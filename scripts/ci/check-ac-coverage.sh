@@ -8,7 +8,7 @@ fail=0
 while IFS='|' read -r _ sec _ _ status _; do
   sec="$(echo "$sec" | xargs)"; n="${sec#§}"; [[ "$n" =~ ^[0-9]+$ ]] || continue
   status="$(echo "$status" | xargs)"
-  ids="$(grep -hoE "^\| AC-$n\.[0-9]+ " spec/contracts/*.md | grep -oE "AC-$n\.[0-9]+" | sort -u -t. -k2,2n)"
+  ids="$(grep -hoE "^\| AC-$n\.[0-9]+ " spec/contracts/*.md | grep -oE "AC-$n\.[0-9]+" | sort -u -t. -k2,2n || true)"
   total=$(echo "$ids" | grep -c . || true)
   [[ $total -gt 7 ]] && { echo "::error::§$n declares $total criteria (max 7)"; fail=1; }
   case "$status" in ✅*|◐*) ;; *) echo "[check-ac-coverage] §$n: $status, no tests expected yet ($total criteria)"; continue ;; esac
