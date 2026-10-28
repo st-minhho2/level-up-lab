@@ -13,5 +13,5 @@ test('GET /api/health answers 200 with status ok', async ({ request }) => {
 test('home page renders the lab title', async ({ page }) => {
   await page.goto('/');
 
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('level-up-lab');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Todos');
 });
