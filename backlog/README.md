@@ -23,9 +23,9 @@ flowchart TD
 
 ## Remaining
 
-| Step | ID   | Title                 | Spec §               | Status | Blocked by | Owner | Size         |
-| ---- | ---- | --------------------- | -------------------- | ------ | ---------- | ----- | ------------ |
-| 3    | B1.3 | Clear completed todos | — (section to write) | Open   | ~~B1.1~~   | Lead  | S [estimate] |
+| Step | ID   | Title                 | Spec § | Status | Blocked by | Owner | Size         |
+| ---- | ---- | --------------------- | ------ | ------ | ---------- | ----- | ------------ |
+| 3    | B1.3 | Clear completed todos | §9     | Open   | ~~B1.1~~   | Lead  | S [estimate] |
 
 ## Waiting on human
 
