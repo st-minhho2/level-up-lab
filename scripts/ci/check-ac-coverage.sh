@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 # Every AC-n in section 3 of each spec at or past `approved` must appear as a test title "AC-n:" in
 # src/**/*.test.ts(x) or e2e/**. Also enforces the 7-criteria cap. Exit 1 on any gap.
-# Specs live in docs/specs/<id>-<slug>/spec.md with `status:` in the frontmatter (legacy specs/FEAT-*.md with a
-# `| Status |` row are still read until FEAT-001 is moved).
+# Specs live in docs/specs/<id>-<slug>/spec.md with `status:` in the frontmatter.
 #   scripts/ci/check-ac-coverage.sh [docs/specs/FEAT-xxx-*/spec.md ...]
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
 specs=("$@")
 if [[ ${#specs[@]} -eq 0 ]]; then
-  while IFS= read -r f; do specs+=("$f"); done < <(ls docs/specs/FEAT-*/spec.md specs/FEAT-*.md 2>/dev/null || true)
+  while IFS= read -r f; do specs+=("$f"); done < <(ls docs/specs/FEAT-*/spec.md 2>/dev/null || true)
 fi
 [[ ${#specs[@]} -eq 0 ]] && { echo "[check-ac-coverage] no specs yet"; exit 0; }
 
