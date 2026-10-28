@@ -1,0 +1,41 @@
+# dependencies
+/node_modules
+.pnp
+.pnp.*
+
+# tests and reports
+/coverage
+/reports
+/.stryker-tmp
+/playwright-report
+/test-results
+/.cache
+
+# next.js
+/.next/
+/.next-*/
+/out/
+/build
+
+# worktrees (scripts/worktree.sh) and their per-task state
+/.worktrees/
+.worktree.env
+/storage/
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files: only the example is tracked
+.env*
+!.env.example
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts

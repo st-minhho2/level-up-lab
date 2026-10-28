@@ -1,0 +1,15 @@
+node_modules
+.next
+.next-*
+out
+coverage
+reports
+.stryker-tmp
+.cache
+.worktrees
+storage
+playwright-report
+test-results
+pnpm-lock.yaml
+prisma/migrations
+next-env.d.ts

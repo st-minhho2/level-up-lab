@@ -1,0 +1,12 @@
+// Models arrive with their feature spec (specs/FEAT-xxx.md) and their migration in the same commit.
+// Conventions: PascalCase singular model, camelCase fields, @@map to snake_case plural table, cuid ids,
+// createdAt/updatedAt on every table. See .claude/rules/prisma.md.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
