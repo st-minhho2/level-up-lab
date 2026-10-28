@@ -1,0 +1,25 @@
+# Overlay on ../docker-compose.yml: adds the dev workspace container. Image must equal CI_IMAGE in
+# .github/workflows/ci.yml so "works in the sandbox" means "works in CI".
+services:
+  app:
+    image: node:24-bookworm
+    command: sleep infinity
+    working_dir: /workspace
+    volumes:
+      # Repo root, not a worktree folder (see devcontainer.json).
+      - ..:/workspace:cached
+      # Shared pnpm store so every worktree installs from the same cache.
+      - pnpm-store:/home/node/.local/share/pnpm/store
+    environment:
+      # Local-only credentials for the compose Postgres. No production value is ever set here.
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/level_up_lab?schema=public
+      PORT: '3000'
+      NODE_ENV: development
+      # Playwright browsers live in the container, not in the mounted repo.
+      PLAYWRIGHT_BROWSERS_PATH: /home/node/.cache/ms-playwright
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pnpm-store:

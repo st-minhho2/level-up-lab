@@ -1,0 +1,21 @@
+# Local infrastructure only. Host port 5433 (5432 is taken by a sibling lab on this machine); override with
+# POSTGRES_PORT. Every worktree shares this one server and gets its own schema (scripts/worktree.sh).
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: level_up_lab
+    ports:
+      - '${POSTGRES_PORT:-5433}:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d level_up_lab']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
