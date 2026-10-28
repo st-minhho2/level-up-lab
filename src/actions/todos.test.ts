@@ -78,6 +78,14 @@ describe('toggleTodoAction', () => {
     expect(result).toEqual({ ok: false, fieldErrors: { id: ['Todo not found'] } });
     expect(cache.revalidatePath).not.toHaveBeenCalled();
   });
+
+  it('rethrows a non-TodoNotFoundError from the lib (review: instanceof arm)', async () => {
+    lib.toggleTodo.mockRejectedValue(new Error('db down'));
+
+    await expect(toggleTodoAction('todo-1')).rejects.toThrow('db down');
+
+    expect(cache.revalidatePath).not.toHaveBeenCalled();
+  });
 });
 
 describe('updateTodoTitleAction (§6)', () => {
@@ -136,6 +144,14 @@ describe('updateTodoTitleAction (§6)', () => {
     const result = await updateTodoTitleAction('missing', 'Buy milk');
 
     expect(result).toEqual({ ok: false, fieldErrors: { id: ['Todo not found'] } });
+    expect(cache.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it('rethrows a non-TodoNotFoundError from the lib (review: instanceof arm)', async () => {
+    lib.updateTodoTitle.mockRejectedValue(new Error('db down'));
+
+    await expect(updateTodoTitleAction('todo-1', 'Buy milk')).rejects.toThrow('db down');
+
     expect(cache.revalidatePath).not.toHaveBeenCalled();
   });
 });

@@ -65,6 +65,16 @@ describe('<TodoItem> edit mode (§6)', () => {
     expect(screen.getByRole('textbox', { name: 'Edit title' })).toHaveValue('Buy mik');
   });
 
+  it('AC-6.1: keeps the checkbox named by the title while editing', async () => {
+    const user = userEvent.setup();
+    render(<TodoItem todo={todo(true)} />);
+
+    await user.click(screen.getByRole('button', { name: 'Edit title' }));
+
+    expect(screen.getByRole('checkbox', { name: 'Walk the dog' })).toBeChecked();
+    expect(screen.getByRole('textbox', { name: 'Edit title' })).toBeInTheDocument();
+  });
+
   it('AC-6.2: submits the draft to updateTodoTitleAction and leaves edit mode', async () => {
     actions.updateTodoTitleAction.mockResolvedValue({ ok: true, data: { ...mistyped(), title: 'Buy milk' } });
     const user = userEvent.setup();
