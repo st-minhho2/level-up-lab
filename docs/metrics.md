@@ -26,5 +26,6 @@ means the situation to measure has not happened yet.
 | Card | §   | Criteria | Covered   | Mutation %                     | QA round trips | Red              | Green   |
 | ---- | --- | -------- | --------- | ------------------------------ | -------------- | ---------------- | ------- |
 | B1.1 | §5  | 7        | 7 (100 %) | 78.87 (actions 71.4, lib 80.7) | 0              | 61cb3f4, 7af9887 | c7153b2 |
+| B1.2 | §6  | 7        | 7 (100 %) | 79.07 (actions 76.2, lib 80.0) | 0              | fa7a3dd          | this PR |
 
 A value below target for two consecutive measurements opens a row in `docs/mistake-log.md` and a fix in `.claude/`.
