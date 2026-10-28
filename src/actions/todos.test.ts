@@ -29,7 +29,7 @@ beforeEach(() => {
 });
 
 describe('createTodoAction', () => {
-  it('AC-2: creates the trimmed title as a not-completed todo and revalidates / once', async () => {
+  it('AC-5.2: creates the trimmed title as a not-completed todo and revalidates / once', async () => {
     lib.createTodo.mockResolvedValue(todo());
 
     const result = await createTodoAction(null, form('  Buy milk  '));
@@ -40,7 +40,7 @@ describe('createTodoAction', () => {
     expect(cache.revalidatePath).toHaveBeenCalledWith('/');
   });
 
-  it('AC-3: returns fieldErrors.title ["Title is required"] for a blank title and stores nothing', async () => {
+  it('AC-5.3: returns fieldErrors.title ["Title is required"] for a blank title and stores nothing', async () => {
     const result = await createTodoAction(null, form('   '));
 
     expect(result).toEqual({ ok: false, fieldErrors: { title: ['Title is required'] } });
@@ -48,7 +48,7 @@ describe('createTodoAction', () => {
     expect(cache.revalidatePath).not.toHaveBeenCalled();
   });
 
-  it('AC-3: returns fieldErrors.title ["Title must be 200 characters or fewer"] for 201 characters', async () => {
+  it('AC-5.3: returns fieldErrors.title ["Title must be 200 characters or fewer"] for 201 characters', async () => {
     const result = await createTodoAction(null, form('x'.repeat(201)));
 
     expect(result).toEqual({ ok: false, fieldErrors: { title: ['Title must be 200 characters or fewer'] } });
@@ -57,7 +57,7 @@ describe('createTodoAction', () => {
 });
 
 describe('toggleTodoAction', () => {
-  it('AC-4: returns the toggled todo and revalidates /', async () => {
+  it('AC-5.4: returns the toggled todo and revalidates /', async () => {
     lib.toggleTodo.mockResolvedValueOnce(todo({ completed: true })).mockResolvedValueOnce(todo({ completed: false }));
 
     const first = await toggleTodoAction('todo-1');
@@ -69,7 +69,7 @@ describe('toggleTodoAction', () => {
     expect(cache.revalidatePath).toHaveBeenCalledTimes(2);
   });
 
-  it('AC-5: returns fieldErrors.id ["Todo not found"] for an unknown id and does not revalidate', async () => {
+  it('AC-5.5: returns fieldErrors.id ["Todo not found"] for an unknown id and does not revalidate', async () => {
     lib.toggleTodo.mockRejectedValue(new TodoNotFoundError('missing'));
 
     const result = await toggleTodoAction('missing');

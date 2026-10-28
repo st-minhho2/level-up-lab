@@ -4,10 +4,10 @@
 # gitignored .env files, dependencies from the shared pnpm store.
 #
 #   scripts/worktree.sh <task-name> [base-ref]      base defaults to main
-#   scripts/worktree.sh FEAT-002-archive-todos
+#   scripts/worktree.sh feat/B1.3-clear-completed
 #
 #   dir      <repo>/.worktrees/<slug>          slug = task name lowercased, [^a-z0-9] -> '-'
-#   branch   <task-name> as given (e.g. feat/FEAT-002-archive-todos) or created from base
+#   branch   <task-name> as given (e.g. feat/B1.3-clear-completed) or created from base
 #   PORT     3001..3900, stable hash of the slug
 #   schema   DATABASE_URL ...?schema=wt_<slug_with_underscores>
 #   dirs     NEXT_DIST_DIR=.next  UPLOAD_DIR=<dir>/storage/uploads  VITEST_CACHE_DIR/STRYKER_TEMP_DIR=<dir>/.cache/*

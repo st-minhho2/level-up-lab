@@ -1,3 +1,4 @@
+// §5 list/create/toggle (and §6 edit title once B1.2 lands).
 import { prisma } from '@/lib/prisma';
 
 export interface Todo {

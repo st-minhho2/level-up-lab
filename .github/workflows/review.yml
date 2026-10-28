@@ -45,7 +45,7 @@ jobs:
             PR NUMBER: ${{ github.event.pull_request.number }}
 
             You are the pre-human reviewer for this repository. The PR branch is checked out. Read CLAUDE.md,
-            .claude/rules/*.md, the spec linked in the PR body (docs/specs/FEAT-xxx-*/spec.md) and the PR body's Plan
+            .claude/rules/*.md, the spec section named in the PR body (spec/contracts/<file>) and the PR body's Plan
             section, then review `gh pr diff`.
 
             Post ONLY blocking findings, each as an inline comment via

@@ -11,14 +11,14 @@ beforeEach(() => {
 });
 
 describe('<TodoForm>', () => {
-  it('AC-7: renders a text box labelled "New todo" and a button "Add"', () => {
+  it('AC-5.7: renders a text box labelled "New todo" and a button "Add"', () => {
     render(<TodoForm />);
 
     expect(screen.getByRole('textbox', { name: 'New todo' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add' })).toBeInTheDocument();
   });
 
-  it('AC-3: shows the title field error returned by the action', async () => {
+  it('AC-5.3: shows the title field error returned by the action', async () => {
     actions.createTodoAction.mockResolvedValue({ ok: false, fieldErrors: { title: ['Title is required'] } });
     const user = userEvent.setup();
     render(<TodoForm />);
@@ -29,7 +29,7 @@ describe('<TodoForm>', () => {
     expect(actions.createTodoAction).toHaveBeenCalledTimes(1);
   });
 
-  it('AC-2: submits the typed title and clears the box on success', async () => {
+  it('AC-5.2: submits the typed title and clears the box on success', async () => {
     actions.createTodoAction.mockResolvedValue({
       ok: true,
       data: { id: 't1', title: 'Buy milk', completed: false, createdAt: new Date() },

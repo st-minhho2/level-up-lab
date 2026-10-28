@@ -1,4 +1,4 @@
-// Mutation testing for the layers that hold logic. CI fails below 70% (L6 quality metric).
+// Mutation testing for the layers that hold logic. CI fails below 70% (spec §2).
 // Report: reports/mutation/index.html (git-ignored, uploaded as a CI artifact).
 /** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
 const config = {

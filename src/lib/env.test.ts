@@ -4,7 +4,7 @@ import { cacheKey, EnvError, parseEnv } from './env';
 const valid = { DATABASE_URL: 'postgresql://postgres:postgres@localhost:5433/level_up_lab?schema=public' };
 
 describe('parseEnv', () => {
-  it('applies defaults when only DATABASE_URL is set', () => {
+  it('AC-4.1: applies defaults when only DATABASE_URL is set', () => {
     const env = parseEnv(valid);
 
     expect(env).toEqual({
@@ -64,7 +64,7 @@ describe('parseEnv', () => {
     expect(() => parseEnv({ ...valid, CACHE_PREFIX: 'Main-1' })).toThrow('CACHE_PREFIX must be lowercase [a-z0-9_]');
   });
 
-  it('reports every issue in one message, joined by "; "', () => {
+  it('AC-4.2: reports every issue in one message, joined by "; "', () => {
     expect(() => parseEnv({ ...valid, PORT: '0', CACHE_PREFIX: 'X' })).toThrow(
       /^Invalid environment: PORT: .*; CACHE_PREFIX: /,
     );

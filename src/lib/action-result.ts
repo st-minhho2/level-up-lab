@@ -1,3 +1,4 @@
+// §7 ActionResult shape.
 import type { ZodError } from 'zod';
 
 // Every Server Action returns this shape; errors travel as data, never as thrown exceptions.

@@ -1,4 +1,4 @@
-# Pre-commit gate. Budget: < 30 s on a warm machine (measured in docs/levels/L5.md). Lint and format run on
+# Pre-commit gate. Budget: < 30 s on a warm machine (measured in .claude/docs/hooks.md). Lint and format run on
 # staged files only; tsc is whole-project because types cross files. Emergency bypass: LEFTHOOK=0 git commit,
 # with the reason in the commit body; CI still runs the full gate.
 pre-commit:

@@ -1,3 +1,4 @@
+// §7 health report.
 export interface HealthReport {
   readonly status: 'ok';
   readonly uptimeSeconds: number;

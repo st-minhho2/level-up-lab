@@ -16,7 +16,7 @@ concurrency:
 env:
   # Single source of truth with .devcontainer/docker-compose.yml. Change both or neither.
   CI_IMAGE: node:24-bookworm
-  # Hotfix lane (docs/levels/L5.md): PRs labelled "hotfix" run only lint, typecheck and unit tests.
+  # Hotfix lane (.claude/docs/git-workflow.md): PRs labelled "hotfix" run only lint, typecheck and unit tests.
   HOTFIX: ${{ contains(github.event.pull_request.labels.*.name, 'hotfix') }}
 
 jobs:
@@ -127,7 +127,13 @@ jobs:
         run: scripts/ci/check-config-change.sh
       - name: feat(...) commits do not touch test files
         run: scripts/ci/check-feat-commits.sh
-      - name: Every acceptance criterion has a test (L6)
+      - name: Every acceptance criterion of a shipped section has a test
         run: scripts/ci/check-ac-coverage.sh
-      - name: test(FEAT-xxx) commits are red for the right reason (L6)
+      - name: Cited spec sections exist
+        run: scripts/ci/check-spec-sections.sh
+      - name: Features map resolves
+        run: scripts/ci/check-features-map.sh
+      - name: Backlog board matches the cards
+        run: scripts/ci/check-backlog.sh
+      - name: test(...) commits are red for the right reason
         run: scripts/verify-red.sh --auto

@@ -28,7 +28,7 @@ beforeEach(() => {
 });
 
 describe('listTodos', () => {
-  it('AC-1: returns todos newest first with id, title and completed', async () => {
+  it('AC-5.1: returns todos newest first with id, title and completed', async () => {
     const [a, b, c] = [makeRow({ title: 'A' }), makeRow({ title: 'B' }), makeRow({ title: 'C' })];
     db.findMany.mockResolvedValue([c, b, a]);
 
@@ -45,7 +45,7 @@ describe('listTodos', () => {
 });
 
 describe('createTodo', () => {
-  it('AC-2: stores the given title as a not-completed todo and returns it', async () => {
+  it('AC-5.2: stores the given title as a not-completed todo and returns it', async () => {
     db.create.mockImplementation(({ data }: { data: { title: string } }) =>
       Promise.resolve(makeRow({ title: data.title })),
     );
@@ -59,7 +59,7 @@ describe('createTodo', () => {
 });
 
 describe('toggleTodo', () => {
-  it('AC-4: inverts completed and stores it, twice in a row', async () => {
+  it('AC-5.4: inverts completed and stores it, twice in a row', async () => {
     const row = makeRow({ completed: false });
     db.findUnique.mockResolvedValueOnce(row).mockResolvedValueOnce({ ...row, completed: true });
     db.update.mockImplementation(({ data }: { data: { completed: boolean } }) =>
@@ -75,7 +75,7 @@ describe('toggleTodo', () => {
     expect(db.update.mock.calls[1]?.[0]).toMatchObject({ where: { id: row.id }, data: { completed: false } });
   });
 
-  it('AC-5: throws TodoNotFoundError for an unknown id and updates nothing', async () => {
+  it('AC-5.5: throws TodoNotFoundError for an unknown id and updates nothing', async () => {
     db.findUnique.mockResolvedValue(null);
 
     await expect(toggleTodo('missing')).rejects.toBeInstanceOf(TodoNotFoundError);

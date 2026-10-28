@@ -1,63 +1,32 @@
-<!-- Title: <type>(<scope>): <summary>   e.g. feat(FEAT-001): list, create and toggle todos -->
+<!-- Title: <type>(<pkg>): <card> <summary>   e.g. feat(todos): B1.2 edit a todo title -->
 
-## Spec
+## Item
 
-Link: `docs/specs/FEAT-xxx-<slug>/spec.md` (or `n/a: chore/docs only`)
-Criteria in this PR: AC-1, AC-2, ... (every AC in the spec, or say which are deferred and why)
+B<epic>.<n> — <title> (spec §<n>)
+
+- spec: §<n> — unchanged | changed by D-<n>
+- test: `<file>::<AC-§.n title>` — red before (`scripts/verify-red.sh`), green after
+- acceptance: AC-§.1 … AC-§.n (all, or say which are deferred and why)
 
 ## Plan
 
-> **Mandatory for any PR that touches more than one file.** Written and approved before the code (see
-> `.claude/rules/planning.md`). If the code diverged, the plan was updated and re-approved; say so below.
+> Copied from `backlog/work/<card>/plan.md`, approved before the skeleton commit. Files table, interfaces touched,
+> verification, work breakdown, `Plan approved by: <human>, <date>`, rounds.
 
-### Files
+## Map delta
 
-| File                 | Change            | Why (AC / REQ id) |
-| -------------------- | ----------------- | ----------------- |
-| `src/lib/<slice>.ts` | add `listTodos()` | AC-1              |
-
-### Interfaces touched
-
-Routes, Server Action signatures, Zod schemas, Prisma models, env vars. Signatures, not prose.
-
-```ts
-createTodoAction(formData: FormData): Promise<ActionResult<Todo>>
-```
-
-### Verification
-
-Exact commands and expected results. The reviewer re-runs them.
-
-```bash
-pnpm test            # N tests green, including every AC-n title
-pnpm test:e2e        # e2e/FEAT-xxx-<name>.spec.ts green
-pnpm test:mutation   # score >= 70 on src/lib + src/actions
-```
-
-Plan approved by: <name>, <date> · Re-approved after change: <yes/no, what changed>
-
-## Out of scope
-
-What this PR deliberately does not do, so nobody asks in review.
-
-## Unchanged behavior
-
-Existing pages, actions or jobs this touches but must not alter, and the test that proves it.
+<!-- spec/features-map.md rows moved, e.g. "F6 · §6 · ✗ → ✅ — updateTodoTitle in src/lib/todos.ts; evidence: pnpm test → 41 passed" -->
 
 ## Review
 
-`/review-loop` result: passes N/3, disposition table (every finding: fix now / no change needed + proving input /
-out of scope), riskiest unfalsified spot. For a pipeline task, paste `review.md`'s diff-review section.
+`/review-loop`: passes N/3, the disposition table (every finding: fix now / no change needed + proving input / out of
+scope), riskiest unfalsified spot. Paste `backlog/work/<card>/review.md` "Diff review".
 
 ## Checklist
 
 - [ ] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
-- [ ] Spec status is `approved` with the lead box ticked; every AC-n appears as a test title.
-- [ ] Tests were committed red first (`test(FEAT-xxx):` precedes `feat(FEAT-xxx):`); `scripts/verify-red.sh` passed.
-- [ ] No `feat(...)` commit touches `*.test.*` or `e2e/**`.
-- [ ] Mutation score for `src/lib` + `src/actions` ≥ 70%.
-- [ ] `/review-loop` clean (gate cleared by `mark-reviewed.sh`); every finding has a disposition above.
-- [ ] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; no lint/tsconfig/CI/hook changes (or label
-      `config-change-approved` with the reason in this PR).
-- [ ] Migrations reviewed as SQL; none edits an applied migration; `prisma/seed.ts` updated if needed.
-- [ ] `docs/metrics.md` row updated; `docs/mistake-log.md` updated if an agent repeated a known mistake.
+- [ ] Red commit precedes the feat commit; no `feat(` commit touches `*.test.*` or `e2e/**`.
+- [ ] Every `AC-§.n` of the section is a test title; mutation on `src/lib` + `src/actions` ≥ 70 %.
+- [ ] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; no protected config change (or label `config-change-approved` with the reason).
+- [ ] Migrations reviewed as SQL; `prisma/seed.ts` updated if a table changed.
+- [ ] `spec/features-map.md` row moved; `docs/metrics.md` per-card row filled; mistake-log updated if a known mistake repeated.

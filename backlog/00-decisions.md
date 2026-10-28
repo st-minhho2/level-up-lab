@@ -1,0 +1,22 @@
+# Decisions (D-n)
+
+Rulings only a human can make, recorded once and never rewritten. Agents follow them and never re-ask; a later D-n
+supersedes an earlier one. The `advisor` escalates with a decision request; the human appends the next D-n here
+(`docs(backlog): D-n …`).
+
+## Settled 2026-10-28 (owner: minh.ho2)
+
+| #   | Decision                                                                                                                                                                                             | Consequence for tasks                                                                                     |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| D-1 | Claude Code is the single approved agent; roles are its subagents in `.claude/agents/`.                                                                                                              | No second tool; instruction files converted once if that ever changes.                                    |
+| D-2 | One human gate per card: plan approval (`Plan approved by:` in `work/<card>/plan.md`).                                                                                                               | Spec approval is delegated to the `reviewer` role after the plan is approved.                             |
+| D-3 | Model tiers: `spec-analyst` and `advisor` on `sonnet`; deciding and writing roles inherit the session model.                                                                                         | Change only here.                                                                                         |
+| D-4 | Review gate on Stop: a change under `src/`, `prisma/`, `e2e/` is reviewed (`/review-loop`, ≤ 3 passes) before a turn ends.                                                                           | `mark-reviewed.sh` is the only way to clear it; a deliberate incomplete stop is reported, never silenced. |
+| D-5 | Todo titles: 1–200 characters after trimming, duplicates allowed.                                                                                                                                    | §5 and §6 reuse the limit; a new D-n changes it.                                                          |
+| D-6 | The spec is a numbered contract (`spec/`, §n permanent) and work is tracked as backlog cards (`backlog/`, `B<e>.<n>`); playbook level names appear nowhere in the tree except README's one sentence. | Ids `FEAT-xxx` retired: FEAT-001 → B1.1/§5, FEAT-003 → B1.2/§6, FEAT-002 → B1.3.                          |
+
+## Open
+
+| Question                                                           | Raised by | Blocks |
+| ------------------------------------------------------------------ | --------- | ------ |
+| B1.3: hide or disable "Clear completed" when nothing is completed? | card B1.3 | B1.3   |

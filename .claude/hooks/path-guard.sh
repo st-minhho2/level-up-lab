@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # PreToolUse hook for Edit|Write|MultiEdit, declared in a subagent's frontmatter with the paths that role may
 # touch. Patterns are bash globs matched against the repo-relative path (`*` crosses `/`); a leading `!` denies.
-#   path-guard.sh 'docs/specs/*'                      # analyst, advisor, dev-lead, tech-lead
+#   path-guard.sh 'backlog/work/*'                    # advisor
 #   path-guard.sh '*.test.ts' '*.test.tsx' 'e2e/*'    # test-writer
-#   path-guard.sh 'src/*' 'prisma/*' 'docs/*' '!*.test.ts' '!*.test.tsx' '!e2e/*'   # implementer
+#   path-guard.sh 'src/*' 'prisma/*' 'spec/features-map.md' '!*.test.ts' '!*.test.tsx' '!e2e/*'   # code-writer
 # Resolves `..` and symlinks first, so a role cannot escape through a relative path.
 set -uo pipefail
 . "$(dirname "$0")/lib.sh"

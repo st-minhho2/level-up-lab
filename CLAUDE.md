@@ -1,61 +1,99 @@
 # level-up-lab
 
-Next.js 15 (App Router) + Prisma 6 + PostgreSQL lab for SupremeTech's AI-Driven Development playbook, target L6
-(spec-driven + TDD). README.md has the narrative; this file has only what an agent cannot read from the code.
-Claude Code is the single approved agent for this repo.
+Next.js 15 (App Router) + Prisma 6 + PostgreSQL. A single-person todo list is the vehicle; the point is the way
+work flows: numbered spec → backlog card → red test → green code → independent review → PR. README.md is for people;
+this file and the nested `CLAUDE.md` files are what an agent needs to act.
+
+| Need                           | Read                                                                                |
+| ------------------------------ | ----------------------------------------------------------------------------------- |
+| What `src/` must do            | `spec/technical-requirements.md` (index) → `spec/contracts/<§>.md`                  |
+| Which feature lives where      | `spec/features-map.md`                                                              |
+| What to work on, in what order | `backlog/README.md`, cards in `backlog/plan/`, rulings in `backlog/00-decisions.md` |
+| How code is laid out           | `src/CLAUDE.md`, then the package's `CLAUDE.md`                                     |
+| How a task is run end to end   | `.claude/agents/dev-lead.md`, `.claude/docs/git-workflow.md`                        |
+| What the hooks block           | `.claude/docs/hooks.md`                                                             |
+
+## Non-negotiables
+
+- **The spec wins.** Every function in `src/` implements a numbered section. Changing behavior without a section to
+  point at is a bug, not a feature. Code and spec disagree → report (`/spec-trace`), never edit the spec to match.
+- **Tests first, tests untouched.** A card's tests land red in their own `test(...)` commit, proven by
+  `scripts/verify-red.sh`; the `feat(...)` commit that turns them green touches no test file (CI rejects it).
+- **Mutations only through Server Actions**, Zod at the boundary, Prisma only in `src/lib` (`server-only`), no raw SQL.
+- **The main checkout is never edited.** Work in a worktree (`scripts/worktree.sh`), commit, push the branch, open a
+  PR; never merge, never force push, never bypass a hook.
+- **Secrets stay out.** Never read or print `.env*` (except `.env.example`), keys, `~/.ssh`, `~/.aws`; hooks block it.
+- **Ask before** any dependency, tool, CI, hook or configuration change (the `config-change-approved` label is a
+  human's).
+
+## Rules
+
+Every `.claude/rules/*.md` loads at launch into each session and subagent (none has `paths:` frontmatter):
+
+| File               | Holds                                                                     |
+| ------------------ | ------------------------------------------------------------------------- |
+| `invariants.md`    | the eight things that may never bend; a task that needs one bent stops    |
+| `spec-fidelity.md` | the spec is the contract; signatures, constants and messages come from it |
+| `ts-style.md`      | TypeScript, App Router and Prisma conventions                             |
+| `testing.md`       | placement, `AC-§.n` titles, mocks at boundaries only, never weaken        |
+| `planning.md`      | one-screen plan, one human approval, diff compared to plan                |
 
 ## Commands
 
+Run from the worktree you were given (`.worktrees/<slug>/`), never from the main checkout.
+
 ```bash
-pnpm install --frozen-lockfile   # pnpm only; never npm/yarn
-pnpm dev                         # next dev on $PORT (default 3000); no --turbopack flag anywhere
-pnpm build && pnpm start
-pnpm lint                        # eslint + prettier --check   (pnpm lint:fix to repair)
-pnpm typecheck                   # tsc --noEmit
-pnpm test                        # vitest: unit (node) + component (jsdom); no DB needed
-pnpm test:e2e                    # playwright; needs `docker compose up -d` and `pnpm db:deploy`
-pnpm test:mutation               # stryker on src/lib + src/actions; fails below 70%
-pnpm db:migrate --name <change>  # prisma migrate dev against the local compose DB only
-pnpm db:deploy | db:generate | db:seed | db:studio
-scripts/verify-red.sh FEAT-xxx   # proves the test(FEAT-xxx) commit fails for the right reason
+pnpm install --frozen-lockfile    # pnpm only
+pnpm lint · pnpm typecheck · pnpm test · pnpm test:e2e · pnpm test:mutation · pnpm build
+pnpm db:migrate --name <verb-noun> # local compose PostgreSQL only; migrations are immutable once on main
+scripts/verify-red.sh B1.2        # proves the card's test commit is red on behavior
+scripts/next-task.sh [--list]     # the next eligible card / the board
+scripts/card-status.sh B1.2 Done "<evidence>"
+.claude/hooks/mark-reviewed.sh    # clears the review gate after /review-loop
 ```
 
-## Layout
+`pnpm test` needs no database; `test:e2e`, `db:*` need `docker compose up -d` (PostgreSQL on localhost:5433).
 
-- `src/app/` Server Components by default; `src/app/api/**/route.ts` Route Handlers are read-only (GET).
-- `src/actions/*.ts` Server Actions (`'use server'`): the only place mutations happen. Zod-validate, delegate to `src/lib`.
-- `src/lib/` domain logic + `prisma.ts` (the one Prisma client, `server-only`) + `env.ts` (validated env). Mutation-tested.
-- `src/components/` client components (`'use client'`) only when they need state or events.
-- `prisma/` schema, migrations, `seed.ts`. `docs/specs/FEAT-xxx-<slug>/` one folder per task: `spec.md` (EARS, frontmatter = state) + role artifacts.
-- Tests sit next to code: `*.test.ts` (node), `*.test.tsx` (jsdom). `e2e/` holds one Playwright file per spec.
-- `docs/levels/LN.md` checklists, `docs/metrics.md`, `docs/mistake-log.md`. Scripts in `scripts/`.
+## Map
 
-## Boundaries (hooks in .claude/settings.json enforce the first three)
+| Path              | Contents                                                   | Spec §     |
+| ----------------- | ---------------------------------------------------------- | ---------- |
+| `src/app/`        | Server Components, `api/health` Route Handler              | §7         |
+| `src/actions/`    | Server Actions (`'use server'`): the only mutations        | §5, §6, §7 |
+| `src/lib/`        | domain logic, Zod schemas, the Prisma client, env          | §3–§6      |
+| `src/components/` | client components (`'use client'`)                         | §7         |
+| `prisma/`         | schema, migrations, seed                                   | §3         |
+| `e2e/`            | Playwright, one file per section (`05-todos.spec.ts`)      | §2         |
+| `spec/`           | the contract (`contracts/`, `features-map.md`)             | —          |
+| `backlog/`        | cards, board, decisions, `work/<card>/` artifacts          | —          |
+| `docs/`           | design, ADRs, metrics, mistake log                         | —          |
+| `scripts/`        | worktree, verify-red, next-task, card-status, `ci/` guards | —          |
 
-- Never read or print `.env*` (except `.env.example`), key files, `~/.ssh`, `~/.aws`, or secret-looking variables.
-- Never run `rm -rf`, `git push --force`, `prisma migrate reset`, `prisma db push`, or any Prisma command against a
-  non-local `DATABASE_URL`.
-- Never edit a migration that is already on `main`; add a new one.
-- Never import `@/lib/prisma` (or anything from `src/lib` that touches it) from a client component or `src/app/api`.
-- Never add `eslint-disable`, `@ts-ignore`, `@ts-expect-error`; never change lint, tsconfig, CI, hooks or Stryker
-  config inside a feature PR (CI rejects it without the `config-change-approved` label).
-- Never edit `*.test.*` or `e2e/**` in a `feat(...)` commit; never weaken an assertion to make a test pass.
-- No spec, no code: a feature starts as `docs/specs/FEAT-xxx-<slug>/spec.md` with the lead-approval box ticked.
-- Pipeline roles write only inside their hook-enforced paths (task folder, tests, or src); state changes only
-  through `scripts/task-status.sh`. The plan gate (`Plan approved by:` in `plan.md`) is never skipped.
-- A change under `src/`, `prisma/`, `e2e/` ends with `/review-loop` (≤ 3 passes) and `mark-reviewed.sh`; the Stop
-  hook blocks once otherwise. Rulings in `docs/decisions.md` (D-n) are settled: follow, never re-ask; a question
-  only a person can answer goes through `/advise` and ends as `blocked`, not as a guess.
+## Architecture in one pass
 
-## Session rules
+`page.tsx` (RSC) → `src/lib/todos.ts` → `src/lib/prisma.ts` → PostgreSQL for reads. Client components call a Server
+Action in `src/actions/todos.ts` → Zod schema in `src/lib/todo-schema.ts` → `src/lib/todos.ts` → `revalidatePath('/')`
+→ the RSC re-renders. `src/lib/env.ts` validates configuration once. Nothing else talks to the database.
 
-- One task per session. A task is one spec (or one skeleton, one red, or one green step of it). Finish or hand off;
-  do not start a second task in the same context.
-- `/clear` between tasks; `/compact` when the context is about half full or before a long test run. Stale context
-  makes the agent repeat mistakes already logged in `docs/mistake-log.md`.
-- Claude Code is the only approved agent here. If the team ever switches tool, convert `CLAUDE.md`, `.claude/rules`,
-  `.claude/skills` and `.claude/agents` once, in one PR, and delete the old copies. Never maintain two sets.
-- Multi-file or unclear work starts in plan mode (`.claude/rules/planning.md`). One-sentence diffs skip it.
-- `/work-next [FEAT-xxx]` runs the backlog pipeline (`docs/pipeline.md`): one task per invocation, stops once for
-  plan approval, ends with a pull request.
-- One task = one worktree = one branch (`scripts/worktree.sh <task>`); never work in someone else's checkout.
+## How coding tasks finish here
+
+```
+implement → /review-loop → disposition every finding → fix → re-verify → re-review if needed (≤ 3 passes)
+```
+
+- **Stop hook**: ending a turn blocks once while `src/`, `prisma/` or `e2e/` changed without a recorded review.
+  Only `.claude/hooks/mark-reviewed.sh` clears it (lint, typecheck, tests re-run). Stopping deliberately with the
+  review incomplete: say so and name what is unreviewed; never clear the gate to silence it.
+- **PostToolUse hook**: prettier and `eslint --fix` after each edit.
+- **Report**: answer first, numbers over adjectives, `[unverified]` for anything not run, one "Waiting on you" list.
+
+## Skills
+
+| Skill                                  | When                                                                                                    |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `/work-next [B1.2]`                    | run a card end to end as `dev-lead`: analyse → advise → plan → **human approval** → build → review → PR |
+| `/tdd-loop`                            | test-writer → red gate → code-writer → green gate                                                       |
+| `/review-loop`                         | the mandatory finish for any `src/`, `prisma/`, `e2e/` change                                           |
+| `/advise`                              | a blocking question about what governs (spec vs code, silence, conflict, needs a ruling)                |
+| `/spec-trace`                          | code vs spec § drift, both directions                                                                   |
+| `/new-feature-slice`, `/add-migration` | skeleton for a section; schema change with migration                                                    |

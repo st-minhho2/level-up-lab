@@ -9,7 +9,7 @@ the "Retired" table so the active list stays short enough to read before a task.
 
 | Date       | Mistake                                                                                                                           | Seen | Prevented by                                                                         |
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------- | ---- | ------------------------------------------------------------------------------------ |
-| 2026-10-28 | Generated ESLint config let `any` and floating promises through (not type-aware)                                                  | 1    | `eslint.config.mjs` type-checked block; L1 watch-out                                 |
+| 2026-10-28 | Generated ESLint config let `any` and floating promises through (not type-aware)                                                  | 1    | `eslint.config.mjs` type-checked block; watch-out                                    |
 | 2026-10-28 | pnpm 10 skipped Prisma/esbuild/sharp postinstall builds, failing only at runtime                                                  | 1    | `pnpm.onlyBuiltDependencies` in `package.json`                                       |
 | 2026-10-28 | Picked `prisma@latest`, which is an 8.0 release candidate                                                                         | 1    | Exact pin `6.19.3`; `.claude/rules/prisma.md`                                        |
 | 2026-10-28 | Compose Postgres on 5432 collided with another local project                                                                      | 1    | `POSTGRES_PORT` default 5433 in `docker-compose.yml` and `.env.example`              |
