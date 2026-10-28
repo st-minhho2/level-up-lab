@@ -13,10 +13,11 @@ ids (`~~B1.1~~` = done), whose Owner is Lead or Dev, and whose card carries both
 - **Spec:** §<n> — unchanged | change: <one sentence>          ← the `spec:` contract line
 - **Test:** `<file>::<AC-§.n title>` — red because: <one sentence> ← the `test:` contract line
 - **Acceptance:** <the AC ids this card closes>
-- **Depends on:** ~~B1.1~~ · **Owner:** Lead | Dev | Human · **Size:** S | M | L [estimate]
+- **Tier:** 0 | quick | full · **Depends on:** ~~B1.1~~ · **Owner:** Lead | Dev | Human · **Size:** S | M | L [estimate]
 - **Work:** `work/B<e>.<n>/` (analysis.md, advice.md, plan.md, review.md as the roles produce them)
 ```
 
+Tier 0 cards close with `work/<card>/plan.md` and no code. Quick cards skip `advisor` unless `dev-lead` asks.
 Missing `Spec:` or `Test:` → not eligible; `dev-lead` first dispatches `spec-analyst` to land them
 (`docs(spec): §n …` then `docs(backlog): B<e>.<n> …`). A `Spec:` line saying "change:" needs a D-n before the
 section is rewritten (§8).

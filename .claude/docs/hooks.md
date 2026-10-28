@@ -25,6 +25,10 @@ Role write scopes (`path-guard.sh` arguments):
 | `test-writer`             | `*.test.ts`, `*.test.tsx`, `e2e/*`                                                          |
 | `code-writer`             | `src/*`, `prisma/*`, `spec/features-map.md`; not tests, not `e2e/`, not `src/lib/prisma.ts` |
 
+Merge policy (D-8): the ruleset on `main` requires the CI checks `lint typecheck test e2e mutation semgrep guards`,
+one human approval, dismisses stale reviews, forbids direct and force pushes, has no bypass actors. Applied with
+`gh api -X POST repos/<owner>/level-up-lab/rulesets --input .github/rulesets/main.json`.
+
 Git hooks (Lefthook, `< 30 s`): prettier and eslint on staged files, `tsc --noEmit`, gitleaks; commit-msg enforces
 Conventional Commits (merge and revert subjects allowed). CI re-runs everything plus Semgrep and the guards in
 `scripts/ci/`. Model policy (D-3): orchestrator, reviewer and writers inherit the session model; `spec-analyst` and

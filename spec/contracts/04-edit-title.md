@@ -1,6 +1,8 @@
 # §6 Todos: edit a title
 
-Status: ✗ open (card B1.2).
+Tier: full
+
+- [x] Lead approves spec (minh.ho2, 2026-10-28, plan gate of B1.2)
 
 ## Intent
 

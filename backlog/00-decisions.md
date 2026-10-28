@@ -14,6 +14,8 @@ supersedes an earlier one. The `advisor` escalates with a decision request; the 
 | D-4 | Review gate on Stop: a change under `src/`, `prisma/`, `e2e/` is reviewed (`/review-loop`, ≤ 3 passes) before a turn ends.                                                                           | `mark-reviewed.sh` is the only way to clear it; a deliberate incomplete stop is reported, never silenced. |
 | D-5 | Todo titles: 1–200 characters after trimming, duplicates allowed.                                                                                                                                    | §5 and §6 reuse the limit; a new D-n changes it.                                                          |
 | D-6 | The spec is a numbered contract (`spec/`, §n permanent) and work is tracked as backlog cards (`backlog/`, `B<e>.<n>`); playbook level names appear nowhere in the tree except README's one sentence. | Ids `FEAT-xxx` retired: FEAT-001 → B1.1/§5, FEAT-003 → B1.2/§6, FEAT-002 → B1.3.                          |
+| D-7 | Spec approval is a human act: the lead ticks the section's `Lead approves spec` box; the plan gate's "approve" reply may tick it in the same step. Supersedes the delegation in D-2.                 | `reviewer` checks the box exists; it never ticks it.                                                      |
+| D-8 | Repository is public; the branch ruleset on `main` is enforced (required checks, one human review, no direct push, no bypass actors).                                                                | Agents cannot merge; every change, including docs, lands by PR with a human approval.                     |
 
 ## Open
 

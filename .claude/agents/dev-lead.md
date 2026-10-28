@@ -31,6 +31,7 @@ approves the plan; roles do the work; you write only `backlog/`, `docs/metrics.m
    `spec-analyst` first and commit `docs(spec): §n …` + `docs(backlog): <card> …`.
    `scripts/worktree.sh feat/<card>-<slug>`; work there.
 2. **Understand.** Dispatch `advisor` (advice mode) → `work/<card>/advice.md`, commit `docs(backlog): <card> advice`.
+   Tier `quick`: skip unless the section touches `src/lib/todos.ts` queries. Tier `0`: skip; the plan is the deliverable.
 3. **Plan** (you). `work/<card>/plan.md`, one screen:
 
 ```

@@ -1,5 +1,9 @@
 # §5 Todos: list, create, toggle
 
+Tier: full
+
+- [x] Lead approves spec (minh.ho2, 2026-10-28, B1.1)
+
 ## Intent
 
 A single person keeps a list of things to do that survives closing the browser: add an item, see every item newest
