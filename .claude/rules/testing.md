@@ -29,6 +29,8 @@ boundaries, no shared state, regression test per bug fix).
   was called with Y" unless the call is the contract (for example `revalidatePath('/')`).
 - Mock only at boundaries: `vi.mock('@/lib/prisma')` in lib tests, `vi.mock('@/lib/<slice>')` and
   `vi.mock('next/cache')` in action tests. Never mock the unit under test or a sibling helper in the same file.
+- When an action test keeps part of the real lib module (`importOriginal`), also `vi.mock('@/lib/prisma')`: the
+  real module imports `server-only`, which throws outside React Server Components (FEAT-001, 2026-10-28).
 - No snapshot-only tests. `toMatchSnapshot` / `toMatchInlineSnapshot` may sit next to an explicit assertion, never
   replace one. A test whose only assertion is a snapshot fails review.
 - No fixed ids and no state shared between tests. Build inputs with small factory functions inside the test file.

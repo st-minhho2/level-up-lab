@@ -10,3 +10,15 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// FEAT-001
+model Todo {
+  id        String   @id @default(cuid())
+  title     String   @db.VarChar(200)
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+  @@map("todos")
+}
