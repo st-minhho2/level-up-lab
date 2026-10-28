@@ -1,12 +1,21 @@
+---
+id: FEAT-001
+title: Todo list
+status: done
+priority: 1
+tier: full
+owner: agent
+depends_on: []
+---
+
 # FEAT-001: Todo list
 
-| Field  | Value                                                                                                                 |
-| ------ | --------------------------------------------------------------------------------------------------------------------- |
-| Tier   | `full`                                                                                                                |
-| Status | `implemented`                                                                                                         |
-| Owner  | minh.ho2                                                                                                              |
-| Slice  | `src/lib/todos.ts`, `src/lib/todo-schema.ts`, `src/actions/todos.ts`, `src/app/page.tsx`, `src/components/todo-*.tsx` |
-| PR     | <link once open>                                                                                                      |
+| Field | Value                                                                                                                 |
+| ----- | --------------------------------------------------------------------------------------------------------------------- |
+| Tier  | `full`                                                                                                                |
+| Owner | minh.ho2                                                                                                              |
+| Slice | `src/lib/todos.ts`, `src/lib/todo-schema.ts`, `src/actions/todos.ts`, `src/app/page.tsx`, `src/components/todo-*.tsx` |
+| PR    | #1 (merged c7153b2)                                                                                                   |
 
 - [x] **Lead approves spec** (minh.ho2, 2026-10-28)
 

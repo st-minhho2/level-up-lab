@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# Every AC-n in section 3 of each non-draft spec must appear as a test title "AC-n:" in src/**/*.test.ts(x) or
-# e2e/**. Also enforces the 7-criteria cap. Exit 1 on any gap.
-#   scripts/ci/check-ac-coverage.sh [specs/FEAT-xxx-*.md ...]
+# Every AC-n in section 3 of each spec at or past `approved` must appear as a test title "AC-n:" in
+# src/**/*.test.ts(x) or e2e/**. Also enforces the 7-criteria cap. Exit 1 on any gap.
+# Specs live in docs/specs/<id>-<slug>/spec.md with `status:` in the frontmatter.
+#   scripts/ci/check-ac-coverage.sh [docs/specs/FEAT-xxx-*/spec.md ...]
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
 specs=("$@")
 if [[ ${#specs[@]} -eq 0 ]]; then
-  while IFS= read -r f; do specs+=("$f"); done < <(ls specs/FEAT-*.md 2>/dev/null || true)
+  while IFS= read -r f; do specs+=("$f"); done < <(ls docs/specs/FEAT-*/spec.md 2>/dev/null || true)
 fi
 [[ ${#specs[@]} -eq 0 ]] && { echo "[check-ac-coverage] no specs yet"; exit 0; }
 
@@ -15,11 +16,13 @@ titles="$(grep -rhoE "(it|test)(\.each\([^)]*\))?\((['\"\`])AC-[0-9]+:" src e2e 
 
 fail=0
 for spec in "${specs[@]}"; do
-  status="$(grep -E '^\| *Status *\|' "$spec" | head -1 | sed -E 's/^\| *Status *\| *`?([a-z]+).*/\1/')"
-  if [[ "$status" == "draft" ]]; then
-    echo "[check-ac-coverage] $spec: draft, skipped"
-    continue
-  fi
+  status="$(awk 'NR==1 && $0!="---"{exit} NR>1 && $0=="---"{exit} /^status:/{print $2; exit}' "$spec")"
+  [[ -n "$status" ]] || status="$(grep -E '^\| *Status *\|' "$spec" | head -1 | sed -E 's/^\| *Status *\| *`?([a-z]+).*/\1/')"
+  case "$status" in
+    backlog|analyzed|advised|planned|draft|blocked)
+      echo "[check-ac-coverage] $spec: $status, no tests expected yet"
+      continue ;;
+  esac
   ids="$(awk '/^## 3\./{f=1;next} /^## /{f=0} f' "$spec" | grep -oE '^\| *AC-[0-9]+' | grep -oE 'AC-[0-9]+' | sort -u -t- -k2,2n)"
   total=$(echo "$ids" | grep -c . || true)
   if [[ $total -gt 7 ]]; then

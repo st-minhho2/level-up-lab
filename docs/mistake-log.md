@@ -18,6 +18,7 @@ the "Retired" table so the active list stays short enough to read before a task.
 | 2026-10-28 | Action test used `importOriginal('@/lib/todos')` without mocking `@/lib/prisma`; `server-only` threw once the lib imported Prisma | 1    | `.claude/rules/testing.md` (mock `@/lib/prisma` alongside `importOriginal`)          |
 | 2026-10-28 | Workflows used mutable action tags (`@v4`, `@v1`); Semgrep `p/default` blocked the first PR with 13 findings                      | 1    | every `uses:` pinned to a commit SHA with the version as a comment (main `6d88d02`)  |
 | 2026-10-28 | commit-msg hook rejected `Merge branch 'main' into ...`; merging main into a feature branch needed a hand-written subject         | 1    | `lefthook.yml` commit-msg accepts `Merge ` / `Revert ` subjects (main `23e16b4`)     |
+| 2026-10-28 | CI `lint` job ran without `prisma generate`, so `@prisma/client` types were unresolved and typed ESLint rules failed on PR #1     | 1    | `.github/actions/setup/action.yml` generates the client for every job                |
 
 ## Retired
 

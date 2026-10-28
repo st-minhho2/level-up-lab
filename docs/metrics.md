@@ -19,12 +19,13 @@ happened yet (for example no second developer has onboarded).
 | L6    | Speed   | QA round trips per feature                              | ≤ 1     | 0 so far (PR open; 1 test-fix commit before green) | 2026-10-28    | Times a PR returned from review/QA with a behavior defect                                     |
 | L6    | Quality | Acceptance criteria covered by tests                    | 100%    | 100% (7/7, FEAT-001)                               | 2026-10-28    | `scripts/ci/check-ac-coverage.sh`                                                             |
 | L6    | Quality | Mutation score on `src/lib` + `src/actions`             | > 70%   | 78.87% (82.35% before FEAT-001)                    | 2026-10-28    | `pnpm test:mutation` final score                                                              |
+| L6    | Speed   | Tasks completed without a second plan round             | ≥ 90%   | n/a (pipeline new; FEAT-003 dry run pending)       | 2026-10-28    | `Rounds:` line in each task's `plan.md` and `review.md`, counted per sprint                   |
 
 ## Per-feature record (L6)
 
-| Feature  | Spec                          | Criteria | Covered  | Mutation %                      | QA round trips | Red commit       | Green commit |
-| -------- | ----------------------------- | -------- | -------- | ------------------------------- | -------------- | ---------------- | ------------ |
-| FEAT-001 | `specs/FEAT-001-todo-list.md` | 7        | 7 (100%) | 78.87% (actions 71.4, lib 80.7) | 0              | 61cb3f4, 7af9887 | this PR      |
+| Feature  | Spec                                    | Criteria | Covered  | Mutation %                      | QA round trips | Red commit       | Green commit |
+| -------- | --------------------------------------- | -------- | -------- | ------------------------------- | -------------- | ---------------- | ------------ |
+| FEAT-001 | `docs/specs/FEAT-001-todo-list/spec.md` | 7        | 7 (100%) | 78.87% (actions 71.4, lib 80.7) | 0              | 61cb3f4, 7af9887 | c7153b2      |
 
 ## How to update
 
