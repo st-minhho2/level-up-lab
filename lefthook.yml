@@ -1,0 +1,29 @@
+# Pre-commit gate. Budget: < 30 s on a warm machine (measured in docs/levels/L5.md). Lint and format run on
+# staged files only; tsc is whole-project because types cross files. Emergency bypass: LEFTHOOK=0 git commit,
+# with the reason in the commit body; CI still runs the full gate.
+pre-commit:
+  parallel: true
+  jobs:
+    - name: prettier
+      glob: '*.{ts,tsx,mts,mjs,js,json,md,yml,yaml,css}'
+      run: pnpm exec prettier --check {staged_files}
+    - name: eslint
+      glob: '*.{ts,tsx,mts,mjs}'
+      run: pnpm exec eslint --no-warn-ignored {staged_files}
+    - name: tsc
+      run: pnpm exec tsc --noEmit
+    - name: gitleaks
+      run: |
+        if command -v gitleaks >/dev/null 2>&1; then
+          gitleaks git --pre-commit --staged --redact --no-banner
+        else
+          echo "gitleaks not installed (brew install gitleaks); skipping local secret scan, CI runs it" >&2
+        fi
+
+commit-msg:
+  jobs:
+    - name: conventional-subject
+      run: |
+        subject="$(head -1 {1})"
+        echo "$subject" | grep -Eq '^(feat|fix|chore|docs|test|refactor|ci|build|perf|style|revert)(\([A-Za-z0-9_./-]+\))?!?: .{1,72}$' \
+          || { echo "commit subject must be Conventional Commits: <type>(<scope>): <summary>  (got: $subject)" >&2; exit 1; }

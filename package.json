@@ -23,7 +23,8 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "prepare": "lefthook install"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -56,6 +57,7 @@
     "eslint-config-next": "15.5.28",
     "eslint-config-prettier": "^10.1.8",
     "jsdom": "^30.1.3",
+    "lefthook": "^2.2.2",
     "prettier": "^3.9.10",
     "prisma": "6.19.3",
     "tailwindcss": "^4",

@@ -1,0 +1,19 @@
+name: setup
+description: corepack + pnpm (version from package.json), cached store, frozen install
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+    - shell: bash
+      run: |
+        corepack enable
+        corepack prepare "$(node -p "require('./package.json').packageManager")" --activate
+        echo "STORE_PATH=$(pnpm store path)" >> "$GITHUB_ENV"
+    - uses: actions/cache@v4
+      with:
+        path: ${{ env.STORE_PATH }}
+        key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: pnpm-${{ runner.os }}-
+    - shell: bash
+      run: pnpm install --frozen-lockfile

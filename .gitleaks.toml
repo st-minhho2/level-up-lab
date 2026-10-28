@@ -1,0 +1,12 @@
+# Extends the default gitleaks rules. Only allowlist entries live here; adding one is a config change.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Local throwaway values that are not secrets"
+regexes = [
+  '''postgresql://postgres:postgres@(localhost|127\.0\.0\.1|postgres):\d+/level_up_lab''',
+]
+paths = [
+  '''pnpm-lock\.yaml''',
+]

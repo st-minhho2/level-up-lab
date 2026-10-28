@@ -1,0 +1,66 @@
+name: review
+
+# Reviewer agent: runs before any human looks at the PR, read-only on the code, posts blocking findings only.
+# Needs the ANTHROPIC_API_KEY repository secret; without it the job reports "skipped" and never blocks a merge.
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+
+concurrency:
+  group: review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  claude-review:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # never write: the reviewer cannot push, edit or approve
+      pull-requests: write # only to post review comments
+      issues: read
+      id-token: write
+    steps:
+      - id: key
+        name: Check that the API key is configured
+        env:
+          HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+        run: echo "present=$HAS_KEY" >> "$GITHUB_OUTPUT"
+
+      - if: steps.key.outputs.present == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - if: steps.key.outputs.present == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          use_sticky_comment: true
+          # Read-only review: no Edit/Write, no git push, only the comment tools below.
+          claude_args: |
+            --max-turns 25
+            --allowedTools "Read,Grep,Glob,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(git log:*),Bash(git diff:*),mcp__github_inline_comment__create_inline_comment"
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            You are the pre-human reviewer for this repository. The PR branch is checked out. Read CLAUDE.md,
+            .claude/rules/*.md, the spec linked in the PR body (specs/FEAT-xxx-*.md) and the PR body's Plan
+            section, then review `gh pr diff`.
+
+            Post ONLY blocking findings, each as an inline comment via
+            mcp__github_inline_comment__create_inline_comment with `confirmed: true`:
+            - behavior that contradicts the spec's requirements or acceptance criteria
+            - a file or interface outside the approved Plan
+            - a violation of a rule in .claude/rules (Prisma in client code, action without Zod, snapshot-only
+              test, feat commit touching tests, raw SQL outside src/lib, migration edited in place)
+            - a correctness or security bug (unvalidated input, secret in code, unbounded query)
+            Do not comment on style, naming, formatting or anything lint/tsc/prettier already enforce.
+            Do not suggest refactors. Do not approve or request changes; humans decide.
+
+            Finish with ONE top-level comment via `gh pr comment` that is either
+            "No blocking issues found." or "Blocking issues: N (see inline comments)."
+            Only post GitHub comments; do not return review text as a message.
+
+      - if: steps.key.outputs.present != 'true'
+        run: echo "::notice::ANTHROPIC_API_KEY not set; reviewer agent skipped (not a required check)."
