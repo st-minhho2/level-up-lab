@@ -1,21 +1,38 @@
 'use server';
 
-import type { ActionResult } from '@/lib/action-result';
-import { NotImplementedError } from '@/lib/errors';
-import type { Todo } from '@/lib/todos';
+import { revalidatePath } from 'next/cache';
+import { failure, fieldErrorsOf, type ActionResult } from '@/lib/action-result';
+import { createTodoSchema, toggleTodoSchema } from '@/lib/todo-schema';
+import { createTodo, TodoNotFoundError, toggleTodo, type Todo } from '@/lib/todos';
 
 // Signature fits React's useActionState: (previousState, formData) => newState.
 export async function createTodoAction(
-  previous: ActionResult<Todo> | null,
+  _previous: ActionResult<Todo> | null,
   formData: FormData,
 ): Promise<ActionResult<Todo>> {
-  const title = formData.get('title');
-  const shownTitle = typeof title === 'string' ? title : '<no title>';
-  return Promise.reject(
-    new NotImplementedError(`createTodoAction(previous.ok=${String(previous?.ok)}, title=${shownTitle})`),
-  );
+  const rawTitle = formData.get('title');
+  const parsed = createTodoSchema.safeParse({ title: typeof rawTitle === 'string' ? rawTitle : '' });
+  if (!parsed.success) {
+    return { ok: false, fieldErrors: fieldErrorsOf(parsed.error) };
+  }
+  const todo = await createTodo(parsed.data.title);
+  revalidatePath('/');
+  return { ok: true, data: todo };
 }
 
 export async function toggleTodoAction(id: string): Promise<ActionResult<Todo>> {
-  return Promise.reject(new NotImplementedError(`toggleTodoAction(${id})`));
+  const parsed = toggleTodoSchema.safeParse({ id });
+  if (!parsed.success) {
+    return { ok: false, fieldErrors: fieldErrorsOf(parsed.error) };
+  }
+  try {
+    const todo = await toggleTodo(parsed.data.id);
+    revalidatePath('/');
+    return { ok: true, data: todo };
+  } catch (error) {
+    if (error instanceof TodoNotFoundError) {
+      return failure('id', 'Todo not found');
+    }
+    throw error;
+  }
 }

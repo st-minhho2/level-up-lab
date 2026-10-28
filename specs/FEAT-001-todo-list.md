@@ -3,7 +3,7 @@
 | Field  | Value                                                                                                                 |
 | ------ | --------------------------------------------------------------------------------------------------------------------- |
 | Tier   | `full`                                                                                                                |
-| Status | `approved`                                                                                                            |
+| Status | `implemented`                                                                                                         |
 | Owner  | minh.ho2                                                                                                              |
 | Slice  | `src/lib/todos.ts`, `src/lib/todo-schema.ts`, `src/actions/todos.ts`, `src/app/page.tsx`, `src/components/todo-*.tsx` |
 | PR     | <link once open>                                                                                                      |
@@ -30,15 +30,15 @@ an item added or toggled on one visit is still there, in the same state, on the 
 
 ## 3. Acceptance criteria (max 7)
 
-| ID   | Covers                                                                                                                                                   | Given   | When | Then (measurable) |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ---- | ----------------- |
-| AC-1 | `src/lib/todos.test.ts` :: AC-1; `src/components/todo-item.test.tsx` :: AC-1; `e2e/FEAT-001-todo-list.spec.ts` :: AC-1                                   | **RED** |      |
-| AC-2 | `src/lib/todo-schema.test.ts` :: AC-2; `src/lib/todos.test.ts` :: AC-2; `src/actions/todos.test.ts` :: AC-2; `src/components/todo-form.test.tsx` :: AC-2 | **RED** |      |
-| AC-3 | `src/lib/todo-schema.test.ts` :: AC-3 (×2); `src/actions/todos.test.ts` :: AC-3 (×2); `src/components/todo-form.test.tsx` :: AC-3                        | **RED** |      |
-| AC-4 | `src/lib/todos.test.ts` :: AC-4; `src/actions/todos.test.ts` :: AC-4; `src/components/todo-item.test.tsx` :: AC-4                                        | **RED** |      |
-| AC-5 | `src/lib/todos.test.ts` :: AC-5; `src/actions/todos.test.ts` :: AC-5; `src/components/todo-item.test.tsx` :: AC-5                                        | **RED** |      |
-| AC-6 | `e2e/FEAT-001-todo-list.spec.ts` :: AC-6                                                                                                                 | **RED** |      |
-| AC-7 | `src/components/todo-form.test.tsx` :: AC-7; `e2e/FEAT-001-todo-list.spec.ts` :: AC-7                                                                    | **RED** |      |
+| ID   | Covers                                                                                                                                                   | Given            | When    | Then (measurable) |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ------- | ----------------- |
+| AC-1 | `src/lib/todos.test.ts` :: AC-1; `src/components/todo-item.test.tsx` :: AC-1; `e2e/FEAT-001-todo-list.spec.ts` :: AC-1                                   | 61cb3f4, 7af9887 | this PR |
+| AC-2 | `src/lib/todo-schema.test.ts` :: AC-2; `src/lib/todos.test.ts` :: AC-2; `src/actions/todos.test.ts` :: AC-2; `src/components/todo-form.test.tsx` :: AC-2 | 61cb3f4, 7af9887 | this PR |
+| AC-3 | `src/lib/todo-schema.test.ts` :: AC-3 (×2); `src/actions/todos.test.ts` :: AC-3 (×2); `src/components/todo-form.test.tsx` :: AC-3                        | 61cb3f4, 7af9887 | this PR |
+| AC-4 | `src/lib/todos.test.ts` :: AC-4; `src/actions/todos.test.ts` :: AC-4; `src/components/todo-item.test.tsx` :: AC-4                                        | 61cb3f4, 7af9887 | this PR |
+| AC-5 | `src/lib/todos.test.ts` :: AC-5; `src/actions/todos.test.ts` :: AC-5; `src/components/todo-item.test.tsx` :: AC-5                                        | 61cb3f4, 7af9887 | this PR |
+| AC-6 | `e2e/FEAT-001-todo-list.spec.ts` :: AC-6                                                                                                                 | 61cb3f4, 7af9887 | this PR |
+| AC-7 | `src/components/todo-form.test.tsx` :: AC-7; `e2e/FEAT-001-todo-list.spec.ts` :: AC-7                                                                    | 61cb3f4, 7af9887 | this PR |
 
 ## 4. Out of scope
 
@@ -57,15 +57,15 @@ an item added or toggled on one visit is still there, in the same state, on the 
 
 ## 6. Traceability (filled as work lands)
 
-| AC   | Test (file :: title)                                                                                                                                     | Red commit | Green commit |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------ |
-| AC-1 | `src/lib/todos.test.ts` :: AC-1; `src/components/todo-item.test.tsx` :: AC-1; `e2e/FEAT-001-todo-list.spec.ts` :: AC-1                                   | **RED**    |              |
-| AC-2 | `src/lib/todo-schema.test.ts` :: AC-2; `src/lib/todos.test.ts` :: AC-2; `src/actions/todos.test.ts` :: AC-2; `src/components/todo-form.test.tsx` :: AC-2 | **RED**    |              |
-| AC-3 | `src/lib/todo-schema.test.ts` :: AC-3 (×2); `src/actions/todos.test.ts` :: AC-3 (×2); `src/components/todo-form.test.tsx` :: AC-3                        | **RED**    |              |
-| AC-4 | `src/lib/todos.test.ts` :: AC-4; `src/actions/todos.test.ts` :: AC-4; `src/components/todo-item.test.tsx` :: AC-4                                        | **RED**    |              |
-| AC-5 | `src/lib/todos.test.ts` :: AC-5; `src/actions/todos.test.ts` :: AC-5; `src/components/todo-item.test.tsx` :: AC-5                                        | **RED**    |              |
-| AC-6 | `e2e/FEAT-001-todo-list.spec.ts` :: AC-6                                                                                                                 | **RED**    |              |
-| AC-7 | `src/components/todo-form.test.tsx` :: AC-7; `e2e/FEAT-001-todo-list.spec.ts` :: AC-7                                                                    | **RED**    |              |
+| AC   | Test (file :: title)                                                                                                                                     | Red commit       | Green commit |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ------------ |
+| AC-1 | `src/lib/todos.test.ts` :: AC-1; `src/components/todo-item.test.tsx` :: AC-1; `e2e/FEAT-001-todo-list.spec.ts` :: AC-1                                   | 61cb3f4, 7af9887 | this PR      |
+| AC-2 | `src/lib/todo-schema.test.ts` :: AC-2; `src/lib/todos.test.ts` :: AC-2; `src/actions/todos.test.ts` :: AC-2; `src/components/todo-form.test.tsx` :: AC-2 | 61cb3f4, 7af9887 | this PR      |
+| AC-3 | `src/lib/todo-schema.test.ts` :: AC-3 (×2); `src/actions/todos.test.ts` :: AC-3 (×2); `src/components/todo-form.test.tsx` :: AC-3                        | 61cb3f4, 7af9887 | this PR      |
+| AC-4 | `src/lib/todos.test.ts` :: AC-4; `src/actions/todos.test.ts` :: AC-4; `src/components/todo-item.test.tsx` :: AC-4                                        | 61cb3f4, 7af9887 | this PR      |
+| AC-5 | `src/lib/todos.test.ts` :: AC-5; `src/actions/todos.test.ts` :: AC-5; `src/components/todo-item.test.tsx` :: AC-5                                        | 61cb3f4, 7af9887 | this PR      |
+| AC-6 | `e2e/FEAT-001-todo-list.spec.ts` :: AC-6                                                                                                                 | 61cb3f4, 7af9887 | this PR      |
+| AC-7 | `src/components/todo-form.test.tsx` :: AC-7; `e2e/FEAT-001-todo-list.spec.ts` :: AC-7                                                                    | 61cb3f4, 7af9887 | this PR      |
 
 ## 7. Open questions
 

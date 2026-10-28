@@ -1,4 +1,4 @@
-import { NotImplementedError } from './errors';
+import { prisma } from '@/lib/prisma';
 
 export interface Todo {
   readonly id: string;
@@ -14,14 +14,20 @@ export class TodoNotFoundError extends Error {
   }
 }
 
+const todoFields = { id: true, title: true, completed: true, createdAt: true } as const;
+
 export async function listTodos(): Promise<Todo[]> {
-  return Promise.reject(new NotImplementedError('listTodos'));
+  return prisma.todo.findMany({ select: todoFields, orderBy: { createdAt: 'desc' } });
 }
 
 export async function createTodo(title: string): Promise<Todo> {
-  return Promise.reject(new NotImplementedError(`createTodo(${title})`));
+  return prisma.todo.create({ data: { title }, select: todoFields });
 }
 
 export async function toggleTodo(id: string): Promise<Todo> {
-  return Promise.reject(new NotImplementedError(`toggleTodo(${id})`));
+  const current = await prisma.todo.findUnique({ where: { id }, select: { completed: true } });
+  if (current === null) {
+    throw new TodoNotFoundError(id);
+  }
+  return prisma.todo.update({ where: { id }, data: { completed: !current.completed }, select: todoFields });
 }
