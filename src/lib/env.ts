@@ -1,3 +1,4 @@
+// §4 environment and configuration.
 import { z } from 'zod';
 
 // Validated at first use; the app fails fast on a missing or malformed variable instead of at the first query.

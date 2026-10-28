@@ -12,8 +12,8 @@ test.afterAll(async () => {
   await prisma.$disconnect();
 });
 
-test.describe('FEAT-001 todo list', () => {
-  test('AC-7: an empty list shows "No todos yet" with the New todo box and the Add button', async ({ page }) => {
+test.describe('§5 todo list', () => {
+  test('AC-5.7: an empty list shows "No todos yet" with the New todo box and the Add button', async ({ page }) => {
     await page.goto('/');
 
     await expect(page.getByText('No todos yet')).toBeVisible();
@@ -21,7 +21,7 @@ test.describe('FEAT-001 todo list', () => {
     await expect(page.getByRole('button', { name: 'Add' })).toBeVisible();
   });
 
-  test('AC-1: lists todos newest first', async ({ page }) => {
+  test('AC-5.1: lists todos newest first', async ({ page }) => {
     for (const [index, title] of ['A', 'B', 'C'].entries()) {
       await prisma.todo.create({ data: { title, createdAt: new Date(2026, 0, 1 + index) } });
     }
@@ -31,7 +31,7 @@ test.describe('FEAT-001 todo list', () => {
     await expect(page.getByRole('listitem')).toHaveText(['C', 'B', 'A']);
   });
 
-  test('AC-6: a created todo survives a reload, and so does its toggled state', async ({ page }) => {
+  test('AC-5.6: a created todo survives a reload, and so does its toggled state', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('textbox', { name: 'New todo' }).fill('Walk the dog');
     await page.getByRole('button', { name: 'Add' }).click();

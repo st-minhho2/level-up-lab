@@ -4,7 +4,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'level-up-lab',
-  description: 'Spec-driven + TDD lab (SupremeTech AI-Driven Development playbook, L6)',
+  description: 'Spec-driven + TDD lab',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>): ReactNode {

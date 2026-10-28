@@ -1,6 +1,7 @@
+// §5 title rules; §6 reuses them.
 import { z } from 'zod';
 
-// Limits from specs/FEAT-001-todo-list.md REQ-2 / REQ-3: trimmed, 1..200 characters.
+// Limits from §5 REQ-5.2 / REQ-5.3: trimmed, 1..200 characters.
 export const TITLE_MAX_LENGTH = 200;
 
 export const createTodoSchema = z.object({

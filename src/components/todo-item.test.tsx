@@ -15,13 +15,13 @@ beforeEach(() => {
 });
 
 describe('<TodoItem>', () => {
-  it('AC-1: renders the title as the accessible name of an unchecked checkbox when not completed', () => {
+  it('AC-5.1: renders the title as the accessible name of an unchecked checkbox when not completed', () => {
     render(<TodoItem todo={todo(false)} />);
 
     expect(screen.getByRole('checkbox', { name: 'Walk the dog' })).not.toBeChecked();
   });
 
-  it('AC-4: renders a checked checkbox when completed and calls toggleTodoAction with the id on click', async () => {
+  it('AC-5.4: renders a checked checkbox when completed and calls toggleTodoAction with the id on click', async () => {
     actions.toggleTodoAction.mockResolvedValue({ ok: true, data: todo(false) });
     const user = userEvent.setup();
     render(<TodoItem todo={todo(true)} />);
@@ -33,7 +33,7 @@ describe('<TodoItem>', () => {
     expect(actions.toggleTodoAction).toHaveBeenCalledWith('todo-9');
   });
 
-  it('AC-5: shows "Todo not found" when the action reports the id error', async () => {
+  it('AC-5.5: shows "Todo not found" when the action reports the id error', async () => {
     actions.toggleTodoAction.mockResolvedValue({ ok: false, fieldErrors: { id: ['Todo not found'] } });
     const user = userEvent.setup();
     render(<TodoItem todo={todo(false)} />);

@@ -11,7 +11,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// FEAT-001
+// §3 Todo (card B1.1)
 model Todo {
   id        String   @id @default(cuid())
   title     String   @db.VarChar(200)

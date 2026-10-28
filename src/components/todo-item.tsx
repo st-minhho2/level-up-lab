@@ -1,5 +1,6 @@
 'use client';
 
+// §7 TodoItem (§6 adds edit mode).
 import { useState, useTransition, type ReactNode } from 'react';
 import { toggleTodoAction } from '@/actions/todos';
 import type { Todo } from '@/lib/todos';

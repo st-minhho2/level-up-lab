@@ -1,3 +1,4 @@
+// §7 home page.
 import type { ReactNode } from 'react';
 import { TodoForm } from '@/components/todo-form';
 import { TodoItem } from '@/components/todo-item';

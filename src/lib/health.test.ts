@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { healthReport } from './health';
 
 describe('healthReport', () => {
-  it('reports status ok with uptime floored to whole seconds', () => {
+  it('AC-7.2: reports status ok with uptime floored to whole seconds', () => {
     expect(healthReport(12.7)).toEqual({ status: 'ok', uptimeSeconds: 12 });
   });
 

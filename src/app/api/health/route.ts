@@ -1,3 +1,4 @@
+// §7 GET /api/health.
 import { NextResponse } from 'next/server';
 import { healthReport } from '@/lib/health';
 

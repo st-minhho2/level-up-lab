@@ -1,5 +1,6 @@
 'use server';
 
+// §5, §6: Server Actions for the todo list.
 import { revalidatePath } from 'next/cache';
 import { failure, fieldErrorsOf, type ActionResult } from '@/lib/action-result';
 import { createTodoSchema, toggleTodoSchema } from '@/lib/todo-schema';
