@@ -4,7 +4,7 @@ SCOPE: all
 
 ## Plan review (round 1)
 
-Reviewed: `backlog/work/B1.2/plan.md` at `4810825` (`Plan approved by: minh.ho2 (session reply "approve"), 2026-10-28`)
+Reviewed: `backlog/work/B1.2/plan.md` at `4810825` (`Plan approved by: lead (session reply "approve"), 2026-10-28`)
 against §6 (`spec/contracts/04-edit-title.md`), §5, card B1.2, D-1..D-6, `advice.md`, `analysis.md`, the tree and
 `pnpm test` (run in this worktree: 9 files, 34 passed). Under D-2 the spec approval is delegated to this review; the
 section's own approval box is on a pending docs branch (D-7 pending), so the plan approval line stands in for it.
