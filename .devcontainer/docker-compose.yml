@@ -7,7 +7,7 @@ services:
     working_dir: /workspace
     volumes:
       # Repo root, not a worktree folder (see devcontainer.json).
-      - ${localWorkspaceFolder}:/workspace:cached
+      - .:/workspace:cached
       # Shared pnpm store so every worktree installs from the same cache.
       - pnpm-store:/root/.local/share/pnpm/store
     environment:
