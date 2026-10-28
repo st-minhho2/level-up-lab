@@ -10,7 +10,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §3  | [contracts/02-schema-and-env.md](contracts/02-schema-and-env.md)   | Database schema                                       | ✅     |
 | §4  | [contracts/02-schema-and-env.md](contracts/02-schema-and-env.md)   | Environment and configuration                         | ✅     |
 | §5  | [contracts/03-todos.md](contracts/03-todos.md)                     | Todos: list, create, toggle                           | ✅     |
-| §6  | [contracts/04-edit-title.md](contracts/04-edit-title.md)           | Todos: edit a title                                   | ✗      |
+| §6  | [contracts/04-edit-title.md](contracts/04-edit-title.md)           | Todos: edit a title                                   | ✅     |
 | §7  | [contracts/05-ui.md](contracts/05-ui.md)                           | Pages, components, the Server Action boundary, health | ✅     |
 | §8  | [contracts/06-change-requests.md](contracts/06-change-requests.md) | How a behavior change enters the spec                 | ✅     |
 

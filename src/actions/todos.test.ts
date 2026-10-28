@@ -1,14 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TodoNotFoundError } from '@/lib/todos';
-import { createTodoAction, toggleTodoAction } from './todos';
+import { createTodoAction, toggleTodoAction, updateTodoTitleAction } from './todos';
 
-const lib = vi.hoisted(() => ({ createTodo: vi.fn(), toggleTodo: vi.fn() }));
+const lib = vi.hoisted(() => ({ createTodo: vi.fn(), toggleTodo: vi.fn(), updateTodoTitle: vi.fn() }));
 const cache = vi.hoisted(() => ({ revalidatePath: vi.fn() }));
 
 vi.mock('@/lib/todos', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/todos')>()),
   createTodo: lib.createTodo,
   toggleTodo: lib.toggleTodo,
+  updateTodoTitle: lib.updateTodoTitle,
 }));
 vi.mock('next/cache', () => ({ revalidatePath: cache.revalidatePath }));
 // importOriginal above loads the real lib module, whose Prisma import pulls `server-only` (throws under Vitest).
@@ -75,6 +76,82 @@ describe('toggleTodoAction', () => {
     const result = await toggleTodoAction('missing');
 
     expect(result).toEqual({ ok: false, fieldErrors: { id: ['Todo not found'] } });
+    expect(cache.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it('rethrows a non-TodoNotFoundError from the lib (review: instanceof arm)', async () => {
+    lib.toggleTodo.mockRejectedValue(new Error('db down'));
+
+    await expect(toggleTodoAction('todo-1')).rejects.toThrow('db down');
+
+    expect(cache.revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe('updateTodoTitleAction (§6)', () => {
+  it('AC-6.2: updates the trimmed title and revalidates / once', async () => {
+    lib.updateTodoTitle.mockResolvedValue(todo({ title: 'Buy milk' }));
+
+    const result = await updateTodoTitleAction('todo-1', '  Buy milk  ');
+
+    expect(result).toEqual({ ok: true, data: todo({ title: 'Buy milk' }) });
+    expect(lib.updateTodoTitle).toHaveBeenCalledTimes(1);
+    expect(lib.updateTodoTitle).toHaveBeenCalledWith('todo-1', 'Buy milk');
+    expect(cache.revalidatePath).toHaveBeenCalledTimes(1);
+    expect(cache.revalidatePath).toHaveBeenCalledWith('/');
+  });
+
+  it('AC-6.4: returns fieldErrors.title for a blank title', async () => {
+    const result = await updateTodoTitleAction('todo-1', '   ');
+
+    expect(result).toEqual({ ok: false, fieldErrors: { title: ['Title is required'] } });
+    expect(lib.updateTodoTitle).not.toHaveBeenCalled();
+    expect(cache.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it('AC-6.5: returns fieldErrors.title for 201 characters', async () => {
+    const result = await updateTodoTitleAction('todo-1', 'x'.repeat(201));
+
+    expect(result).toEqual({ ok: false, fieldErrors: { title: ['Title must be 200 characters or fewer'] } });
+    expect(lib.updateTodoTitle).not.toHaveBeenCalled();
+    expect(cache.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it('AC-6.6: accepts 200 characters padded with spaces', async () => {
+    const longest = 'x'.repeat(200);
+    lib.updateTodoTitle.mockResolvedValue(todo({ title: longest }));
+
+    const result = await updateTodoTitleAction('todo-1', `${' '.repeat(5)}${longest}${' '.repeat(5)}`);
+
+    expect(result).toEqual({ ok: true, data: todo({ title: longest }) });
+    expect(lib.updateTodoTitle).toHaveBeenCalledWith('todo-1', longest);
+    expect(cache.revalidatePath).toHaveBeenCalledTimes(1);
+  });
+
+  it('AC-6.7: accepts a duplicate title', async () => {
+    lib.updateTodoTitle.mockResolvedValue(todo({ id: 'todo-2', title: 'A' }));
+
+    const result = await updateTodoTitleAction('todo-2', 'A');
+
+    expect(result).toEqual({ ok: true, data: todo({ id: 'todo-2', title: 'A' }) });
+    expect(lib.updateTodoTitle).toHaveBeenCalledWith('todo-2', 'A');
+    expect(cache.revalidatePath).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns fieldErrors.id ["Todo not found"] for an unknown id and does not revalidate', async () => {
+    lib.updateTodoTitle.mockRejectedValue(new TodoNotFoundError('missing'));
+
+    const result = await updateTodoTitleAction('missing', 'Buy milk');
+
+    expect(result).toEqual({ ok: false, fieldErrors: { id: ['Todo not found'] } });
+    expect(cache.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it('rethrows a non-TodoNotFoundError from the lib (review: instanceof arm)', async () => {
+    lib.updateTodoTitle.mockRejectedValue(new Error('db down'));
+
+    await expect(updateTodoTitleAction('todo-1', 'Buy milk')).rejects.toThrow('db down');
+
     expect(cache.revalidatePath).not.toHaveBeenCalled();
   });
 });

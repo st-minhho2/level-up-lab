@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createTodo, listTodos, TodoNotFoundError, toggleTodo } from './todos';
+import { createTodo, listTodos, TodoNotFoundError, toggleTodo, updateTodoTitle } from './todos';
 
 const db = vi.hoisted(() => ({
   findMany: vi.fn(),
@@ -80,6 +80,69 @@ describe('toggleTodo', () => {
 
     await expect(toggleTodo('missing')).rejects.toBeInstanceOf(TodoNotFoundError);
     await expect(toggleTodo('missing')).rejects.toMatchObject({ id: 'missing' });
+    expect(db.update).not.toHaveBeenCalled();
+  });
+});
+
+interface UpdateArgs {
+  where: { id: string };
+  data: Record<string, unknown>;
+  select: Record<string, boolean>;
+}
+
+function updateCall(index: number): UpdateArgs {
+  return db.update.mock.calls[index]?.[0] as UpdateArgs;
+}
+
+// Mirrors Prisma's `select`: only the requested fields come back, so a shrunken or widened select is visible.
+function pick(row: Record<string, unknown>, fields: Record<string, boolean>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(row).filter(([key]) => fields[key] === true));
+}
+
+function stubStoredRow(row: ReturnType<typeof makeRow>): void {
+  db.findUnique.mockResolvedValue({ id: row.id });
+  db.update.mockImplementation(({ data, select }: UpdateArgs) => Promise.resolve(pick({ ...row, ...data }, select)));
+}
+
+describe('updateTodoTitle (§6)', () => {
+  it('AC-6.2: stores the new title with data { title } only', async () => {
+    const row = makeRow({ title: 'Buy mik' });
+    stubStoredRow(row);
+
+    const todo = await updateTodoTitle(row.id, 'Buy milk');
+
+    expect(todo).toEqual({ id: row.id, title: 'Buy milk', completed: false, createdAt: row.createdAt });
+    expect(db.update).toHaveBeenCalledTimes(1);
+    expect(updateCall(0).where).toEqual({ id: row.id });
+    expect(updateCall(0).data).toEqual({ title: 'Buy milk' });
+  });
+
+  it('AC-6.3: does not touch completed or createdAt', async () => {
+    const row = makeRow({ title: 'B', completed: true });
+    stubStoredRow(row);
+
+    const todo = await updateTodoTitle(row.id, 'B2');
+
+    expect(todo).toEqual({ id: row.id, title: 'B2', completed: true, createdAt: row.createdAt });
+    expect(Object.keys(updateCall(0).data)).toEqual(['title']);
+  });
+
+  it('AC-6.7: allows a title equal to another todo', async () => {
+    const [a, b] = [makeRow({ title: 'A' }), makeRow({ title: 'B' })];
+    stubStoredRow(b);
+
+    const todo = await updateTodoTitle(b.id, a.title);
+
+    expect(todo).toEqual({ id: b.id, title: 'A', completed: false, createdAt: b.createdAt });
+    expect(updateCall(0).where).toEqual({ id: b.id });
+    expect(updateCall(0).data).toEqual({ title: 'A' });
+  });
+
+  it('throws TodoNotFoundError for an unknown id and updates nothing', async () => {
+    db.findUnique.mockResolvedValue(null);
+
+    await expect(updateTodoTitle('missing', 'Buy milk')).rejects.toBeInstanceOf(TodoNotFoundError);
+    await expect(updateTodoTitle('missing', 'Buy milk')).rejects.toMatchObject({ id: 'missing' });
     expect(db.update).not.toHaveBeenCalled();
   });
 });
