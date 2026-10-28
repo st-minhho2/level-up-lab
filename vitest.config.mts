@@ -1,5 +1,8 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import { loadDotEnv } from './scripts/load-env';
+
+loadDotEnv();
 
 // Two projects: `unit` runs *.test.ts in node (actions, lib, route handlers), `component` runs *.test.tsx in
 // jsdom (React components). Playwright owns e2e/ and is never picked up here.

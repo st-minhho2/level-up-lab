@@ -1,4 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
+import { loadDotEnv } from './scripts/load-env';
+
+loadDotEnv();
 
 // PORT comes from .env (scripts/worktree.sh gives every worktree its own) so two worktrees can run e2e at once.
 const port = Number(process.env.PORT ?? 3000);

@@ -7,9 +7,9 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "next dev -p ${PORT:-3000}",
+    "dev": "next dev -p $(scripts/port.sh)",
     "build": "next build",
-    "start": "next start -p ${PORT:-3000}",
+    "start": "next start -p $(scripts/port.sh)",
     "lint": "eslint . && prettier --check .",
     "lint:fix": "eslint . --fix && prettier --write .",
     "typecheck": "tsc --noEmit",
