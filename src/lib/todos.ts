@@ -1,5 +1,4 @@
-// §5 list/create/toggle, §6 edit title.
-import { NotImplementedError } from '@/lib/errors';
+// §5 list/create/toggle, §6 edit title, §9 clear completed.
 import { prisma } from '@/lib/prisma';
 
 export interface Todo {
@@ -43,7 +42,8 @@ export async function updateTodoTitle(id: string, title: string): Promise<Todo> 
   return prisma.todo.update({ where: { id }, data: { title }, select: todoFields });
 }
 
-// §9 clear completed (B1.3). Skeleton.
+// §9: one statement scoped to completed rows (REQ-9.1); open rows are untouched (REQ-9.2); 0 when none (REQ-9.7).
 export async function clearCompletedTodos(): Promise<number> {
-  return Promise.reject(new NotImplementedError('clearCompletedTodos'));
+  const { count } = await prisma.todo.deleteMany({ where: { completed: true } });
+  return count;
 }
