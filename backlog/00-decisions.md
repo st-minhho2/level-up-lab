@@ -21,6 +21,5 @@ supersedes an earlier one. The `advisor` escalates with a decision request; the 
 
 ## Open
 
-| Question                                                           | Raised by | Blocks |
-| ------------------------------------------------------------------ | --------- | ------ |
-| B1.3: hide or disable "Clear completed" when nothing is completed? | card B1.3 | B1.3   |
+| Question | Raised by | Blocks |
+| -------- | --------- | ------ |
