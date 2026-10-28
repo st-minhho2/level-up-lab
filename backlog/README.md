@@ -7,7 +7,7 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic      | File                                 | Done  | Partial | Open  | Total |
 | --------- | ------------------------------------ | ----- | ------- | ----- | ----- |
-| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 1     | 0       | 2     | 3     |
+| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 2     | 0       | 1     | 3     |
 | **Total** |                                      | **2** | **0**   | **1** | **3** |
 
 ## Execution order
