@@ -11,7 +11,7 @@ B<epic>.<n> — <title> (spec §<n>)
 ## Plan
 
 > Copied from `backlog/work/<card>/plan.md`, approved before the skeleton commit. Files table, interfaces touched,
-> verification, work breakdown, `Plan approved by: lead, <date>`, rounds.
+> verification, work breakdown, `Plan approved by: <human>, <date>`, rounds.
 
 ## Map delta
 
