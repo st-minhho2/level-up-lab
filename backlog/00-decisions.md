@@ -4,7 +4,7 @@ Rulings only a human can make, recorded once and never rewritten. Agents follow 
 supersedes an earlier one. The `advisor` escalates with a decision request; the human appends the next D-n here
 (`docs(backlog): D-n …`).
 
-## Settled 2026-10-28 / 2026-10-29 (owner: minh.ho2)
+## Settled 2026-10-28 / 2026-10-29 (owner: lead)
 
 | #    | Decision                                                                                                                                                                                                                                                                                     | Consequence for tasks                                                                                                               |
 | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
