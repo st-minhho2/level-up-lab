@@ -132,3 +132,7 @@ jobs:
         run: scripts/ci/check-config-change.sh
       - name: feat(...) commits do not touch test files
         run: scripts/ci/check-feat-commits.sh
+      - name: Every acceptance criterion has a test (L6)
+        run: scripts/ci/check-ac-coverage.sh
+      - name: test(FEAT-xxx) commits are red for the right reason (L6)
+        run: scripts/verify-red.sh --auto
