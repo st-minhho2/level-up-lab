@@ -9,7 +9,15 @@
       "Read(./.env.production)",
       "Read(~/.ssh/**)",
       "Read(~/.aws/**)",
-      "Read(~/.kube/**)"
+      "Read(~/.kube/**)",
+      "Edit(./.env*)",
+      "Bash(git commit --no-verify*)",
+      "Bash(git commit * --no-verify*)",
+      "Bash(git commit -n *)",
+      "Bash(git -c core.hooksPath=*)",
+      "Bash(LEFTHOOK=0*)",
+      "Bash(gh pr merge*)",
+      "Bash(gh pr review*)"
     ]
   },
   "hooks": {
@@ -27,15 +35,16 @@
       {
         "matcher": "Edit|Write|MultiEdit",
         "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format-after-edit.sh" }]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/record-test-run.sh" }]
       }
     ],
     "Stop": [
       {
-        "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stop-remind-tests.sh" }]
+        "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/require-review.sh" }]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/require-review.sh" }]
       }
     ]
   }

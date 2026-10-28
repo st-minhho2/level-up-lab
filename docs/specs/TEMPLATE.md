@@ -4,7 +4,7 @@ title: <feature name>
 status: backlog # backlog → analyzed → advised → planned → approved → in-progress → review → done | blocked
 priority: 3 # 1 = highest; scripts/next-task.sh picks the lowest number among ready backlog items
 tier: full # 0 plan-only · quick (≤ 3 criteria, no schema change) · full
-owner: <human>
+owner: agent # agent = pickable by /work-next · human = needs a person first (never picked)
 depends_on: [] # ids that must be `done` before this one is picked
 ---
 

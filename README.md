@@ -13,7 +13,7 @@ point is the scaffolding around it: rules, skills, hooks, CI gates, worktree iso
 | L5    | Enforcement, checks that never forget  | [docs/levels/L5.md](docs/levels/L5.md) |
 | L6    | Spec-driven + TDD, specs define done   | [docs/levels/L6.md](docs/levels/L6.md) |
 
-Metrics for every level: [docs/metrics.md](docs/metrics.md). Repeated agent mistakes and what now prevents them:
+Metrics for every level: [docs/metrics.md](docs/metrics.md). Human rulings: [docs/decisions.md](docs/decisions.md). Repeated agent mistakes and what now prevents them:
 [docs/mistake-log.md](docs/mistake-log.md).
 
 ## Stack

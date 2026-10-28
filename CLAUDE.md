@@ -41,8 +41,11 @@ scripts/verify-red.sh FEAT-xxx   # proves the test(FEAT-xxx) commit fails for th
   config inside a feature PR (CI rejects it without the `config-change-approved` label).
 - Never edit `*.test.*` or `e2e/**` in a `feat(...)` commit; never weaken an assertion to make a test pass.
 - No spec, no code: a feature starts as `docs/specs/FEAT-xxx-<slug>/spec.md` with the lead-approval box ticked.
-- Pipeline roles (`spec-analyst`, `advisor`, `dev-lead`, `tech-lead`) write only inside their task folder; state
-  changes only through `scripts/task-status.sh`. The plan gate (`Plan approved by:` in `plan.md`) is never skipped.
+- Pipeline roles write only inside their hook-enforced paths (task folder, tests, or src); state changes only
+  through `scripts/task-status.sh`. The plan gate (`Plan approved by:` in `plan.md`) is never skipped.
+- A change under `src/`, `prisma/`, `e2e/` ends with `/review-loop` (≤ 3 passes) and `mark-reviewed.sh`; the Stop
+  hook blocks once otherwise. Rulings in `docs/decisions.md` (D-n) are settled: follow, never re-ask; a question
+  only a person can answer goes through `/advise` and ends as `blocked`, not as a guess.
 
 ## Session rules
 

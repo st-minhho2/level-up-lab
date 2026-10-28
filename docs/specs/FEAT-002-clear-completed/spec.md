@@ -4,7 +4,7 @@ title: Clear completed todos
 status: backlog
 priority: 2
 tier: quick
-owner: minh.ho2
+owner: agent
 depends_on: [FEAT-001]
 ---
 

@@ -4,7 +4,7 @@ title: Edit a todo title
 status: backlog
 priority: 3
 tier: full
-owner: minh.ho2
+owner: agent
 depends_on: []
 ---
 

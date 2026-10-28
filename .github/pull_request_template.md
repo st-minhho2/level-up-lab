@@ -44,6 +44,11 @@ What this PR deliberately does not do, so nobody asks in review.
 
 Existing pages, actions or jobs this touches but must not alter, and the test that proves it.
 
+## Review
+
+`/review-loop` result: passes N/3, disposition table (every finding: fix now / no change needed + proving input /
+out of scope), riskiest unfalsified spot. For a pipeline task, paste `review.md`'s diff-review section.
+
 ## Checklist
 
 - [ ] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
@@ -51,6 +56,7 @@ Existing pages, actions or jobs this touches but must not alter, and the test th
 - [ ] Tests were committed red first (`test(FEAT-xxx):` precedes `feat(FEAT-xxx):`); `scripts/verify-red.sh` passed.
 - [ ] No `feat(...)` commit touches `*.test.*` or `e2e/**`.
 - [ ] Mutation score for `src/lib` + `src/actions` ≥ 70%.
+- [ ] `/review-loop` clean (gate cleared by `mark-reviewed.sh`); every finding has a disposition above.
 - [ ] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; no lint/tsconfig/CI/hook changes (or label
       `config-change-approved` with the reason in this PR).
 - [ ] Migrations reviewed as SQL; none edits an applied migration; `prisma/seed.ts` updated if needed.

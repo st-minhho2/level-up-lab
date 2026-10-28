@@ -15,8 +15,15 @@ Entry point: `/work-next [FEAT-xxx]` (`.claude/skills/work-next/SKILL.md`).
 | `test-writer`            | inherit | spec, skeleton                                                           | `*.test.ts(x)`, one `e2e/*.spec.ts`; `verify-red.sh` exit 0                                                                | (`in-progress`)            |
 | `implementer`            | inherit | spec, red tests                                                          | `src/**`, `prisma/**`, metrics row                                                                                         | (`in-progress`)            |
 
-Analyst, advisor, dev-lead and tech-lead never write outside the task folder. The two reading-heavy roles run on
-`sonnet`; the roles that decide or write code inherit the session model.
+Write scopes are **enforced by a hook in each agent's frontmatter** (`.claude/hooks/path-guard.sh <globs>`), not
+by prose: analyst/advisor → the task folder minus `spec.md`; dev-lead → the task folder, metrics, mistake log;
+tech-lead → `review.md` and the spec's lead box; test-writer → `*.test.ts(x)`, `e2e/`, spec traceability;
+implementer → `src/`, `prisma/`, metrics, never tests or `src/lib/prisma.ts`. A blocked write tells the role to
+report back instead. The two reading-heavy roles run on `sonnet`; deciding and writing roles inherit (D-3).
+
+Every role ends with a fixed report shape (`ANALYZED:` / `ADVISED:` / `RED:` / `GREEN:` / `REVIEW:` lines) so the
+orchestrator reads results, not prose. `dev-lead` is control plane: it writes only docs and dispatches one role at
+a time with the brief template in its agent file.
 
 ## State machine
 
@@ -51,12 +58,29 @@ One folder per task, `docs/specs/FEAT-xxx-<slug>/`:
 Every artifact is a `docs(FEAT-xxx): <artifact>` commit on the task's branch, so the PR shows the reasoning next
 to the code.
 
+## Sources of truth and rulings
+
+`advisor` settles "what governs" by authority order: `.claude/rules` and `CLAUDE.md` boundaries (never bent) →
+`docs/decisions.md` D-n rulings → the task's `spec.md` and its dependencies → explanatory docs; `src/` and tests
+are evidence of what exists, never required behavior. A question only a person can answer becomes a **decision
+request** (context, options with cost/risk/reversibility, recommendation, "flips if") in the report; the human
+records the ruling as the next D-n and the task is unblocked. Tasks with `owner: human` are never picked.
+
 ## The one gate
 
 `/work-next` stops after `plan.md` with "Plan for FEAT-xxx is ready. Reply `approve` or list changes." Changes go
 back to `dev-lead` (round counter in the plan). `approve` writes `Plan approved by: <name>, <date>` and only then
 does `tech-lead` review the plan and tick the spec's lead box. Nothing under `src/`, `prisma/` or `e2e/` changes
 before that line exists; `scripts/ci/check-feat-commits.sh` and the reviewer agent keep the later steps honest.
+
+## Review gate (D-4)
+
+A change under `src/`, `prisma/` or `e2e/` is fingerprinted against the branch base. Ending a turn with a
+fingerprint that `mark-reviewed.sh` has not recorded blocks the stop once (`require-review.sh`, also on
+`SubagentStop`) with the instruction to run `/review-loop`: tech-lead diff review (adversarial: every finding needs
+a concrete trigger and a confidence), a disposition for every finding, narrow fixes, re-verify, at most 3 passes,
+then `.claude/hooks/mark-reviewed.sh` (which re-runs lint, typecheck, tests before recording). A deliberate stop
+with the review incomplete is stated, never silenced.
 
 ## Running it
 
@@ -73,7 +97,8 @@ Stop a task: `scripts/task-status.sh FEAT-xxx blocked "<why>"` (commit it). Resu
 
 ## Limits and costs
 
-- Rounds: tech-lead may send a plan or a diff back twice; the third time the task is `blocked` for a human.
+- Rounds: tech-lead may send a plan back twice; `/review-loop` caps at 3 passes; after that the task is `blocked` for a human.
+- `scripts/hook-smoke.sh` re-runs every hook probe (guards, role write scopes, review gate); run it after touching a hook.
 - A role that writes outside its paths is reverted, logged in `docs/mistake-log.md`, and rerun once.
 - Typical token spend per task: two `sonnet` reads (analysis, advice) + four session-model steps (plan, review ×2,
   implementation) + the test-writer. Record the rounds used in `docs/metrics.md` ("tasks without a second plan round").
