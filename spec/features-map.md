@@ -13,4 +13,4 @@ moves or removes a feature updates its row in the same commit (`docs(map): F<n> 
 | F5  | §5  | Toggle a todo           | `src/lib/todos.ts`, `src/actions/todos.ts`, `src/components/todo-item.tsx`                           | `src/lib/todos.test.ts`, `src/actions/todos.test.ts`, `src/components/todo-item.test.tsx`                                                             | ✅     |
 | F6  | §6  | Edit a todo title       | `src/lib/todo-schema.ts`, `src/lib/todos.ts`, `src/actions/todos.ts`, `src/components/todo-item.tsx` | `src/lib/todo-schema.test.ts`, `src/lib/todos.test.ts`, `src/actions/todos.test.ts`, `src/components/todo-item.test.tsx`, `e2e/06-edit-title.spec.ts` | ✅     |
 
-Receipt: verified against `c7153b2` (B1.1 merged).
+Receipt: verified against `fc812e3` (B1.2 merged).

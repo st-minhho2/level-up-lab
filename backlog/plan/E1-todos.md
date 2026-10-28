@@ -14,13 +14,13 @@ _F3 F4 F5 · §5_
 ### B1.2 · Edit a todo title
 
 _F6 · §6_
-**Status: Open** — `grep -n updateTodoTitle src/` returns nothing; `TodoItem` has no edit mode (`src/components/todo-item.tsx`).
+**Status: Done** — fc812e3 (#5); 55 unit/component + 9 e2e green, mutation 81.40 % (actions 85.7, lib 80.0); red fa7a3dd, green 78f73f4, hardening 8ac5f37
 
 - **Spec:** §6 — unchanged (section written from `work/B1.2/analysis.md` + `advice.md`)
 - **Test:** `src/actions/todos.test.ts::AC-6.2: updates the trimmed title and revalidates / once` — red because: `updateTodoTitleAction` is not exported from `src/actions/todos.ts`
 - **Acceptance:** AC-6.1 … AC-6.7
 - **Tier:** full · **Depends on:** ~~B1.1~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.2/` — analysis.md (spec-analyst), advice.md (advisor, approach A: schema `createTodoSchema.extend(toggleTodoSchema.shape)`, `findUnique` then `update` with `data: { title }`, icon-only edit button so AC-5.1's row text stays unchanged); plan.md pending human approval
+- **Work:** `work/B1.2/` — analysis.md (spec-analyst), advice.md (advisor, approach A: schema `createTodoSchema.extend(toggleTodoSchema.shape)`, `findUnique` then `update` with `data: { title }`, icon-only edit button so AC-5.1's row text stays unchanged); plan.md approved 2026-10-28 (rounds 1/1), review.md (plan + diff review, passes 1/3) · squash `fc812e3` (#5)
 
 ### B1.3 · Clear completed todos
 
