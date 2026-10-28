@@ -83,3 +83,9 @@ describe('toggleTodo', () => {
     expect(db.update).not.toHaveBeenCalled();
   });
 });
+
+describe('updateTodoTitle (§6)', () => {
+  it.todo('AC-6.2: stores the new title with data { title } only');
+  it.todo('AC-6.3: does not touch completed or createdAt');
+  it.todo('AC-6.7: allows a title equal to another todo');
+});

@@ -78,3 +78,11 @@ describe('toggleTodoAction', () => {
     expect(cache.revalidatePath).not.toHaveBeenCalled();
   });
 });
+
+describe('updateTodoTitleAction (§6)', () => {
+  it.todo('AC-6.2: updates the trimmed title and revalidates / once');
+  it.todo('AC-6.4: returns fieldErrors.title for a blank title');
+  it.todo('AC-6.5: returns fieldErrors.title for 201 characters');
+  it.todo('AC-6.6: accepts 200 characters padded with spaces');
+  it.todo('AC-6.7: accepts a duplicate title');
+});

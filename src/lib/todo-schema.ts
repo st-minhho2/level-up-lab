@@ -14,3 +14,11 @@ export const toggleTodoSchema = z.object({
 
 export type CreateTodoInput = z.infer<typeof createTodoSchema>;
 export type ToggleTodoInput = z.infer<typeof toggleTodoSchema>;
+
+// §6 edit title (B1.2). Skeleton: shape only; the green step wires the §5 title rules and the id.
+export const updateTodoTitleSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+});
+
+export type UpdateTodoTitleInput = z.infer<typeof updateTodoTitleSchema>;

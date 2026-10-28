@@ -4,6 +4,7 @@
 import { revalidatePath } from 'next/cache';
 import { failure, fieldErrorsOf, type ActionResult } from '@/lib/action-result';
 import { createTodoSchema, toggleTodoSchema } from '@/lib/todo-schema';
+import { NotImplementedError } from '@/lib/errors';
 import { createTodo, TodoNotFoundError, toggleTodo, type Todo } from '@/lib/todos';
 
 // Signature fits React's useActionState: (previousState, formData) => newState.
@@ -36,4 +37,9 @@ export async function toggleTodoAction(id: string): Promise<ActionResult<Todo>> 
     }
     throw error;
   }
+}
+
+// §6 edit title (B1.2). Skeleton.
+export async function updateTodoTitleAction(id: string, title: string): Promise<ActionResult<Todo>> {
+  return Promise.reject(new NotImplementedError(`updateTodoTitleAction(${id}, ${title})`));
 }

@@ -43,3 +43,9 @@ describe('<TodoItem>', () => {
     expect(await screen.findByText('Todo not found')).toBeInTheDocument();
   });
 });
+
+describe('<TodoItem> edit mode (§6)', () => {
+  it.todo('AC-6.1: shows one text field named "Edit title" with the current title');
+  it.todo('AC-6.2: submits the draft to updateTodoTitleAction and leaves edit mode');
+  it.todo('AC-6.4: keeps the draft and shows the error when the action rejects the title');
+});

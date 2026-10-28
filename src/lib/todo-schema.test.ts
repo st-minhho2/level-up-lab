@@ -28,3 +28,10 @@ describe('createTodoSchema', () => {
     expect(firstMessage(result)).toBe('Title must be 200 characters or fewer');
   });
 });
+
+describe('updateTodoTitleSchema (§6)', () => {
+  it.todo('AC-6.2: trims the title');
+  it.todo('AC-6.4: rejects an empty title with "Title is required"');
+  it.todo('AC-6.5: rejects 201 characters with "Title must be 200 characters or fewer"');
+  it.todo('AC-6.6: accepts 200 characters padded with spaces');
+});
