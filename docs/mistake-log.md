@@ -16,6 +16,8 @@ the "Retired" table so the active list stays short enough to read before a task.
 | 2026-10-28 | Vitest config as `.ts` in a CommonJS package printed loader warnings on every run                                                 | 1    | `vitest.config.mts`                                                                  |
 | 2026-10-28 | Red commit carried an infrastructure test that was already green (`errors.test.ts`)                                               | 1    | `scripts/verify-red.sh` fails on any passing test; test moved to the skeleton commit |
 | 2026-10-28 | Action test used `importOriginal('@/lib/todos')` without mocking `@/lib/prisma`; `server-only` threw once the lib imported Prisma | 1    | `.claude/rules/testing.md` (mock `@/lib/prisma` alongside `importOriginal`)          |
+| 2026-10-28 | Workflows used mutable action tags (`@v4`, `@v1`); Semgrep `p/default` blocked the first PR with 13 findings                      | 1    | every `uses:` pinned to a commit SHA with the version as a comment (main `6d88d02`)  |
+| 2026-10-28 | commit-msg hook rejected `Merge branch 'main' into ...`; merging main into a feature branch needed a hand-written subject         | 1    | `lefthook.yml` commit-msg accepts `Merge ` / `Revert ` subjects (main `23e16b4`)     |
 
 ## Retired
 
