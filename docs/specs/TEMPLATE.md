@@ -1,14 +1,22 @@
+---
+id: FEAT-XXX
+title: <feature name>
+status: backlog # backlog → analyzed → advised → planned → approved → in-progress → review → done | blocked
+priority: 3 # 1 = highest; scripts/next-task.sh picks the lowest number among ready backlog items
+tier: full # 0 plan-only · quick (≤ 3 criteria, no schema change) · full
+owner: <human>
+depends_on: [] # ids that must be `done` before this one is picked
+---
+
 # FEAT-XXX: <feature name>
 
-| Field  | Value                                                                          |
-| ------ | ------------------------------------------------------------------------------ |
-| Tier   | `0` plan-only · `quick` (≤ 3 criteria, no schema change) · `full` (everything) |
-| Status | `draft` → `approved` → `implemented`                                           |
-| Owner  | <human>                                                                        |
-| Slice  | `src/lib/<slice>.ts`, `src/actions/<slice>.ts`, `src/app/<route>`              |
-| PR     | <link once open>                                                               |
+| Field | Value                                                             |
+| ----- | ----------------------------------------------------------------- |
+| Slice | `src/lib/<slice>.ts`, `src/actions/<slice>.ts`, `src/app/<route>` |
+| PR    | <link once open>                                                  |
 
-- [ ] **Lead approves spec** (name, date). Nothing below section 1 is implemented before this box is ticked.
+- [ ] **Lead approves spec** (name or `tech-lead` agent, date). Ticked when `status` becomes `approved`; nothing
+      below section 1 is implemented before that.
 
 ## 1. Intent (one paragraph)
 
@@ -74,6 +82,9 @@ Resolved before Status becomes `approved`. One line each: question · decision �
 - One behavior per SHALL. An "and" in the response usually means two requirements.
 - Criteria assert on what a user or client can observe (rendered text, returned `ActionResult`, HTTP status,
   database row), never on internal calls.
-- Tier `0` specs stop after section 2 and produce a plan only. Tier `quick` may skip sections 5 and 7 if empty.
+- Frontmatter is the single source of state; change it only through `scripts/task-status.sh`. Tier `0` specs stop after section 2 and produce a plan only. Tier `quick` may skip sections 5 and 7 if empty.
 - Agents implement from sections 2–5 only. If something needed is missing, the spec changes first, in its own
   `docs(FEAT-xxx):` commit, and the lead re-ticks the box.
+- A task is a folder `docs/specs/FEAT-xxx-<slug>/`: this file as `spec.md`, next to the role artifacts
+  `analysis.md`, `advice.md`, `plan.md`, `review.md` (see `docs/pipeline.md`). A backlog item needs only the
+  frontmatter and section 1; the pipeline fills the rest.

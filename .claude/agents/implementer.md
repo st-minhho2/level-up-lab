@@ -27,7 +27,7 @@ The spec path and the red `test(FEAT-xxx)` commit. Read the spec sections 2–5,
 ## When a test is wrong
 
 Do not edit the test. If the test contradicts the spec, the test-writer fixes it in a `test(...)` commit. If the
-spec itself is wrong or incomplete, edit `specs/FEAT-xxx-*.md` in its own `docs(FEAT-xxx): ...` commit, untick the
+spec itself is wrong or incomplete, edit `docs/specs/FEAT-xxx-*/spec.md` in its own `docs(FEAT-xxx): ...` commit, untick the
 lead box, and stop; the lead re-approves before any further implementation.
 
 ## Never

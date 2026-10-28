@@ -32,3 +32,9 @@ A plan that does not fit on one screen is two tasks; split it before asking for 
   update the plan, get it re-approved, then continue. Never silently extend the Files list.
 - The approved plan goes into the PR body (template section "Plan"). Reviewers compare the diff against it: a file
   outside the list, or an interface not in the plan, sends the PR back before any line-level review.
+
+## In the agent pipeline
+
+`docs/specs/FEAT-xxx-<slug>/plan.md`, written by the `dev-lead` role, _is_ the plan: same three parts, same one-screen
+limit, and the human's `Plan approved by: <name>, <date>` line is the approval. `/work-next` stops at that line and
+nothing under `src/` changes before it exists. The PR body copies `plan.md` into the template's Plan section.

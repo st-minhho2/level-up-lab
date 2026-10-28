@@ -33,12 +33,13 @@ pnpm dev                      # http://localhost:3000
 
 Checks: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm test:e2e`, `pnpm test:mutation`, `pnpm build`.
 
-## Ship a feature (L6 flow)
+## Ship a feature
 
-1. `specs/FEAT-xxx-<name>.md` from `specs/TEMPLATE.md`; lead ticks "approves spec". Commit `docs(FEAT-xxx): ...`.
-2. `scripts/worktree.sh FEAT-xxx-<name>` and work there.
-3. Skeleton (`new-feature-slice` skill) → `chore(FEAT-xxx): ...`.
-4. Red tests (`write-spec-tests` skill / `test-writer` agent) → `scripts/verify-red.sh FEAT-xxx` → `test(FEAT-xxx): ...`.
-5. Green (`implementer` agent, never touches tests) → `feat(FEAT-xxx): ...`.
-6. PR with the template's Plan section; CI (lint, types, unit, e2e, mutation ≥ 70%, Semgrep, guards) and one human
-   review gate the merge.
+The backlog is `docs/specs/` (one folder per task, see [docs/pipeline.md](docs/pipeline.md)). `/work-next` picks
+the next ready task and runs the role chain `spec-analyst → advisor → dev-lead → (you approve the plan) →
+tech-lead → skeleton → test-writer → implementer → tech-lead → pull request`. CI (lint, types, unit, e2e, mutation
+≥ 70%, Semgrep, guards) and one human review gate the merge.
+
+Manual fallback, same commits: spec (`docs(FEAT-xxx)`) → `scripts/worktree.sh` → skeleton (`new-feature-slice`,
+`chore`) → red (`write-spec-tests`, `scripts/verify-red.sh`, `test`) → green (`implementer`, `feat`) → PR with the
+template's Plan section.

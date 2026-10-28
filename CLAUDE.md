@@ -26,7 +26,7 @@ scripts/verify-red.sh FEAT-xxx   # proves the test(FEAT-xxx) commit fails for th
 - `src/actions/*.ts` Server Actions (`'use server'`): the only place mutations happen. Zod-validate, delegate to `src/lib`.
 - `src/lib/` domain logic + `prisma.ts` (the one Prisma client, `server-only`) + `env.ts` (validated env). Mutation-tested.
 - `src/components/` client components (`'use client'`) only when they need state or events.
-- `prisma/` schema, migrations, `seed.ts`. `specs/` EARS specs, one `FEAT-xxx-<name>.md` per feature.
+- `prisma/` schema, migrations, `seed.ts`. `docs/specs/FEAT-xxx-<slug>/` one folder per task: `spec.md` (EARS, frontmatter = state) + role artifacts.
 - Tests sit next to code: `*.test.ts` (node), `*.test.tsx` (jsdom). `e2e/` holds one Playwright file per spec.
 - `docs/levels/LN.md` checklists, `docs/metrics.md`, `docs/mistake-log.md`. Scripts in `scripts/`.
 
@@ -40,7 +40,9 @@ scripts/verify-red.sh FEAT-xxx   # proves the test(FEAT-xxx) commit fails for th
 - Never add `eslint-disable`, `@ts-ignore`, `@ts-expect-error`; never change lint, tsconfig, CI, hooks or Stryker
   config inside a feature PR (CI rejects it without the `config-change-approved` label).
 - Never edit `*.test.*` or `e2e/**` in a `feat(...)` commit; never weaken an assertion to make a test pass.
-- No spec, no code: a feature starts as `specs/FEAT-xxx-<name>.md` with the lead-approval box ticked.
+- No spec, no code: a feature starts as `docs/specs/FEAT-xxx-<slug>/spec.md` with the lead-approval box ticked.
+- Pipeline roles (`spec-analyst`, `advisor`, `dev-lead`, `tech-lead`) write only inside their task folder; state
+  changes only through `scripts/task-status.sh`. The plan gate (`Plan approved by:` in `plan.md`) is never skipped.
 
 ## Session rules
 
@@ -51,4 +53,6 @@ scripts/verify-red.sh FEAT-xxx   # proves the test(FEAT-xxx) commit fails for th
 - Claude Code is the only approved agent here. If the team ever switches tool, convert `CLAUDE.md`, `.claude/rules`,
   `.claude/skills` and `.claude/agents` once, in one PR, and delete the old copies. Never maintain two sets.
 - Multi-file or unclear work starts in plan mode (`.claude/rules/planning.md`). One-sentence diffs skip it.
+- `/work-next [FEAT-xxx]` runs the backlog pipeline (`docs/pipeline.md`): one task per invocation, stops once for
+  plan approval, ends with a pull request.
 - One task = one worktree = one branch (`scripts/worktree.sh <task>`); never work in someone else's checkout.

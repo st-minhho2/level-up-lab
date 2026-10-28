@@ -1,6 +1,6 @@
 ---
 name: new-feature-slice
-description: Scaffold the skeleton for an approved spec (specs/FEAT-xxx-<name>.md) as one vertical slice - Server Component page under src/app/<slice>, Server Action file under src/actions with Zod-validated stubs that throw NotImplementedError, the Zod schema in src/lib/<slice>-schema.ts, a src/lib/<slice>.ts stub, and it.todo test stubs titled with each AC id. Use when a spec is approved and no files for that slice exist yet; this is the chore(FEAT-xxx) skeleton commit that lets red tests fail on behavior instead of on imports. Do not use to write real tests (write-spec-tests) or real logic (implementer agent).
+description: Scaffold the skeleton for an approved spec (docs/specs/FEAT-xxx-<slug>/spec.md) as one vertical slice - Server Component page under src/app/<slice>, Server Action file under src/actions with Zod-validated stubs that throw NotImplementedError, the Zod schema in src/lib/<slice>-schema.ts, a src/lib/<slice>.ts stub, and it.todo test stubs titled with each AC id. Use when a spec is approved and no files for that slice exist yet; this is the chore(FEAT-xxx) skeleton commit that lets red tests fail on behavior instead of on imports. Do not use to write real tests (write-spec-tests) or real logic (implementer agent).
 ---
 
 # new-feature-slice

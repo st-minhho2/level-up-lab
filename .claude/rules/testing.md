@@ -3,7 +3,7 @@ paths:
   - '**/*.test.ts'
   - '**/*.test.tsx'
   - 'e2e/**'
-  - 'specs/**'
+  - 'docs/specs/**'
 ---
 
 # Testing: placement, naming, criterion ids

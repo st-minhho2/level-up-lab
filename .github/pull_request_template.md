@@ -2,7 +2,7 @@
 
 ## Spec
 
-Link: `specs/FEAT-xxx-<name>.md` (or `n/a: chore/docs only`)
+Link: `docs/specs/FEAT-xxx-<slug>/spec.md` (or `n/a: chore/docs only`)
 Criteria in this PR: AC-1, AC-2, ... (every AC in the spec, or say which are deferred and why)
 
 ## Plan

@@ -1,6 +1,6 @@
 ---
 name: write-spec-tests
-description: Turn the acceptance criteria table of an approved spec (specs/FEAT-xxx-<name>.md) into failing Vitest and Playwright tests - one test per AC-n with the id at the start of the title, unit tests for actions and Zod schemas, component tests for UI, exactly one e2e file per spec - verify they fail for an assertion reason with scripts/verify-red.sh, and commit them alone as test(FEAT-xxx). Use at the TDD red step, after the skeleton exists and before any implementation. Never writes or edits files outside tests.
+description: Turn the acceptance criteria table of an approved spec (docs/specs/FEAT-xxx-<slug>/spec.md) into failing Vitest and Playwright tests - one test per AC-n with the id at the start of the title, unit tests for actions and Zod schemas, component tests for UI, exactly one e2e file per spec - verify they fail for an assertion reason with scripts/verify-red.sh, and commit them alone as test(FEAT-xxx). Use at the TDD red step, after the skeleton exists and before any implementation. Never writes or edits files outside tests.
 ---
 
 # write-spec-tests

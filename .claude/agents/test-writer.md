@@ -1,6 +1,6 @@
 ---
 name: test-writer
-description: TDD red step. Turns the acceptance criteria of an approved spec (specs/FEAT-xxx-<name>.md) into failing tests - one per AC-n, title starting with the id - and commits them alone as test(FEAT-xxx). Writes only *.test.ts, *.test.tsx and e2e/*.spec.ts; never implementation. Use after the skeleton commit exists and before any implementation work.
+description: TDD red step. Turns the acceptance criteria of an approved spec (docs/specs/FEAT-xxx-<slug>/spec.md) into failing tests - one per AC-n, title starting with the id - and commits them alone as test(FEAT-xxx). Writes only *.test.ts, *.test.tsx and e2e/*.spec.ts; never implementation. Use after the skeleton commit exists and before any implementation work.
 tools: Read, Grep, Glob, Write, Edit, Bash
 model: inherit
 ---
