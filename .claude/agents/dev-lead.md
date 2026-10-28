@@ -59,7 +59,7 @@ Review (= review.md diff section). Report and stop.
 
 ```
 Card: <card> — <title> (§n). Worktree: <absolute path>. Mode: <analysis | advice | plan review | red | green | diff review>.
-Spec: spec/contracts/<file> §n. Plan: backlog/work/<card>/plan.md (approved by <human>, <date>).
+Spec: spec/contracts/<file> §n. Plan: backlog/work/<card>/plan.md (approved by lead, <date>).
 Rules: CLAUDE.md and .claude/rules are loaded; your write paths are hook-enforced.
 Report in your role's exact report shape; nothing else.
 ```
