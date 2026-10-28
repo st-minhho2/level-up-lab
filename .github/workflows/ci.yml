@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     container: node:24-bookworm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: ./.github/actions/setup
       - run: pnpm lint
 
@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     container: node:24-bookworm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: ./.github/actions/setup
       - run: pnpm db:generate
       - run: pnpm typecheck
@@ -41,12 +41,12 @@ jobs:
     runs-on: ubuntu-latest
     container: node:24-bookworm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: ./.github/actions/setup
       - run: pnpm db:generate
       - name: Unit + component tests with coverage
         run: pnpm test:coverage
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: coverage
@@ -73,14 +73,14 @@ jobs:
       NODE_ENV: test
       CI: 'true'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: ./.github/actions/setup
       - run: pnpm db:generate
       - run: pnpm db:deploy
       - run: pnpm exec playwright install --with-deps chromium
       - name: Playwright against docker Postgres
         run: pnpm test:e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: playwright-report
@@ -92,12 +92,12 @@ jobs:
     runs-on: ubuntu-latest
     container: node:24-bookworm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: ./.github/actions/setup
       - run: pnpm db:generate
       - name: Stryker on src/lib + src/actions (break < 70%)
         run: pnpm test:mutation
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: mutation-report
@@ -109,7 +109,7 @@ jobs:
     runs-on: ubuntu-latest
     container: semgrep/semgrep
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - run: semgrep scan --config p/default --config p/typescript --config p/secrets --error --metrics=off --exclude=.worktrees --exclude=node_modules
 
   guards:
@@ -121,7 +121,7 @@ jobs:
       HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       CONFIG_CHANGE_APPROVED: ${{ contains(github.event.pull_request.labels.*.name, 'config-change-approved') }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
       - uses: ./.github/actions/setup
