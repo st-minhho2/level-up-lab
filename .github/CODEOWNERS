@@ -1,6 +1,6 @@
 # Control-plane paths: a human owns every change here. Agents may propose (PR), never merge.
-# CLAUDE.md, .claude/rules, .claude/agents and docs/ are deliberately not listed: roles edit them inside their
-# task folders and the CI guards (scripts/ci/check-config-change.sh) cover the protected subset.
+# CLAUDE.md files, .claude/rules, .claude/agents, spec/ and backlog/ are deliberately not listed: roles edit them
+# through reviewed PRs and the CI guards (scripts/ci/check-config-change.sh) cover the protected subset.
 /.claude/settings.json      @st-minhho2
 /.claude/hooks/             @st-minhho2
 /.github/                   @st-minhho2
@@ -10,4 +10,4 @@
 /.gitleaks.toml             @st-minhho2
 /docker-compose.yml         @st-minhho2
 /.devcontainer/             @st-minhho2
-/docs/decisions.md          @st-minhho2
+/backlog/00-decisions.md    @st-minhho2

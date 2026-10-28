@@ -30,18 +30,18 @@ for f in /x/level-up-lab/.env /x/.env.production /Users/me/.ssh/id_ed25519; do p
 for f in /x/level-up-lab/.env.example /x/level-up-lab/src/lib/env.ts; do probe 0 guard-read.sh "$(read_path "$f")"; done
 
 echo "== path-guard.sh (role write scopes)"
-TW=('*.test.ts' '*.test.tsx' 'e2e/*' 'docs/specs/*/spec.md')
-IM=('src/*' 'prisma/*' 'docs/specs/*/spec.md' 'docs/metrics.md' '!*.test.ts' '!*.test.tsx' '!e2e/*' '!src/lib/prisma.ts')
-DOCS=('docs/specs/*' '!docs/specs/*/spec.md')
+TW=('*.test.ts' '*.test.tsx' 'e2e/*')
+IM=('src/*' 'prisma/*' 'spec/features-map.md' 'docs/metrics.md' '!*.test.ts' '!*.test.tsx' '!e2e/*' '!src/lib/prisma.ts')
+DOCS=('backlog/work/*')
 probe 0 path-guard.sh "$(read_path "$PWD/src/lib/todos.test.ts")" "${TW[@]}"
 probe 0 path-guard.sh "$(read_path "$PWD/e2e/x.spec.ts")" "${TW[@]}"
 probe 2 path-guard.sh "$(read_path "$PWD/src/lib/todos.ts")" "${TW[@]}"
 probe 0 path-guard.sh "$(read_path "$PWD/src/lib/todos.ts")" "${IM[@]}"
 probe 2 path-guard.sh "$(read_path "$PWD/src/lib/todos.test.ts")" "${IM[@]}"
 probe 2 path-guard.sh "$(read_path "$PWD/src/lib/prisma.ts")" "${IM[@]}"
-probe 0 path-guard.sh "$(read_path "$PWD/docs/specs/FEAT-003-edit-title/plan.md")" "${DOCS[@]}"
-probe 2 path-guard.sh "$(read_path "$PWD/docs/specs/FEAT-003-edit-title/spec.md")" "${DOCS[@]}"
-probe 2 path-guard.sh "$(read_path "$PWD/docs/specs/../../src/lib/x.ts")" "${DOCS[@]}"
+probe 0 path-guard.sh "$(read_path "$PWD/backlog/work/B1.2/plan.md")" "${DOCS[@]}"
+probe 2 path-guard.sh "$(read_path "$PWD/spec/contracts/04-edit-title.md")" "${DOCS[@]}"
+probe 2 path-guard.sh "$(read_path "$PWD/backlog/work/../../src/lib/x.ts")" "${DOCS[@]}"
 probe 2 path-guard.sh "$(read_path "/etc/hosts")" "${DOCS[@]}"
 
 echo "== review gate (require-review.sh / mark-reviewed.sh)"

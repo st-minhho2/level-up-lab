@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Prove that a feature's test(FEAT-xxx) commit is red for the right reason.
+# Prove that a card's test(...) commit is red for the right reason.
 #
-#   scripts/verify-red.sh FEAT-001 [--range <base>..<head>] [--keep]
-#   scripts/verify-red.sh --auto   [--range ...]      every FEAT id with a test(...) commit in the range
+#   scripts/verify-red.sh B1.2 [--range <base>..<head>] [--keep]
+#   scripts/verify-red.sh --auto [--range ...]      every card id named by a test(...) commit in the range
 #
-# For each FEAT id:
-#   1. find commits in the range whose subject starts with "test(FEAT-id)"
+# For each card id:
+#   1. find commits in the range whose subject is "test(<pkg>): <id> …"
 #   2. collect the *.test.ts / *.test.tsx files they touch (e2e/*.spec.ts needs a server: listed, skipped)
 #   3. check out the parent of the FIRST test commit into a scratch worktree (that is "the base": the code as it
 #      was before the red tests landed, skeleton included, so imports resolve and failures are about behavior)
@@ -38,13 +38,13 @@ else
 fi
 
 if [[ $AUTO -eq 1 ]]; then
-  while IFS= read -r id; do [[ -n "$id" ]] && FEATS+=("$id"); done < <(git log --no-merges --format=%s "$BASE_SHA..$HEAD_SHA" | sed -nE 's/^test\((FEAT-[0-9]+)\).*/\1/p' | sort -u)
+  while IFS= read -r id; do [[ -n "$id" ]] && FEATS+=("$id"); done < <(git log --no-merges --format=%s "$BASE_SHA..$HEAD_SHA" | sed -nE 's/^test\([^)]*\): (B[0-9]+\.[0-9]+).*/\1/p' | sort -u)
   if [[ ${#FEATS[@]} -eq 0 ]]; then
-    echo "[verify-red] no test(FEAT-xxx) commit in range; nothing to verify"
+    echo "[verify-red] no test(...): B<e>.<n> commit in range; nothing to verify"
     exit 0
   fi
 fi
-[[ ${#FEATS[@]} -gt 0 ]] || { echo "usage: scripts/verify-red.sh FEAT-001 | --auto" >&2; exit 1; }
+[[ ${#FEATS[@]} -gt 0 ]] || { echo "usage: scripts/verify-red.sh B1.2 | --auto" >&2; exit 1; }
 
 IMPORT_ERROR='Failed to resolve import|Cannot find module|Cannot find package|SyntaxError|Transform failed|Unexpected token|is not defined|Failed to load|No test suite found|No test files found'
 overall=0
@@ -53,7 +53,7 @@ verify_feat() {
   local feat="$1"
   echo "=== $feat"
   local commits
-  commits="$(git rev-list --reverse --no-merges -E --grep="^test\\($feat\\)" "$BASE_SHA..$HEAD_SHA")"
+  commits="$(git rev-list --reverse --no-merges -E --grep="^test\\([^)]*\\): ${feat//./\\.}( |$)" "$BASE_SHA..$HEAD_SHA")"
   if [[ -z "$commits" ]]; then
     echo "::error::no test($feat) commit in $BASE_SHA..$HEAD_SHA"
     return 1
