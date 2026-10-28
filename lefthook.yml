@@ -25,5 +25,6 @@ commit-msg:
     - name: conventional-subject
       run: |
         subject="$(head -1 {1})"
+        echo "$subject" | grep -Eq '^(Merge|Revert) ' && exit 0
         echo "$subject" | grep -Eq '^(feat|fix|chore|docs|test|refactor|ci|build|perf|style|revert)(\([A-Za-z0-9_./-]+\))?!?: .{1,72}$' \
           || { echo "commit subject must be Conventional Commits: <type>(<scope>): <summary>  (got: $subject)" >&2; exit 1; }
