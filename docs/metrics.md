@@ -19,13 +19,13 @@ means the situation to measure has not happened yet.
 | Spec + TDD  | Speed   | QA round trips per card                                    | ≤ 1     | 0 (B1.1)                                     | 2026-10-28 | PR returned from review/QA with a behavior defect                     |
 | Spec + TDD  | Quality | Acceptance criteria covered by tests                       | 100 %   | 100 % (§5: 7/7)                              | 2026-10-28 | `scripts/ci/check-ac-coverage.sh`                                     |
 | Spec + TDD  | Quality | Mutation score on `src/lib` + `src/actions`                | > 70 %  | 78.87 %                                      | 2026-10-28 | `pnpm test:mutation`                                                  |
-| Spec + TDD  | Speed   | Cards completed without a second plan round                | ≥ 90 %  | n/a (B1.2 pending)                           | 2026-10-28 | `Rounds:` in `work/<card>/plan.md` and `review.md`                    |
+| Spec + TDD  | Speed   | Cards completed without a second plan round                | ≥ 90 %  | 1/1 (B1.2: plan round 1, review pass 1)      | 2026-10-28 | `Rounds:` in `work/<card>/plan.md` and `review.md`                    |
 
 ## Per card
 
 | Card | §   | Criteria | Covered   | Mutation %                     | QA round trips | Red              | Green   |
 | ---- | --- | -------- | --------- | ------------------------------ | -------------- | ---------------- | ------- |
 | B1.1 | §5  | 7        | 7 (100 %) | 78.87 (actions 71.4, lib 80.7) | 0              | 61cb3f4, 7af9887 | c7153b2 |
-| B1.2 | §6  | 7        | 7 (100 %) | 79.07 (actions 76.2, lib 80.0) | 0              | fa7a3dd          | this PR |
+| B1.2 | §6  | 7        | 7 (100 %) | 81.40 (actions 85.7, lib 80.0) | 0              | fa7a3dd, 8ac5f37 | this PR |
 
 A value below target for two consecutive measurements opens a row in `docs/mistake-log.md` and a fix in `.claude/`.
