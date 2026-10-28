@@ -146,3 +146,8 @@ describe('updateTodoTitle (§6)', () => {
     expect(db.update).not.toHaveBeenCalled();
   });
 });
+
+describe('clearCompletedTodos (§9)', () => {
+  it.todo('AC-9.1: deletes exactly the completed rows and returns the count');
+  it.todo('AC-9.1: returns 0 and still issues one deleteMany when nothing is completed');
+});

@@ -1,4 +1,5 @@
 // §5 list/create/toggle, §6 edit title.
+import { NotImplementedError } from '@/lib/errors';
 import { prisma } from '@/lib/prisma';
 
 export interface Todo {
@@ -40,4 +41,9 @@ export async function updateTodoTitle(id: string, title: string): Promise<Todo> 
     throw new TodoNotFoundError(id);
   }
   return prisma.todo.update({ where: { id }, data: { title }, select: todoFields });
+}
+
+// §9 clear completed (B1.3). Skeleton.
+export async function clearCompletedTodos(): Promise<number> {
+  return Promise.reject(new NotImplementedError('clearCompletedTodos'));
 }

@@ -4,6 +4,7 @@
 import { revalidatePath } from 'next/cache';
 import { failure, fieldErrorsOf, type ActionResult } from '@/lib/action-result';
 import { createTodoSchema, toggleTodoSchema, updateTodoTitleSchema } from '@/lib/todo-schema';
+import { NotImplementedError } from '@/lib/errors';
 import { createTodo, TodoNotFoundError, toggleTodo, updateTodoTitle, type Todo } from '@/lib/todos';
 
 // Signature fits React's useActionState: (previousState, formData) => newState.
@@ -54,4 +55,9 @@ export async function updateTodoTitleAction(id: string, title: string): Promise<
     }
     throw error;
   }
+}
+
+// §9 clear completed (B1.3). Skeleton.
+export async function clearCompletedTodosAction(): Promise<ActionResult<{ deleted: number }>> {
+  return Promise.reject(new NotImplementedError('clearCompletedTodosAction'));
 }

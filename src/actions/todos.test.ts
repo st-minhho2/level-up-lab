@@ -155,3 +155,8 @@ describe('updateTodoTitleAction (§6)', () => {
     expect(cache.revalidatePath).not.toHaveBeenCalled();
   });
 });
+
+describe('clearCompletedTodosAction (§9)', () => {
+  it.todo('AC-9.1: deletes every completed todo, returns the count and revalidates / once');
+  it.todo('AC-9.1: returns { deleted: 0 } and still revalidates / when nothing was completed');
+});
