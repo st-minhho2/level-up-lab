@@ -29,6 +29,7 @@ Server/Client boundary). Read the section the card names and `.claude/rules/*.md
 | ≤ 7 criteria, every Then measurable, no banned adjective without a number |
 | verification lists exact commands with expected numbers |
 | work breakdown has skeleton → red → green → map → review with convention subjects |
+| the section's `Lead approves spec` box is ticked by a human (never by you) |
 | no settled D-n contradicted |
 
 Write `## Plan review (round N)` in `review.md` with the table and `Verdict: approved | changes requested`.

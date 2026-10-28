@@ -1,20 +1,31 @@
 {
-  "name": "main: PR + required checks + one human review",
+  "name": "main: PR + required checks (solo mode: 0 approvals, D-9)",
   "target": "branch",
   "enforcement": "active",
-  "conditions": { "ref_name": { "include": ["~DEFAULT_BRANCH"], "exclude": [] } },
+  "conditions": {
+    "ref_name": {
+      "include": ["~DEFAULT_BRANCH"],
+      "exclude": []
+    }
+  },
   "bypass_actors": [],
   "rules": [
-    { "type": "deletion" },
-    { "type": "non_fast_forward" },
-    { "type": "required_linear_history" },
+    {
+      "type": "deletion"
+    },
+    {
+      "type": "non_fast_forward"
+    },
+    {
+      "type": "required_linear_history"
+    },
     {
       "type": "pull_request",
       "parameters": {
-        "required_approving_review_count": 1,
+        "required_approving_review_count": 0,
         "dismiss_stale_reviews_on_push": true,
         "require_code_owner_review": false,
-        "require_last_push_approval": true,
+        "require_last_push_approval": false,
         "required_review_thread_resolution": true,
         "allowed_merge_methods": ["squash", "rebase"]
       }
@@ -25,13 +36,27 @@
         "strict_required_status_checks_policy": true,
         "do_not_enforce_on_create": false,
         "required_status_checks": [
-          { "context": "lint" },
-          { "context": "typecheck" },
-          { "context": "test" },
-          { "context": "e2e" },
-          { "context": "mutation" },
-          { "context": "semgrep" },
-          { "context": "guards" }
+          {
+            "context": "lint"
+          },
+          {
+            "context": "typecheck"
+          },
+          {
+            "context": "test"
+          },
+          {
+            "context": "e2e"
+          },
+          {
+            "context": "mutation"
+          },
+          {
+            "context": "semgrep"
+          },
+          {
+            "context": "guards"
+          }
         ]
       }
     }

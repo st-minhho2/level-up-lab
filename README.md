@@ -1,8 +1,10 @@
 # level-up-lab
 
-A small Next.js 15 full-stack app (todos in PostgreSQL) used as a personal lab for SupremeTech's AI-Driven Development
-playbook. **The repo operates at the playbook's top level, L6: spec-driven + TDD**, with Claude Code as the single
-agent. The app is the vehicle; the point is the scaffolding around it.
+![playbook level](https://img.shields.io/badge/AI--Driven%20Development-L6-2C5F2D) ![spec-driven + TDD](https://img.shields.io/badge/spec--driven-TDD-1E2761) ![agent](https://img.shields.io/badge/agent-Claude%20Code-36454F)
+
+A small Next.js 15 full-stack app (todos in PostgreSQL) used as a personal lab for SupremeTech's AI-Driven
+Development practice: numbered spec contract, backlog cards, red-first tests, independent review, one human gate,
+with Claude Code as the single agent. The app is the vehicle; the point is the scaffolding around it.
 
 This README is for people. Coding agents read `CLAUDE.md`.
 
