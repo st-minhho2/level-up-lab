@@ -4,7 +4,7 @@ SCOPE: all
 
 ## Plan review (round 1)
 
-Reviewed: `backlog/work/B1.3/plan.md` at `63686be` (`Plan approved by: minh.ho2 (session reply "approve"), 2026-10-29`)
+Reviewed: `backlog/work/B1.3/plan.md` at `63686be` (`Plan approved by: lead (session reply "approve"), 2026-10-29`)
 against §9 (`spec/contracts/07-clear-completed.md`, Tier quick, box `- [x] Lead approves spec (minh.ho2, 2026-10-29,
 plan gate of B1.3)` ticked in the same commit per D-7), §5, §7, card B1.3, D-1..D-10, `advice.md`, `analysis.md`,
 the tree and, run in this worktree on 2026-10-29: `pnpm test` (9 files, 55 passed), `check-features-map.sh` OK,

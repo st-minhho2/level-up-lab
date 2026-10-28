@@ -2,7 +2,7 @@
 
 Tier: quick
 
-- [x] Lead approves spec (minh.ho2, 2026-10-29, plan gate of B1.3)
+- [x] Lead approves spec (lead, 2026-10-29, plan gate of B1.3)
 
 ## Intent
 

@@ -50,4 +50,4 @@ scripts/ci/check-ac-coverage.sh && scripts/ci/check-features-map.sh && scripts/c
 | 3 Green    | `code-writer` → green gate (dev-lead) | behavior, F7 map row, §9 ✅, metrics row                   | `feat(todos): B1.3 clear completed todos`       |
 | 4 Review   | `reviewer` (diff), `/review-loop`     | `review.md`, gate cleared                                  | —                                               |
 
-Plan approved by: minh.ho2 (session reply "approve"), 2026-10-29 · Rounds: 1
+Plan approved by: lead (session reply "approve"), 2026-10-29 · Rounds: 1
