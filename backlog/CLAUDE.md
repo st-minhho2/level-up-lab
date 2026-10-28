@@ -40,6 +40,8 @@ on squash). `<pkg>` is the `src/` folder: `todos`, `health`, `env`, `ui`.
 
 ## Writing here
 
-English identifiers; status claims verified by reading code (quote the line). Sizes: S ≤ 1 day · M 2–5 days ·
+Artifacts name **roles, never people**: `lead` approves, `dev-lead` plans, `reviewer` reviews; no personal names
+or handles in spec, backlog, work artifacts or decisions (git authorship and CODEOWNERS are the only places a
+handle appears). English identifiers; status claims verified by reading code (quote the line). Sizes: S ≤ 1 day · M 2–5 days ·
 L > 1 week, always `[estimate]`. One card = one mergeable change (≤ M). Ids `B<epic>.<n>` are permanent, never
 reused. Commit prefix `docs(backlog): …`.

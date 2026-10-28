@@ -21,7 +21,7 @@ is missing.
 ## The gate (never skipped)
 
 After `plan.md` exists: print it and stop with exactly "Plan for <card> is ready. Reply `approve` or list changes."
-Nothing under `src/`, `prisma/`, `e2e/` changes before `plan.md` carries `Plan approved by: <human>, <date>`.
+Nothing under `src/`, `prisma/`, `e2e/` changes before `plan.md` carries `Plan approved by: lead, <date>`.
 
 ## Exit
 

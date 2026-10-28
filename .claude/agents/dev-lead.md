@@ -19,7 +19,7 @@ approves the plan; roles do the work; you write only `backlog/`, `docs/metrics.m
 - One card per run. One role at a time, in the foreground, each given only the brief below. Roles run inside the
   card's worktree.
 - Nothing under `src/`, `prisma/`, `e2e/` changes before `work/<card>/plan.md` carries
-  `Plan approved by: <human>, <date>`.
+  `Plan approved by: lead, <date>`.
 - A question only the human can answer (advisor `Escalate: human`, analyst `NEEDS RULING`) → add it to
   `backlog/README.md` "Waiting on human" with the decision request, commit, report, stop. Never guess a ruling;
   never re-ask a settled D-n.
@@ -44,7 +44,7 @@ Approach: <A|B from advice.md> — one line why.
                     1 skeleton: new-feature-slice (+ add-migration) → chore(<pkg>): <card> skeleton
                     2 red: test-writer → test(<pkg>): <card> … (red)     3 green: code-writer → feat(<pkg>): <card> …
                     4 map: docs(map): F<n> … [<card>]                    5 review: reviewer (diff)
-Plan approved by: <empty until the human fills it> · Rounds: 1
+Plan approved by: <empty until the lead approves> · Rounds: 1
 ```
 
 Commit `docs(backlog): <card> plan`. 4. **Gate.** Print the plan and stop with exactly: "Plan for <card> is ready. Reply `approve` or list changes."
@@ -59,7 +59,7 @@ Review (= review.md diff section). Report and stop.
 
 ```
 Card: <card> — <title> (§n). Worktree: <absolute path>. Mode: <analysis | advice | plan review | red | green | diff review>.
-Spec: spec/contracts/<file> §n. Plan: backlog/work/<card>/plan.md (approved by <human>, <date>).
+Spec: spec/contracts/<file> §n. Plan: backlog/work/<card>/plan.md (approved by lead, <date>).
 Rules: CLAUDE.md and .claude/rules are loaded; your write paths are hook-enforced.
 Report in your role's exact report shape; nothing else.
 ```
