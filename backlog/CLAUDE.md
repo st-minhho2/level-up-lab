@@ -25,7 +25,8 @@ section is rewritten (§8).
 ## Commit order on a card's branch
 
 `docs(spec)` (only if the section changes) → `chore(<pkg>): B<e>.<n> skeleton` → `test(<pkg>): B<e>.<n> … (red)` →
-`feat(<pkg>): B<e>.<n> …` → `docs(map): F<n> … [B<e>.<n>]` → `/review-loop` → PR (`B<e>.<n>: <summary> (§n) (#PR)`
+`feat(<pkg>): B<e>.<n> …` → `docs(map): F<n> … [B<e>.<n>]` → `/review-loop` (hardening tests land as
+`test(<pkg>): B<e>.<n> review pass N -- …`, without the `(red)` marker: `verify-red.sh` judges only `(red)` commits) → PR (`B<e>.<n>: <summary> (§n) (#PR)`
 on squash). `<pkg>` is the `src/` folder: `todos`, `health`, `env`, `ui`.
 
 ## Closing a card (one commit, with the PR)
