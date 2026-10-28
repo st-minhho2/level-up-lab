@@ -11,6 +11,8 @@ vi.mock('@/lib/todos', async (importOriginal) => ({
   toggleTodo: lib.toggleTodo,
 }));
 vi.mock('next/cache', () => ({ revalidatePath: cache.revalidatePath }));
+// importOriginal above loads the real lib module, whose Prisma import pulls `server-only` (throws under Vitest).
+vi.mock('@/lib/prisma', () => ({ prisma: {} }));
 
 function todo(overrides: Partial<{ id: string; title: string; completed: boolean }> = {}) {
   return { id: 'todo-1', title: 'Buy milk', completed: false, createdAt: new Date(2026, 0, 1), ...overrides };
