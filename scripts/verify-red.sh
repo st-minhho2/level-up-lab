@@ -5,7 +5,8 @@
 #   scripts/verify-red.sh --auto [--range ...]      every card id named by a test(...) commit in the range
 #
 # For each card id:
-#   1. find commits in the range whose subject is "test(<pkg>): <id> …"
+#   1. find commits in the range whose subject is "test(<pkg>): <id> … (red)" — the (red) marker separates the
+#      red step from later test-only commits (review hardening), whose tests are green by design
 #   2. collect the *.test.ts / *.test.tsx files they touch (e2e/*.spec.ts needs a server: listed, skipped)
 #   3. check out the parent of the FIRST test commit into a scratch worktree (that is "the base": the code as it
 #      was before the red tests landed, skeleton included, so imports resolve and failures are about behavior)
@@ -39,9 +40,9 @@ else
 fi
 
 if [[ $AUTO -eq 1 ]]; then
-  while IFS= read -r id; do [[ -n "$id" ]] && FEATS+=("$id"); done < <(git log --no-merges --format=%s "$BASE_SHA..$HEAD_SHA" | sed -nE 's/^test\([^)]*\): (B[0-9]+\.[0-9]+).*/\1/p' | sort -u)
+  while IFS= read -r id; do [[ -n "$id" ]] && FEATS+=("$id"); done < <(git log --no-merges --format=%s "$BASE_SHA..$HEAD_SHA" | sed -nE 's/^test\([^)]*\): (B[0-9]+\.[0-9]+).*\(red\)$/\1/p' | sort -u)
   if [[ ${#FEATS[@]} -eq 0 ]]; then
-    echo "[verify-red] no test(...): B<e>.<n> commit in range; nothing to verify"
+    echo "[verify-red] no test(...): B<e>.<n> … (red) commit in range; nothing to verify"
     exit 0
   fi
 fi
@@ -54,9 +55,9 @@ verify_feat() {
   local feat="$1"
   echo "=== $feat"
   local commits
-  commits="$(git rev-list --reverse --no-merges -E --grep="^test\\([^)]*\\): ${feat//./\\.}( |$)" "$BASE_SHA..$HEAD_SHA")"
+  commits="$(git rev-list --reverse --no-merges -E --grep="^test\\([^)]*\\): ${feat//./\\.} .*\\(red\\)$" "$BASE_SHA..$HEAD_SHA")"
   if [[ -z "$commits" ]]; then
-    echo "::error::no test($feat) commit in $BASE_SHA..$HEAD_SHA"
+    echo "::error::no 'test(<pkg>): $feat … (red)' commit in $BASE_SHA..$HEAD_SHA (red commits carry the (red) marker; hardening commits do not)"
     return 1
   fi
   local first last; first="$(echo "$commits" | head -1)"; last="$(echo "$commits" | tail -1)"
