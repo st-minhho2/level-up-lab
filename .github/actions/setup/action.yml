@@ -17,3 +17,5 @@ runs:
         restore-keys: pnpm-${{ runner.os }}-
     - shell: bash
       run: pnpm install --frozen-lockfile
+    - shell: bash
+      run: pnpm db:generate # every job type-checks or runs code that imports @prisma/client
