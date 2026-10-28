@@ -30,15 +30,15 @@ an item added or toggled on one visit is still there, in the same state, on the 
 
 ## 3. Acceptance criteria (max 7)
 
-| ID   | Covers       | Given                                  | When                                       | Then (measurable)                                                                                                            |
-| ---- | ------------ | -------------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| AC-1 | REQ-1        | three todos created in order A, B, C   | the list is read                           | exactly `[C, B, A]`, each with `id`, `title`, `completed`                                                                    |
-| AC-2 | REQ-2        | form title `"  Buy milk  "`            | `createTodoAction` runs                    | `{ ok: true, data: { title: 'Buy milk', completed: false } }` and `/` is revalidated once                                    |
-| AC-3 | REQ-3        | title `"   "`; title of 201 characters | `createTodoAction` runs                    | `{ ok: false, fieldErrors: { title: ['Title is required'] } }` / `['Title must be 200 characters or fewer']`; nothing stored |
-| AC-4 | REQ-4        | a todo with `completed: false`         | `toggleTodoAction` runs twice              | first result `completed: true`, second `completed: false`; each stored                                                       |
-| AC-5 | REQ-5        | no todo with id `missing`              | `toggleTodoAction('missing')` runs         | `{ ok: false, fieldErrors: { id: ['Todo not found'] } }`; no row changed                                                     |
-| AC-6 | REQ-6, REQ-1 | empty list in the browser              | add "Walk the dog", reload, toggle, reload | after reload 1 the item is listed unchecked; after reload 2 it is listed checked                                             |
-| AC-7 | REQ-7        | no todos                               | `/` renders                                | the text "No todos yet" is visible, with a text box labelled "New todo" and a button "Add"                                   |
+| ID   | Covers                                                                                                                                                   | Given   | When | Then (measurable) |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ---- | ----------------- |
+| AC-1 | `src/lib/todos.test.ts` :: AC-1; `src/components/todo-item.test.tsx` :: AC-1; `e2e/FEAT-001-todo-list.spec.ts` :: AC-1                                   | **RED** |      |
+| AC-2 | `src/lib/todo-schema.test.ts` :: AC-2; `src/lib/todos.test.ts` :: AC-2; `src/actions/todos.test.ts` :: AC-2; `src/components/todo-form.test.tsx` :: AC-2 | **RED** |      |
+| AC-3 | `src/lib/todo-schema.test.ts` :: AC-3 (×2); `src/actions/todos.test.ts` :: AC-3 (×2); `src/components/todo-form.test.tsx` :: AC-3                        | **RED** |      |
+| AC-4 | `src/lib/todos.test.ts` :: AC-4; `src/actions/todos.test.ts` :: AC-4; `src/components/todo-item.test.tsx` :: AC-4                                        | **RED** |      |
+| AC-5 | `src/lib/todos.test.ts` :: AC-5; `src/actions/todos.test.ts` :: AC-5; `src/components/todo-item.test.tsx` :: AC-5                                        | **RED** |      |
+| AC-6 | `e2e/FEAT-001-todo-list.spec.ts` :: AC-6                                                                                                                 | **RED** |      |
+| AC-7 | `src/components/todo-form.test.tsx` :: AC-7; `e2e/FEAT-001-todo-list.spec.ts` :: AC-7                                                                    | **RED** |      |
 
 ## 4. Out of scope
 
@@ -49,22 +49,23 @@ an item added or toggled on one visit is still there, in the same state, on the 
 
 ## 5. Unchanged behavior
 
-| Behavior                                               | Proof                                                                |
-| ------------------------------------------------------ | -------------------------------------------------------------------- |
-| `GET /api/health` still answers 200 `{ status: 'ok' }` | `src/app/api/health/route.test.ts` :: "returns 200 with a JSON body" |
-| Env validation unchanged                               | `src/lib/env.test.ts` (8 tests)                                      |
+| Behavior                                                           | Proof                                                                |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| Home heading becomes "Todos" (smoke e2e updated in the red commit) | `e2e/smoke.spec.ts` :: "home page renders the lab title"             |
+| `GET /api/health` still answers 200 `{ status: 'ok' }`             | `src/app/api/health/route.test.ts` :: "returns 200 with a JSON body" |
+| Env validation unchanged                                           | `src/lib/env.test.ts` (8 tests)                                      |
 
 ## 6. Traceability (filled as work lands)
 
-| AC   | Test (file :: title) | Red commit | Green commit |
-| ---- | -------------------- | ---------- | ------------ |
-| AC-1 |                      |            |              |
-| AC-2 |                      |            |              |
-| AC-3 |                      |            |              |
-| AC-4 |                      |            |              |
-| AC-5 |                      |            |              |
-| AC-6 |                      |            |              |
-| AC-7 |                      |            |              |
+| AC   | Test (file :: title)                                                                                                                                     | Red commit | Green commit |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------ |
+| AC-1 | `src/lib/todos.test.ts` :: AC-1; `src/components/todo-item.test.tsx` :: AC-1; `e2e/FEAT-001-todo-list.spec.ts` :: AC-1                                   | **RED**    |              |
+| AC-2 | `src/lib/todo-schema.test.ts` :: AC-2; `src/lib/todos.test.ts` :: AC-2; `src/actions/todos.test.ts` :: AC-2; `src/components/todo-form.test.tsx` :: AC-2 | **RED**    |              |
+| AC-3 | `src/lib/todo-schema.test.ts` :: AC-3 (×2); `src/actions/todos.test.ts` :: AC-3 (×2); `src/components/todo-form.test.tsx` :: AC-3                        | **RED**    |              |
+| AC-4 | `src/lib/todos.test.ts` :: AC-4; `src/actions/todos.test.ts` :: AC-4; `src/components/todo-item.test.tsx` :: AC-4                                        | **RED**    |              |
+| AC-5 | `src/lib/todos.test.ts` :: AC-5; `src/actions/todos.test.ts` :: AC-5; `src/components/todo-item.test.tsx` :: AC-5                                        | **RED**    |              |
+| AC-6 | `e2e/FEAT-001-todo-list.spec.ts` :: AC-6                                                                                                                 | **RED**    |              |
+| AC-7 | `src/components/todo-form.test.tsx` :: AC-7; `e2e/FEAT-001-todo-list.spec.ts` :: AC-7                                                                    | **RED**    |              |
 
 ## 7. Open questions
 
