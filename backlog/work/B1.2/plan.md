@@ -50,4 +50,4 @@ scripts/ci/check-ac-coverage.sh && scripts/ci/check-features-map.sh && scripts/c
 | 4 Map      | (in step 3 or own commit)             | `F6 ✗ → ✅`, `§6 ✅`                                                                                         | `docs(map): F6 edit title [B1.2]`           |
 | 5 Review   | `reviewer` (diff), `/review-loop`     | `review.md`, gate cleared                                                                                    | —                                           |
 
-Plan approved by: · Rounds: 1
+Plan approved by: minh.ho2 (session reply "approve"), 2026-10-28 · Rounds: 1
