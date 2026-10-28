@@ -7,7 +7,9 @@
   // a worktree's .git is a file pointing at ../../.git, which would be outside the mount.
   "workspaceFolder": "/workspace",
   "shutdownAction": "stopCompose",
-  "remoteUser": "node",
+  // root inside the container: corepack and `playwright install --with-deps` write to /usr/local and apt. The
+  // container holds no credentials (local compose Postgres only), so this is the pragmatic choice for a lab.
+  "remoteUser": "root",
   "features": {
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {},

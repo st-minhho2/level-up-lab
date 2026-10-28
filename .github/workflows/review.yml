@@ -12,7 +12,8 @@ concurrency:
 
 jobs:
   claude-review:
-    if: ${{ !github.event.pull_request.draft }}
+    # Same-repository PRs only: on a public repo a fork PR gets no secrets and its body/diff is untrusted input.
+    if: ${{ !github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     permissions:
       contents: read # never write: the reviewer cannot push, edit or approve

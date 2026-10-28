@@ -29,6 +29,18 @@ on the PR), dependencies.
 
 `git merge main` inside the worktree (the commit-msg hook accepts `Merge …`). Never rebase a pushed branch.
 
+## Hotfix lane
+
+For a production incident only, and never as a silent bypass:
+
+1. Branch `hotfix/<card or incident id>` from `main`, PR labelled `hotfix` (a maintainer adds the label).
+2. Minimal gate: `lint`, `typecheck`, `test` (unit + component) and **one human review**. `e2e`, `mutation`, `semgrep`
+   and `guards` are skipped by the label (`ci.yml`); the ruleset still requires the review.
+3. Squash-merge, deploy.
+4. Within **one working day** a follow-up PR without the label restores the full gate: regression test as a
+   `test(<pkg>): <card> … (red)` commit, section update if behavior changed, mutation back above 70 %. The follow-up
+   links the hotfix PR, and a row in `docs/mistake-log.md` names what let the bug through.
+
 ## Headless lane (documented, not wired)
 
 `claude --agent dev-lead --print "/work-next"` runs one card to the human gate and stops; the same hooks apply.

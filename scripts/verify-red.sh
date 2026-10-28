@@ -10,8 +10,9 @@
 #   3. check out the parent of the FIRST test commit into a scratch worktree (that is "the base": the code as it
 #      was before the red tests landed, skeleton included, so imports resolve and failures are about behavior)
 #   4. copy the test files from the LAST test commit on top, run vitest with the JSON reporter
-#   5. PASS only if: every file loaded (no import/compile error), at least one test ran, zero tests passed, and no
-#      failure message looks like an import, syntax or transform error.
+#   5. PASS only if: every file loaded (no import/compile error), at least one NEW test ran, zero NEW tests passed
+#      (a test is new when its title is absent from the base's copy of the file), and no failure message looks like
+#      an import, syntax or transform error. Pre-existing tests in an extended file may pass.
 # Exit 0 = correctly red. Exit 1 = green, wrong reason, or nothing to verify for an explicit id.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
@@ -94,25 +95,38 @@ verify_feat() {
     echo "::error::vitest produced no report (config or install problem)"
     verdict=1
   else
-    node - "$report" "$IMPORT_ERROR" "$scratch" <<'NODE' || verdict=1
-const [reportPath, pattern, scratchArg] = process.argv.slice(2);
+    node - "$report" "$IMPORT_ERROR" "$scratch" "$base" "$ROOT" <<'NODE' || verdict=1
+const [reportPath, pattern, scratchArg, baseSha, repoRoot] = process.argv.slice(2);
 const report = require(reportPath);
 const scratch = require('fs').realpathSync(scratchArg);
+const { execFileSync } = require('child_process');
+// titles the base already had in this file: a passing one of those is not "green before implementation"
+function baseTitles(rel) {
+  let src = '';
+  try { src = execFileSync('git', ['-C', repoRoot, 'show', `${baseSha}:${rel}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }); } catch { return new Set(); }
+  const titles = new Set();
+  const re = /\b(?:it|test)(?:\.each\([^)]*\))?\(\s*(['"`])((?:\\.|(?!\1).)*)\1/g;
+  let m; while ((m = re.exec(src))) titles.add(m[2]);
+  return titles;
+}
 const bad = new RegExp(pattern);
 const problems = [];
 for (const file of report.testResults ?? []) {
   const rel = require('path').relative(scratch, file.name);
   const ran = file.assertionResults ?? [];
-  const passed = ran.filter((t) => t.status === 'passed');
-  const failed = ran.filter((t) => t.status === 'failed');
+  const old = baseTitles(rel);
+  const isNew = (t) => ![...old].some((title) => t.title === title || t.title.startsWith(title.replace(/%[sdifjo]/g, '')));
+  const fresh = ran.filter(isNew);
+  const passed = fresh.filter((t) => t.status === 'passed');
+  const failed = fresh.filter((t) => t.status === 'failed');
   const suiteMsg = file.message ?? '';
   const loadFailure = ran.length === 0 || bad.test(suiteMsg);
   const wrongReason = failed.filter((t) => (t.failureMessages ?? []).some((m) => bad.test(m)));
-  const line = `  ${rel}: ${ran.length} ran, ${failed.length} failed, ${passed.length} passed`;
+  const line = `  ${rel}: ${ran.length} ran (${fresh.length} new), ${failed.length} new failed, ${passed.length} new passed`;
   if (loadFailure) problems.push(`${line}  -> did not load: ${suiteMsg.split('\n')[0] || 'no tests collected'}`);
   else if (wrongReason.length) problems.push(`${line}  -> import/compile failure in: ${wrongReason.map((t) => t.title).join(', ')}`);
   else if (passed.length) problems.push(`${line}  -> GREEN before implementation: ${passed.map((t) => t.title).join(', ')}`);
-  else if (failed.length === 0) problems.push(`${line}  -> nothing executed (todo/skip only)`);
+  else if (failed.length === 0) problems.push(`${line}  -> no new test executed (todo/skip only, or every test already existed at the base)`);
   else console.log(`${line}  OK (red on behavior)`);
 }
 if ((report.numTotalTests ?? 0) === 0) problems.push('  no test executed at all');
