@@ -26,6 +26,7 @@ const eslintConfig = [
       'storage/**',
       'playwright-report/**',
       'test-results/**',
+      '.pnpm-store/**',
       'next-env.d.ts',
     ],
   },
