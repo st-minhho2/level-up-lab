@@ -31,4 +31,4 @@ _F7 (new) · § to be written_
 - **Test:** — (written with the section)
 - **Acceptance:** to be defined (≤ 7)
 - **Tier:** quick · **Depends on:** ~~B1.1~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Open:** hide or disable the button when nothing is completed? (needs a D-n)
+- **Ruled:** D-10 — button always rendered, disabled while nothing is completed.
