@@ -57,3 +57,13 @@ _F8 · §10_
 - **Acceptance:** AC-10.4 … AC-10.5
 - **Tier:** full · **Depends on:** ~~B1.4~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.5/` — analysis, advice, plan (rounds 2/2: A dropped the native POST), review (plan rounds 2, diff passes 3/3, 2 findings fixed); squash `e7b3390` (#13)
+
+### B1.6 · Log swallowed mutation failures
+
+_F9 (new) · § to be written_
+**Status: Open** — the four `catch` arms in `src/actions/todos.ts` (lines 30, 45, 64, 80) resolve `failure('form', MUTATION_FAILED_MESSAGE)` and drop the cause: nothing in `src/` logs (`grep -rn 'console\.' src` outside tests is empty; `eslint.config.mjs:48` sets `no-console: error`). D-11 defers logging "until a logger card lands".
+
+- **Spec:** change: new section "Logging failures" (a swallowed mutation failure is recorded server-side with enough context to diagnose it; the person still sees only `Could not save, try again`)
+- **Test:** — (written with the section)
+- **Depends on:** ~~B1.5~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.6/` (analysis.md, advice.md, plan.md, review.md as the roles produce them)
