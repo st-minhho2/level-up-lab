@@ -72,3 +72,112 @@ Notes (none blocking; for the test-writer, the code-writer and the diff review):
    not scope, so it is not a split.
 
 Rounds: 1
+
+## Diff review (round 1)
+
+SCOPE: all
+
+Reviewed: `4ec8c23..0c8db17` (red `025938b` → green `0c8db17`, no skeleton) against §10, §9 (edited clause), §5,
+§6, D-11, `plan.md` (approved 2026-10-29), `analysis.md`, every changed file in full, `page.tsx`, `todo-form.tsx`,
+the three e2e files' locators. Run in this worktree on 2026-10-29 (database: the root compose project already
+serving 5433; `pnpm db:deploy` → "No pending migrations to apply"). Probes on a copy under the scratchpad
+(`rsync` without `node_modules`, symlinked), restored and diffed back to identical after each.
+
+### Command results (last line of each)
+
+| Command                             | Last line                                                                                                          |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `pnpm lint`                         | `All matched files use Prettier code style!`                                                                       |
+| `pnpm typecheck`                    | `tsc --noEmit` (no output, exit 0)                                                                                 |
+| `pnpm test`                         | `Tests  67 passed (67)` (10 files)                                                                                 |
+| `pnpm test:e2e`                     | `12 passed (12.6s)`                                                                                                |
+| `pnpm test:mutation`                | `All files 82.80` (actions/todos.ts 88.00, lib/action-result.ts 75.00, lib/todos.ts 76.47); `≥ break threshold 70` |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                                          |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                                  |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                                 |
+| `scripts/ci/check-ac-coverage.sh`   | `OK` (`§10: ✗, no tests expected yet (3 criteria)`; see checklist row 3)                                           |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 2 3 4 5 6 7 8 9 10`                                                                         |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                                               |
+| `scripts/ci/check-backlog.sh`       | `OK: README matches the cards`                                                                                     |
+| `scripts/verify-red.sh B1.4`        | `RESULT: red for the right reason` (actions 3 new / 3 failed, button 1 / 1, todo-item 2 / 2, 0 new passed)         |
+| `git diff --stat main...HEAD`       | `19 files changed, 475 insertions(+), 76 deletions(-)`                                                             |
+
+### Checklist
+
+| Check                                                | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-§.n has a test whose assertion matches Then | pass: AC-10.1 ×3 (`todos.test.ts:88`, `:160`, `:197`: `.resolves.toEqual` the exact object, lib called 1, `revalidatePath` 0; the `TodoNotFoundError` half of the Then is pinned by `:79` AC-5.5 and `:151`); AC-10.2 (a)+(c) `todo-item.test.tsx:132`, (b)+(c) `:152` (`within(row)` count 1 / 0, exact `textContent`, checkbox unchecked, textbox value `Walk the cat`); AC-10.3 `clear-completed-button.test.tsx:81` (count 1 / 0, same `parentElement`, `nextElementSibling`, enabled). |
+| no test weakened after the red commit                | pass: `git diff 025938b..HEAD -- '*.test.*' e2e/` is empty. The two "rethrows …" rewrites sit in the red commit under D-11 (plan review, above).                                                                                                                                                                                                                                                                                                                                            |
+| every changed file is in `plan.md`                   | pass with one omission: the seven files of `0c8db17` are all listed. The plan's `spec/technical-requirements.md` "§10 ✗ → ✅ (green commit)" was not done (index still ✗, map F8 ✅). `backlog/CLAUDE.md` "Closing a card" step 3 places that flip in the closing commit and the plan review (note 3) said so; probe: flipping it on the copy → `check-ac-coverage.sh` prints `§10 criteria=3 covered=3`, OK. For the closing commit, not a blocker.                                        |
+| interfaces match the section's contracts             | pass: `MUTATION_FAILED_MESSAGE = 'Could not save, try again' as const` (`action-result.ts:9`); three action signatures unchanged; `ClearCompletedButton({ disabled }: { readonly disabled: boolean }): ReactNode`; `TodoItem({ todo })`; `'Could not update the todo'` removed (0 hits in `src/`).                                                                                                                                                                                          |
+| Zod at every action boundary                         | pass: toggle/edit parse before the try; clear has no input (§9).                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Prisma only in `src/lib`; no raw SQL                 | pass: `src/lib/todos.ts`, `prisma/` untouched.                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| migration reversible and indexed                     | n/a (none).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| no secret, no suppression, no `console`              | pass: `grep -rn 'console\.\|error\.tsx\|onError\|reportError\|instrumentation' src` (non-test) → 0 hits; check-suppressions OK.                                                                                                                                                                                                                                                                                                                                                             |
+| features map row moved                               | pass: F8 §10 ✅ with the four files and three tests of §10's contracts block; `check-features-map.sh` OK.                                                                                                                                                                                                                                                                                                                                                                                   |
+| would any test fail if one line were reverted?       | pass, 11 probes, 11 kills (table below).                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+
+Probes (copy; one edit each; the test that fails):
+
+| P   | Edit                                                                   | Fails                                                                          |
+| --- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| 1   | button: success no longer clears `error`                               | AC-10.3 `expected … length of +0 but got 1`                                    |
+| 2   | button: `<p>` rendered before the button                               | AC-10.3 `expected null to be <p role="alert">` (`nextElementSibling`)          |
+| 3   | button: `<p>` wrapped in a `<span>`                                    | AC-10.3 `parentElement` mismatch                                               |
+| 4   | row: toggle drops `?? fieldErrors.form?.[0]`                           | AC-10.2 (a) `expected [] to have a length of 1`                                |
+| 5   | row: Save drops `?? fieldErrors.form?.[0]`                             | AC-10.2 (b) same                                                               |
+| 6   | row: Save success drops `setError(undefined)`                          | AC-10.2 (b)/(c) `length of +0 but got 1`                                       |
+| 7   | actions: `instanceof TodoNotFoundError` arm removed in toggle and edit | AC-5.5 (`:79`) and `:151` both fail → the id arm is pinned (author's point 4)  |
+| 8   | actions: toggle's `form` arm collapsed into `failure('id', …)`         | AC-10.1 toggle                                                                 |
+| 9   | actions: clear calls `revalidatePath` before the lib call              | AC-10.1 clear `expected … +0 times, but got 1`                                 |
+| 10  | actions: clear rethrows (catch removed)                                | AC-10.1 clear `promise rejected "Error: db down" instead of resolving`         |
+| 11  | constant text `'Could not save. Try again'`                            | 3 AC-10.1 tests fail (the literal in the tests is the contract, not the const) |
+
+Stryker on the card's lines (`todos.ts` 36–47, 55–65, 71–77): 0 survivors. The three `todos.ts` survivors are
+`22:54`, `22:96` (createTodoAction, B1.5) and `38:20` (the `'/'` argument of toggle's `revalidatePath`), exactly the
+lines plan-review note 4 predicted; `action-result.ts:18` (`|| 'form'` in `fieldErrorsOf`) predates this card.
+
+Author's uncertainties: (1) nothing in `src/` observes a thrown action error (no `error.tsx`, no logger, no
+instrumentation; the grep above), so swallowing changes what no code reads: D-11 accepted. (2) `createTodoAction`
+(`todos.ts:17–29`) and `todo-form.tsx` are byte-identical to `4ec8c23`; `src/actions/CLAUDE.md` states the B1.5
+carve-out. (3) e2e 12/12 with the wrapper: `getByRole('button', { name: 'Clear completed' })` (AC-9.2 ×2, AC-9.3),
+`getByRole('listitem')` row text (AC-5.1, AC-6.3, AC-9.3) and `getByText('No todos yet')` (AC-5.7, AC-9.2) all pass;
+the `<div>` is outside the `<ul>` and `self-start` moved from the button to the wrapper, so `main`'s column layout
+sees one block as before. (4) yes: probe 7.
+
+### Findings
+
+None blocking.
+
+Notes for the closing commit (dev-lead, none a code change):
+
+1. `spec/technical-requirements.md` §10 ✗ → ✅ (plan said green commit; `backlog/CLAUDE.md` says closing commit;
+   probe-confirmed to pass `check-ac-coverage.sh` 3/3).
+2. `backlog/plan/E1-todos.md` B1.4 `Test:` line quotes `AC-10.1: toggleTodoAction resolves fieldErrors.form […] when
+the lib rejects and does not revalidate`; the committed title is `AC-10.1: resolves fieldErrors.form ["Could not
+save, try again"] when the lib rejects with another error and does not revalidate` (`todos.test.ts:88`). The
+   status line will replace it anyway.
+3. `docs/metrics.md` row B1.4 `82.80 (actions 88.0, lib 80.3)` matches this run (`All files 82.80`, `todos.ts
+88.00`); lib 80.3 is the aggregate of `action-result.ts` 75.00 and `todos.ts` 76.47 with `env.ts`,
+   `todo-schema.ts`, `health.ts` [unverified: aggregate not printed per folder].
+
+Verdict: ready for PR
+
+Riskiest unfalsified: no test exercises a real failure end to end. The path "Prisma rejects inside the Server
+Action → Next serialises `{ ok: false, fieldErrors: { form: […] } }` over the wire → the transition resolves and the
+alert renders beside the control" is proven only with a mocked lib (AC-10.1) and a mocked action (AC-10.2/10.3)
+in jsdom; §10 rules an e2e fault injection out of scope, so the seam between those two mocks is untested.
+
+Rounds: 1
+
+## Dispositions (dev-lead, pass 1 of 3)
+
+| Pass | #   | Finding (file:line)                                                         | Source                          | Kind     | Disposition              | Justification                                                                                                                                                   |
+| ---- | --- | --------------------------------------------------------------------------- | ------------------------------- | -------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | —   | real failure path never exercised end to end (Prisma reject → wire → alert) | reviewer (riskiest unfalsified) | coverage | out of scope             | §10 rules e2e fault injection out of scope; the seam is the same `ActionResult` serialisation §5/§6 already rely on; revisit if a fault-injection harness lands |
+| 1    | —   | `spec/technical-requirements.md` §10 still ✗ while F8 is ✅                 | reviewer note                   | docs     | fix now (closing commit) | per `backlog/CLAUDE.md`; probe-confirmed `check-ac-coverage` 3/3 after the flip                                                                                 |
+| 1    | —   | card `Test:` line title differs from the committed title                    | reviewer note                   | docs     | fix now                  | fixed in this commit                                                                                                                                            |
+| 1    | —   | `fieldErrorsOf`'s `\|\| 'form'` fallback survivor (pre-existing)            | code-writer                     | coverage | out of scope             | not a §10 line; candidate for a hardening test when action-result is next touched                                                                               |
+
+Re-verify: `pnpm test` 67 passed · `pnpm test:e2e` 12 passed · `pnpm test:mutation` 82.80 % · lint, typecheck green.
+Passes used: 1/3. Gate cleared with `mark-reviewed.sh`.
