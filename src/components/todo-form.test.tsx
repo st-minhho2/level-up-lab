@@ -1,10 +1,28 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TodoForm } from './todo-form';
 
 const actions = vi.hoisted(() => ({ createTodoAction: vi.fn(), toggleTodoAction: vi.fn() }));
 vi.mock('@/actions/todos', () => actions);
+
+function todo(overrides: Partial<{ id: string; title: string; completed: boolean }> = {}) {
+  return {
+    id: `todo-${crypto.randomUUID()}`,
+    title: 'Buy milk',
+    completed: false,
+    createdAt: new Date(),
+    ...overrides,
+  };
+}
+
+function formOf(element: HTMLElement): HTMLFormElement {
+  const form = element.closest('form');
+  if (form === null) {
+    throw new Error('expected the element to sit inside a <form>');
+  }
+  return form;
+}
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -44,5 +62,32 @@ describe('<TodoForm>', () => {
     const formData = actions.createTodoAction.mock.calls[0]?.[1] as FormData;
     expect(formData.get('title')).toBe('Buy milk');
     expect(await screen.findByRole('textbox', { name: 'New todo' })).toHaveValue('');
+  });
+
+  it('AC-10.5: shows 1 alert "Could not save, try again" in the form, keeps "Buy milk" in the box and "Add" enabled after a failed save, then shows 0 alerts and an empty box after the next save succeeds', async () => {
+    actions.createTodoAction
+      .mockResolvedValueOnce({ ok: false, fieldErrors: { form: ['Could not save, try again'] } })
+      .mockResolvedValueOnce({ ok: true, data: todo({ title: 'Buy milk' }) });
+    const user = userEvent.setup();
+    render(<TodoForm />);
+    const textbox = screen.getByRole('textbox', { name: 'New todo' });
+    const button = screen.getByRole('button', { name: 'Add' });
+    const form = formOf(textbox);
+
+    await user.type(textbox, 'Buy milk');
+    await user.click(button);
+
+    const alerts = await within(form).findAllByRole('alert');
+    expect(alerts.map((alert) => alert.textContent)).toEqual(['Could not save, try again']);
+    expect(textbox).toHaveValue('Buy milk');
+    expect(button).toBeEnabled();
+
+    await user.click(button);
+
+    await waitFor(() => {
+      expect(within(form).queryAllByRole('alert')).toHaveLength(0);
+    });
+    expect(textbox).toHaveValue('');
+    expect(actions.createTodoAction).toHaveBeenCalledTimes(2);
   });
 });
