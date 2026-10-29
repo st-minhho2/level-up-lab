@@ -150,3 +150,108 @@ Received: 0
 ```
 
 Result: `1 failed` at the alert `toHaveCount(1)` (received 0), and the trigger fired in the server's schema (`P0001 "e2e: insert rejected"`): red for the missing behavior, not a misplaced fault. At HEAD the same file passes (`13 passed`).
+
+## Diff review (round 1)
+
+Reviewed at HEAD `f635dba` against `origin/main` `5387591` (merge base `077ce60`; local `main` is stale). Diff:
+`8 files changed, 464 insertions(+), 15 deletions(-)`, of which code: `e2e/10-mutation-feedback.spec.ts` (new, 74
+lines); the rest is `backlog/` and `spec/features-map.md`. No `src/`, `prisma/`, config or dependency change. Read:
+`plan.md`, §10 (REQ-10.5, REQ-10.6, AC-10.5), D-13, D-16, `playwright.config.ts`, `e2e/CLAUDE.md`, the other e2e
+files' `beforeEach`, `src/components/todo-form.tsx`, `createTodoAction`, `.github/workflows/ci.yml` (e2e job).
+
+### Commands (run by the reviewer in the worktree; last line of each)
+
+| Command                                     | Result                                                                                                                                         |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                 | `All matched files use Prettier code style!`                                                                                                   |
+| `pnpm typecheck`                            | `tsc --noEmit`, exit 0                                                                                                                         |
+| `pnpm test`                                 | `Tests  100 passed (100)` (12 files; unchanged, no `src/` change)                                                                              |
+| `pnpm test:e2e`                             | `13 passed (12.4s)`; the run printed `[WebServer] {"level":"error",…"action":"createTodoAction",…"P0001",…"e2e: insert rejected"…}` (§11 line) |
+| `pnpm test:mutation`                        | skipped: no `src/lib` or `src/actions` change, and Stryker never runs `e2e/` (D-16)                                                            |
+| `scripts/ci/check-suppressions.sh`          | `OK: no new suppressions`                                                                                                                      |
+| `scripts/ci/check-config-change.sh`         | `OK: no protected config changed`                                                                                                              |
+| `scripts/ci/check-feat-commits.sh`          | `OK: no feat commit touches tests`                                                                                                             |
+| `scripts/ci/check-ac-coverage.sh`           | `OK: every criterion of a shipped section has a test`                                                                                          |
+| `scripts/ci/check-spec-sections.sh`         | `OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11`                                                                                                  |
+| `scripts/ci/check-features-map.sh`          | `OK`                                                                                                                                           |
+| `scripts/verify-red.sh --auto`              | `no test(...): B<e>.<n> … (red) commit in range; nothing to verify` (expected: D-13/D-16 shape)                                                |
+| `git diff ef5725a..HEAD -- e2e/ '*.test.*'` | empty (0 lines): no test changed after the test commit                                                                                         |
+| semgrep (`ci.yml:113`)                      | [unverified]: not installed locally; the four statements are tagged templates without `${}`                                                    |
+
+### Probes (copy `$TMPDIR/b110-diff-probe` from `git archive HEAD`, no `.env`; throwaway schema `b110_diff_probe`, ports 3979/3980; schema dropped afterwards, `pg_trigger` holds no `e2e_reject_todo_insert` anywhere after the review)
+
+| Probe                                                                                                    | Result                                                                                                                                                                       |
+| -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Flake, dev server: file 10 `--repeat-each=15`                                                            | `15 passed (22.1s)`                                                                                                                                                          |
+| Flake, CI path (`CI=true`, `NODE_ENV=test`, `pnpm build && pnpm start`), `--repeat-each=10 --retries=0`  | `10 passed (19.9s)`                                                                                                                                                          |
+| M1: `todo-form.tsx` `kept` always `''` (box not kept after a failure)                                    | `1 failed` at line 61 `toHaveValue('Buy milk')`: `Received: ""`                                                                                                              |
+| M2: Add `disabled={pending \|\| error !== undefined}`                                                    | `1 failed` at line 62 `toBeEnabled()`: `Received: disabled`                                                                                                                  |
+| M3: the `role="alert"` `<p>` rendered after `</form>` (inside a fragment)                                | `1 failed` at line 59 `toHaveCount(1)`: `Received: 0`, so the scoped locator enforces AC-10.5's "inside the `<form>`"                                                        |
+| Leftover trigger (state a killed worker leaves: trigger installed, no drop), then full `playwright test` | `9 failed, 4 passed`: every 05/06/09 test that inserts (seed or UI) fails; file 10's `beforeEach` drops it, and the next full run is `13 passed`                             |
+| Leftover trigger, then `playwright test e2e/05-todos.spec.ts` twice                                      | `2 failed, 1 passed` both times: a targeted run never reaches file 10, so it never heals                                                                                     |
+| SIGINT to the runner while the trigger is installed                                                      | inconclusive: trigger count 0 after exit, but the poll may have hit after line 66's drop; the orphaned `next dev` it left on the port hung the next reused run (probe-local) |
+
+### Checklist
+
+| Check                                                                | Result                                                                                                                                                                                                              |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-§.n has a test whose assertion matches its Then             | pass: AC-10.5 first click → 1 alert in the form, exact text, box `Buy milk`, Add enabled (M1–M3 each fail it); second click → 0 alerts, box `''`. REQ-10.6 "list no new todo" → list text + `count() === 1`         |
+| no test weakened after the red commit                                | pass: `git diff ef5725a..HEAD -- e2e/ '*.test.*'` empty; red evidence (D-16 A) recorded with the `[WebServer] P0001` discriminator the plan required                                                                |
+| every changed file is in `plan.md`                                   | pass: e2e file, `features-map.md` F8, `00-decisions.md` D-16, README; `plan/E1-todos.md` card and `work/B1.10/*` predate the plan or are role artifacts                                                             |
+| interfaces match the section's contracts                             | pass: no `src/` interface; the four `$executeRaw` statements are verbatim the plan's "Interfaces touched"                                                                                                           |
+| Zod at every action boundary · Prisma only in `src/lib` · no raw SQL | pass\* by D-16: parameterless DDL in `e2e/` through the file's own `PrismaClient`, `e2e_` names, no interpolation, no other raw SQL; the `review.yml` bot's "raw SQL outside src/lib" line is dispositioned by D-16 |
+| migration reversible and indexed                                     | n/a (no migration)                                                                                                                                                                                                  |
+| no secret, no suppression, no `skip`/`only`/`fixme`                  | pass                                                                                                                                                                                                                |
+| features map row moved                                               | pass: F8 tests column ends with `e2e/10-mutation-feedback.spec.ts`; `check-features-map.sh` OK                                                                                                                      |
+| would any test fail if one changed line were reverted?               | pass: no `src/` line changed; reverting the shipped behavior (M1–M3, and `9327a03` in the red evidence) fails this test at the asserting line                                                                       |
+| e2e conventions (`e2e/CLAUDE.md`)                                    | pass: `beforeEach` resets rows, explicit `createdAt`, AC id first in the title, `workers: 1` / `fullyParallel: false` so the trigger never overlaps another file                                                    |
+
+### dev-lead's three questions
+
+1. **Killed run leaves the trigger behind**: yes, see finding [1]. The consequence is confirmed; the kill itself was
+   not reproduced. CI is unaffected (fresh `postgres` service per job, `retries: 1` re-runs `beforeEach`).
+2. **`filter({ has: New todo box })` and "inside the `<form>`"**: it satisfies it. M3 (alert moved outside the form)
+   fails at `toHaveCount(1)` with `Received: 0`. The second phase's `toHaveCount(0)` would pass vacuously if the
+   form vanished, but line 70 (`toHaveValue('')` on the box) then fails, so no vacuous pass survives.
+3. **Timing between the alert and the row count**: no race found. `prisma.todo.count()` (line 64) runs after the
+   alert is visible, so `createTodoAction` has returned and the rejected `INSERT` is final; line 72 runs after the
+   list shows `Buy milk`, so the row is committed. 25 repeated runs (dev 15, production build 10) and 3 full suites
+   were green.
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: e2e/10-mutation-feedback.spec.ts:14-27 (cleanup only in this file's beforeEach/afterEach)
+    DEFECT: a run whose worker dies after line 54 and before afterEach leaves e2e_reject_todo_insert on `todos` in the
+            worktree schema, and only this file ever drops it.
+    TRIGGER: trigger installed with no drop (the state a SIGKILL / crashed worker / closed laptop leaves), then
+             `pnpm test:e2e` → `9 failed, 4 passed` (every 05/06/09 test that inserts); or
+             `pnpm exec playwright test e2e/05-todos.spec.ts` → `2 failed, 1 passed` on every run until someone runs
+             file 10 or drops the trigger by hand.
+    WRONG BEHAVIOUR: unrelated §5/§6/§9 tests fail locally with a PrismaClientUnknownRequestError; the comment at
+             lines 14-15 implies IF EXISTS prevents "break every create in this schema", but it only heals once file
+             10 runs again. No §-behaviour is wrong, CI is unaffected, and the full run self-heals.
+    CONFIDENCE: confirmed for the consequence (state simulated, suite run); plausible for the kill path (SIGINT probe
+             inconclusive)
+```
+
+Non-blocking: a fix in the other e2e files is outside the plan's Files list, and a Playwright `globalSetup` is a
+config change that needs approval. Disposition options for dev-lead: out of scope (follow-up card, or a line in the
+PR body), or a `test(todos): B1.10 review pass 1 -- …` commit that reworded only the lines 14-15 comment to say
+what the drop really does ("until this file runs again").
+
+Verdict: ready for PR (finding [1] needs a disposition; it does not block)
+
+Riskiest unfalsified: a fill and click before hydration (a slow CI runner) would submit the native form. That skips
+`onSubmit`, leaves `draft` `''`, and would fail line 61 spuriously. The test shares this with 05's AC-5.6. 25
+repeated runs and 3 full suites never hit it.
+
+### Dispositions (dev-lead, pass 1 of 3)
+
+| Pass | #   | Finding (file:line)                                                                                                              | Source                          | Kind        | Disposition      | Justification                                                                                                                                                                                                                                                                         |
+| ---- | --- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ----------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | 1   | a run killed between install and drop leaves `e2e_reject_todo_insert` in the worktree schema; a targeted 05/06/09 run then fails | reviewer                        | correctness | out of scope     | accepted at the plan (analysis Q5): local-only (CI starts a fresh database), a full run heals it through file 10's `beforeEach`; recovery = the two `DROP … IF EXISTS` lines, named in the PR body; a cross-file cleanup needs `globalSetup` (config) or edits outside the Files list |
+| 1    | —   | a click before hydration sends the native POST, `draft` stays `''`, line 61 fails                                                | reviewer (riskiest unfalsified) | flake       | out of scope     | same exposure as `e2e/05-todos.spec.ts` AC-5.6; 25 repeated runs and 3 full suites (dev and `build && start`) never hit it                                                                                                                                                            |
+| 1    | —   | `filter({ has: New todo box })` vs "inside the `<form>`"                                                                         | dev-lead (unsure)               | spec        | no change needed | reviewer probe: the alert-outside-the-form mutation fails line 59 (`Received: 0`); a vanished form is caught by line 70                                                                                                                                                               |
+| 1    | —   | timing between the alert and the row counts                                                                                      | dev-lead (unsure)               | flake       | no change needed | both counts run after a visible-state assertion that implies the action returned (line 64) or the row committed (line 72)                                                                                                                                                             |
