@@ -24,11 +24,22 @@ _F6 · §6_
 
 ### B1.3 · Clear completed todos
 
-_F7 (new) · § to be written_
-**Status: Open** — no section, no code.
+_F7 (new) · §9_
+**Status: Open** — §9 written (`spec/contracts/07-clear-completed.md`), no code: `clearCompletedTodos` and `clearCompletedTodosAction` are not in `src/` (grep).
 
-- **Spec:** change: new section "Clear completed" (one action removes every `completed: true` row; open rows keep their order)
-- **Test:** — (written with the section)
-- **Acceptance:** to be defined (≤ 7)
+- **Spec:** §9 — unchanged (section written from `work/B1.3/analysis.md`)
+- **Test:** `src/actions/todos.test.ts::AC-9.1: deletes every completed todo, returns the count and revalidates / once` — red because: `clearCompletedTodosAction` is not exported from `src/actions/todos.ts`
+- **Acceptance:** AC-9.1 … AC-9.3
 - **Tier:** quick · **Depends on:** ~~B1.1~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Open:** hide or disable the button when nothing is completed? (needs a D-n)
+- **Work:** `work/B1.3/` (analysis.md)
+- **Ruled:** D-10 — button always rendered, disabled while nothing is completed.
+
+### B1.4 · Feedback when a mutation fails
+
+_F8 (new) · § to be written_
+**Status: Open** — `TodoItem.onToggle`, the edit Save and `ClearCompletedButton` ignore a rejected action promise; a database failure mid-click reaches Next's error boundary with no message (found by the B1.3 diff review).
+
+- **Spec:** change: new section "Mutation failure feedback" (a failed action shows a message next to the control and leaves the list unchanged)
+- **Test:** — (written with the section)
+- **Acceptance:** to be defined (≤ 3)
+- **Tier:** quick · **Depends on:** ~~B1.1~~ ~~B1.2~~ ~~B1.3~~ · **Owner:** Lead · **Size:** S [estimate]

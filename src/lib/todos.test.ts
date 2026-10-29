@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createTodo, listTodos, TodoNotFoundError, toggleTodo, updateTodoTitle } from './todos';
+import { clearCompletedTodos, createTodo, listTodos, TodoNotFoundError, toggleTodo, updateTodoTitle } from './todos';
 
 const db = vi.hoisted(() => ({
   findMany: vi.fn(),
   create: vi.fn(),
   findUnique: vi.fn(),
   update: vi.fn(),
+  deleteMany: vi.fn(),
 }));
 
 vi.mock('@/lib/prisma', () => ({ prisma: { todo: db } }));
@@ -144,5 +145,28 @@ describe('updateTodoTitle (§6)', () => {
     await expect(updateTodoTitle('missing', 'Buy milk')).rejects.toBeInstanceOf(TodoNotFoundError);
     await expect(updateTodoTitle('missing', 'Buy milk')).rejects.toMatchObject({ id: 'missing' });
     expect(db.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('clearCompletedTodos (§9)', () => {
+  it('AC-9.1: deletes exactly the completed rows and returns the count', async () => {
+    db.deleteMany.mockResolvedValue({ count: 2 });
+
+    const deleted = await clearCompletedTodos();
+
+    expect(deleted).toBe(2);
+    expect(db.deleteMany).toHaveBeenCalledTimes(1);
+    expect(db.deleteMany).toHaveBeenCalledWith({ where: { completed: true } });
+  });
+
+  // REQ-9.7: nothing completed → nothing deleted, the delete is still scoped to completed rows.
+  it('AC-9.1: returns 0 and still issues one deleteMany when nothing is completed', async () => {
+    db.deleteMany.mockResolvedValue({ count: 0 });
+
+    const deleted = await clearCompletedTodos();
+
+    expect(deleted).toBe(0);
+    expect(db.deleteMany).toHaveBeenCalledTimes(1);
+    expect(db.deleteMany).toHaveBeenCalledWith({ where: { completed: true } });
   });
 });

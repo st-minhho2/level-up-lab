@@ -1,10 +1,17 @@
 'use server';
 
-// §5, §6: Server Actions for the todo list.
+// §5, §6, §9: Server Actions for the todo list.
 import { revalidatePath } from 'next/cache';
 import { failure, fieldErrorsOf, type ActionResult } from '@/lib/action-result';
 import { createTodoSchema, toggleTodoSchema, updateTodoTitleSchema } from '@/lib/todo-schema';
-import { createTodo, TodoNotFoundError, toggleTodo, updateTodoTitle, type Todo } from '@/lib/todos';
+import {
+  clearCompletedTodos,
+  createTodo,
+  TodoNotFoundError,
+  toggleTodo,
+  updateTodoTitle,
+  type Todo,
+} from '@/lib/todos';
 
 // Signature fits React's useActionState: (previousState, formData) => newState.
 export async function createTodoAction(
@@ -54,4 +61,12 @@ export async function updateTodoTitleAction(id: string, title: string): Promise<
     }
     throw error;
   }
+}
+
+// §9 clear completed: no input to parse, so there is no Zod step and no failure arm; `/` is revalidated even when
+// nothing was deleted (REQ-9.3, REQ-9.7).
+export async function clearCompletedTodosAction(): Promise<ActionResult<{ deleted: number }>> {
+  const deleted = await clearCompletedTodos();
+  revalidatePath('/');
+  return { ok: true, data: { deleted } };
 }

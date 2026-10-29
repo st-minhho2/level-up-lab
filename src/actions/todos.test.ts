@@ -1,8 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TodoNotFoundError } from '@/lib/todos';
-import { createTodoAction, toggleTodoAction, updateTodoTitleAction } from './todos';
+import { clearCompletedTodosAction, createTodoAction, toggleTodoAction, updateTodoTitleAction } from './todos';
 
-const lib = vi.hoisted(() => ({ createTodo: vi.fn(), toggleTodo: vi.fn(), updateTodoTitle: vi.fn() }));
+const lib = vi.hoisted(() => ({
+  createTodo: vi.fn(),
+  toggleTodo: vi.fn(),
+  updateTodoTitle: vi.fn(),
+  clearCompletedTodos: vi.fn(),
+}));
 const cache = vi.hoisted(() => ({ revalidatePath: vi.fn() }));
 
 vi.mock('@/lib/todos', async (importOriginal) => ({
@@ -10,6 +15,7 @@ vi.mock('@/lib/todos', async (importOriginal) => ({
   createTodo: lib.createTodo,
   toggleTodo: lib.toggleTodo,
   updateTodoTitle: lib.updateTodoTitle,
+  clearCompletedTodos: lib.clearCompletedTodos,
 }));
 vi.mock('next/cache', () => ({ revalidatePath: cache.revalidatePath }));
 // importOriginal above loads the real lib module, whose Prisma import pulls `server-only` (throws under Vitest).
@@ -153,5 +159,30 @@ describe('updateTodoTitleAction (§6)', () => {
     await expect(updateTodoTitleAction('todo-1', 'Buy milk')).rejects.toThrow('db down');
 
     expect(cache.revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe('clearCompletedTodosAction (§9)', () => {
+  it('AC-9.1: deletes every completed todo, returns the count and revalidates / once', async () => {
+    lib.clearCompletedTodos.mockResolvedValue(2);
+
+    const result = await clearCompletedTodosAction();
+
+    expect(result).toEqual({ ok: true, data: { deleted: 2 } });
+    expect(lib.clearCompletedTodos).toHaveBeenCalledTimes(1);
+    expect(lib.clearCompletedTodos).toHaveBeenCalledWith();
+    expect(cache.revalidatePath).toHaveBeenCalledTimes(1);
+    expect(cache.revalidatePath).toHaveBeenCalledWith('/');
+  });
+
+  it('AC-9.1: returns { deleted: 0 } and still revalidates / when nothing was completed', async () => {
+    lib.clearCompletedTodos.mockResolvedValue(0);
+
+    const result = await clearCompletedTodosAction();
+
+    expect(result).toEqual({ ok: true, data: { deleted: 0 } });
+    expect(lib.clearCompletedTodos).toHaveBeenCalledTimes(1);
+    expect(cache.revalidatePath).toHaveBeenCalledTimes(1);
+    expect(cache.revalidatePath).toHaveBeenCalledWith('/');
   });
 });
