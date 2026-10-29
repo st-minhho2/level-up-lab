@@ -58,3 +58,48 @@ fieldErrorsOf(parsed.error)`. Probe: `tsc --noEmit` exit 0, `eslint` clean on bo
 Notes (not blocking): the probe table above is per-test red evidence against each mutant (option B's content) at
 no extra cost; the diff review will repeat it on the committed tests and read `killedBy` from the after report.
 Plan is 49 lines against the ≈ 40-line guide; it fits once the wide table wraps.
+
+## Plan review (round 2)
+
+SCOPE: all (`src/actions` and `src/lib` tests; no code change)
+
+Reviewed: `backlog/work/B1.7/plan.md` at `95a845c` (`Plan approved by:` empty, `Rounds: 1`). The change since round
+1 (`git diff 29a2442 95a845c`) touches only `backlog/` (plan, README, review), so round 1's test count, e2e count and
+mutant probes still hold. Re-read: `dev-lead.md` (hook, control-plane rules, steps 4–6), `test-writer.md`,
+`code-writer.md:31`, `backlog/CLAUDE.md`, `00-decisions.md` (D-1–D-12 settled, Open empty), README "Waiting on human",
+`scripts/verify-red.sh` (`--auto` selects only subjects matching `^test\([^)]*\): B…\(red\)$`, prints "nothing to
+verify" and exits 0 when none), `ci.yml:148–150`, §10 `08-mutation-feedback.md:52–53`. New probe on a
+`git archive HEAD` copy under `$TMPDIR/b17r2-GuyC` (`node_modules` symlinked), test 3 written exactly as the step 1
+brief gives it: `tsc --noEmit` exit 0; `eslint src/lib/action-result.test.ts` exit 0; `Tests 1 passed (1)`; with
+`action-result.ts:18` `|| 'form'` → `|| ''` applied by hand, `Tests 1 failed (1)`.
+
+Round 1 reasons:
+
+| #   | Round 1 reason                           | Round 2                                                                                                                                                                                                                                                                                                                         |
+| --- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | D-13 has no step and no writer           | resolved: step 0 (lead, `docs(backlog): D-13 …`, before step 1); the request is a README "Waiting on human" row (D-13, blocks B1.7), ruled at this gate under D-2; B and C consequences stated; D-13 also names `backlog/CLAUDE.md` as governing over `code-writer.md:31`.                                                      |
+| 2   | test-writer cannot do step 1 as it reads | resolved: the step 1 brief override says green on arrival, no `verify-red.sh B1.7`, no `(red)`, one report line per test naming its mutant; the subject `test(todos): B1.7 kill four mutation survivors` is not picked by `verify-red.sh --auto`, so CI's step exits 0. The role's write scope (`*.test.ts`) covers both files. |
+| 3   | test 3's Arrange fails typecheck         | resolved: the brief names the narrowed Arrange; probe above: typecheck, lint green, passes, kills 18:55.                                                                                                                                                                                                                        |
+
+| Check                                                                             | pass / fail: reason                                                                                                                                                                                                                                                                                                                      |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: as round 1. `src/actions/todos.test.ts` in F4/F8; `src/lib/action-result.test.ts` new, no map row needed (`check-features-map.sh` checks non-test modules); `00-decisions.md` written by the lead (step 0), `review.md` by the reviewer.                                                                                           |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass: no interface change; the three pasted signatures match §5 Function contracts and `todos.ts:19,39`, `action-result.ts:15`.                                                                                                                                                                                                          |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: no `advice.md`; "Advisor skipped (quick, no `src/lib/todos.ts` query)" per `dev-lead.md` step 2.                                                                                                                                                                                                                                   |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: no criterion added. Q1 cost stays for the lead: the absent-field test carries the `AC-5.3` prefix though AC-5.3's Given names only `"   "` and 201 characters (no-prefix alternative: `todos.test.ts:105`).                                                                                                                        |
+| verification lists exact commands with expected numbers                           | pass: `pnpm test` 94 → 96 (round 1 probe), e2e 12, Stryker > 85.09 % with four ids Killed (88.60 % projected, [unverified]), `verify-red.sh --auto` exit 0 (traced, see above), `git diff --stat main...HEAD -- src` test files only. The before report is git-ignored; its evidence is `analysis.md`'s table and round 1's probe table. |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass (by stated deviation, conditional on D-13 A or B): skeleton, red, green, map dropped because nothing under `src/` non-test changes; steps 0–3 with subjects; option C stops the card.                                                                                                                                               |
+| the section has a `Lead approves spec` box, ticked only by a human                | pass: §5 `03-todos.md:5` and §10 `08-mutation-feedback.md:5–6` ticked; no section change, no new tick. §7 has no box (pre-existing; every test also traces to a boxed section).                                                                                                                                                          |
+| no settled D-n contradicted                                                       | pass: D-2 kept (D-13 ruled at the one gate), D-7 not triggered, D-11 untouched. D-13 is open and the plan depends on it; cost for the lead unchanged from round 1: option A is an exception to CLAUDE.md "Tests first … land red" and invariant 2, whose text stays unqualified.                                                         |
+
+Verdict: approved (ready for the lead's gate, not approved for build)
+
+Notes (not blocking):
+
+- The plan is 62 lines against the ≈ 40-line guide; the growth is the step 0 and step 1 text round 1 asked for, and
+  the work is one task (3 tests, 2 files), so splitting would add a card without reducing risk.
+- The diff review's standard command `scripts/verify-red.sh B1.7` exits 1 under D-13 A ("no … (red) commit"); the
+  diff review will run `--auto` as the plan's Verification says and record that substitution.
+- The README "Waiting on human" D-13 row is not in Files; it should leave with step 0's commit or the closing commit.
+- Under option B, the per-mutant failing-test output is the diff review's job (it reruns the round 1 probe table on
+  the committed tests), so `dev-lead` need not write into `review.md`.

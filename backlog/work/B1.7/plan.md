@@ -8,12 +8,12 @@ Advisor skipped (quick, no `src/lib/todos.ts` query). Q1–Q3 as proposed: absen
 
 ## Files
 
-| File                                  | Change                                                                                                                                                            | Why                                      |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `src/actions/todos.test.ts`           | new `AC-5.3: returns fieldErrors.title ["Title is required"] when the form has no title field and stores nothing`; AC-5.4 test adds `mock.calls` `[['/'], ['/']]` | AC-5.3 (24:54, 24:96); AC-5.4/§7 (46:20) |
-| `src/lib/action-result.test.ts` (new) | `fieldErrorsOf puts the message of an issue without a path under form`                                                                                            | §10 contracts l.52–53 (18:55)            |
-| `backlog/00-decisions.md`             | D-13 row as the lead rules it                                                                                                                                     | gate                                     |
-| `backlog/work/B1.7/review.md`         | plan review, diff review, mutation before/after                                                                                                                   | —                                        |
+| File                                           | Change                                                                                                                                                            | Why                                      |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `src/actions/todos.test.ts`                    | new `AC-5.3: returns fieldErrors.title ["Title is required"] when the form has no title field and stores nothing`; AC-5.4 test adds `mock.calls` `[['/'], ['/']]` | AC-5.3 (24:54, 24:96); AC-5.4/§7 (46:20) |
+| `src/lib/action-result.test.ts` (new)          | `fieldErrorsOf puts the message of an issue without a path under form`                                                                                            | §10 contracts l.52–53 (18:55)            |
+| `backlog/00-decisions.md`, `backlog/README.md` | D-13 row as the lead rules it; its Waiting-on-human row removed                                                                                                   | gate                                     |
+| `backlog/work/B1.7/review.md`                  | plan review, diff review, mutation before/after                                                                                                                   | —                                        |
 
 No spec, features-map, `src/` (non-test) or e2e change. Card status, board and `docs/metrics.md` row land in the
 closing commit after merge.
@@ -59,4 +59,4 @@ the parse result (`const parsed = z.string().min(1, 'Boom').safeParse(''); if (p
 Error('expected a failed parse'); fieldErrorsOf(parsed.error)`), since destructuring `error` fails typecheck
 (TS2345). Report one line per test naming the mutant it kills."
 
-Plan review: · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: · Rounds: 1
