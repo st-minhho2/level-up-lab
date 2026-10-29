@@ -20,6 +20,8 @@ this file and the nested `CLAUDE.md` files are what an agent needs to act.
 - **Tests first, tests untouched.** A card's tests land red in their own `test(...)` commit, proven by
   `scripts/verify-red.sh`; the `feat(...)` commit that turns them green touches no test file (CI rejects it).
 - **Mutations only through Server Actions**, Zod at the boundary, Prisma only in `src/lib` (`server-only`), no raw SQL.
+- **Open the session in the repo root** (or a worktree), never a parent folder: Claude Code loads `.claude/settings.json`
+  hooks only from the launch directory. Without them `scripts/require-hooks.sh` refuses commits and new worktrees.
 - **The main checkout is never edited.** Work in a worktree (`scripts/worktree.sh`), commit, push the branch, open a
   PR; never merge, never force push, never bypass a hook.
 - **Secrets stay out.** Never read or print `.env*` (except `.env.example`), keys, `~/.ssh`, `~/.aws`; hooks block it.
