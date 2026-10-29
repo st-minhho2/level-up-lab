@@ -41,7 +41,10 @@ function describeError(error: unknown, secrets: readonly string[]): LoggedError 
   if (!(error instanceof Error)) {
     return { name: 'NonError', message: scrub(String(error), secrets, LOG_MESSAGE_MAX_LENGTH) };
   }
-  const { code } = error as Error & { readonly code?: unknown };
+  // Prisma's initialization errors (a failed connection) carry their code as `errorCode`, not `code`; a string `code`
+  // still wins, and the property name is never written, only its value as `code`.
+  const { code: ownCode, errorCode } = error as Error & { readonly code?: unknown; readonly errorCode?: unknown };
+  const code = typeof ownCode === 'string' ? ownCode : errorCode;
   return {
     name: error.name,
     message: scrub(error.message, secrets, LOG_MESSAGE_MAX_LENGTH),
