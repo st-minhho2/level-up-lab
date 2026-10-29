@@ -59,4 +59,4 @@ the parse result (`const parsed = z.string().min(1, 'Boom').safeParse(''); if (p
 Error('expected a failed parse'); fieldErrorsOf(parsed.error)`), since destructuring `error` fails typecheck
 (TS2345). Report one line per test naming the mutant it kills."
 
-Plan review: approved, round 2 · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: lead (session reply "approve", D-13 option A), 2026-10-29 · Rounds: 1
