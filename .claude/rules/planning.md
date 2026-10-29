@@ -36,5 +36,7 @@ A plan that does not fit on one screen is two tasks; split it before asking for 
 ## In the agent pipeline
 
 `backlog/work/<card>/plan.md`, written by the `dev-lead` role, _is_ the plan: same three parts, same one-screen limit,
-and the human's `Plan approved by: lead, <date>` line is the approval. `/work-next` stops at that line and nothing
-under `src/` changes before it exists. The PR body copies `plan.md` into the template's Plan section.
+and the human's `Plan approved by: lead, <date>` line is the approval. The `reviewer`'s plan review runs before the
+lead is asked, so the lead approves a reviewed plan, with every cost the review found already stated. `/work-next`
+stops at that line and nothing under `src/` changes before it exists. The PR body copies `plan.md` into the
+template's Plan section.

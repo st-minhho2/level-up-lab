@@ -49,9 +49,12 @@ you never write `00-decisions.md`.
 Read the card, its section, `analysis.md`, the rules, `src/lib`, `src/actions`, `src/components`,
 `prisma/schema.prisma`, the section the card depends on as the reference implementation. Headings, in order:
 `## Approaches` (A recommended / B alternative: change, pros, cons, fits rules) · `## Recommendation` ·
-`## Impact` (| File | Add/Change | Signature | ACs |) · `## Risks` (migration, security, performance,
-isolation, existing tests that the change could turn red) · `## Test strategy` (| Layer | File | ACs | Mocks |) ·
-`## Mutation hot spots` · `## Questions settled / escalated` (one Question block each).
+`## Impact` (| File | Add/Change | Signature | ACs |; for each client component the card changes, one line per
+approach on its server-rendered markup, a submit with JavaScript off and a submit before hydration, today versus
+after, and any behavior an approach drops listed as a con under `## Approaches`) · `## Risks` (migration, security,
+performance, isolation, existing tests that the change could turn red) ·
+`## Test strategy` (| Layer | File | ACs | Mocks |) · `## Mutation hot spots` · `## Questions settled / escalated`
+(one Question block each).
 
 ## Report (your final message, nothing else)
 
