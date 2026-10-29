@@ -395,4 +395,22 @@ describe('logMutationFailure (§11)', () => {
 
     expect(onlyEntry().error.message).toBe('auth [redacted]');
   });
+
+  it('redacts a password query value in the form the URL parser returns, space escaped and slash kept (REQ-11.4)', () => {
+    env.getEnv.mockReturnValue({ DATABASE_URL: 'postgresql://app@db.internal:5432/lab?password=a b/c' });
+    const error = new Error('pw a%20b/c');
+
+    logMutationFailure('createTodoAction', error);
+
+    expect(onlyEntry().error.message).toBe('pw [redacted]');
+  });
+
+  it('redacts the userinfo password in the form the URL parser returns, space escaped and dollar kept (REQ-11.4)', () => {
+    env.getEnv.mockReturnValue({ DATABASE_URL: 'postgresql://app:p$s s@db.internal:5432/lab' });
+    const error = new Error('auth p$s%20s');
+
+    logMutationFailure('createTodoAction', error);
+
+    expect(onlyEntry().error.message).toBe('auth [redacted]');
+  });
 });
