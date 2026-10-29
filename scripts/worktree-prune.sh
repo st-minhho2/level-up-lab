@@ -39,8 +39,8 @@ run() { if [[ $DRY -eq 1 ]]; then echo "  [dry-run] $*"; else "$@"; fi; }
 postgres_running() {
   [[ -n "$(docker compose -f "$ROOT/docker-compose.yml" ps -q --status running postgres 2>/dev/null </dev/null)" ]]
 }
-psql_c() { # psql_c <sql>: unaligned, tuples only
-  docker compose -f "$ROOT/docker-compose.yml" exec -T postgres \
+psql_c() { # psql_c <sql>: unaligned, tuples only; NOTICEs (e.g. "drop cascades to …") hidden, errors still shown
+  docker compose -f "$ROOT/docker-compose.yml" exec -T -e PGOPTIONS='-c client_min_messages=warning' postgres \
     psql -q -At -U postgres -d level_up_lab -v ON_ERROR_STOP=1 -c "$1" </dev/null
 }
 
