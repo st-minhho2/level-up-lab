@@ -37,6 +37,5 @@ flowchart TD
 
 ## Waiting on human
 
-| ID   | What                                                                                                                                                                                                                                 | Blocks |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
-| D-13 | Tests-only (mutation hardening) cards: commit without `(red)`, no skeleton/feat, red evidence = Stryker before/after (option A; B manual mutant probes; C verify-red mutant mode). Request: `work/B1.7/analysis.md` "Needs a ruling" | B1.7   |
+| ID  | What | Blocks |
+| --- | ---- | ------ |
