@@ -1,14 +1,14 @@
 # Backlog
 
-Work for the whole system, derived from the spec (`spec/technical-requirements.md` §1–§8). Cards live in `plan/`,
+Work for the whole system, derived from the spec (`spec/technical-requirements.md` §1–§10). Cards live in `plan/`,
 rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for picking, writing and closing: `CLAUDE.md`.
 
 ## Status summary
 
 | Epic      | File                                 | Done  | Partial | Open  | Total |
 | --------- | ------------------------------------ | ----- | ------- | ----- | ----- |
-| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 3     | 0       | 1     | 4     |
-| **Total** |                                      | **3** | **0**   | **1** | **4** |
+| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 4     | 0       | 0     | 4     |
+| **Total** |                                      | **4** | **0**   | **0** | **4** |
 
 ## Execution order
 
@@ -18,16 +18,15 @@ flowchart TD
   S2["2 · Edit a title<br/>~~B1.2~~"]
   S3["3 · Clear completed<br/>~~B1.3~~"]
   S1 --> S2
-  S4["4 · Mutation failure feedback<br/>B1.4"]
+  S4["4 · Mutation failure feedback<br/>~~B1.4~~"]
   S1 --> S3
   S3 --> S4
 ```
 
 ## Remaining
 
-| Step | ID   | Title                          | Spec § | Status | Blocked by | Owner | Size         |
-| ---- | ---- | ------------------------------ | ------ | ------ | ---------- | ----- | ------------ |
-| 4    | B1.4 | Feedback when a mutation fails | §10    | Open   | ~~B1.3~~   | Lead  | S [estimate] |
+| Step | ID  | Title | Spec § | Status | Blocked by | Owner | Size |
+| ---- | --- | ----- | ------ | ------ | ---------- | ----- | ---- |
 
 ## Waiting on human
 
