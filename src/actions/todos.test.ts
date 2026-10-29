@@ -61,6 +61,38 @@ describe('createTodoAction', () => {
     expect(result).toEqual({ ok: false, fieldErrors: { title: ['Title must be 200 characters or fewer'] } });
     expect(lib.createTodo).not.toHaveBeenCalled();
   });
+
+  it('AC-10.4: resolves fieldErrors.form ["Could not save, try again"] when createTodo rejects and does not revalidate', async () => {
+    lib.createTodo.mockRejectedValue(new Error('db down'));
+
+    await expect(createTodoAction(null, form('Buy milk'))).resolves.toEqual({
+      ok: false,
+      fieldErrors: { form: ['Could not save, try again'] },
+    });
+
+    expect(cache.revalidatePath).toHaveBeenCalledTimes(0);
+    expect(lib.createTodo).toHaveBeenCalledTimes(1);
+    expect(lib.createTodo).toHaveBeenCalledWith('Buy milk');
+
+    await expect(createTodoAction(null, form('   '))).resolves.toEqual({
+      ok: false,
+      fieldErrors: { title: ['Title is required'] },
+    });
+
+    expect(lib.createTodo).toHaveBeenCalledTimes(1);
+  });
+
+  it('createTodoAction resolves the form failure when revalidatePath throws after createTodo resolves', async () => {
+    lib.createTodo.mockResolvedValue(todo());
+    cache.revalidatePath.mockImplementation(() => {
+      throw new Error('cache down');
+    });
+
+    const outcome = createTodoAction(null, form('Buy milk'));
+
+    await expect(outcome).resolves.toEqual({ ok: false, fieldErrors: { form: ['Could not save, try again'] } });
+    expect(lib.createTodo).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('toggleTodoAction', () => {

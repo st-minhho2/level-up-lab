@@ -1,6 +1,6 @@
 'use server';
 
-// §5, §6, §9: Server Actions for the todo list; §10: a failed toggle, edit or clear resolves to a `form` error.
+// §5, §6, §9: Server Actions for the todo list; §10: a failed create, toggle, edit or clear resolves to a `form` error.
 import { revalidatePath } from 'next/cache';
 import { failure, fieldErrorsOf, MUTATION_FAILED_MESSAGE, type ActionResult } from '@/lib/action-result';
 import { createTodoSchema, toggleTodoSchema, updateTodoTitleSchema } from '@/lib/todo-schema';
@@ -23,9 +23,14 @@ export async function createTodoAction(
   if (!parsed.success) {
     return { ok: false, fieldErrors: fieldErrorsOf(parsed.error) };
   }
-  const todo = await createTodo(parsed.data.title);
-  revalidatePath('/');
-  return { ok: true, data: todo };
+  try {
+    const todo = await createTodo(parsed.data.title);
+    revalidatePath('/');
+    return { ok: true, data: todo };
+  } catch {
+    // §10: the form shows the message and nothing is revalidated; the cause is not logged until a logger card lands.
+    return failure('form', MUTATION_FAILED_MESSAGE);
+  }
 }
 
 export async function toggleTodoAction(id: string): Promise<ActionResult<Todo>> {
