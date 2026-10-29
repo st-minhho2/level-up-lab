@@ -168,6 +168,16 @@ describe('logMutationFailure (§11)', () => {
     expect(onlyEntry().error.message).toBe('db down');
   });
 
+  it("records the thrown Error's own name (REQ-11.3)", () => {
+    const error = new TypeError('db down');
+
+    logMutationFailure('toggleTodoAction', error);
+
+    const entry = onlyEntry();
+    expect(entry.error.name).toBe('TypeError');
+    expect(entry.error.message).toBe('db down');
+  });
+
   it('omits stack when the Error has none', () => {
     const error = new Error('db down');
     error.stack = undefined;
