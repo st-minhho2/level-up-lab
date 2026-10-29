@@ -330,4 +330,24 @@ describe('logMutationFailure (§11)', () => {
 
     expect(onlyEntry().error.message).toBe('The table public.todos does not exist; upper');
   });
+
+  it('leaves the user name, a parameter merely ending in password and the fragment unredacted (REQ-11.4)', () => {
+    env.getEnv.mockReturnValue({
+      DATABASE_URL: 'postgresql://app@db.internal:5432/lab?mypassword=suffix&sslmode=require#&password=frag',
+    });
+    const error = new Error('user app, suffix, frag');
+
+    logMutationFailure('createTodoAction', error);
+
+    expect(onlyEntry().error.message).toBe('user app, suffix, frag');
+  });
+
+  it('leaves the message unchanged when DATABASE_URL has no user name or password (REQ-11.4)', () => {
+    env.getEnv.mockReturnValue({ DATABASE_URL: 'postgresql://db.internal:5432/lab' });
+    const error = new Error('port 5432');
+
+    logMutationFailure('createTodoAction', error);
+
+    expect(onlyEntry().error.message).toBe('port 5432');
+  });
 });
