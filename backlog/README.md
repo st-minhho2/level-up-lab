@@ -35,6 +35,5 @@ flowchart TD
 
 ## Waiting on human
 
-| ID   | What                                                                                                                                                                    | Blocks |
-| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| D-12 | Logger sink and what a log may contain (A in-repo stderr JSON / B console.error / C dependency; R2 scrub vs R3 name+code only) — `work/B1.6/analysis.md` Needs a ruling | B1.6   |
+| ID  | What | Blocks |
+| --- | ---- | ------ |
