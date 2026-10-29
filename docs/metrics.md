@@ -30,5 +30,6 @@ means the situation to measure has not happened yet.
 | B1.3 | §9  | 3        | 3 (100 %) | 82.22 (actions 86.4, lib 80.9) | 0              | 74c5a3d          | 1ec6cb0 |
 | B1.4 | §10 | 3        | 3 (100 %) | 82.80 (actions 88.0, lib 80.3) | 0              | 025938b          | b605e3f |
 | B1.5 | §10 | 2        | 2 (100 %) | 82.98 (actions 88.5, lib 80.9) | 0              | 311c8ef          | e7b3390 |
+| B1.6 | §11 | 6        | 6 (100 %) | 85.09 (actions 88.5, lib 84.1) | 0              | 67294c1          | this PR |
 
 A value below target for two consecutive measurements opens a row in `docs/mistake-log.md` and a fix in `.claude/`.
