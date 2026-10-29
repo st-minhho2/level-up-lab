@@ -50,10 +50,10 @@ _F8 (new) · §10_
 ### B1.5 · Feedback when creating a todo fails
 
 _F8 · §10_
-**Status: Open** — `createTodoAction` awaits `createTodo(parsed.data.title)` with no try/catch (`src/actions/todos.ts:26`), so a database failure rejects the form action and reaches Next's error boundary; `TodoForm` reads only `fieldErrors.title?.[0]` (`src/components/todo-form.tsx:9`). D-11 names B1.5 as the card that covers it.
+**Status: Done** — e7b3390 (#13); 72 unit/component + 12 e2e green, mutation 82.98 % (actions 88.5, lib 80.9); red 311c8ef, green 73db034, review fixes 933962a, 0e3d738
 
 - **Spec:** §10 — unchanged (amended within D-11 from `work/B1.5/analysis.md`)
 - **Test:** `src/actions/todos.test.ts::AC-10.4: resolves fieldErrors.form ["Could not save, try again"] when createTodo rejects and does not revalidate` — red because: `createTodoAction` awaits `createTodo` with no try/catch (`src/actions/todos.ts:26`), so the awaited promise rejects instead of resolving to `{ ok: false, fieldErrors: { form: [...] } }`
 - **Acceptance:** AC-10.4 … AC-10.5
 - **Tier:** full · **Depends on:** ~~B1.4~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.5/` (analysis.md, plan.md, review.md as the roles produce them)
+- **Work:** `work/B1.5/` — analysis, advice, plan (rounds 2/2: A dropped the native POST), review (plan rounds 2, diff passes 3/3, 2 findings fixed); squash `e7b3390` (#13)

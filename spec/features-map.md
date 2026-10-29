@@ -15,4 +15,4 @@ moves or removes a feature updates its row in the same commit (`docs(map): F<n> 
 | F7  | §9  | Clear completed todos          | `src/lib/todos.ts`, `src/actions/todos.ts`, `src/components/clear-completed-button.tsx`, `src/app/page.tsx`                                                     | `src/lib/todos.test.ts`, `src/actions/todos.test.ts`, `src/components/clear-completed-button.test.tsx`, `e2e/09-clear-completed.spec.ts`                | ✅     |
 | F8  | §10 | Feedback when a mutation fails | `src/lib/action-result.ts`, `src/actions/todos.ts`, `src/components/todo-item.tsx`, `src/components/clear-completed-button.tsx`, `src/components/todo-form.tsx` | `src/actions/todos.test.ts`, `src/components/todo-item.test.tsx`, `src/components/clear-completed-button.test.tsx`, `src/components/todo-form.test.tsx` | ✅     |
 
-Receipt: verified against `b605e3f` (B1.4 merged).
+Receipt: verified against `e7b3390` (B1.5 merged).

@@ -7,8 +7,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic      | File                                 | Done  | Partial | Open  | Total |
 | --------- | ------------------------------------ | ----- | ------- | ----- | ----- |
-| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 4     | 0       | 1     | 5     |
-| **Total** |                                      | **4** | **0**   | **1** | **5** |
+| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 5     | 0       | 0     | 5     |
+| **Total** |                                      | **5** | **0**   | **0** | **5** |
 
 ## Execution order
 
@@ -21,15 +21,14 @@ flowchart TD
   S4["4 · Mutation failure feedback<br/>~~B1.4~~"]
   S1 --> S3
   S3 --> S4
-  S5["5 · Create failure feedback<br/>B1.5"]
+  S5["5 · Create failure feedback<br/>~~B1.5~~"]
   S4 --> S5
 ```
 
 ## Remaining
 
-| Step | ID   | Title                               | Spec § | Status | Blocked by | Owner | Size         |
-| ---- | ---- | ----------------------------------- | ------ | ------ | ---------- | ----- | ------------ |
-| 5    | B1.5 | Feedback when creating a todo fails | §10    | Open   | ~~B1.4~~   | Lead  | S [estimate] |
+| Step | ID  | Title | Spec § | Status | Blocked by | Owner | Size |
+| ---- | --- | ----- | ------ | ------ | ---------- | ----- | ---- |
 
 ## Waiting on human
 
