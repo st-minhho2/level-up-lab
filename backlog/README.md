@@ -7,8 +7,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic      | File                                 | Done  | Partial | Open  | Total |
 | --------- | ------------------------------------ | ----- | ------- | ----- | ----- |
-| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 6     | 0       | 1     | 7     |
-| **Total** |                                      | **6** | **0**   | **1** | **7** |
+| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 7     | 0       | 0     | 7     |
+| **Total** |                                      | **7** | **0**   | **0** | **7** |
 
 ## Execution order
 
@@ -25,15 +25,14 @@ flowchart TD
   S4 --> S5
   S6["6 · Log swallowed failures<br/>~~B1.6~~"]
   S5 --> S6
-  S7["7 · Kill mutation survivors<br/>B1.7"]
+  S7["7 · Kill mutation survivors<br/>~~B1.7~~"]
   S6 --> S7
 ```
 
 ## Remaining
 
-| Step | ID   | Title                                | Spec §    | Status | Blocked by | Owner | Size         |
-| ---- | ---- | ------------------------------------ | --------- | ------ | ---------- | ----- | ------------ |
-| 7    | B1.7 | Kill pre-existing mutation survivors | §5 §7 §10 | Open   | ~~B1.6~~   | Lead  | S [estimate] |
+| Step | ID  | Title | Spec § | Status | Blocked by | Owner | Size |
+| ---- | --- | ----- | ------ | ------ | ---------- | ----- | ---- |
 
 ## Waiting on human
 
