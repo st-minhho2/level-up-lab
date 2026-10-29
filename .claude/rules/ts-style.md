@@ -15,5 +15,6 @@ Derived from the team's Node.js/TypeScript conventions; the linters enforce most
   template in `src/lib` with a comment and a reviewer. Models PascalCase singular, `@@map` snake_case plural, cuid
   ids, `createdAt`/`updatedAt`, an index on every list `orderBy`. Migrations via `pnpm db:migrate` on the local
   compose database only; immutable once on `main`.
-- Errors are classes; `console` is not a logger in `src/` (allowed in scripts, seeds, tests). No `TODO` without a
-  card id. Comments say why, not what.
+- Errors are classes; `console` is not a logger anywhere in `src/`, unit tests included (spy on
+  `process.stderr.write` instead); it is allowed only in config files, `prisma/seed.ts`, `vitest.setup.ts` and
+  `e2e/` (`eslint.config.mjs`). No `TODO` without a card id. Comments say why, not what.
