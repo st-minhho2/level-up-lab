@@ -7,8 +7,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic      | File                                 | Done   | Partial | Open  | Total  |
 | --------- | ------------------------------------ | ------ | ------- | ----- | ------ |
-| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 10     | 0       | 0     | 10     |
-| **Total** |                                      | **10** | **0**   | **0** | **10** |
+| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 10     | 0       | 1     | 11     |
+| **Total** |                                      | **10** | **0**   | **1** | **11** |
 
 ## Execution order
 
@@ -33,14 +33,18 @@ flowchart TD
   S8 --> S9
   S10["10 · E2E failed create keeps title<br/>~~B1.10~~"]
   S5 --> S10
+  S11["11 · Redact password as written<br/>B1.11"]
+  S9 --> S11
 ```
 
 ## Remaining
 
-| Step | ID  | Title | Spec § | Status | Blocked by | Owner | Size |
-| ---- | --- | ----- | ------ | ------ | ---------- | ----- | ---- |
+| Step | ID    | Title                                                             | Spec § | Status | Blocked by     | Owner | Size         |
+| ---- | ----- | ----------------------------------------------------------------- | ------ | ------ | -------------- | ----- | ------------ |
+| 11   | B1.11 | Redact the database password exactly as written in `DATABASE_URL` | §11    | Open   | ~~B1.9~~, D-17 | Lead  | S [estimate] |
 
 ## Waiting on human
 
-| ID  | What | Blocks |
-| --- | ---- | ------ |
+| ID   | What                                                                                                                                                                                                                                            | Blocks |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| D-17 | §11 REQ-11.4 "as written" vs the parser-normalized forms in its Function contracts: A also redact the raw-text forms; B reword REQ-11.4 to the parser forms (Tier 0); C list the gap as out of scope. Request: `work/B1.11/decision-request.md` | B1.11  |
