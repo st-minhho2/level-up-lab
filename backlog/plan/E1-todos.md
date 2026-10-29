@@ -69,3 +69,19 @@ _F9 (new) · §11_
 - **Tier:** full · **Depends on:** ~~B1.5~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.6/` — analysis, advice, plan (rounds 1/1), review (plan round 1, diff pass 1/3, 1 coverage finding fixed); squash `f191c34` (#15)
 - **Ruled:** D-12 — in-repo stderr JSON logger; name, message, string code, stack; secrets scrubbed; input never logged.
+
+### B1.7 · Kill pre-existing mutation survivors
+
+_F3 F4 F8 · §5 §7 §10_
+**Status: Open** — `pnpm test:mutation` on `main` (9250a74, 85.09 %) leaves survivors no test can tell from the
+code: `src/actions/todos.ts:24` (`typeof rawTitle === 'string'` → `true`; the `''` fallback → `"Stryker was here!"`:
+no test submits a form without a string `title`), `src/actions/todos.ts:46` (toggle's `revalidatePath('/')` →
+`revalidatePath('')`: `AC-5.4: returns the toggled todo and revalidates /` counts calls, never the path),
+`src/lib/action-result.ts:18` (`|| 'form'`: no test builds a Zod issue without a path). Tests only; no behavior
+change.
+
+- **Spec:** §5 — unchanged (§7 and §10 unchanged too; tests only, no section edit)
+- **Test:** `src/actions/todos.test.ts::AC-5.3: returns fieldErrors.title ["Title is required"] when the form has no title field and stores nothing` — red because: against Stryker mutant `src/actions/todos.ts` 24:54 (`typeof rawTitle === 'string'` → `true`) the result is `title: ['Invalid input: expected string, received null']`, and against 24:96 (`''` → `"Stryker was here!"`) `createTodo` is called; green against the current code by design (tests-only card, no `(red)` commit; see `work/B1.7/analysis.md` Needs a ruling)
+- **Acceptance:** the three survivors above are killed; `pnpm test:mutation` above 85.09 %
+- **Tier:** quick · **Depends on:** ~~B1.6~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.7/` — analysis (spec-analyst)
