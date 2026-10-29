@@ -52,4 +52,4 @@ bash -n scripts/card-status.sh && pnpm lint   # syntax OK; lint green
 | 3 Review      | `reviewer` (diff)                     | `review.md` diff section               | `docs(backlog): B1.12 diff review …`                                  |
 | 4 PR          | dev-lead                              | PR; lead adds `config-change-approved` | —                                                                     |
 
-Plan review: approved, round 2 · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: lead (session reply "approve B1.12"), 2026-10-30 · Rounds: 1
