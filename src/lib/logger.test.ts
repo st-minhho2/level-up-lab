@@ -350,4 +350,49 @@ describe('logMutationFailure (§11)', () => {
 
     expect(onlyEntry().error.message).toBe('port 5432');
   });
+
+  it('AC-11.3: redacts the userinfo password as written in DATABASE_URL', () => {
+    env.getEnv.mockReturnValue({ DATABASE_URL: 'postgresql://app:pä%40ss@db.internal:5432/lab' });
+    const error = new Error('auth pä%40ss');
+
+    logMutationFailure('createTodoAction', error);
+
+    expect(onlyEntry().error.message).toBe('auth [redacted]');
+  });
+
+  it('AC-11.3: redacts a password query value as written, with the space the parser would encode', () => {
+    env.getEnv.mockReturnValue({ DATABASE_URL: 'postgresql://app@db.internal:5432/lab?password=a b%26c' });
+    const error = new Error('pw a b%26c');
+
+    logMutationFailure('createTodoAction', error);
+
+    expect(onlyEntry().error.message).toBe('pw [redacted]');
+  });
+
+  it('AC-11.3: redacts the decoded then re-encoded sslpassword query value', () => {
+    env.getEnv.mockReturnValue({ DATABASE_URL: 'postgresql://app@db.internal:5432/lab?sslpassword=k%2fey' });
+    const error = new Error('ssl k%2Fey');
+
+    logMutationFailure('createTodoAction', error);
+
+    expect(onlyEntry().error.message).toBe('ssl [redacted]');
+  });
+
+  it('AC-11.3: redacts a written password containing an @, split at the last @ of the userinfo', () => {
+    env.getEnv.mockReturnValue({ DATABASE_URL: 'postgresql://app:p@ä%41@db.internal:5432/lab' });
+    const error = new Error('auth p@ä%41');
+
+    logMutationFailure('createTodoAction', error);
+
+    expect(onlyEntry().error.message).toBe('auth [redacted]');
+  });
+
+  it('redacts the written password after the first colon of the userinfo (REQ-11.4)', () => {
+    env.getEnv.mockReturnValue({ DATABASE_URL: 'postgresql://app:p@ä:%41@db.internal:5432/lab' });
+    const error = new Error('auth p@ä:%41');
+
+    logMutationFailure('createTodoAction', error);
+
+    expect(onlyEntry().error.message).toBe('auth [redacted]');
+  });
 });
