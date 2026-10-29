@@ -121,6 +121,27 @@ describe('logMutationFailure (§11)', () => {
     expect(Object.keys(entry.error)).toEqual(['name', 'message']);
   });
 
+  it('AC-11.2: records a string errorCode as error.code when the Error has no string code', () => {
+    const error = errorCodedError('db down', 'P1001');
+
+    logMutationFailure('clearCompletedTodosAction', error);
+
+    const entry = onlyEntry();
+    expect(Object.keys(entry.error)).toEqual(['name', 'message', 'code', 'stack']);
+    expect(entry.error.code).toBe('P1001');
+    expect(Object.keys(entry.error)).not.toContain('errorCode');
+  });
+
+  it('AC-11.2: records the string errorCode as error.code when the code is a number', () => {
+    const error = errorCodedError('db down', 'P1001', 42);
+
+    logMutationFailure('clearCompletedTodosAction', error);
+
+    const entry = onlyEntry();
+    expect(entry.error.code).toBe('P1001');
+    expect(Object.keys(entry.error)).not.toContain('errorCode');
+  });
+
   it('AC-11.2: records the string code, not the errorCode, when the Error carries both', () => {
     const error = errorCodedError('db down', 'P1001', 'P2002');
 
