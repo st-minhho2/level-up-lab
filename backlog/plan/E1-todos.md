@@ -73,7 +73,7 @@ _F9 (new) · §11_
 ### B1.7 · Kill pre-existing mutation survivors
 
 _F3 F4 F8 · §5 §7 §10_
-**Status: Open** — `pnpm test:mutation` on `main` (9250a74, 85.09 %) leaves survivors no test can tell from the
+**Status: Done** — 07f753a (#27); 96 unit/component + 12 e2e green, mutation 88.60 % (actions 100, lib 85.2); hardening 0af8a79 (D-13, no red commit); todos.ts 24:54, 24:96, 46:20 and action-result.ts 18:55 Killed
 code: `src/actions/todos.ts:24` (`typeof rawTitle === 'string'` → `true`; the `''` fallback → `"Stryker was here!"`:
 no test submits a form without a string `title`), `src/actions/todos.ts:46` (toggle's `revalidatePath('/')` →
 `revalidatePath('')`: `AC-5.4: returns the toggled todo and revalidates /` counts calls, never the path),
@@ -84,7 +84,8 @@ change.
 - **Test:** `src/actions/todos.test.ts::AC-5.3: returns fieldErrors.title ["Title is required"] when the form has no title field and stores nothing` — red because: against Stryker mutant `src/actions/todos.ts` 24:54 (`typeof rawTitle === 'string'` → `true`) the result is `title: ['Invalid input: expected string, received null']`, and against 24:96 (`''` → `"Stryker was here!"`) `createTodo` is called; green against the current code by design (tests-only card, no `(red)` commit; see `work/B1.7/analysis.md` Needs a ruling)
 - **Acceptance:** the three survivors above are killed; `pnpm test:mutation` above 85.09 %
 - **Tier:** quick · **Depends on:** ~~B1.6~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.7/` — analysis (spec-analyst)
+- **Work:** `work/B1.7/` — analysis, plan (rounds 1/1), review (plan rounds 2, diff pass 1/3, 0 findings); squash `07f753a` (#27)
+- **Ruled:** D-13 — tests-only hardening cards land without `(red)`; red evidence is the mutation report before and after.
 
 ### B1.8 · Log the Prisma error code of a failed connection
 
@@ -92,7 +93,7 @@ _F9 · §11_
 **Status: Open** — `src/lib/logger.ts:44` reads only `error.code` (`const { code } = error as Error & { readonly code?: unknown }`);
 Prisma's `PrismaClientInitializationError` (database down) carries its code as `errorCode?: string`
 (`@prisma/client` `runtime/library.d.ts`), so a database-down entry has `name`, `message`, `stack` and no code.
-§11 REQ-11.3 names only `code`: a §11 change, D-14 requested (README "Waiting on human").
+§11 REQ-11.3 names only `code`: a §11 change, ruled by D-14.
 
 - **Spec:** §11 — unchanged (REQ-11.3, AC-11.2 cases (d)–(g) and Function contracts extended under D-14)
 - **Test:** `src/lib/logger.test.ts::AC-11.2: records a string errorCode as error.code when the Error has no string code` — red because: `describeError` in `src/lib/logger.ts` reads only `error.code`, so the entry's `error` keys are `name, message, stack` with no `code` (fails on the key-order assertion, not on an import)
