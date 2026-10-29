@@ -7,8 +7,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic      | File                                 | Done  | Partial | Open  | Total |
 | --------- | ------------------------------------ | ----- | ------- | ----- | ----- |
-| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 2     | 0       | 2     | 4     |
-| **Total** |                                      | **2** | **0**   | **2** | **4** |
+| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 3     | 0       | 1     | 4     |
+| **Total** |                                      | **3** | **0**   | **1** | **4** |
 
 ## Execution order
 
@@ -16,7 +16,7 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 flowchart TD
   S1["1 · List, create, toggle<br/>~~B1.1~~"]
   S2["2 · Edit a title<br/>~~B1.2~~"]
-  S3["3 · Clear completed<br/>B1.3"]
+  S3["3 · Clear completed<br/>~~B1.3~~"]
   S1 --> S2
   S4["4 · Mutation failure feedback<br/>B1.4"]
   S1 --> S3
@@ -27,8 +27,7 @@ flowchart TD
 
 | Step | ID   | Title                          | Spec §               | Status | Blocked by | Owner | Size         |
 | ---- | ---- | ------------------------------ | -------------------- | ------ | ---------- | ----- | ------------ |
-| 3    | B1.3 | Clear completed todos          | §9                   | Open   | ~~B1.1~~   | Lead  | S [estimate] |
-| 4    | B1.4 | Feedback when a mutation fails | — (section to write) | Open   | B1.3       | Lead  | S [estimate] |
+| 4    | B1.4 | Feedback when a mutation fails | — (section to write) | Open   | ~~B1.3~~   | Lead  | S [estimate] |
 
 ## Waiting on human
 
