@@ -110,5 +110,8 @@ decoded password (`p@ss` for `p%40ss`), a differently encoded form, or a `passwo
 `DATABASE_URL` is written verbatim (B1.6 review note 1, plan review note 4). §11 REQ-11.4 names only the URL and "the
 password inside it": a §11 change, ruled by D-15.
 
+- **Spec:** §11 — unchanged (REQ-11.4, AC-11.3 cases (c)–(g) and Function contracts extended under D-15)
+- **Test:** `src/lib/logger.test.ts::AC-11.3: redacts the decoded and the re-encoded password` — red because: `secretsOf` in `src/lib/logger.ts` returns only the URL and `new URL(url).password` (`p%40ss%2fw`), so `error.message` is `auth p@ss/w, p%40ss%2Fw, [redacted]` instead of `auth [redacted], [redacted], [redacted]` (fails on the message assertion, not on an import)
+- **Acceptance:** AC-11.3 (cases (c)–(g); (a), (b) and (f) are green before the change, (c), (d), (e), (g) red)
 - **Tier:** quick · **Depends on:** ~~B1.8~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.9/`
