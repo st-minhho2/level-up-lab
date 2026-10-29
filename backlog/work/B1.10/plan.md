@@ -55,9 +55,14 @@ scripts/worktree.sh red/B1.10-pre-b1-5 9327a03          # own port P, own schema
 S=.worktrees/red-b1-10-pre-b1-5; P=$(. $S/.worktree.env; echo $WORKTREE_PORT)
 lsof -nP -iTCP:$P -sTCP:LISTEN && exit 1                 # port must be free, or reuseExistingServer runs the wrong code
 git show <test sha>:e2e/10-mutation-feedback.spec.ts > $S/e2e/10-mutation-feedback.spec.ts
-(cd $S && pnpm exec playwright test e2e/10-mutation-feedback.spec.ts) 2>&1 | tee review-red.txt
-scripts/worktree-prune.sh --base origin/main            # 9327a03 is an ancestor: worktree, branch, schema removed
+(cd $S && pnpm exec playwright test e2e/10-mutation-feedback.spec.ts) 2>&1 | tee "$TMPDIR/b1-10-red.txt"
+scripts/worktree-prune.sh --dry-run --base origin/main  # plan review round 2: list every [prune] line first
+scripts/worktree-prune.sh --base origin/main            # only if each [prune] line is the scratch tree or a card already merged on origin/main
 ```
+
+Before step 3: `docker compose up -d`. The prune removes every merged worktree, not only the scratch one (today also
+`docs/B1.8-done` and `feat/B1.9-widen-log-redaction`, both merged, which the card closings prune anyway); an unmerged
+one in the dry-run list → stop and report.
 
 Expected: `1 failed`, at the alert `toHaveCount(1)` (received 0), and in the same run a `[WebServer]` line containing
 `e2e: insert rejected` (the trigger fired in the server's schema, so the red is the missing behavior, not a
@@ -67,4 +72,4 @@ misplaced fault). Anything else (pass, other line, no `[WebServer]` match) → s
 Brief override: test-writer commits a green test without `(red)` and does not run verify-red (D-13 shape); if the test
 is red at HEAD it stops and reports, never adjusts an assertion.
 
-Plan review: · Plan approved by: · Rounds: 1
+Plan review: changes requested round 2 (one line, fixed after the round; review cap reached, lead decides) · Plan approved by: · Rounds: 1

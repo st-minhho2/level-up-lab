@@ -73,3 +73,65 @@ Option A's red is reproducible, and the approach is green at HEAD.
   (D-16)", as the analysis says.
 
 Verdict: changes requested
+
+## Plan review (round 2)
+
+Reviewed at HEAD `6fec648` (`docs(backlog): B1.10 plan review round 1, plan revised`); the plan diff against
+`96b9d4c` touches only the Verification red-evidence line, the new "Step 3" block and the brief override. Re-read
+`scripts/worktree.sh`, `scripts/worktree-prune.sh`, `.claude/hooks/guard-bash.sh`, `playwright.config.ts` (HEAD and
+`9327a03`).
+
+### Probes (read-only; nothing created, no schema touched)
+
+| Probe                                                                                 | Result                                                                                                                                                                                                                                                      |
+| ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Step 3's six lines, singly and as one command, through `guard-bash.sh`                | all exit 0 (none blocked; `. $S/.worktree.env` does not match the `.env*` secret pattern)                                                                                                                                                                   |
+| `worktree.sh` from the session root `…/frosty-ardinghelli-20793b`                     | root is not `*/.worktrees/*`, so it runs; slug of `red/B1.10-pre-b1-5` is `red-b1-10-pre-b1-5`, which matches `S`; `.worktree.env` carries `WORKTREE_PORT`; run from the feature worktree it would refuse, and the plan says "from the session's repo root" |
+| `9327a03` has `scripts/load-env.ts` and the same `loadDotEnv()` + `PORT` config       | yes: the spec file's `PrismaClient` and the dev server both read the scratch `.env` (schema `wt_red_b1_10_pre_b1_5`), so the trigger lands in the server's schema; `9327a03` is an ancestor of `origin/main`                                                |
+| `scripts/worktree-prune.sh --dry-run --base origin/main` from the session root, today | `[prune] docs/B1.8-done (cherry)` and `[prune] feat/B1.9-widen-log-redaction (tree)`, each with `git worktree remove --force` and `git branch -D`; `[keep]` docs/B1.7-done and feat/B1.10. See reason 1                                                     |
+| `origin/main` since the branch point                                                  | only `5387591` (B1.9, #31): `src/lib/logger*` changed, no `e2e/` change, so "12 → 13" still holds and the unit count is the plan's "106 if B1.9 merged first"                                                                                               |
+
+### Round 1 reason 1: resolved
+
+The step now names every command, who runs them (dev-lead, Bash only, so the Edit/Write path guard does not apply),
+the port-free check that stops `reuseExistingServer` from testing the wrong code, the spec-file route
+(`git show <test sha>:…`), and a two-part expected output (`1 failed` at `toHaveCount(1)` AND a `[WebServer]` line
+with `e2e: insert rejected`) with a stop rule for anything else. That pair tells a real red apart from a fault that
+never reached the server's schema. The brief override now also covers "red at HEAD → stop and report".
+
+### Checklist
+
+| Check                                                                             | Result                                                                                       |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass (unchanged from round 1)                                                                |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass\* (unchanged: holds only if the lead rules D-16 with the raw-SQL clause)                |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass (unchanged)                                                                             |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass (unchanged)                                                                             |
+| verification lists exact commands with expected numbers                           | pass: step 3 is runnable and its expected output discriminates; the cleanup line is reason 1 |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass\* (unchanged: D-13 shape, stated)                                                       |
+| the section has a `Lead approves spec` box, ticked only by a human                | pass (unchanged; none ticked by the reviewer)                                                |
+| no settled D-n contradicted                                                       | pass\* (unchanged: D-16 must be ruled before step 2)                                         |
+
+### Reasons (changes requested)
+
+1. **Step 3's cleanup removes more than the scratch tree.** `scripts/worktree-prune.sh --base origin/main` prunes
+   every worktree under `.worktrees/` whose branch counts as merged, not only `red/B1.10-pre-b1-5`. Trigger (dry run
+   today, from the session root): it would also `git worktree remove --force` and `git branch -D`
+   `docs/B1.8-done` (cherry) and `feat/B1.9-widen-log-redaction` (tree, B1.9 merged as #31). `--force` discards
+   uncommitted changes, so if another session is writing B1.9's closing commit in that worktree at the time, the work
+   is lost. The comment "worktree, branch, schema removed" reads as the scratch only. Fix, one line: run
+   `scripts/worktree-prune.sh --dry-run --base origin/main` first and proceed only if `red/B1.10-pre-b1-5` is the sole
+   `[prune]` line, otherwise stop and leave the scratch for the human to remove; or state the side effect in the plan so
+   the lead accepts it at the gate.
+
+### Notes (no change required)
+
+- `tee review-red.txt` writes an untracked file into the session root. `$TMPDIR/b110-red.txt` keeps that tree clean.
+  Only the pasted excerpt goes into `review.md`.
+- Postgres was down during this review (`postgres not running` in the dry run). `worktree.sh` only warns when
+  `db:deploy` fails, so `docker compose up -d` comes before step 3; otherwise the run fails on a missing table, which
+  the stop rule catches.
+- `lsof … && exit 1` aborts the rest of a one-call run before the cleanup. That is the right stop, and the scratch
+  tree is then left for the human.
+
+Verdict: changes requested
