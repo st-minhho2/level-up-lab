@@ -282,10 +282,131 @@ path on Next's vendored React, so a `next` upgrade could empty the box after a f
 
 Rounds: 1
 
-## Dispositions (dev-lead, pass 1 of 3)
+## Dispositions (dev-lead, passes 1–2 of 3)
 
-| Pass | #   | Finding (file:line)                                                                | Source                          | Kind          | Disposition      | Justification                                                                                                                    |
-| ---- | --- | ---------------------------------------------------------------------------------- | ------------------------------- | ------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| 1    | 1   | `todo-form.tsx:13`, `:28` box reset to the onChange draft, not the submitted title | reviewer                        | spec-mismatch | fix now          | test `bbdf7cb` (red on the box value), fix `933962a`: draft read from the submitted FormData in `onSubmit`; 71 unit, 12 e2e      |
-| 1    | —   | B-2 commit order verified by hand only on Next's vendored React                    | reviewer (riskiest unfalsified) | coverage      | out of scope     | needs a fault-injection hook for an e2e (config change, ask first); carried into the PR body as a known risk of a `next` upgrade |
-| 1    | —   | §10 index ◐ → ✅; metrics top table (second plan round)                            | reviewer note 2                 | docs          | no change needed | closing commit after merge, per plan                                                                                             |
+| Pass | #   | Finding (file:line)                                                                | Source                          | Kind          | Disposition      | Justification                                                                                                                                     |
+| ---- | --- | ---------------------------------------------------------------------------------- | ------------------------------- | ------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | 1   | `todo-form.tsx:13`, `:28` box reset to the onChange draft, not the submitted title | reviewer                        | spec-mismatch | fix now          | test `bbdf7cb` (red on the box value), fix `933962a`: draft read from the submitted FormData in `onSubmit`; 71 unit, 12 e2e                       |
+| 1    | —   | B-2 commit order verified by hand only on Next's vendored React                    | reviewer (riskiest unfalsified) | coverage      | out of scope     | needs a fault-injection hook for an e2e (config change, ask first); carried into the PR body as a known risk of a `next` upgrade                  |
+| 1    | —   | §10 index ◐ → ✅; metrics top table (second plan round)                            | reviewer note 2                 | docs          | no change needed | closing commit after merge, per plan                                                                                                              |
+| 2    | 1   | `todo-form.tsx:19-22` draft taken at submit; text typed while pending is discarded | reviewer                        | correctness   | fix now          | test `3fc71da` (red: box kept `Buy milk`, not `Buy milk now`), fix `0e3d738`: `onChange` restored next to the `onSubmit` capture; 72 unit, 12 e2e |
+
+## Diff review (pass 2)
+
+SCOPE: ui
+
+Reviewed: `git diff 73db034..HEAD` (`bbdf7cb` test, `933962a` fix, `3f80972` docs) against pass 1 finding 1, §10
+(REQ-10.5, REQ-10.6, AC-10.5, Intent "What they typed is still in the box"), §7 (`useActionState(createTodoAction)`),
+`plan.md` (round 2, B-2) and the dispositions. Run in this worktree on 2026-10-29, the gates one after another (e2e
+finished before Stryker started). Probes on a copy under the session scratchpad (`rsync` without `node_modules`,
+`.git`, `.env`; `node_modules` symlinked; probe-only fault in the copy's `createTodo`: a title starting `FAIL` throws,
+one containing `SLOW` waits 2.5 s), own `next dev` on port 3792 with this worktree's schema. The copy, the scripts and
+the 8 probe rows are deleted.
+
+### Command results (last line of each)
+
+| Command                             | Last line                                                                                                     |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!`                                                                  |
+| `pnpm typecheck`                    | `tsc --noEmit` (no output, exit 0)                                                                            |
+| `pnpm test`                         | `Tests  71 passed (71)`                                                                                       |
+| `pnpm test:e2e`                     | `12 passed (13.8s)`                                                                                           |
+| `pnpm test:mutation`                | `Final mutation score of 82.98 is greater than or equal to break threshold 70` (`src/actions/todos.ts` 88.46) |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                                     |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                             |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                            |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test` (`§10 criteria=5 covered=5`)                            |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 2 3 4 5 6 7 8 9 10`                                                                    |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                                          |
+| `scripts/ci/check-backlog.sh`       | `OK: README matches the cards`                                                                                |
+| `scripts/verify-red.sh B1.5`        | `RESULT: red for the right reason` (unchanged: judges `311c8ef` only)                                         |
+| `git diff --stat origin/main..HEAD` | `15 files changed, 896 insertions(+), 57 deletions(-)`                                                        |
+
+Mutation is unchanged from pass 1 (82.98; no `src/lib` or `src/actions` change since).
+
+### Pass 1 finding 1: resolved
+
+Both triggers now keep the title (Chromium, Next's vendored React, copy with the fault):
+
+| Scenario                                                                | Box after                     | Alerts in form | "Add"   | Rows      |
+| ----------------------------------------------------------------------- | ----------------------------- | -------------- | ------- | --------- |
+| typed **before hydration** (JS chunks delayed 4 s), "Add" clicked after | `FAIL typed before hydration` | 1              | enabled | unchanged |
+| then `Probe2 ok A` succeeds                                             | `''`                          | 0              | enabled | +1        |
+| after a success, `FAIL z` set without an `input` event, "Add"           | `FAIL z` (was the old title)  | 1              | enabled | unchanged |
+| fail (Enter), edit, fail (Enter), then succeed                          | kept, kept edited, `''`       | 1, 1, 0        | enabled | +1        |
+| `   ` → title error, then `FAIL …` → form failure, then "Add" unchanged | `''`, kept, kept              | 1 each         | enabled | unchanged |
+
+The new test is meaningful: with `73db034`'s `todo-form.tsx` on the copy it fails on the box value (`Received: ''`),
+alone (`1 failed | 4 passed`).
+
+### onSubmit against the native POST and the enhancement
+
+- Server render unchanged: `curl /` → `<form class="flex flex-col gap-2" action="" encType="multipart/form-data"
+method="POST">` with `$ACTION_REF_1`, `$ACTION_1:0`, `$ACTION_1:1`, `$ACTION_KEY`; no `onsubmit` attribute
+  (React handlers are not serialized).
+- No JavaScript (Chromium, `javaScriptEnabled: false`): a valid title is stored and listed; a `FAIL` title shows the
+  alert, box `''` (plan review round 2 note 2, unchanged).
+- Submit **before** hydration with JavaScript on (chunks delayed 6 s, Enter): the form posts natively (navigation),
+  the alert shows, box `''`. Same path as no-JS; `onSubmit` cannot run there, and `73db034` behaved the same. Not
+  introduced by this diff; it is round 2 note 2's open question.
+- The handler does not call `preventDefault`, so React's `FormActionEventPlugin` still takes the action path
+  (`react-dom-client.development.js` `extractEvents$1`: a prevented submit runs `startHostTransition` with a `null`
+  action). Probe: adding `event.preventDefault()` fails AC-5.2, AC-5.3 and both AC-10.5 tests, so the suite guards it.
+
+### Checklist
+
+| Check                                                  | Result                                                                                                                                                                                           |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every AC-§.n has a test whose assertion matches Then   | pass: unchanged; AC-10.5 `todo-form.test.tsx:67` still covers the full Then (alert, `Buy milk`, enabled, recovery to 0 / `''`).                                                                  |
+| no test weakened after the red commit                  | pass: `git diff 311c8ef..HEAD -- '*.test.*' e2e/` is one added test (+21), in `bbdf7cb` (`test(todos): B1.5 review pass 1 -- …`, body "Red because …"); no existing line changed.                |
+| every changed file is in `plan.md`                     | pass: `todo-form.tsx` and its test are planned files. The plan's Interfaces line `// written by the input's onChange` is stale since `933962a` (note 2).                                         |
+| interfaces match the section's contracts               | pass: `TodoForm(): ReactNode`, `useActionState(createTodoAction, null)` literal (§7), one `<p id="new-todo-error" role="alert">`, `title ?? form`.                                               |
+| Zod / Prisma / raw SQL / migration                     | n/a: no `src/actions`, `src/lib` or `prisma/` change since pass 1.                                                                                                                               |
+| no secret, no suppression                              | pass.                                                                                                                                                                                            |
+| features map row moved                                 | pass: unchanged since pass 1, `check-features-map.sh` OK.                                                                                                                                        |
+| would any test fail if one changed line were reverted? | pass for the changed lines: `setDraft('')` in `onSubmit` fails both AC-10.5 tests; `kept` always `''` fails both; the `73db034` form fails the new test; `preventDefault()` added fails 4 tests. |
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: src/components/todo-form.tsx:19-22 (onSubmit is now the only writer of `draft`; the input's onChange was removed)
+    DEFECT: `draft` is frozen at submit time, so text the person types into the still-enabled box while the save is
+            pending is overwritten by React's post-action reset after a `form` failure.
+    TRIGGER: real Chromium, copy with the fault: fill `FAIL SLOW`, click "Add", while "Add" is disabled type ` more`
+            (box reads `FAIL SLOW more`), the save fails → box `FAIL SLOW`, 1 alert. Same flow on `73db034`'s form
+            → `FAIL SLOW more` (pass 1's table row "`FAIL SLOW` pending … `FAIL SLOW more`" held then). jsdom
+            reproduces it with react-dom 19.1.0: `createTodoAction` returns a promise settled by hand; `user.type`
+            `Buy milk`, click "Add", wait for "Add" disabled, `user.type` ` and eggs`, settle `{ ok: false,
+            fieldErrors: { form: ['Could not save, try again'] } }` → `toHaveValue('Buy milk and eggs')` fails with
+            `Buy milk` on HEAD, passes on `73db034`.
+    WRONG BEHAVIOUR: §10 Intent "What they typed is still in the box" and REQ-10.6 "keep the typed title in the box":
+            the characters typed during the pending save are deleted. A regression introduced by `933962a`; pass 1's
+            suggested candidate (onSubmit alone) had the same gap and its probes did not type while pending.
+    CONFIDENCE: confirmed (both runtimes run, HEAD and 73db034 compared)
+```
+
+For the test-writer / code-writer (not prescriptive): the jsdom recipe above is red on HEAD and green on `73db034`.
+Candidate, probed: keep the `onSubmit` capture **and** restore the input's `onChange={(event) => setDraft(…)}`
+(submit seeds the draft for text that never fired a change event; later keystrokes, pending ones included, update
+it). With it: component suite 21/21 (the 20 existing plus the recipe); Chromium: pending edit kept (`FAIL SLOW
+more`), typed before hydration kept, value set without an event kept, title error then failure kept, success → `''`,
+no-JS POST stores. The narrow residue (text set without an event while pending) is not reachable by typing.
+
+### Notes (not findings)
+
+1. The new test is titled `AC-10.5:` although pass 1 suggested no prefix: its Given (a value set without a change
+   event, no recovery half) is not AC-10.5's ("the person types `Buy milk`"). `check-ac-coverage.sh` is indifferent;
+   the precedent kept such a test unprefixed (plan review round 1 note 2). Lead's call; not blocking.
+2. `plan.md` Interfaces reads `useState('') // written by the input's onChange`; after `933962a` it is written by
+   `onSubmit`, after the candidate fix by both. dev-lead: carry the final wording into the PR body's Plan section.
+3. Pass 1 notes 2 and 3 and the riskiest-unfalsified line still stand (closing commit; B-2's order on Next's vendored
+   React, re-confirmed by hand today in every row above).
+
+Verdict: back to test-writer (finding 1: a failing test for the edit-while-pending case first, then code-writer)
+
+Riskiest unfalsified: B-2's commit order on Next's vendored React (`defaultValue` committed before the post-action
+form reset) is still checked only by hand in Chromium; a `next` upgrade could empty the box after a failure while
+the jsdom suite (react-dom 19.1.0) stays green.
+
+Rounds: 2
