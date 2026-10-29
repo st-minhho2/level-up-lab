@@ -78,5 +78,8 @@ Prisma's `PrismaClientInitializationError` (database down) carries its code as `
 (`@prisma/client` `runtime/library.d.ts`), so a database-down entry has `name`, `message`, `stack` and no code.
 §11 REQ-11.3 names only `code`: a §11 change, D-14 requested (README "Waiting on human").
 
+- **Spec:** §11 — unchanged (REQ-11.3, AC-11.2 cases (d)–(g) and Function contracts extended under D-14)
+- **Test:** `src/lib/logger.test.ts::AC-11.2: records a string errorCode as error.code when the Error has no string code` — red because: `describeError` in `src/lib/logger.ts` reads only `error.code`, so the entry's `error` keys are `name, message, stack` with no `code` (fails on the key-order assertion, not on an import)
+- **Acceptance:** AC-11.2 (cases (d)–(g); (a)–(c) stay green)
 - **Tier:** quick · **Depends on:** ~~B1.6~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.8/`
