@@ -40,10 +40,23 @@ scripts/verify-red.sh --auto               # no (red) commit → exits 0 (D-13 A
 
 ## Work breakdown
 
-| Step     | Role / skill                       | Produces                                    | Commit                                           |
-| -------- | ---------------------------------- | ------------------------------------------- | ------------------------------------------------ |
-| 1 Tests  | `test-writer` (hardening, not red) | the three tests, green on arrival           | `test(todos): B1.7 kill four mutation survivors` |
-| 2 Gate   | dev-lead                           | suites green, Stryker after, mutants Killed | —                                                |
-| 3 Review | `reviewer` (diff), `/review-loop`  | `review.md` diff section, gate cleared      | `docs(backlog): B1.7 diff review …`              |
+| Step     | Role / skill                      | Produces                                    | Commit                                           |
+| -------- | --------------------------------- | ------------------------------------------- | ------------------------------------------------ |
+| 0 Ruling | lead (at this gate, D-2)          | D-13 row in `00-decisions.md`               | `docs(backlog): D-13 …` (lead's words)           |
+| 1 Tests  | `test-writer` (brief override)    | the three tests, green on arrival           | `test(todos): B1.7 kill four mutation survivors` |
+| 2 Gate   | dev-lead                          | suites green, Stryker after, mutants Killed | —                                                |
+| 3 Review | `reviewer` (diff), `/review-loop` | `review.md` diff section, gate cleared      | `docs(backlog): B1.7 diff review …`              |
+
+Step 0. The D-13 request is in README "Waiting on human"; it is ruled in the same reply as this plan (one gate, D-2).
+Option A → as above. Option B → step 2 also applies each of the four mutants by hand on a copy and records the
+failing test's output in `review.md`. Option C → stop; a `verify-red.sh` mutant mode is a config change outside this
+card. D-13 (A or B) also settles that `backlog/CLAUDE.md` (hardening commits carry no `(red)`) governs over
+`code-writer.md:31`.
+
+Step 1 brief override (test-writer Procedure 2–4 assume red): "Hardening under D-13: the tests kill mutants of
+correct code, so they are green on arrival. Do not run `verify-red.sh B1.7`; commit without `(red)`. Test 3 narrows
+the parse result (`const parsed = z.string().min(1, 'Boom').safeParse(''); if (parsed.success) throw new
+Error('expected a failed parse'); fieldErrorsOf(parsed.error)`), since destructuring `error` fails typecheck
+(TS2345). Report one line per test naming the mutant it kills."
 
 Plan review: · Plan approved by: · Rounds: 1
