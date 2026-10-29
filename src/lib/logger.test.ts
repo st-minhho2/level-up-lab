@@ -44,6 +44,11 @@ function codedError(message: string, code: unknown): Error {
   return Object.assign(new Error(message), { code });
 }
 
+// Prisma's initialization errors carry their code as `errorCode`; `code` is set only when given, so "no code" means no key.
+function errorCodedError(message: string, errorCode: unknown, code?: unknown): Error {
+  return Object.assign(new Error(message), code === undefined ? { errorCode } : { errorCode, code });
+}
+
 beforeEach(() => {
   vi.resetAllMocks();
   env.getEnv.mockReturnValue({ DATABASE_URL });
@@ -114,6 +119,48 @@ describe('logMutationFailure (§11)', () => {
     const entry = onlyEntry();
     expect(entry.error).toEqual({ name: 'NonError', message: 'boom' });
     expect(Object.keys(entry.error)).toEqual(['name', 'message']);
+  });
+
+  it('AC-11.2: records a string errorCode as error.code when the Error has no string code', () => {
+    const error = errorCodedError('db down', 'P1001');
+
+    logMutationFailure('clearCompletedTodosAction', error);
+
+    const entry = onlyEntry();
+    expect(Object.keys(entry.error)).toEqual(['name', 'message', 'code', 'stack']);
+    expect(entry.error.code).toBe('P1001');
+    expect(Object.keys(entry.error)).not.toContain('errorCode');
+  });
+
+  it('AC-11.2: records the string errorCode as error.code when the code is a number', () => {
+    const error = errorCodedError('db down', 'P1001', 42);
+
+    logMutationFailure('clearCompletedTodosAction', error);
+
+    const entry = onlyEntry();
+    expect(entry.error.code).toBe('P1001');
+    expect(Object.keys(entry.error)).not.toContain('errorCode');
+  });
+
+  it('AC-11.2: records the string code, not the errorCode, when the Error carries both', () => {
+    const error = errorCodedError('db down', 'P1001', 'P2002');
+
+    logMutationFailure('clearCompletedTodosAction', error);
+
+    const entry = onlyEntry();
+    expect(entry.error.code).toBe('P2002');
+    expect(Object.keys(entry.error)).not.toContain('errorCode');
+  });
+
+  it('AC-11.2: records no code key when the errorCode is a number and there is no code', () => {
+    const error = errorCodedError('db down', 1001);
+
+    logMutationFailure('clearCompletedTodosAction', error);
+
+    const entry = onlyEntry();
+    expect(Object.keys(entry.error)).not.toContain('code');
+    expect(Object.keys(entry.error)).not.toContain('errorCode');
+    expect(entry.error.message).toBe('db down');
   });
 
   it('AC-11.3: replaces the DATABASE_URL value and its password with [redacted] in message and stack', () => {

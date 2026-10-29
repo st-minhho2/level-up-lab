@@ -86,3 +86,17 @@ change.
 - **Tier:** quick · **Depends on:** ~~B1.6~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.7/` — analysis, plan (rounds 1/1), review (plan rounds 2, diff pass 1/3, 0 findings); squash `07f753a` (#27)
 - **Ruled:** D-13 — tests-only hardening cards land without `(red)`; red evidence is the mutation report before and after.
+
+### B1.8 · Log the Prisma error code of a failed connection
+
+_F9 · §11_
+**Status: Open** — `src/lib/logger.ts:44` reads only `error.code` (`const { code } = error as Error & { readonly code?: unknown }`);
+Prisma's `PrismaClientInitializationError` (database down) carries its code as `errorCode?: string`
+(`@prisma/client` `runtime/library.d.ts`), so a database-down entry has `name`, `message`, `stack` and no code.
+§11 REQ-11.3 names only `code`: a §11 change, ruled by D-14.
+
+- **Spec:** §11 — unchanged (REQ-11.3, AC-11.2 cases (d)–(g) and Function contracts extended under D-14)
+- **Test:** `src/lib/logger.test.ts::AC-11.2: records a string errorCode as error.code when the Error has no string code` — red because: `describeError` in `src/lib/logger.ts` reads only `error.code`, so the entry's `error` keys are `name, message, stack` with no `code` (fails on the key-order assertion, not on an import)
+- **Acceptance:** AC-11.2 (cases (d)–(g); (a)–(c) stay green)
+- **Tier:** quick · **Depends on:** ~~B1.6~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.8/`
