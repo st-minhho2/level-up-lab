@@ -103,3 +103,94 @@ Notes (not blocking):
 - The README "Waiting on human" D-13 row is not in Files; it should leave with step 0's commit or the closing commit.
 - Under option B, the per-mutant failing-test output is the diff review's job (it reruns the round 1 probe table on
   the committed tests), so `dev-lead` need not write into `review.md`.
+
+## Diff review (round 1)
+
+SCOPE: all (`src/actions` and `src/lib` tests; no non-test `src/` change)
+
+Reviewed: `main...HEAD` at `0af8a79` (`test(todos): B1.7 kill four mutation survivors`, no `(red)`, D-13 A; no
+skeleton, no `feat`). Against `plan.md` (approved by lead 2026-10-29), D-13, card B1.7 contract lines, §5
+`03-todos.md:18,32–33,58–59`, §10 `08-mutation-feedback.md:40–53`, §7 `05-ui.md:6`, `.claude/rules/*.md`.
+
+### Commands (run by the reviewer in this worktree, last line each)
+
+| Command                                     | Result                                                                                                                                                                                                                      |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                 | `All matched files use Prettier code style!` (exit 0)                                                                                                                                                                       |
+| `pnpm typecheck`                            | `tsc --noEmit` exit 0                                                                                                                                                                                                       |
+| `pnpm test`                                 | `Tests 96 passed (96)` (12 files; 94 → 96 as planned)                                                                                                                                                                       |
+| `pnpm test:e2e`                             | `12 passed (14.0s)`                                                                                                                                                                                                         |
+| `pnpm test:mutation`                        | not re-run: relied on dev-lead's run, `reports/mutation/mutation.json` (14:32, after the 14:29 commit, tree clean). Read by the reviewer: Killed 101, Survived 12, NoCoverage 1, CompileError 115 → **88.60 %** (> 85.09 %) |
+| `scripts/ci/check-suppressions.sh`          | `OK: no new suppressions`                                                                                                                                                                                                   |
+| `scripts/ci/check-config-change.sh`         | `OK: no protected config changed`                                                                                                                                                                                           |
+| `scripts/ci/check-feat-commits.sh`          | `OK: no feat commit touches tests`                                                                                                                                                                                          |
+| `scripts/ci/check-ac-coverage.sh`           | `OK: every criterion of a shipped section has a test`                                                                                                                                                                       |
+| `scripts/ci/check-spec-sections.sh`         | `OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11`                                                                                                                                                                               |
+| `scripts/ci/check-features-map.sh`          | `OK`                                                                                                                                                                                                                        |
+| `scripts/verify-red.sh --auto` (for `B1.7`) | `no test(...): B<e>.<n> … (red) commit in range; nothing to verify` (exit 0). Substituted per D-13; `verify-red.sh B1.7` exits 1 ("no … (red) commit"), as D-13 states.                                                     |
+| `git diff --stat main...HEAD`               | 8 files, +329 −18; under `src/` only `src/actions/todos.test.ts` +9, `src/lib/action-result.test.ts` +14 (0 deletions)                                                                                                      |
+
+### Red evidence (D-13: before/after report, plus per-mutant probe)
+
+`mutation.json` targets and `killedBy`:
+
+| Mutant                                              | Before (analysis.md, 85.09 %) | After    | Killed by                                                              |
+| --------------------------------------------------- | ----------------------------- | -------- | ---------------------------------------------------------------------- |
+| `todos.ts` 24:54 `typeof … === 'string'` → `true`   | Survived                      | Killed   | `AC-5.3: … when the form has no title field and stores nothing`        |
+| `todos.ts` 24:96 `''` → `"Stryker was here!"`       | NoCoverage                    | Killed   | same test                                                              |
+| `todos.ts` 46:20 `revalidatePath('/')` → `('')`     | Survived                      | Killed   | `AC-5.4: returns the toggled todo and revalidates /`                   |
+| `action-result.ts` 18:55 `\|\| 'form'` → `\|\| ''`  | NoCoverage                    | Killed   | `fieldErrorsOf puts the message of an issue without a path under form` |
+| `action-result.ts` 18:47 `.join('.')` → `.join('')` | Survived                      | Survived | none (out of scope, plan Q3)                                           |
+
+Probe on a `git archive HEAD` copy (`$TMPDIR/b17diff-wTxb`, `node_modules` symlinked, only tracked `.env.example`
+present), committed tests, each mutant applied by hand, `vitest run` on the two files: baseline `Tests 28 passed
+(28)`; 24:54 → `1 failed | 27 passed`, the AC-5.3 absent-field test; 24:96 → same; 46:20 → `1 failed`, AC-5.4;
+18:55 → `1 failed`, the `fieldErrorsOf` test. Each new assertion is the only one that fails against its mutant, so
+reverting any changed test line lets that mutant survive again.
+
+### Checklist
+
+| Check                                                                | Result                                                                                                                                                                                                                                                                           |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-§.n has a test whose assertion matches its Then             | pass: `check-ac-coverage.sh` OK. The new AC-5.3 test asserts AC-5.3's Then exactly (`{ ok: false, fieldErrors: { title: ['Title is required'] } }`, nothing stored); the AC-5.4 addition asserts the path that §10 l.48 and §7 l.6 name (`revalidatePath('/')`).                 |
+| no test weakened after the red commit                                | pass: no red commit (D-13); `main...HEAD` under `src/` is 23 insertions, 0 deletions; no assertion removed or loosened.                                                                                                                                                          |
+| every changed file is in `plan.md`                                   | pass: the two test files, `00-decisions.md` (whitespace-only re-pad of D-1–D-12 by prettier plus the appended D-13 row; `git diff -w` shows only the D-13 line), `README.md`, `review.md`. `plan/E1-todos.md`, `analysis.md`, `plan.md` are the card and its pre-plan artifacts. |
+| interfaces match the section's contracts                             | pass: no interface change; tests call `createTodoAction(null, FormData)`, `toggleTodoAction(id)`, `fieldErrorsOf(ZodError)` as §5 l.58–59 and §10 contracts give them.                                                                                                           |
+| Zod at every action boundary · Prisma only in `src/lib` · no raw SQL | pass: no non-test `src/` change.                                                                                                                                                                                                                                                 |
+| migration reversible and indexed                                     | n/a: no `prisma/` change.                                                                                                                                                                                                                                                        |
+| no secret, no suppression                                            | pass: `check-suppressions.sh` OK; no `.only`/`.skip`/`.todo` in either file.                                                                                                                                                                                                     |
+| features map row moved                                               | n/a: tests only; `check-features-map.sh` OK (test modules need no row).                                                                                                                                                                                                          |
+| test style (`testing.md`)                                            | pass: AAA with blank lines, values asserted (`toEqual`, `mock.calls`), mocks only at boundaries (`@/lib/todos`, `next/cache`); `fieldErrorsOf` test uses real Zod and narrows `parsed` as the plan's brief gives it. Card `Test:` title matches the committed title verbatim.    |
+| commit shape (D-13)                                                  | pass: one `test(todos): B1.7 …` commit without `(red)`, body names each mutant killed; no `feat`.                                                                                                                                                                                |
+
+### Findings
+
+None blocking. dev-lead's two doubts, examined:
+
+- **`AC-5.3` prefix on the absent-field test.** Not a finding. The lead ruled Q1 at the plan gate ("absent title is
+  REQ-5.3's empty title (AC-5.3 prefix)"); the title matches the card's `Test:` contract line verbatim; the Then is
+  AC-5.3's exactly. The stretch is real: AC-5.3's Given lists only `"   "` and 201 characters, and no section says a
+  form without a `title` field is "empty after trimming" (REQ-5.3); the code's `typeof rawTitle === 'string' ? … : ''`
+  is the only place that says it. Trigger for a future reader: counting AC-5.3 coverage finds three tests for two
+  Givens. If the lead wants the spec to carry it, a `docs(spec): §5` adding "form without `title`" to AC-5.3's Given
+  under a D-n is the fix; not this card's (spec unchanged by contract line).
+- **Title "fieldErrorsOf puts …" repeats its describe name.** Not a finding: no rule forbids it, `testing.md` only
+  requires no prefix for a test without a criterion, and the file has the precedent `createTodoAction resolves the
+form failure when revalidatePath throws …` inside `describe('createTodoAction')` (`todos.test.ts:105`). Vitest's
+  full name reads `fieldErrorsOf > fieldErrorsOf puts …`; dropping the repeat is cosmetic and optional.
+
+Note (not blocking): the new test uses `toHaveBeenCalledTimes(0)` where its sibling AC-5.3 tests use
+`not.toHaveBeenCalled()`; equivalent, both used in the file (AC-10.4 uses the former).
+
+Verdict: ready for PR
+
+Riskiest unfalsified: `action-result.ts` 18:47 `.join('.')` → `.join('')` still survives; no schema has a nested
+path today, so a future nested field would key as `ab` instead of `a.b` with no test noticing (out of scope, plan Q3).
+
+### Dispositions (dev-lead, pass 1 of 3)
+
+| Pass | #   | Finding (file:line)                                               | Source                          | Kind     | Disposition      | Justification                                                                                                                                    |
+| ---- | --- | ----------------------------------------------------------------- | ------------------------------- | -------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1    | —   | `action-result.ts:18` `.join('.')` → `.join('')` survives         | reviewer (riskiest unfalsified) | coverage | out of scope     | plan Q3: no section states the nested-key format and no schema in `src/` is nested; follow-up card for the remaining survivors                   |
+| 1    | —   | `AC-5.3` prefix on the absent-field test stretches AC-5.3's Given | dev-lead (unsure)               | spec     | no change needed | ruled at the plan gate (Q1); the Then is AC-5.3's exactly; a §5 Given naming the absent field would be a `docs(spec)` under a D-n, not this card |
+| 1    | —   | test title repeats its describe name (`fieldErrorsOf puts …`)     | dev-lead (unsure)               | style    | no change needed | no rule against it; precedent `todos.test.ts:105`; title matches the approved plan verbatim                                                      |
