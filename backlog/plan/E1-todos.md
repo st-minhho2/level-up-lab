@@ -73,7 +73,7 @@ _F9 (new) · §11_
 ### B1.7 · Kill pre-existing mutation survivors
 
 _F3 F4 F8 · §5 §7 §10_
-**Status: Open** — `pnpm test:mutation` on `main` (9250a74, 85.09 %) leaves survivors no test can tell from the
+**Status: Done** — 07f753a (#27); 96 unit/component + 12 e2e green, mutation 88.60 % (actions 100, lib 85.2); hardening 0af8a79 (D-13, no red commit); todos.ts 24:54, 24:96, 46:20 and action-result.ts 18:55 Killed
 code: `src/actions/todos.ts:24` (`typeof rawTitle === 'string'` → `true`; the `''` fallback → `"Stryker was here!"`:
 no test submits a form without a string `title`), `src/actions/todos.ts:46` (toggle's `revalidatePath('/')` →
 `revalidatePath('')`: `AC-5.4: returns the toggled todo and revalidates /` counts calls, never the path),
@@ -84,4 +84,5 @@ change.
 - **Test:** `src/actions/todos.test.ts::AC-5.3: returns fieldErrors.title ["Title is required"] when the form has no title field and stores nothing` — red because: against Stryker mutant `src/actions/todos.ts` 24:54 (`typeof rawTitle === 'string'` → `true`) the result is `title: ['Invalid input: expected string, received null']`, and against 24:96 (`''` → `"Stryker was here!"`) `createTodo` is called; green against the current code by design (tests-only card, no `(red)` commit; see `work/B1.7/analysis.md` Needs a ruling)
 - **Acceptance:** the three survivors above are killed; `pnpm test:mutation` above 85.09 %
 - **Tier:** quick · **Depends on:** ~~B1.6~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.7/` — analysis (spec-analyst)
+- **Work:** `work/B1.7/` — analysis, plan (rounds 1/1), review (plan rounds 2, diff pass 1/3, 0 findings); squash `07f753a` (#27)
+- **Ruled:** D-13 — tests-only hardening cards land without `(red)`; red evidence is the mutation report before and after.
