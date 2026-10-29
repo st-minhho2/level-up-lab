@@ -61,11 +61,11 @@ _F8 · §10_
 ### B1.6 · Log swallowed mutation failures
 
 _F9 (new) · §11_
-**Status: Open** — the four `catch` arms in `src/actions/todos.ts` (lines 30, 45, 64, 80) resolve `failure('form', MUTATION_FAILED_MESSAGE)` and drop the cause: nothing in `src/` logs (`grep -rn 'console\.' src` outside tests is empty; `eslint.config.mjs:48` sets `no-console: error`). D-11 defers logging "until a logger card lands".
+**Status: Done** — f191c34 (#15); 94 unit/component + 12 e2e green, mutation 85.09 % (actions 88.5, lib 84.1, logger 95.0); skeleton 592977a, red 67294c1, green ff66382, review test 51f7399
 
 - **Spec:** §11 — unchanged (section written from `work/B1.6/analysis.md`)
 - **Test:** `src/lib/logger.test.ts::AC-11.1: writes one newline-terminated JSON line with level, time, msg, action and error to stderr and nothing to stdout` — red because: `src/lib/logger.ts` does not exist yet; once the skeleton stub throws `NotImplementedError`, `logMutationFailure` throws instead of writing the line
 - **Acceptance:** AC-11.1 … AC-11.6
 - **Tier:** full · **Depends on:** ~~B1.5~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.6/` (analysis.md, advice.md, plan.md, review.md as the roles produce them)
+- **Work:** `work/B1.6/` — analysis, advice, plan (rounds 1/1), review (plan round 1, diff pass 1/3, 1 coverage finding fixed); squash `f191c34` (#15)
 - **Ruled:** D-12 — in-repo stderr JSON logger; name, message, string code, stack; secrets scrubbed; input never logged.
