@@ -146,3 +146,22 @@ Notes (no change requested):
 Riskiest unfalsified: the fixed awk's rule order (skip rules after `incard && /^### /`) on a status paragraph that is
 the file's last card with no trailing blank line; the planned rule ends at EOF, so only a lost-line case is
 conceivable, and none was found in the variants run.
+
+## Red and green evidence (dev-lead)
+
+Probe `bash backlog/work/B1.12/probe.sh <script> <(git show 24665de:backlog/plan/E1-todos.md)`:
+
+```
+# before: scripts/card-status.sh at 24665de
+FAIL B1.10: 5 line(s) left over, 0 line(s) lost
+PASS B1.6
+FAIL B9.1: 1 line(s) left over, 0 line(s) lost
+FAIL B9.2: 1 line(s) left over, 0 line(s) lost
+# after: scripts/card-status.sh at 9dac5b4
+PASS B1.10
+PASS B1.6
+PASS B9.1
+PASS B9.2
+```
+
+Cleanup: `git diff --numstat origin/main -- backlog/plan/E1-todos.md` → `0 23`; `check-backlog`, `check-spec-sections`, `check-features-map` OK; `bash -n scripts/card-status.sh` OK.
