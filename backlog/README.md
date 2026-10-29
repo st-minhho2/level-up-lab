@@ -7,8 +7,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic      | File                                 | Done   | Partial | Open  | Total  |
 | --------- | ------------------------------------ | ------ | ------- | ----- | ------ |
-| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 11     | 0       | 0     | 11     |
-| **Total** |                                      | **11** | **0**   | **0** | **11** |
+| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 11     | 0       | 1     | 12     |
+| **Total** |                                      | **11** | **0**   | **1** | **12** |
 
 ## Execution order
 
@@ -35,12 +35,14 @@ flowchart TD
   S5 --> S10
   S11["11 · Redact password as written<br/>~~B1.11~~"]
   S9 --> S11
+  S12["12 · card-status.sh whole paragraph<br/>B1.12"]
 ```
 
 ## Remaining
 
-| Step | ID  | Title | Spec § | Status | Blocked by | Owner | Size |
-| ---- | --- | ----- | ------ | ------ | ---------- | ----- | ---- |
+| Step | ID    | Title                                                | Spec § | Status | Blocked by | Owner | Size         |
+| ---- | ----- | ---------------------------------------------------- | ------ | ------ | ---------- | ----- | ------------ |
+| 12   | B1.12 | `card-status.sh` replaces the whole status paragraph | —      | Open   |            | Lead  | S [estimate] |
 
 ## Waiting on human
 
