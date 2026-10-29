@@ -3,7 +3,7 @@
 | Script                                   | Does                                                                         | Needs                                |
 | ---------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------ |
 | `worktree.sh <branch> [base]`            | isolated worktree: port, schema, caches, storage, `.env`, deps               | compose PostgreSQL (optional)        |
-| `worktree-prune.sh [--dry-run]`          | removes merged worktrees, their branches and schemas                         | docker                               |
+| `worktree-prune.sh [--dry-run]`          | removes merged (incl. squash-merged) worktrees, their branches and schemas   | docker; `gh` optional (PR check)     |
 | `next-task.sh [--list]`                  | the next eligible card (or the board) from `backlog/`                        | —                                    |
 | `card-status.sh <id> <Open               | Partial                                                                      | Done> "<evidence>"`                  | rewrites a card's status line | —   |
 | `verify-red.sh <card> [--auto]`          | the card's `test(...)` commit fails on behavior at its parent                | node_modules; `--auto` PR only in CI |
