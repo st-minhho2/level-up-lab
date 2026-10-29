@@ -269,4 +269,24 @@ describe('logMutationFailure (§11)', () => {
 
     expect(onlyEntry().error.message).toBe('[redacted] and [redacted]');
   });
+
+  it('AC-11.3: leaves the message unchanged when the password and sslpassword query values are empty', () => {
+    env.getEnv.mockReturnValue({ DATABASE_URL: 'postgresql://app@db.internal:5432/lab?password=&sslpassword=' });
+    const error = new Error('db down');
+
+    logMutationFailure('createTodoAction', error);
+
+    expect(onlyEntry().error.message).toBe('db down');
+  });
+
+  it('leaves the values of query parameters not named exactly password or sslpassword unredacted (REQ-11.4)', () => {
+    env.getEnv.mockReturnValue({
+      DATABASE_URL: 'postgresql://app@db.internal:5432/lab?schema=public&PASSWORD=upper&password',
+    });
+    const error = new Error('The table public.todos does not exist; upper');
+
+    logMutationFailure('createTodoAction', error);
+
+    expect(onlyEntry().error.message).toBe('The table public.todos does not exist; upper');
+  });
 });
