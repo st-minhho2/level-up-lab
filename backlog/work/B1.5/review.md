@@ -102,3 +102,48 @@ down" instead of resolving`; AC-10.5 `Unable to find role="alert"`. verify-red's
 8. `plan.md` is 56 lines against `planning.md`'s "≈ 40"; the overrun is table-row width, not scope (same as B1.4).
 
 Rounds: 1
+
+## Plan review (round 2)
+
+SCOPE: all
+
+Reviewed: `backlog/work/B1.5/plan.md` at `9efec0b` (`Plan approved by: lead (session reply "approve"), 2026-10-29 ·
+Rounds: 2`), approach B-2 of `advice.md`. Worktree clean, no `src/` change. Probes on a copy under the session
+scratchpad (B-2 form, the §10 try/catch in `createTodoAction`, AC-10.5 written as §10's row says, and a probe-only
+fault for titles starting `FAIL`), `next dev` on port 3790 with this worktree's schema; copy deleted afterwards.
+
+| Check                                                                             | pass / fail: reason                                                                                                                                                                                                                                                                                                                                                              |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| round 1 reason 1 (A dropped the native POST and §7's literal hook)                | resolved: the plan switches to B-2 and states why in one line. `useActionState(createTodoAction, null)` stays literal (§7). Probe: `curl /` renders `<form … action="" encType="multipart/form-data" method="POST">` with `$ACTION_REF_1`, `$ACTION_1:0`, `$ACTION_1:1`, `$ACTION_KEY`; a no-JS multipart POST with title `Probe native ok` stores and lists the todo (200).     |
+| round 1 reason 2 (map row given to dev-lead)                                      | resolved: the F8 row is the code-writer's, in the green commit (Files line and step 3), whose hook allows `spec/features-map.md`; `check-feat-commits.sh` rejects only test files, so the row may ride in `feat(todos)` (B1.4 precedent).                                                                                                                                        |
+| every file in the plan belongs to the section's features (map)                    | pass: unchanged from round 1; `todo-form.tsx` line now says "header comment names §10" (round 1 note 5a).                                                                                                                                                                                                                                                                        |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass: no new import, no wrapper, no type import; `createTodoAction` signature unchanged. Probe: `tsc --noEmit` exit 0, `eslint` clean on `todo-form.tsx` with B-2 applied.                                                                                                                                                                                                       |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: B-2 is the advice's named fallback; the deviation from A is stated with its reason. One sentence of the rationale is wrong (note 1), it does not change the choice.                                                                                                                                                                                                        |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: unchanged (§10 has 5).                                                                                                                                                                                                                                                                                                                                                     |
+| verification lists exact commands with expected numbers                           | pass: probe with B-2 and AC-10.5 only: `vitest run` → `Tests 68 passed (68)` (67 + 1; the two action tests make 70); AC-10.5 fails on today's `todo-form.tsx` (`1 failed \| 3 passed`); `playwright test` (Chromium) → the 12 existing tests passed, AC-5.6 included. Mutants: `kept = ''` and alert reading `title` only fail AC-10.5; `kept = draft` fails AC-5.2 and AC-10.5. |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: no skeleton (justified), map folded into green by the code-writer, subjects unchanged from round 1.                                                                                                                                                                                                                                                                        |
+| the section's `Lead approves spec` box is ticked by a human (never by you)        | pass: `spec/contracts/08-mutation-feedback.md:6` `- [x] Lead approves spec (lead, 2026-10-29, plan gate of B1.5)`, unchanged.                                                                                                                                                                                                                                                    |
+| no settled D-n contradicted                                                       | pass: unchanged from round 1 (D-5, D-7, D-11).                                                                                                                                                                                                                                                                                                                                   |
+
+Verdict: approved
+
+Notes (none blocking):
+
+1. **Correction to the plan, and to round 1 reason 1.** "B-2's commit-order dependency is pinned by react/react-dom
+   19.1.0 exact and caught by AC-10.5" holds for `vitest` only (`react-dom` 19.1.0 in jsdom). The browser runs Next's
+   vendored React, `19.2.0-canary-0bdb9206-20250818` in `node_modules/next/dist/compiled/react-dom`, pinned by
+   `"next": "15.5.28"` (exact, `package.json:34`); AC-10.5 does not exercise it and no e2e can (§10 has no fault hook).
+   Probed in Chromium on that runtime with a probe-only fault: failure keeps `FAIL Buy milk`, 1 alert, "Add" enabled,
+   0 rows stored; edit and fail again keeps the new text; the next success lists the todo, 0 alerts, box `''`; a
+   failure on the first submit after load keeps the title. So B-2 is correct on both runtimes today; a `next` upgrade
+   (a dependency change, needs approval) must re-check the order by hand. dev-lead: carry the corrected sentence
+   into the PR body's Plan section.
+2. No-JS path, spec silent: after a failed native POST the server renders the alert but the box is empty (`value=""`,
+   `draft` is `''` on the server). Better than A (nothing submitted); if the lead wants REQ-10.6 to hold without JS,
+   that is an analysis question, not this card.
+3. For the test-writer: the mutant "keep the draft after any `ok: false`" survives every planned test; correct, the
+   box after a `title` error is out of scope (§10). With `user-event`, do not type again after a form reset without
+   `clear()` first (advice: `onetwo`); AC-10.5 as §10 words it does not type twice, so it is unaffected.
+4. `docs/metrics.md` names no role; dev-lead's hook allows it. `plan.md` is 59 lines (≈ 40; table width, as round 1).
+
+Rounds: 2
