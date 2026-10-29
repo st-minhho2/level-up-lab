@@ -25,6 +25,9 @@ checks|comment`. Everything the project scripts do.
 `vitest.config.mts`, `playwright.config.ts`, `tsconfig*.json`, `eslint.config.mjs` (label `config-change-approved`
 on the PR), dependencies.
 
+Adding or removing a label (`config-change-approved`, `hotfix`) starts a fresh `ci` run that reads the new labels and
+cancels the one in flight. "Re-run jobs" replays the old event and never sees a label added after it.
+
 ## Bringing `main` in
 
 `git merge main` inside the worktree (the commit-msg hook accepts `Merge …`). Never rebase a pushed branch.
