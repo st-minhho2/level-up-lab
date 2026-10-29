@@ -138,7 +138,7 @@ drops it afterwards; no app, env or config change; the raw SQL in `e2e/` is revi
 ### B1.11 · Redact the database password exactly as written in `DATABASE_URL`
 
 _F9 · §11_
-**Status: Open** — §11 disagrees with itself: REQ-11.4 names the query values "as written", while its Function
+**Status: Done** — 0b2a6d5 (#36); 115 unit/component + 13 e2e green, mutation 89.02 % (actions 100, lib 87.0, logger 91.4); pin dc3ba53, red 58fe164, green 4dfccfa, hardening 50935fb
 contracts take them from `url.search` and the password from `url.password`, both normalized by the URL parser
 (`src/lib/logger.ts:51`: `const url = new URL(value);`, then `url.password` and `querySecretsOf(url.search)`). Probe
 (`node -e`): `postgresql://app:pä%40ss@db.internal:5432/lab` gives `url.password` `p%C3%A4%40ss`, decoded `pä@ss`,
@@ -150,4 +150,5 @@ verbatim (B1.9 diff review, riskiest unfalsified; no such driver found). A §11 
 - **Test:** `src/lib/logger.test.ts::AC-11.3: redacts the userinfo password as written in DATABASE_URL` — red because: `secretsOf` in `src/lib/logger.ts` takes the password only from `new URL(value).password` (`p%C3%A4%40ss`, decoded `pä@ss`), so for `postgresql://app:pä%40ss@db.internal:5432/lab` `error.message` is `auth pä%40ss` instead of `auth [redacted]` (fails on the message assertion, not on an import)
 - **Acceptance:** AC-11.3 (cases (h)–(k), all four red before the change; (a)–(g) stay green)
 - **Tier:** quick · **Depends on:** ~~B1.9~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.11/`
+- **Work:** `work/B1.11/` — decision request, analysis, plan (rounds 1/1), review (plan rounds 2, diff pass 1/3, 1 finding fixed by hardening `50935fb`); squash `0b2a6d5` (#36)
+- **Ruled:** D-17 — secrets come from both the raw `DATABASE_URL` text and the URL parser, each as written, parsed, decoded and re-encoded.

@@ -7,8 +7,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic      | File                                 | Done   | Partial | Open  | Total  |
 | --------- | ------------------------------------ | ------ | ------- | ----- | ------ |
-| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 10     | 0       | 1     | 11     |
-| **Total** |                                      | **10** | **0**   | **1** | **11** |
+| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 11     | 0       | 0     | 11     |
+| **Total** |                                      | **11** | **0**   | **0** | **11** |
 
 ## Execution order
 
@@ -33,15 +33,14 @@ flowchart TD
   S8 --> S9
   S10["10 · E2E failed create keeps title<br/>~~B1.10~~"]
   S5 --> S10
-  S11["11 · Redact password as written<br/>B1.11"]
+  S11["11 · Redact password as written<br/>~~B1.11~~"]
   S9 --> S11
 ```
 
 ## Remaining
 
-| Step | ID    | Title                                                             | Spec § | Status | Blocked by | Owner | Size         |
-| ---- | ----- | ----------------------------------------------------------------- | ------ | ------ | ---------- | ----- | ------------ |
-| 11   | B1.11 | Redact the database password exactly as written in `DATABASE_URL` | §11    | Open   | ~~B1.9~~   | Lead  | S [estimate] |
+| Step | ID  | Title | Spec § | Status | Blocked by | Owner | Size |
+| ---- | --- | ----- | ------ | ------ | ---------- | ----- | ---- |
 
 ## Waiting on human
 
