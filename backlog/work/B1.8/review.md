@@ -116,3 +116,97 @@ Notes (not blocking; costs the lead should see):
    match (round 1 note 1); a (g) title beginning with `AC-11.2: records no code key when the code is a number` would not.
 5. The plan is 52 lines against the ≈ 40-line one-screen guide (`rules/planning.md`); the overage is the wide
    tables, not scope. The footer still reads `Rounds: 1`; the dev-lead updates it to 2.
+
+## Diff review (round 1)
+
+SCOPE: lib. Commits: pin `098e5e2` (test file only, +26), red `18c1a2c` (test file only, +21), feat `e2cb5b0`
+(`src/lib/logger.ts` only, +4/−1). Compared with `git diff origin/main...HEAD` (local `main` is stale: `main...HEAD`
+reports 21 files, `origin/main...HEAD` 11, of which `src/` = `logger.ts`, `logger.test.ts`).
+
+### Command results (run by the reviewer unless marked)
+
+| Command                                     | Last line                                                                                                                                                                                                                                                                                                                       |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                 | `All matched files use Prettier code style!` (exit 0)                                                                                                                                                                                                                                                                           |
+| `pnpm typecheck`                            | `tsc --noEmit` (exit 0, no output)                                                                                                                                                                                                                                                                                              |
+| `pnpm test`                                 | `Tests  100 passed (100)` (12 files)                                                                                                                                                                                                                                                                                            |
+| `pnpm test:e2e`                             | `12 passed (11.4s)`                                                                                                                                                                                                                                                                                                             |
+| `pnpm test:mutation`                        | not re-run; relied on dev-lead's `reports/mutation/mutation.json` (mtime 15:28:48, feat commit 15:28:56; its logger.ts:47 mutants carry `ownCode`, so it measured the feat code): 104 killed / 12 survived / 1 NoCoverage / 116 CompileError = 88.89 %; logger.ts 22 killed / 1 survived (:27 `secretsOf` filter, pre-existing) |
+| `scripts/ci/check-suppressions.sh`          | `OK: no new suppressions`                                                                                                                                                                                                                                                                                                       |
+| `scripts/ci/check-config-change.sh`         | `OK: no protected config changed`                                                                                                                                                                                                                                                                                               |
+| `scripts/ci/check-feat-commits.sh`          | `OK: no feat commit touches tests`                                                                                                                                                                                                                                                                                              |
+| `scripts/ci/check-ac-coverage.sh`           | `OK: every criterion of a shipped section has a test`                                                                                                                                                                                                                                                                           |
+| `scripts/ci/check-spec-sections.sh`         | `OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11`                                                                                                                                                                                                                                                                                   |
+| `scripts/ci/check-features-map.sh`          | `OK`                                                                                                                                                                                                                                                                                                                            |
+| `scripts/verify-red.sh B1.8`                | `RESULT: red for the right reason` (18 ran, 2 new, 2 new failed, 0 new passed; base `098e5e2`)                                                                                                                                                                                                                                  |
+| `git diff 18c1a2c..HEAD -- '*.test.*' e2e/` | empty (0 lines)                                                                                                                                                                                                                                                                                                                 |
+
+### Checklist
+
+| Check                                                          | Result                                                                                                                                                                                 |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-11.2 case has a test whose assertion matches its Then | pass: (d) keys `name, message, code, stack` + `code` `P1001`; (e) `code` `P2002`; (f) `code` `P1001`; (g) no `code` key; each of (d)–(g) asserts no `errorCode` key. (a)–(c) unchanged |
+| no test weakened after the red commit                          | pass: `git diff 18c1a2c..HEAD -- '*.test.*' e2e/` empty; pin commit only adds                                                                                                          |
+| every changed file is in `plan.md`                             | pass: `src/lib/logger.ts`, `src/lib/logger.test.ts`; helper `errorCodedError(message, errorCode, code?)` as planned; titles of (d)/(g) as plan review round 2 note 4 named             |
+| interfaces match §11's contracts                               | pass: `logMutationFailure` signature unchanged; `LoggedError.code?: string` unchanged; no `errorCode` key written; precedence string `code` → string `errorCode` → none                |
+| Zod at action boundary / Prisma only in lib / no raw SQL       | n/a: no action, no Prisma import in the logger (unchanged)                                                                                                                             |
+| migration                                                      | n/a                                                                                                                                                                                    |
+| no secret, no suppression                                      | pass (guards above)                                                                                                                                                                    |
+| features map row moved                                         | n/a by plan (F9 already names both files; status moves in the closing commit)                                                                                                          |
+| would a test fail if the changed line were reverted?           | yes: reverting the feat is exactly the red commit's state; verify-red shows (d) and (f) fail on assertions                                                                             |
+
+### Answers to the dev-lead's two questions
+
+1. **Ternary pinned?** Yes. Stryker on logger.ts:47 (`typeof ownCode === 'string' ? ownCode : errorCode`):
+   `ConditionalExpression true` Killed (by (d): `errorCode`-only would log no code), `false` Killed (by (a) and (e):
+   `code` `P1001`/`P2002` would be lost or replaced), `EqualityOperator !==` Killed, `StringLiteral ""` CompileError.
+   The spread at :51 (`typeof code === 'string'`): `true`/`false`/`!==`/`""` are all CompileError, because `code` is
+   `unknown` and cannot be spread into `code?: string`; typecheck is a gate, and at runtime (b) and (g) would also
+   kill `true`. The `{}` object-literal mutant at :51 is Killed.
+2. **Throwing `errorCode` getter vs REQ-11.6.** REQ-11.6 holds: probe (below) returns `undefined` and does not throw.
+   But the entry is lost, see [1].
+
+### Probes (copy under the session scratchpad, `.env*` excluded, `src/lib/probe.test.ts`)
+
+- Error with `code` `'P2002'` (own, non-enumerable) and an `errorCode` getter that throws → returns `undefined`,
+  stderr receives **0** chunks.
+- `new Prisma.PrismaClientInitializationError("Can't reach database server", '6.0.0', 'P1001')` from the installed
+  `@prisma/client` → entry `error.code` `P1001`, keys `name, message, code, stack`: the change does what the card is for.
+- Error with `errorCode` `'s3cret'` (the URL's password) → written as `"code":"s3cret"`, unredacted. Consistent with
+  REQ-11.4 (redaction covers `message` and `stack` only) and identical to a string `code` before this card; not a finding.
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: src/lib/logger.ts:46
+    DEFECT: the destructuring reads `error.errorCode` eagerly, even when `error.code` is a string, so a throwing
+            `errorCode` accessor now drops the whole entry where the code before this card logged it.
+    TRIGGER: an Error with own `code` 'P2002' and `Object.defineProperty(e, 'errorCode', { get() { throw … } })`
+             passed to logMutationFailure('toggleTodoAction', e).
+    WRONG BEHAVIOUR: 0 chunks on stderr; REQ-11.1 asks for exactly one entry, and §11's contract reads errorCode
+                     only "otherwise" (when `code` is not a string). No throw, so REQ-11.6 holds.
+    CONFIDENCE: confirmed (probe)
+```
+
+Non-blocking. The trigger is a hostile accessor: Prisma 6's `PrismaClientInitializationError` sets `errorCode` as a
+plain property (probe 2), and a throwing `code`, `name`, `message` or `stack` getter already dropped the entry before
+this card (pre-existing; §11 is silent on throwing accessors). Suggested disposition: no change needed, or a lazy read
+(`typeof ownCode === 'string' ? ownCode : (error as …).errorCode`) if the lead wants the contract's reading order
+literal; that change would need its own test first (`rules/testing.md`: a bug found without a test is not fixed).
+
+Note (not a finding): `plan.md` footer still reads `Rounds: 1` (plan review round 2 note 5).
+
+Verdict: ready for PR
+
+Riskiest unfalsified: none in the changed lines; the closest is [1]'s hostile-accessor case, which §11 does not
+address for any property of the thrown Error.
+
+### Dispositions (dev-lead, pass 1 of 3)
+
+| Pass | #   | Finding (file:line)                                                                              | Source                 | Kind        | Disposition      | Justification                                                                                                                                                                                                                                                                                                                                                    |
+| ---- | --- | ------------------------------------------------------------------------------------------------ | ---------------------- | ----------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | 1   | `logger.ts:46` reads `errorCode` even when `code` is a string; a throwing getter drops the entry | reviewer               | correctness | no change needed | proving input (reviewer probe): an `Error` whose `errorCode` getter throws → `logMutationFailure` returns `undefined`, does not throw, writes 0 chunks; REQ-11.6 holds and the §10 result is unchanged. Same class as a throwing `code`/`message`/`stack` getter before this card; real Prisma `PrismaClientInitializationError(…, 'P1001')` logs `code` `P1001` |
+| 1    | —   | mutants on the new ternary pinned?                                                               | dev-lead (unsure)      | coverage    | no change needed | reviewer traced: `true` killed by (d), `false` by (a)/(e), `!==` killed, `""` and the `typeof code` mutants are CompileErrors; Stryker logger 22 killed / 1 survived (`:27`, pre-existing)                                                                                                                                                                       |
+| 1    | —   | an `errorCode` equal to the password is logged unredacted                                        | reviewer (observation) | security    | out of scope     | REQ-11.4 redacts `message` and `stack` only, as for `code` before this card; widening redaction is B1.9 (D-15)                                                                                                                                                                                                                                                   |
+| 1    | —   | plan footer `Rounds: 1`                                                                          | reviewer (observation) | docs        | no change needed | `Rounds` counts the lead's rounds only (dev-lead.md step 5); plan review rounds (2) are in this file                                                                                                                                                                                                                                                             |
