@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { MutationActionName } from '@/lib/logger';
 import { TodoNotFoundError } from '@/lib/todos';
 import { clearCompletedTodosAction, createTodoAction, toggleTodoAction, updateTodoTitleAction } from './todos';
 
@@ -9,6 +10,9 @@ const lib = vi.hoisted(() => ({
   clearCompletedTodos: vi.fn(),
 }));
 const cache = vi.hoisted(() => ({ revalidatePath: vi.fn() }));
+const logger = vi.hoisted(() => ({
+  logMutationFailure: vi.fn<(action: MutationActionName, error: unknown) => void>(),
+}));
 
 vi.mock('@/lib/todos', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/todos')>()),
@@ -18,6 +22,8 @@ vi.mock('@/lib/todos', async (importOriginal) => ({
   clearCompletedTodos: lib.clearCompletedTodos,
 }));
 vi.mock('next/cache', () => ({ revalidatePath: cache.revalidatePath }));
+// §11: observed at the module boundary; also keeps the swallowed-failure tests from writing to stderr.
+vi.mock('@/lib/logger', () => ({ logMutationFailure: logger.logMutationFailure }));
 // importOriginal above loads the real lib module, whose Prisma import pulls `server-only` (throws under Vitest).
 vi.mock('@/lib/prisma', () => ({ prisma: {} }));
 
@@ -29,6 +35,20 @@ function form(title: string): FormData {
   const data = new FormData();
   data.set('title', title);
   return data;
+}
+
+function formFailure() {
+  return { ok: false, fieldErrors: { form: ['Could not save, try again'] } };
+}
+
+// §11: exactly one call, with exactly the action's own name and the thrown value (same reference), never the input.
+function expectLoggedOnce(action: MutationActionName, error: unknown): void {
+  expect(logger.logMutationFailure).toHaveBeenCalledTimes(1);
+  const args = logger.logMutationFailure.mock.calls[0];
+  expect(args).toHaveLength(2);
+  expect(args?.[0]).toBe(action);
+  expect(args?.[1]).toBe(error);
+  expect(JSON.stringify(args)).not.toContain('Buy milk');
 }
 
 beforeEach(() => {
@@ -236,5 +256,134 @@ describe('clearCompletedTodosAction (§9)', () => {
 
     expect(lib.clearCompletedTodos).toHaveBeenCalledTimes(1);
     expect(cache.revalidatePath).toHaveBeenCalledTimes(0);
+  });
+});
+
+describe('logging swallowed mutation failures (§11)', () => {
+  it('AC-11.5: createTodoAction resolves the form failure and logs ("createTodoAction", the thrown error) exactly once', async () => {
+    const error = new Error('db down');
+    lib.createTodo.mockRejectedValue(error);
+
+    const result = await createTodoAction(null, form('Buy milk'));
+
+    expect(result).toEqual(formFailure());
+    expect(JSON.stringify(result)).not.toContain('db down');
+    expectLoggedOnce('createTodoAction', error);
+  });
+
+  it('AC-11.5: createTodoAction resolves the form failure and logs ("createTodoAction", the thrown error) exactly once when revalidatePath throws', async () => {
+    const error = new Error('cache down');
+    lib.createTodo.mockResolvedValue(todo());
+    cache.revalidatePath.mockImplementation(() => {
+      throw error;
+    });
+
+    const result = await createTodoAction(null, form('Buy milk'));
+
+    expect(result).toEqual(formFailure());
+    expect(JSON.stringify(result)).not.toContain('cache down');
+    expectLoggedOnce('createTodoAction', error);
+  });
+
+  it('AC-11.5: toggleTodoAction resolves the form failure and logs ("toggleTodoAction", the thrown error) exactly once', async () => {
+    const error = new Error('db down');
+    lib.toggleTodo.mockRejectedValue(error);
+
+    const result = await toggleTodoAction('todo-1');
+
+    expect(result).toEqual(formFailure());
+    expect(JSON.stringify(result)).not.toContain('db down');
+    expectLoggedOnce('toggleTodoAction', error);
+  });
+
+  it('AC-11.5: updateTodoTitleAction resolves the form failure and logs ("updateTodoTitleAction", the thrown error) exactly once', async () => {
+    const error = new Error('db down');
+    lib.updateTodoTitle.mockRejectedValue(error);
+
+    const result = await updateTodoTitleAction('todo-1', 'Buy milk');
+
+    expect(result).toEqual(formFailure());
+    expect(JSON.stringify(result)).not.toContain('db down');
+    expectLoggedOnce('updateTodoTitleAction', error);
+  });
+
+  it('AC-11.5: clearCompletedTodosAction resolves the form failure and logs ("clearCompletedTodosAction", the thrown error) exactly once', async () => {
+    const error = new Error('db down');
+    lib.clearCompletedTodos.mockRejectedValue(error);
+
+    const result = await clearCompletedTodosAction();
+
+    expect(result).toEqual(formFailure());
+    expect(JSON.stringify(result)).not.toContain('db down');
+    expectLoggedOnce('clearCompletedTodosAction', error);
+  });
+
+  it('AC-11.6: logs nothing when each of the four actions succeeds, and still logs the next swallowed failure', async () => {
+    lib.createTodo.mockResolvedValue(todo());
+    lib.toggleTodo.mockResolvedValue(todo({ completed: true }));
+    lib.updateTodoTitle.mockResolvedValue(todo());
+    lib.clearCompletedTodos.mockResolvedValue(1);
+
+    const results = [
+      await createTodoAction(null, form('Buy milk')),
+      await toggleTodoAction('todo-1'),
+      await updateTodoTitleAction('todo-1', 'Buy milk'),
+      await clearCompletedTodosAction(),
+    ];
+
+    expect(results.map((result) => result.ok)).toEqual([true, true, true, true]);
+    expect(logger.logMutationFailure).toHaveBeenCalledTimes(0);
+
+    const error = new Error('db down');
+    lib.clearCompletedTodos.mockRejectedValue(error);
+
+    const failed = await clearCompletedTodosAction();
+
+    expect(failed).toEqual(formFailure());
+    expectLoggedOnce('clearCompletedTodosAction', error);
+  });
+
+  it('AC-11.6: logs nothing when the title is invalid on create or edit, and still logs the next swallowed failure', async () => {
+    const results = [
+      await createTodoAction(null, form('   ')),
+      await createTodoAction(null, form('x'.repeat(201))),
+      await updateTodoTitleAction('todo-1', '   '),
+    ];
+
+    expect(results).toEqual([
+      { ok: false, fieldErrors: { title: ['Title is required'] } },
+      { ok: false, fieldErrors: { title: ['Title must be 200 characters or fewer'] } },
+      { ok: false, fieldErrors: { title: ['Title is required'] } },
+    ]);
+    expect(logger.logMutationFailure).toHaveBeenCalledTimes(0);
+
+    const error = new Error('db down');
+    lib.createTodo.mockRejectedValue(error);
+
+    const failed = await createTodoAction(null, form('Buy milk'));
+
+    expect(failed).toEqual(formFailure());
+    expectLoggedOnce('createTodoAction', error);
+  });
+
+  it('AC-11.6: logs nothing when toggle or edit finds no todo, and still logs the next swallowed failure', async () => {
+    lib.toggleTodo.mockRejectedValueOnce(new TodoNotFoundError('todo-1'));
+    lib.updateTodoTitle.mockRejectedValueOnce(new TodoNotFoundError('todo-1'));
+
+    const results = [await toggleTodoAction('todo-1'), await updateTodoTitleAction('todo-1', 'Buy milk')];
+
+    expect(results).toEqual([
+      { ok: false, fieldErrors: { id: ['Todo not found'] } },
+      { ok: false, fieldErrors: { id: ['Todo not found'] } },
+    ]);
+    expect(logger.logMutationFailure).toHaveBeenCalledTimes(0);
+
+    const error = new Error('db down');
+    lib.toggleTodo.mockRejectedValueOnce(error);
+
+    const failed = await toggleTodoAction('todo-1');
+
+    expect(failed).toEqual(formFailure());
+    expectLoggedOnce('toggleTodoAction', error);
   });
 });
