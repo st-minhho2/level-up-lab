@@ -33,7 +33,7 @@ await prisma.$executeRaw`DROP TRIGGER IF EXISTS e2e_reject_todo_insert ON todos`
 ```bash
 pnpm lint && pnpm typecheck && pnpm test   # 100 unchanged (106 if B1.9 merged first)
 pnpm test:e2e                              # 12 → 13 passed; e2e/10-mutation-feedback.spec.ts green; 05/06/09 unaffected
-# red evidence (D-16 A): scratch worktree at 9327a03 + this spec file → the AC-10.5 test fails on the alert count
+# red evidence (D-16 A): step 3 below → "1 failed" at the alert count AND `[WebServer]` output with `e2e: insert rejected`
 scripts/ci/check-features-map.sh && scripts/ci/check-ac-coverage.sh && scripts/ci/check-suppressions.sh && scripts/ci/check-feat-commits.sh
 ```
 
@@ -48,6 +48,23 @@ scripts/ci/check-features-map.sh && scripts/ci/check-ac-coverage.sh && scripts/c
 | 4 Map         | dev-lead                            | F8 row                                 | `docs(map): F8 e2e proof of the kept title [B1.10]`                 |
 | 5 Review      | `reviewer` (diff), `/review-loop`   | `review.md` diff section, gate cleared | `docs(backlog): B1.10 diff review …`                                |
 
-Brief override: test-writer commits a green test without `(red)` and does not run verify-red (D-13 shape).
+Step 3 (dev-lead, Bash only; nothing committed in the scratch tree), from the session's repo root:
+
+```bash
+scripts/worktree.sh red/B1.10-pre-b1-5 9327a03          # own port P, own schema, deps, db:deploy into that schema
+S=.worktrees/red-b1-10-pre-b1-5; P=$(. $S/.worktree.env; echo $WORKTREE_PORT)
+lsof -nP -iTCP:$P -sTCP:LISTEN && exit 1                 # port must be free, or reuseExistingServer runs the wrong code
+git show <test sha>:e2e/10-mutation-feedback.spec.ts > $S/e2e/10-mutation-feedback.spec.ts
+(cd $S && pnpm exec playwright test e2e/10-mutation-feedback.spec.ts) 2>&1 | tee review-red.txt
+scripts/worktree-prune.sh --base origin/main            # 9327a03 is an ancestor: worktree, branch, schema removed
+```
+
+Expected: `1 failed`, at the alert `toHaveCount(1)` (received 0), and in the same run a `[WebServer]` line containing
+`e2e: insert rejected` (the trigger fired in the server's schema, so the red is the missing behavior, not a
+misplaced fault). Anything else (pass, other line, no `[WebServer]` match) → stop and report; the probe in
+`review.md` round 1 produced exactly the expected result.
+
+Brief override: test-writer commits a green test without `(red)` and does not run verify-red (D-13 shape); if the test
+is red at HEAD it stops and reports, never adjusts an assertion.
 
 Plan review: · Plan approved by: · Rounds: 1
