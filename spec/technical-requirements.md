@@ -15,7 +15,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §8  | [contracts/06-change-requests.md](contracts/06-change-requests.md)     | How a behavior change enters the spec                                  | ✅     |
 | §9  | [contracts/07-clear-completed.md](contracts/07-clear-completed.md)     | Todos: clear completed                                                 | ✅     |
 | §10 | [contracts/08-mutation-feedback.md](contracts/08-mutation-feedback.md) | Todos: feedback when a mutation fails                                  | ✅     |
-| §11 | [contracts/09-logging.md](contracts/09-logging.md)                     | Logging failures: a swallowed mutation failure is recorded server-side | ◐      |
+| §11 | [contracts/09-logging.md](contracts/09-logging.md)                     | Logging failures: a swallowed mutation failure is recorded server-side | ✅     |
 
 Reading order: §1 → §2 → the section your backlog card names → [features-map.md](features-map.md).
 
