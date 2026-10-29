@@ -139,3 +139,114 @@ inputs a test-writer needs verbatim; the scope is still one function in one file
 the lead updates it at the gate.
 
 Verdict: approved (ready for the lead's gate, not approved for build)
+
+## Diff review (round 1)
+
+SCOPE: lib
+
+Reviewed `git diff origin/main...HEAD` at `4dfccfa` (pin `dc3ba53`, red `58fe164`, feat `4dfccfa`) against §11
+(`spec/contracts/09-logging.md`, REQ-11.4 and the Function contracts) and `plan.md` (approved, 2026-10-29). Probes ran
+on a clone at `$TMPDIR/b111-diff-r1-probe` (no `.env*` copied), with a throwaway `src/lib/probe.test.ts` there only.
+
+### Commands (run by me, 2026-10-29, last line each)
+
+| Command                              | Result                                                                                                                                                                                               |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                          | `All matched files use Prettier code style!` (exit 0)                                                                                                                                                |
+| `pnpm typecheck`                     | `tsc --noEmit`, no output (exit 0)                                                                                                                                                                   |
+| `pnpm test`                          | `Tests  113 passed (113)`                                                                                                                                                                            |
+| `pnpm test:e2e`                      | `13 passed (11.9s)`                                                                                                                                                                                  |
+| `pnpm test:mutation`                 | not re-run; relied on code-writer's `reports/mutation/mutation.json` (23:33, its embedded `logger.ts` source is byte-identical to `4dfccfa`): 88.41 % overall (145/164), `logger.ts` 90.00 % (63/70) |
+| `scripts/ci/check-suppressions.sh`   | `OK: no new suppressions`                                                                                                                                                                            |
+| `scripts/ci/check-config-change.sh`  | `OK: no protected config changed`                                                                                                                                                                    |
+| `scripts/ci/check-feat-commits.sh`   | `OK: no feat commit touches tests`                                                                                                                                                                   |
+| `scripts/ci/check-ac-coverage.sh`    | `OK: every criterion of a shipped section has a test` (§11 criteria=6 covered=6)                                                                                                                     |
+| `scripts/ci/check-spec-sections.sh`  | `OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11`                                                                                                                                                        |
+| `scripts/ci/check-features-map.sh`   | `OK`                                                                                                                                                                                                 |
+| `scripts/verify-red.sh B1.11`        | `31 ran (5 new), 5 new failed, 0 new passed  OK (red on behavior)`, `RESULT: red for the right reason`                                                                                               |
+| `git diff --stat origin/main...HEAD` | 10 files; `src/` only `src/lib/logger.ts` (+40/−17) and `src/lib/logger.test.ts` (+65/−0)                                                                                                            |
+
+### Checklist
+
+| Check                                                       | Result                                                                                                                                                                       |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-§.n has a test whose assertion matches its Then    | pass: AC-11.3 (h)–(k) each assert the exact `error.message` the Then names; (a)–(g) unchanged.                                                                               |
+| no test weakened after the red commit                       | pass: `git diff 58fe164..HEAD -- '*.test.*' e2e/` is empty; pin and red commits only add `it(...)` blocks.                                                                   |
+| every changed file is in `plan.md`                          | pass: `logger.ts`, `logger.test.ts`; other paths are the spec/backlog commits before the gate.                                                                               |
+| interfaces match the section's contracts                    | pass: `logMutationFailure` signature unchanged; helpers private; constants and order as written (see Q2 below).                                                              |
+| Zod at every action boundary / Prisma only in lib / no SQL  | n/a, no action or Prisma change.                                                                                                                                             |
+| migration reversible and indexed                            | n/a.                                                                                                                                                                         |
+| no secret, no suppression                                   | pass (guards above; test URLs are fixtures).                                                                                                                                 |
+| features map row moved                                      | n/a by plan (F9 already names both files); closing commit pending.                                                                                                           |
+| would a test fail if one changed line were reverted (probe) | **fail for two lines**: deleting `url.password,` (logger.ts:73) or `...queryPasswordsOf(url.search.slice(1)),` (logger.ts:75) leaves all 31 logger tests green; finding [1]. |
+
+### Findings
+
+```
+[1] KIND: coverage
+    WHERE: src/lib/logger.ts:73 and src/lib/logger.ts:75 (tests: src/lib/logger.test.ts)
+    DEFECT: since the written sources now cover every existing test case, nothing pins REQ-11.4's "as the URL parser
+            returns it" forms; deleting either parser source, or Stryker's 75:27 (`url.search.slice(1)` → `url.search`),
+            leaves all 113 tests green while a §4-accepted URL leaks.
+    TRIGGER: (a) DATABASE_URL `postgresql://app@db.internal:5432/lab?password=a b/c` (parseEnv accepts; url.search is
+             `?password=a%20b/c`), message `pw a%20b/c`; (b) DATABASE_URL `postgresql://app:p$s s@db.internal:5432/lab`
+             (parseEnv accepts; url.password is `p$s%20s`), message `auth p$s%20s`.
+    WRONG BEHAVIOUR: on 4dfccfa both log `pw [redacted]` / `auth [redacted]` (correct). With mutant 75:27 or line 75
+             deleted, (a) logs `pw a%20b/c`; with line 73 deleted, (b) logs `auth p$s%20s`; in all three the suite
+             stays `31 passed` in logger.test.ts (probe). §11 requires both parser forms redacted. Neither form is
+             reachable from the written source: the parser leaves `/` and `$` unescaped where encodeURIComponent
+             escapes them, and escapes the space the written form keeps.
+    CONFIDENCE: confirmed (probed reference, 75:27, line-75 deletion, line-73 deletion)
+```
+
+Fix (test-writer, no code change, green on arrival): two tests in `src/lib/logger.test.ts`, one commit
+`test(todos): B1.11 review pass 1 -- pin the parser's own password forms`, titled like the file's REQ-11.4 tests:
+`redacts the parser's escaped form of the first password query value (REQ-11.4)` with trigger (a) → `pw [redacted]`,
+and `redacts the parser's escaped form of the userinfo password (REQ-11.4)` with trigger (b) → `auth [redacted]`.
+Expected: `Tests 115 passed (115)`; on re-run Stryker kills 75:27 (`logger.ts` 64/70). Test count 113 → 115 differs
+from the plan's verification line; Files list unchanged, so the lead only notes the count.
+
+### Answers to dev-lead's three questions
+
+1. **75:27 is a real leak path for a regression, not for the shipped code.** `4dfccfa` redacts trigger (a); the
+   mutant does not, and no test notices. It needs a first-pair value with both a character the parser escapes (space,
+   `"`, `<`, `>`) and one it keeps that encodeURIComponent escapes (`/`, `:`, `@`, `$`, `&`, `+`, `,`, `;`, `=`, `?`);
+   test (i) `a b%26c` has only the first kind, so its re-encoded form equals the parser's and masks the mutant. Same
+   gap for line 73 (trigger (b)), which Stryker cannot show (no mutator deletes a spread element). Finding [1].
+2. **Both choices match the Function contracts.**
+   - No `://` → no written password: the contract defines the written password as text "after the first `://`"; with
+     none there is no authority, and the code yields `[]` like its own "none without an `@`/`:`" rules. Unreachable
+     through `getEnv()` anyway: §4's refine requires a `postgresql://` or `postgres://` prefix, so 40:59 (NoCoverage)
+     is equivalent.
+   - Re-encode inside the decode guard: the contract says only what happens when decodeURIComponent throws; it is
+     silent on encodeURIComponent throwing. That throws only on a lone surrogate (probe: written password
+     `p\uD800%41` decodes to `p\uD800A`, encode throws URIError; `new URL` and Zod `.url()` accept the value). The
+     code then keeps only the written form and drops `p\uD800A`; a literal reading would throw into `secretsOf`'s
+     catch and redact nothing, so the choice is the safer one. A lone surrogate cannot reach `process.env` (the OS
+     string is UTF-8 decoded with U+FFFD), so no finding; recorded as a spec gap for `/spec-trace`, not a code change.
+3. **The drop (89.47 → 88.41 %) hides one secret-forming survivor, 75:27**, plus two secret-forming lines Stryker
+   cannot mutate away (73, 75 deletions), all three covered by finding [1]. The other six `logger.ts` survivors are
+   not secret-forming: 40:59 unreachable (above); 44:38, 62:28, 80:12 add a `"Stryker was here"` secret no message
+   contains (80:12 is the pre-existing outer catch); 62:10 and 62:23 (`question === -1` → `false` / `+1`) only make
+   a `?`-less value's `&`-pieces candidates, i.e. over-redaction, never under.
+
+### Notes (no change required)
+
+- Contract line by line: authority regex `:\/\/([^/?#]*)` = first `://` up to the first `/`, `?`, `#`;
+  `lastIndexOf('@')`, `indexOf(':')`; written query = up to first `#`, after first `?`; `startsWith('<name>=')` is the
+  same set as "name before the first `=` is exactly …"; empty dropped; longest first; `new URL` throwing → `[]`.
+- Pre-existing, unchanged by this card: a short secret that occurs inside `[redacted]` (e.g. a password `e`) rewrites
+  the marker; over-redaction only.
+
+Verdict: back to test-writer (finding [1]: two pins, no code change; then a round-2 diff review)
+
+Riskiest unfalsified: a parser normalization no source covers — none found (tab stripping, `@`/`:` splits, escape
+sets probed); the lone-surrogate encode gap is unspecified but unreachable through `process.env`.
+
+### Dispositions (dev-lead, pass 1 of 3)
+
+| Pass | #   | Finding (file:line)                                                                                  | Source                          | Kind     | Disposition      | Justification                                                                                                                                                                                         |
+| ---- | --- | ---------------------------------------------------------------------------------------------------- | ------------------------------- | -------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | 1   | `logger.ts:73` (`url.password`) and `:75` (parsed query, Stryker 75:27) no longer pinned by any test | reviewer                        | coverage | fix now          | `50935fb` (2 hardening tests, green on arrival); `pnpm test` 115 passed; Stryker re-run: 75:27 Killed, overall 89.02 %, `logger.ts` 91.43 % (64/70); the fix touches tests only, so no re-review pass |
+| 1    | —   | no `://` → no written password; re-encode inside the decode guard                                    | code-writer / dev-lead (unsure) | spec     | no change needed | reviewer: both match the Function contracts; a value without `://` fails §4; a lone surrogate (encode throws) cannot reach `process.env`                                                              |
+| 1    | —   | survivors 40:59, 44:38, 62:10, 62:23, 62:28, 80:12                                                   | code-writer                     | coverage | no change needed | none forms a secret: 40:59 unreachable (§4), 44:38/62:28/80:12 inject a secret no message contains, 62:10/62:23 over-redaction only (plan review round 1 notes 2–3)                                   |
