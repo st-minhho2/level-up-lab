@@ -71,3 +71,49 @@ Notes (no change required):
    body, an `at === -1` check made redundant by the name check, a `!== undefined` filter term, the outer catch's
    `return []` (pre-existing class). "Killed or listed" covers them; list them by line in the green gate.
 5. Analysis note (a) (`[[redacted]acted]` for a secret inside the marker) stays cosmetic and pre-existing.
+
+## Plan review (round 2)
+
+SCOPE: lib
+
+Reviewed: `backlog/work/B1.9/plan.md` at `aad318e` (`Plan approved by:` empty) against round 1 reason 1 and
+`git diff 5f76a7b aad318e -- backlog/work/B1.9/plan.md` (approach paragraph, Files row, step 1 row and subject, test
+counts; nothing else changed). §11 unchanged since `b53b264`; `spec/contracts/09-logging.md:7` still unticked.
+
+Probe: fresh `git clone` of the worktree at `aad318e` under `$TMPDIR/b19-plan-r2-probe` (`node_modules` symlinked, no
+hooks bypassed), plan steps 1–3 as commits with the plan's subjects; test files and reference `logger.ts` taken from
+the round 1 probe, the guard added to the pin exactly as the plan words it.
+
+- Step 1 (`test(todos): B1.9 pin empty and other query values`, (f) + guard) → `Tests 102 passed (102)`.
+- Step 2 (`… (red)`) → `Tests 4 failed | 102 passed (106)`; `scripts/verify-red.sh B1.9 --range aad318e..HEAD` →
+  base = pin commit, `24 ran (4 new), 4 new failed, 0 new passed  OK (red on behavior)`, `red for the right reason`.
+- Step 3 (round 1 reference) → `Tests 106 passed (106)`; `tsc --noEmit` and `eslint` on both files clean;
+  `check-feat-commits`, `check-ac-coverage`, `check-suppressions`, `check-spec-sections` OK on `aad318e..HEAD`.
+- Guard mutants on the reference: dropping the name check (`if (at === -1)` only) → guard fails, `1 failed | 23
+passed`; comparing the lower-cased name → guard fails, `1 failed | 23 passed`. Round 1 measured the same pin at
+  89.58 % on `logger.ts`.
+
+| Check                                                                             | pass / fail: reason                                                                                                                                                      |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every file in the plan belongs to the section's features (map)                    | pass: unchanged from round 1; still only `src/lib/logger.ts` and `src/lib/logger.test.ts` (F9).                                                                          |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass: interfaces block unchanged.                                                                                                                                        |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: unchanged (no `advice.md`, skip stated).                                                                                                                           |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: still 6 criteria; the guard is a REQ-11.4 test with an exact expected message, no new criterion.                                                                   |
+| verification lists exact commands with expected numbers                           | pass: 100 → 102 → 106 and verify-red 4 new failed / 0 new passed, all reproduced by the probe.                                                                           |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: step 1 subject `test(todos): B1.9 pin empty and other query values` carries no `(red)`, so `verify-red.sh` keeps it in the base (probe).                           |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7)          | pass: line 7 unticked; not ticked by me.                                                                                                                                 |
+| no settled D-n contradicted                                                       | pass: the guard pins §11 Out of scope ("any query parameter other than `password` and `sslpassword`", "a parameter name in another case") and the pair-without-`=` rule. |
+
+Round 1 reason 1: resolved. The plan names the guard's URL, message, expected value, title (no AC prefix, REQ-11.4
+suffix like the file's other REQ tests), places it in the pin commit and updates the Files row, step 1 and the counts.
+The probe shows it green on today's code and the reference and red on both name-check mutants.
+
+Verdict: approved
+
+Notes (no change required):
+
+1. The plan is 57 lines against `planning.md`'s ≈ 40 (53 in round 1, accepted then); the 4 added lines are the
+   guard's wording. Not split-worthy: one file pair, one helper.
+2. The trailer still reads `Rounds: 1`; the lead updates it with the approval line.
+3. Round 1 notes 1–5 stand (stale local `main`, metrics row, optional `readonly string[]`, expected equivalent
+   survivors listed by line in the green gate, cosmetic `[[redacted]acted]`).

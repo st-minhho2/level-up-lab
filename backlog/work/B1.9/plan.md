@@ -54,4 +54,4 @@ scripts/ci/check-ac-coverage.sh && scripts/ci/check-feat-commits.sh && scripts/c
 Brief overrides: test-writer step 1 commits a green test without `(red)` and does not run verify-red; code-writer
 leaves `docs/metrics.md` for the closing commit. Approving this plan also ticks §11's new `Lead approves spec` box (D-7).
 
-Plan review: · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: · Rounds: 1
