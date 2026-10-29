@@ -2,6 +2,9 @@ name: ci
 
 on:
   pull_request:
+    # labeled/unlabeled: jobs read labels (hotfix, config-change-approved) from the event payload, and "Re-run" replays
+    # the old payload, so only a new event sees a label a human just added or removed.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   push:
     branches: [main]
 
@@ -9,6 +12,7 @@ on:
 permissions:
   contents: read
 
+# Per PR (refs/pull/<n>/merge): a push or label event cancels the run it supersedes.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
