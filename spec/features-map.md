@@ -16,4 +16,4 @@ moves or removes a feature updates its row in the same commit (`docs(map): F<n> 
 | F8  | §10 | Feedback when a mutation fails  | `src/lib/action-result.ts`, `src/actions/todos.ts`, `src/components/todo-item.tsx`, `src/components/clear-completed-button.tsx`, `src/components/todo-form.tsx` | `src/actions/todos.test.ts`, `src/lib/action-result.test.ts`, `src/components/todo-item.test.tsx`, `src/components/clear-completed-button.test.tsx`, `src/components/todo-form.test.tsx`, `e2e/10-mutation-feedback.spec.ts` | ✅     |
 | F9  | §11 | Log swallowed mutation failures | `src/lib/logger.ts`, `src/actions/todos.ts`                                                                                                                     | `src/lib/logger.test.ts`, `src/actions/todos.test.ts`                                                                                                                                                                        | ✅     |
 
-Receipt: verified against `287c5a4` (B1.8 merged).
+Receipt: verified against `5387591` (B1.9 merged).

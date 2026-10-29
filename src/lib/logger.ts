@@ -16,13 +16,43 @@ interface LoggedError {
   readonly stack?: string;
 }
 
-// The whole URL comes first so it is replaced as one piece; the password alone would leave the rest of the URL behind.
-// An unreadable environment or URL means no redaction (REQ-11.6), and an empty password is skipped because
-// replaceAll('') would insert the marker between every character.
+// Query parameters whose value is a secret (REQ-11.4); the name must match exactly, in this case.
+const SECRET_QUERY_PARAMETERS: readonly string[] = ['password', 'sslpassword'];
+
+// A form that cannot be percent-decoded is left out on its own, so the other forms of every secret still count.
+function decoded(text: string): string[] {
+  try {
+    return [decodeURIComponent(text)];
+  } catch {
+    return [];
+  }
+}
+
+// The value of each `name=value` pair named in SECRET_QUERY_PARAMETERS, as written and decoded; URLSearchParams is not
+// used because it reads `+` as a space and decodes leniently, which would miss the forms the driver may echo.
+function querySecretsOf(search: string): string[] {
+  return search
+    .slice(1)
+    .split('&')
+    .flatMap((pair) =>
+      SECRET_QUERY_PARAMETERS.filter((name) => pair.startsWith(`${name}=`)).flatMap((name) => {
+        const raw = pair.slice(name.length + 1);
+        return [raw, ...decoded(raw)];
+      }),
+    );
+}
+
+// Longest first, so a secret that contains a shorter one is replaced whole; the whole URL is the longest of all, so
+// the password alone never leaves the rest of the URL behind. An unreadable environment or URL means no redaction
+// (REQ-11.6), and an empty string is skipped because replaceAll('') would insert the marker between every character.
 function secretsOf(): string[] {
   try {
-    const url = getEnv().DATABASE_URL;
-    return [url, new URL(url).password].filter((secret) => secret !== '');
+    const value = getEnv().DATABASE_URL;
+    const url = new URL(value);
+    const passwordForms = decoded(url.password).flatMap((plain) => [plain, encodeURIComponent(plain)]);
+    return [value, url.password, ...passwordForms, ...querySecretsOf(url.search)]
+      .filter((secret) => secret !== '')
+      .sort((a, b) => b.length - a.length);
   } catch {
     return [];
   }

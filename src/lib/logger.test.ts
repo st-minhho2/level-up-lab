@@ -269,4 +269,65 @@ describe('logMutationFailure (§11)', () => {
 
     expect(onlyEntry().error.message).toBe('[redacted] and [redacted]');
   });
+
+  it('AC-11.3: redacts the decoded and the re-encoded password', () => {
+    env.getEnv.mockReturnValue({ DATABASE_URL: 'postgresql://app:p%40ss%2fw@db.internal:5432/lab' });
+    const error = new Error('auth p@ss/w, p%40ss%2Fw, p%40ss%2fw');
+
+    logMutationFailure('createTodoAction', error);
+
+    expect(onlyEntry().error.message).toBe('auth [redacted], [redacted], [redacted]');
+  });
+
+  it('AC-11.3: redacts the sslpassword and password query values as written and decoded', () => {
+    env.getEnv.mockReturnValue({
+      DATABASE_URL: 'postgresql://app@db.internal:5432/lab?sslpassword=k%23ey&password=q%26w',
+    });
+    const error = new Error('ssl k%23ey k#ey pw q%26w q&w');
+
+    logMutationFailure('createTodoAction', error);
+
+    expect(onlyEntry().error.message).toBe('ssl [redacted] [redacted] pw [redacted] [redacted]');
+  });
+
+  it('AC-11.3: redacts a longer sslpassword whole before the shorter password it contains', () => {
+    env.getEnv.mockReturnValue({
+      DATABASE_URL: 'postgresql://app:s3cret@db.internal:5432/lab?sslpassword=s3cret-ssl',
+    });
+    const error = new Error('key s3cret-ssl');
+
+    logMutationFailure('createTodoAction', error);
+
+    expect(onlyEntry().error.message).toBe('key [redacted]');
+  });
+
+  it('AC-11.3: leaves out the forms that cannot be decoded and still redacts every other form', () => {
+    const undecodable = 'postgresql://app:p%zz@db.internal:5432/lab?password=q%zz';
+    env.getEnv.mockReturnValue({ DATABASE_URL: undecodable });
+    const error = new Error(`Can't reach ${undecodable} as p%zz or q%zz`);
+
+    logMutationFailure('createTodoAction', error);
+
+    expect(onlyEntry().error.message).toBe("Can't reach [redacted] as [redacted] or [redacted]");
+  });
+
+  it('AC-11.3: leaves the message unchanged when the password and sslpassword query values are empty', () => {
+    env.getEnv.mockReturnValue({ DATABASE_URL: 'postgresql://app@db.internal:5432/lab?password=&sslpassword=' });
+    const error = new Error('db down');
+
+    logMutationFailure('createTodoAction', error);
+
+    expect(onlyEntry().error.message).toBe('db down');
+  });
+
+  it('leaves the values of query parameters not named exactly password or sslpassword unredacted (REQ-11.4)', () => {
+    env.getEnv.mockReturnValue({
+      DATABASE_URL: 'postgresql://app@db.internal:5432/lab?schema=public&PASSWORD=upper&password',
+    });
+    const error = new Error('The table public.todos does not exist; upper');
+
+    logMutationFailure('createTodoAction', error);
+
+    expect(onlyEntry().error.message).toBe('The table public.todos does not exist; upper');
+  });
 });
