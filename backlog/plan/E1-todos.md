@@ -69,3 +69,14 @@ _F9 (new) · §11_
 - **Tier:** full · **Depends on:** ~~B1.5~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.6/` — analysis, advice, plan (rounds 1/1), review (plan round 1, diff pass 1/3, 1 coverage finding fixed); squash `f191c34` (#15)
 - **Ruled:** D-12 — in-repo stderr JSON logger; name, message, string code, stack; secrets scrubbed; input never logged.
+
+### B1.8 · Log the Prisma error code of a failed connection
+
+_F9 · §11_
+**Status: Open** — `src/lib/logger.ts:44` reads only `error.code` (`const { code } = error as Error & { readonly code?: unknown }`);
+Prisma's `PrismaClientInitializationError` (database down) carries its code as `errorCode?: string`
+(`@prisma/client` `runtime/library.d.ts`), so a database-down entry has `name`, `message`, `stack` and no code.
+§11 REQ-11.3 names only `code`: a §11 change, D-14 requested (README "Waiting on human").
+
+- **Tier:** quick · **Depends on:** ~~B1.6~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.8/`

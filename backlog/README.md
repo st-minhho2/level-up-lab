@@ -7,8 +7,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic      | File                                 | Done  | Partial | Open  | Total |
 | --------- | ------------------------------------ | ----- | ------- | ----- | ----- |
-| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 6     | 0       | 0     | 6     |
-| **Total** |                                      | **6** | **0**   | **0** | **6** |
+| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 6     | 0       | 1     | 7     |
+| **Total** |                                      | **6** | **0**   | **1** | **7** |
 
 ## Execution order
 
@@ -25,14 +25,18 @@ flowchart TD
   S4 --> S5
   S6["6 · Log swallowed failures<br/>~~B1.6~~"]
   S5 --> S6
+  S8["8 · Log Prisma errorCode<br/>B1.8"]
+  S6 --> S8
 ```
 
 ## Remaining
 
-| Step | ID  | Title | Spec § | Status | Blocked by | Owner | Size |
-| ---- | --- | ----- | ------ | ------ | ---------- | ----- | ---- |
+| Step | ID   | Title                                            | Spec § | Status | Blocked by     | Owner | Size         |
+| ---- | ---- | ------------------------------------------------ | ------ | ------ | -------------- | ----- | ------------ |
+| 8    | B1.8 | Log the Prisma error code of a failed connection | §11    | Open   | ~~B1.6~~, D-14 | Lead  | S [estimate] |
 
 ## Waiting on human
 
-| ID  | What | Blocks |
-| --- | ---- | ------ |
+| ID   | What                                                                                                                                                                                          | Blocks |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| D-14 | Does a §11 entry record Prisma's `errorCode` (A: as `code` when `code` is not a string; B: as its own `errorCode` key; C: no, close B1.8 as Tier 0)? Request: `work/B1.8/decision-request.md` | B1.8   |
