@@ -90,7 +90,7 @@ change.
 ### B1.8 · Log the Prisma error code of a failed connection
 
 _F9 · §11_
-**Status: Open** — `src/lib/logger.ts:44` reads only `error.code` (`const { code } = error as Error & { readonly code?: unknown }`);
+**Status: Done** — 287c5a4 (#29); 100 unit/component + 12 e2e green, mutation 88.89 % (actions 100, lib 85.7, logger 95.7); pin 098e5e2, red 18c1a2c, green e2cb5b0
 Prisma's `PrismaClientInitializationError` (database down) carries its code as `errorCode?: string`
 (`@prisma/client` `runtime/library.d.ts`), so a database-down entry has `name`, `message`, `stack` and no code.
 §11 REQ-11.3 names only `code`: a §11 change, ruled by D-14.
@@ -99,7 +99,8 @@ Prisma's `PrismaClientInitializationError` (database down) carries its code as `
 - **Test:** `src/lib/logger.test.ts::AC-11.2: records a string errorCode as error.code when the Error has no string code` — red because: `describeError` in `src/lib/logger.ts` reads only `error.code`, so the entry's `error` keys are `name, message, stack` with no `code` (fails on the key-order assertion, not on an import)
 - **Acceptance:** AC-11.2 (cases (d)–(g); (a)–(c) stay green)
 - **Tier:** quick · **Depends on:** ~~B1.6~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.8/`
+- **Work:** `work/B1.8/` — decision request, analysis, plan (rounds 1/1), review (plan rounds 2, diff pass 1/3, 1 finding no change needed); squash `287c5a4` (#29)
+- **Ruled:** D-14 — the logged `code` is the string `code`, else the string `errorCode`, else absent.
 
 ### B1.9 · Redact every form of the database password in logs
 
