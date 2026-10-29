@@ -75,6 +75,14 @@ describe('createTodoAction', () => {
     expect(cache.revalidatePath).not.toHaveBeenCalled();
   });
 
+  it('AC-5.3: returns fieldErrors.title ["Title is required"] when the form has no title field and stores nothing', async () => {
+    const result = await createTodoAction(null, new FormData());
+
+    expect(result).toEqual({ ok: false, fieldErrors: { title: ['Title is required'] } });
+    expect(lib.createTodo).toHaveBeenCalledTimes(0);
+    expect(cache.revalidatePath).toHaveBeenCalledTimes(0);
+  });
+
   it('AC-5.3: returns fieldErrors.title ["Title must be 200 characters or fewer"] for 201 characters', async () => {
     const result = await createTodoAction(null, form('x'.repeat(201)));
 
@@ -126,6 +134,7 @@ describe('toggleTodoAction', () => {
     expect(second).toMatchObject({ ok: true, data: { id: 'todo-1', completed: false } });
     expect(lib.toggleTodo).toHaveBeenCalledTimes(2);
     expect(cache.revalidatePath).toHaveBeenCalledTimes(2);
+    expect(cache.revalidatePath.mock.calls).toEqual([['/'], ['/']]);
   });
 
   it('AC-5.5: returns fieldErrors.id ["Todo not found"] for an unknown id and does not revalidate', async () => {
