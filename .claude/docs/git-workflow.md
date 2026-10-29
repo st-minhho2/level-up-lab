@@ -21,9 +21,9 @@ checks|comment`. Everything the project scripts do.
 ## Needs a human (and the hooks say so)
 
 `git push --force` in any spelling, pushes to `main`, `gh pr merge|review`, `gh api`, labels, any change under
-`.github/`, `.claude/hooks`, `.claude/settings.json`, `scripts/ci/`, `lefthook.yml`, `stryker.config.mjs`,
-`vitest.config.mts`, `playwright.config.ts`, `tsconfig*.json`, `eslint.config.mjs` (label `config-change-approved`
-on the PR), dependencies.
+`.github/`, `.claude/hooks`, `.claude/settings.json`, `.claude/agents`, `.claude/skills`, `.claude/rules`,
+`.claude/docs`, `scripts/ci/`, `lefthook.yml`, `stryker.config.mjs`, `vitest.config.mts`, `playwright.config.ts`,
+`tsconfig*.json`, `eslint.config.mjs` (label `config-change-approved` on the PR), dependencies.
 
 ## Bringing `main` in
 
