@@ -56,4 +56,4 @@ scripts/ci/check-ac-coverage.sh && scripts/ci/check-features-map.sh && scripts/c
 | 3 Green       | `code-writer` → green gate (dev-lead) | behavior, guides, F8 map row           | `feat(todos): B1.5 feedback when creating a todo fails`       |
 | 4 Review      | `reviewer` (diff), `/review-loop`     | `review.md` diff section, gate cleared | —                                                             |
 
-Plan approved by: · Rounds: 2 (round 1 approved A, plan review round 1 requested changes)
+Plan approved by: lead (session reply "approve"), 2026-10-29 · Rounds: 2 (round 1 approved A, plan review round 1 requested changes)
