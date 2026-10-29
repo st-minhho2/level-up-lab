@@ -74,11 +74,6 @@ _F9 (new) · §11_
 
 _F3 F4 F8 · §5 §7 §10_
 **Status: Done** — 07f753a (#27); 96 unit/component + 12 e2e green, mutation 88.60 % (actions 100, lib 85.2); hardening 0af8a79 (D-13, no red commit); todos.ts 24:54, 24:96, 46:20 and action-result.ts 18:55 Killed
-code: `src/actions/todos.ts:24` (`typeof rawTitle === 'string'` → `true`; the `''` fallback → `"Stryker was here!"`:
-no test submits a form without a string `title`), `src/actions/todos.ts:46` (toggle's `revalidatePath('/')` →
-`revalidatePath('')`: `AC-5.4: returns the toggled todo and revalidates /` counts calls, never the path),
-`src/lib/action-result.ts:18` (`|| 'form'`: no test builds a Zod issue without a path). Tests only; no behavior
-change.
 
 - **Spec:** §5 — unchanged (§7 and §10 unchanged too; tests only, no section edit)
 - **Test:** `src/actions/todos.test.ts::AC-5.3: returns fieldErrors.title ["Title is required"] when the form has no title field and stores nothing` — red because: against Stryker mutant `src/actions/todos.ts` 24:54 (`typeof rawTitle === 'string'` → `true`) the result is `title: ['Invalid input: expected string, received null']`, and against 24:96 (`''` → `"Stryker was here!"`) `createTodo` is called; green against the current code by design (tests-only card, no `(red)` commit; see `work/B1.7/analysis.md` Needs a ruling)
@@ -91,9 +86,6 @@ change.
 
 _F9 · §11_
 **Status: Done** — 287c5a4 (#29); 100 unit/component + 12 e2e green, mutation 88.89 % (actions 100, lib 85.7, logger 95.7); pin 098e5e2, red 18c1a2c, green e2cb5b0
-Prisma's `PrismaClientInitializationError` (database down) carries its code as `errorCode?: string`
-(`@prisma/client` `runtime/library.d.ts`), so a database-down entry has `name`, `message`, `stack` and no code.
-§11 REQ-11.3 names only `code`: a §11 change, ruled by D-14.
 
 - **Spec:** §11 — unchanged (REQ-11.3, AC-11.2 cases (d)–(g) and Function contracts extended under D-14)
 - **Test:** `src/lib/logger.test.ts::AC-11.2: records a string errorCode as error.code when the Error has no string code` — red because: `describeError` in `src/lib/logger.ts` reads only `error.code`, so the entry's `error` keys are `name, message, stack` with no `code` (fails on the key-order assertion, not on an import)
@@ -106,10 +98,6 @@ Prisma's `PrismaClientInitializationError` (database down) carries its code as `
 
 _F9 · §11_
 **Status: Done** — 5387591 (#31); 106 unit/component + 12 e2e green, mutation 89.47 % (actions 100, lib 86.9, logger 94.9); pin 45dd8c2, red 8039100, green e820652
-`new URL(url).password` is the percent-encoded userinfo as the URL parser normalizes it, so a driver message quoting the
-decoded password (`p@ss` for `p%40ss`), a differently encoded form, or a `password`/`sslpassword` query parameter of
-`DATABASE_URL` is written verbatim (B1.6 review note 1, plan review note 4). §11 REQ-11.4 names only the URL and "the
-password inside it": a §11 change, ruled by D-15.
 
 - **Spec:** §11 — unchanged (REQ-11.4, AC-11.3 cases (c)–(g) and Function contracts extended under D-15)
 - **Test:** `src/lib/logger.test.ts::AC-11.3: redacts the decoded and the re-encoded password` — red because: `secretsOf` in `src/lib/logger.ts` returns only the URL and `new URL(url).password` (`p%40ss%2fw`), so `error.message` is `auth p@ss/w, p%40ss%2Fw, [redacted]` instead of `auth [redacted], [redacted], [redacted]` (fails on the message assertion, not on an import)
@@ -122,11 +110,6 @@ password inside it": a §11 change, ruled by D-15.
 
 _F8 · §10_
 **Status: Done** — c850ddb (#33); 106 unit/component + 13 e2e green (e2e/10-mutation-feedback.spec.ts new), mutation 89.47 % unchanged (no src/ change); test ef5725a, red evidence at 9327a03 (D-16 A)
-`src/components/todo-form.test.tsx` mocks `createTodoAction` (AC-10.5). No file in `e2e/` makes a create fail
-(`ls e2e`: `05-todos.spec.ts`, `06-edit-title.spec.ts`, `09-clear-completed.spec.ts`, `smoke.spec.ts`), so the real
-`useActionState` form, Server Action, Prisma error and §11 log line are never exercised together in Chromium.
-Fault injection is ruled (lead, option B): the e2e test adds a PostgreSQL trigger on `todos` that rejects inserts and
-drops it afterwards; no app, env or config change; the raw SQL in `e2e/` is reviewed by this card's reviewer.
 
 - **Spec:** §10 — unchanged (REQ-10.6 and AC-10.5 already state the behavior; tests only, no section edit)
 - **Test:** `e2e/10-mutation-feedback.spec.ts::AC-10.5: a create the database rejects shows 1 alert "Could not save, try again" in the form, keeps "Buy milk" in the box, "Add" enabled and the list unchanged; the next Add saves it once` — red because: green against the current code by design (behavior shipped in B1.5 `e7b3390`; tests-only card, D-13 shape, no `(red)` commit); against `9327a03`'s `src/` (pre-B1.5: `createTodoAction` has no `try`, `TodoForm` reads only `fieldErrors.title`) it fails on the alert-count assertion [unverified]; see `work/B1.10/analysis.md` Needs a ruling
@@ -139,12 +122,6 @@ drops it afterwards; no app, env or config change; the raw SQL in `e2e/` is revi
 
 _F9 · §11_
 **Status: Done** — 0b2a6d5 (#36); 115 unit/component + 13 e2e green, mutation 89.02 % (actions 100, lib 87.0, logger 91.4); pin dc3ba53, red 58fe164, green 4dfccfa, hardening 50935fb
-contracts take them from `url.search` and the password from `url.password`, both normalized by the URL parser
-(`src/lib/logger.ts:51`: `const url = new URL(value);`, then `url.password` and `querySecretsOf(url.search)`). Probe
-(`node -e`): `postgresql://app:pä%40ss@db.internal:5432/lab` gives `url.password` `p%C3%A4%40ss`, decoded `pä@ss`,
-re-encoded `p%C3%A4%40ss`, so the written form `pä%40ss` is no secret; `…/lab?password=a b%26c` gives `url.search`
-`?password=a%20b%26c`, so the written `a b%26c` is no secret. A driver message quoting either form would be logged
-verbatim (B1.9 diff review, riskiest unfalsified; no such driver found). A §11 change, ruled by D-17 (`work/B1.11/decision-request.md`).
 
 - **Spec:** §11 — unchanged (REQ-11.4, AC-11.3 cases (h)–(k) and Function contracts extended under D-17)
 - **Test:** `src/lib/logger.test.ts::AC-11.3: redacts the userinfo password as written in DATABASE_URL` — red because: `secretsOf` in `src/lib/logger.ts` takes the password only from `new URL(value).password` (`p%C3%A4%40ss`, decoded `pä@ss`), so for `postgresql://app:pä%40ss@db.internal:5432/lab` `error.message` is `auth pä%40ss` instead of `auth [redacted]` (fails on the message assertion, not on an import)
