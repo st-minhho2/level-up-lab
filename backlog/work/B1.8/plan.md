@@ -30,9 +30,9 @@ export function logMutationFailure(action: MutationActionName, error: unknown): 
 
 ```bash
 scripts/verify-red.sh B1.8   # 2 new tests fail on the key/value assertions ((d), (f)), 0 new pass
-pnpm lint && pnpm typecheck && pnpm test   # 94 → 96 (pin) → 98 green (4 new AC-11.2)
+pnpm lint && pnpm typecheck && pnpm test   # 96 → 98 (pin) → 100 green (4 new AC-11.2; base includes B1.7)
 pnpm test:e2e                # 12 unchanged
-pnpm test:mutation           # ≥ 70 (base 85.09 %); new logger mutants Killed, logger ≥ 95 %
+pnpm test:mutation           # ≥ 70 (base 88.60 % after B1.7); new logger mutants Killed, logger ≥ 95 %
 scripts/ci/check-ac-coverage.sh && scripts/ci/check-feat-commits.sh && scripts/ci/check-suppressions.sh && scripts/ci/check-spec-sections.sh
 ```
 
