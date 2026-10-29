@@ -117,3 +117,19 @@ password inside it": a §11 change, ruled by D-15.
 - **Tier:** quick · **Depends on:** ~~B1.8~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.9/` — analysis, plan (rounds 1/1), review (plan rounds 2, diff pass 1/3, 0 findings); squash `5387591` (#31)
 - **Ruled:** D-15 — redaction covers the password decoded and re-encoded and the raw and decoded `password`/`sslpassword` query values, longest first.
+
+### B1.10 · End-to-end proof that a failed create keeps the typed title
+
+_F8 · §10_
+**Status: Open** — §10 REQ-10.6 ("keep the typed title in the box … and list no new todo") is proven only in jsdom:
+`src/components/todo-form.test.tsx` mocks `createTodoAction` (AC-10.5). No file in `e2e/` makes a create fail
+(`ls e2e`: `05-todos.spec.ts`, `06-edit-title.spec.ts`, `09-clear-completed.spec.ts`, `smoke.spec.ts`), so the real
+`useActionState` form, Server Action, Prisma error and §11 log line are never exercised together in Chromium.
+Fault injection is ruled (lead, option B): the e2e test adds a PostgreSQL trigger on `todos` that rejects inserts and
+drops it afterwards; no app, env or config change; the raw SQL in `e2e/` is reviewed by this card's reviewer.
+
+- **Spec:** §10 — unchanged (REQ-10.6 and AC-10.5 already state the behavior; tests only, no section edit)
+- **Test:** `e2e/10-mutation-feedback.spec.ts::AC-10.5: a create the database rejects shows 1 alert "Could not save, try again" in the form, keeps "Buy milk" in the box, "Add" enabled and the list unchanged; the next Add saves it once` — red because: green against the current code by design (behavior shipped in B1.5 `e7b3390`; tests-only card, D-13 shape, no `(red)` commit); against `9327a03`'s `src/` (pre-B1.5: `createTodoAction` has no `try`, `TodoForm` reads only `fieldErrors.title`) it fails on the alert-count assertion [unverified]; see `work/B1.10/analysis.md` Needs a ruling
+- **Acceptance:** AC-10.5 (end to end, through the real form, Server Action and PostgreSQL); REQ-10.6 "list no new todo"
+- **Tier:** quick · **Depends on:** ~~B1.5~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.10/`

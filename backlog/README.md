@@ -5,10 +5,10 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 ## Status summary
 
-| Epic      | File                                 | Done  | Partial | Open  | Total |
-| --------- | ------------------------------------ | ----- | ------- | ----- | ----- |
-| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 9     | 0       | 0     | 9     |
-| **Total** |                                      | **9** | **0**   | **0** | **9** |
+| Epic      | File                                 | Done  | Partial | Open  | Total  |
+| --------- | ------------------------------------ | ----- | ------- | ----- | ------ |
+| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 9     | 0       | 1     | 10     |
+| **Total** |                                      | **9** | **0**   | **1** | **10** |
 
 ## Execution order
 
@@ -31,12 +31,15 @@ flowchart TD
   S6 --> S8
   S9["9 · Redact every password form<br/>~~B1.9~~"]
   S8 --> S9
+  S10["10 · E2E failed create keeps title<br/>B1.10"]
+  S5 --> S10
 ```
 
 ## Remaining
 
-| Step | ID  | Title | Spec § | Status | Blocked by | Owner | Size |
-| ---- | --- | ----- | ------ | ------ | ---------- | ----- | ---- |
+| Step | ID    | Title                                                       | Spec § | Status | Blocked by | Owner | Size         |
+| ---- | ----- | ----------------------------------------------------------- | ------ | ------ | ---------- | ----- | ------------ |
+| 10   | B1.10 | End-to-end proof that a failed create keeps the typed title | §10    | Open   | ~~B1.5~~   | Lead  | S [estimate] |
 
 ## Waiting on human
 
