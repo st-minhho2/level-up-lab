@@ -111,4 +111,31 @@ describe('<TodoForm>', () => {
     const formData = actions.createTodoAction.mock.calls[0]?.[1] as FormData;
     expect(formData.get('title')).toBe('Buy milk');
   });
+
+  it('keeps text typed while the save is pending in the box after a failed save', async () => {
+    let settle: (result: unknown) => void = () => undefined;
+    actions.createTodoAction.mockReturnValueOnce(
+      new Promise((resolve) => {
+        settle = resolve;
+      }),
+    );
+    const user = userEvent.setup();
+    render(<TodoForm />);
+    const textbox = screen.getByRole('textbox', { name: 'New todo' });
+    const button = screen.getByRole('button', { name: 'Add' });
+    const form = formOf(textbox);
+    await user.type(textbox, 'Buy milk');
+    await user.click(button);
+    await waitFor(() => {
+      expect(button).toBeDisabled();
+    });
+
+    await user.type(textbox, ' now');
+    settle({ ok: false, fieldErrors: { form: ['Could not save, try again'] } });
+
+    const alerts = await within(form).findAllByRole('alert');
+    expect(alerts.map((alert) => alert.textContent)).toEqual(['Could not save, try again']);
+    expect(textbox).toHaveValue('Buy milk now');
+    expect(actions.createTodoAction).toHaveBeenCalledTimes(1);
+  });
 });
