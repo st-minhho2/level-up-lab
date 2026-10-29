@@ -1,6 +1,6 @@
 'use client';
 
-// §7 TodoItem, with the §6 edit mode.
+// §7 TodoItem, with the §6 edit mode and the §10 message of a failed toggle or save.
 import { useState, useTransition, type FormEvent, type ReactNode } from 'react';
 import { toggleTodoAction, updateTodoTitleAction } from '@/actions/todos';
 import type { Todo } from '@/lib/todos';
@@ -14,10 +14,11 @@ export function TodoItem({ todo }: { readonly todo: Todo }): ReactNode {
   const fieldId = `${checkboxId}-title`;
   const errorId = `${checkboxId}-error`;
 
+  // A failed result carries exactly one of these keys (§5 `id`, §10 `form`); a success clears the row's message (REQ-10.5).
   function onToggle(): void {
     startTransition(async () => {
       const result = await toggleTodoAction(todo.id);
-      setError(result.ok ? undefined : (result.fieldErrors.id?.[0] ?? 'Could not update the todo'));
+      setError(result.ok ? undefined : (result.fieldErrors.id?.[0] ?? result.fieldErrors.form?.[0]));
     });
   }
 
@@ -26,7 +27,8 @@ export function TodoItem({ todo }: { readonly todo: Todo }): ReactNode {
     setEditing(true);
   }
 
-  // The action trims and validates; the draft is sent as typed so the field can keep it on a rejection (AC-6.4).
+  // The action trims and validates; the draft is sent as typed so the field can keep it on a rejection (AC-6.4) or a
+  // failed save (REQ-10.3), which both leave the row in edit mode.
   function onSave(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     startTransition(async () => {
@@ -36,7 +38,7 @@ export function TodoItem({ todo }: { readonly todo: Todo }): ReactNode {
         setError(undefined);
         return;
       }
-      setError(result.fieldErrors.title?.[0] ?? result.fieldErrors.id?.[0] ?? 'Could not update the todo');
+      setError(result.fieldErrors.title?.[0] ?? result.fieldErrors.id?.[0] ?? result.fieldErrors.form?.[0]);
     });
   }
 
