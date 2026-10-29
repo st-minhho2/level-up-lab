@@ -41,5 +41,6 @@ flowchart TD
 
 ## Waiting on human
 
-| ID  | What | Blocks |
-| --- | ---- | ------ |
+| ID   | What                                                                                                                                                                                                                                                 | Blocks |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| D-16 | e2e-only tests-only cards: red evidence (A: new test fails against pre-B1.5 `src/`; B: fails with the fault never installed; C: none) and raw DDL fault injection in `e2e/` recorded as a ruling. Request: `work/B1.10/analysis.md` "Needs a ruling" | B1.10  |
