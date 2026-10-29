@@ -41,6 +41,7 @@ flowchart TD
 
 ## Waiting on human
 
-| ID   | What                                                                                                                                                                                                                                                 | Blocks |
-| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| D-16 | e2e-only tests-only cards: red evidence (A: new test fails against pre-B1.5 `src/`; B: fails with the fault never installed; C: none) and raw DDL fault injection in `e2e/` recorded as a ruling. Request: `work/B1.10/analysis.md` "Needs a ruling" | B1.10  |
+| ID         | What                                                                                                                                                                                                                                                 | Blocks |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| D-16       | e2e-only tests-only cards: red evidence (A: new test fails against pre-B1.5 `src/`; B: fails with the fault never installed; C: none) and raw DDL fault injection in `e2e/` recorded as a ruling. Request: `work/B1.10/analysis.md` "Needs a ruling" | B1.10  |
+| B1.10 plan | Plan review hit its 2-round cap; round 2's one reason (prune scope) is fixed in `plan.md` but not re-reviewed. Lead approves the fixed plan or asks for round 3                                                                                      | B1.10  |
