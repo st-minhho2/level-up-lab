@@ -101,3 +101,18 @@ Prisma's `PrismaClientInitializationError` (database down) carries its code as `
 - **Tier:** quick · **Depends on:** ~~B1.6~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.8/` — decision request, analysis, plan (rounds 1/1), review (plan rounds 2, diff pass 1/3, 1 finding no change needed); squash `287c5a4` (#29)
 - **Ruled:** D-14 — the logged `code` is the string `code`, else the string `errorCode`, else absent.
+
+### B1.9 · Redact every form of the database password in logs
+
+_F9 · §11_
+**Status: Open** — `src/lib/logger.ts:25` redacts only two strings: `return [url, new URL(url).password].filter((secret) => secret !== '');`.
+`new URL(url).password` is the percent-encoded userinfo as the URL parser normalizes it, so a driver message quoting the
+decoded password (`p@ss` for `p%40ss`), a differently encoded form, or a `password`/`sslpassword` query parameter of
+`DATABASE_URL` is written verbatim (B1.6 review note 1, plan review note 4). §11 REQ-11.4 names only the URL and "the
+password inside it": a §11 change, ruled by D-15.
+
+- **Spec:** §11 — unchanged (REQ-11.4, AC-11.3 cases (c)–(g) and Function contracts extended under D-15)
+- **Test:** `src/lib/logger.test.ts::AC-11.3: redacts the decoded and the re-encoded password` — red because: `secretsOf` in `src/lib/logger.ts` returns only the URL and `new URL(url).password` (`p%40ss%2fw`), so `error.message` is `auth p@ss/w, p%40ss%2Fw, [redacted]` instead of `auth [redacted], [redacted], [redacted]` (fails on the message assertion, not on an import)
+- **Acceptance:** AC-11.3 (cases (c)–(g); (a), (b) and (f) are green before the change, (c), (d), (e), (g) red)
+- **Tier:** quick · **Depends on:** ~~B1.8~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.9/`
