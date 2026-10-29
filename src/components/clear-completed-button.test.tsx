@@ -18,6 +18,11 @@ function cleared(deleted: number): ClearResult {
   return { ok: true, data: { deleted } };
 }
 
+// §10: the failure result the action reports when the lib call fails.
+function saveFailed(): ClearResult {
+  return { ok: false, fieldErrors: { form: ['Could not save, try again'] } };
+}
+
 // A promise the test settles by hand, so the button can be observed while the action is still pending.
 function deferred(): { promise: Promise<ClearResult>; resolve: (value: ClearResult) => void } {
   let resolve: (value: ClearResult) => void = () => undefined;
@@ -69,5 +74,29 @@ describe('<ClearCompletedButton> (§9)', () => {
 
     expect(actions.clearCompletedTodosAction).toHaveBeenCalledTimes(1);
     expect(actions.clearCompletedTodosAction).toHaveBeenCalledWith();
+  });
+});
+
+describe('<ClearCompletedButton> when the mutation fails (§10)', () => {
+  it('AC-10.3: shows exactly one alert "Could not save, try again" right after the button and leaves it enabled when the action fails, then removes it on the next success', async () => {
+    actions.clearCompletedTodosAction.mockResolvedValueOnce(saveFailed()).mockResolvedValueOnce(cleared(1));
+    const user = userEvent.setup();
+    render(<ClearCompletedButton disabled={false} />);
+    const button = screen.getByRole('button', { name: 'Clear completed' });
+
+    await user.click(button);
+
+    await waitFor(() => expect(screen.queryAllByRole('alert')).toHaveLength(1));
+    const alert = screen.getByRole('alert');
+    expect(alert.textContent).toBe('Could not save, try again');
+    expect(alert.parentElement).toBe(button.parentElement);
+    expect(button.nextElementSibling).toBe(alert);
+    expect(button).toBeEnabled();
+
+    // REQ-10.5: the next successful attempt on the same control removes the message.
+    await user.click(button);
+
+    expect(actions.clearCompletedTodosAction).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(screen.queryAllByRole('alert')).toHaveLength(0));
   });
 });

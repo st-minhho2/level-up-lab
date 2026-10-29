@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TodoItem } from './todo-item';
@@ -16,6 +16,11 @@ function todo(completed: boolean) {
 
 function mistyped() {
   return { id: 'todo-9', title: 'Buy mik', completed: false, createdAt: new Date(2026, 0, 1) };
+}
+
+// §10: the one failure result a mutation can report besides its own field errors.
+function saveFailed() {
+  return { ok: false as const, fieldErrors: { form: ['Could not save, try again'] } };
 }
 
 beforeEach(() => {
@@ -120,5 +125,52 @@ describe('<TodoItem> edit mode (§6)', () => {
 
     expect(await screen.findByText('Title must be 200 characters or fewer')).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Edit title' })).toHaveValue('Buy mik');
+  });
+});
+
+describe('<TodoItem> when a mutation fails (§10)', () => {
+  it('AC-10.2: shows exactly one alert "Could not save, try again" in the row and leaves the checkbox unchecked when the toggle fails, then removes it on the next success', async () => {
+    actions.toggleTodoAction.mockResolvedValueOnce(saveFailed()).mockResolvedValueOnce({ ok: true, data: todo(true) });
+    const user = userEvent.setup();
+    render(<TodoItem todo={todo(false)} />);
+    const row = screen.getByRole('listitem');
+    const box = screen.getByRole('checkbox', { name: 'Walk the dog' });
+
+    await user.click(box);
+
+    await waitFor(() => expect(within(row).queryAllByRole('alert')).toHaveLength(1));
+    expect(within(row).getByRole('alert').textContent).toBe('Could not save, try again');
+    expect(box).not.toBeChecked();
+
+    // REQ-10.5: the next successful attempt on the same control removes the message.
+    await user.click(box);
+
+    expect(actions.toggleTodoAction).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(within(row).queryAllByRole('alert')).toHaveLength(0));
+  });
+
+  it('AC-10.2: shows exactly one alert "Could not save, try again" in the row and keeps the draft "Walk the cat" in edit mode when Save fails, then removes it on the next success', async () => {
+    actions.updateTodoTitleAction
+      .mockResolvedValueOnce(saveFailed())
+      .mockResolvedValueOnce({ ok: true, data: { ...todo(false), title: 'Walk the cat' } });
+    const user = userEvent.setup();
+    render(<TodoItem todo={todo(false)} />);
+    const row = screen.getByRole('listitem');
+    await user.click(screen.getByRole('button', { name: 'Edit title' }));
+    const field = screen.getByRole('textbox', { name: 'Edit title' });
+    await user.clear(field);
+    await user.type(field, 'Walk the cat');
+
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(within(row).queryAllByRole('alert')).toHaveLength(1));
+    expect(within(row).getByRole('alert').textContent).toBe('Could not save, try again');
+    expect(screen.getByRole('textbox', { name: 'Edit title' })).toHaveValue('Walk the cat');
+
+    // REQ-10.5: the next successful attempt on the same control removes the message.
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(actions.updateTodoTitleAction).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(within(row).queryAllByRole('alert')).toHaveLength(0));
   });
 });
