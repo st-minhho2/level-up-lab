@@ -1,10 +1,13 @@
 # Hooks — what the agent runtime blocks, and what is on you
 
-Wired in `.claude/settings.json`; every script is bash 3.2-safe and parses JSON with node. Probe table:
+Wired in `.claude/settings.json`, which Claude Code reads only from the directory a session is opened in: open
+sessions in the repo root or a worktree, never a parent folder (`scripts/require-hooks.sh` stops such a session).
+Every script is bash 3.2-safe and parses JSON with node. Probe table:
 `scripts/hook-smoke.sh` (run it after touching any hook).
 
 | Hook                    | Event                                              | Blocks / does                                                                                                                                                                                                                    |
 | ----------------------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `session-mark.sh`       | SessionStart                                       | marks the session as one that loaded these hooks (marker `.git/claude-hooks/<session_id>`, `LEVEL_UP_LAB_HOOKS` via `CLAUDE_ENV_FILE`); `scripts/require-hooks.sh` refuses commits and `worktree.sh` without it                  |
 | `guard-bash.sh`         | PreToolUse Bash                                    | `rm -rf` any spelling, force pushes, `prisma migrate reset` / `db push` / `db execute`, Prisma against a non-local `DATABASE_URL`, reads of `.env*`/keys/credentials, printing secret-looking variables or the whole environment |
 | `guard-read.sh`         | PreToolUse Read                                    | `.env*` (except `.env.example`), keys, credential stores                                                                                                                                                                         |
 | `path-guard.sh <globs>` | PreToolUse Edit/Write, in each agent's frontmatter | a role writing outside its scope (`!` denies); message: report back instead                                                                                                                                                      |

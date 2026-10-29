@@ -8,6 +8,7 @@
 | `card-status.sh <id> <Open               | Partial                                                                      | Done> "<evidence>"`                  | rewrites a card's status line | —   |
 | `verify-red.sh <card> [--auto]`          | the card's `test(...)` commit fails on behavior at its parent                | node_modules; `--auto` PR only in CI |
 | `hook-smoke.sh`                          | every hook probe (guards, role write scopes, review gate)                    | —                                    |
+| `require-hooks.sh`                       | exit 1 in a Claude Code session that did not load `.claude/settings.json`    | Lefthook pre-commit, `worktree.sh`   |
 | `setup-env.sh`, `port.sh`, `load-env.ts` | env bootstrap helpers                                                        | —                                    |
 | `ci/check-suppressions.sh`               | no new `eslint-disable` / `@ts-*`                                            | git range                            |
 | `ci/check-config-change.sh`              | protected config needs the label                                             | git range; PR only in CI             |

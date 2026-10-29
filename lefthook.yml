@@ -4,6 +4,8 @@
 pre-commit:
   parallel: true
   jobs:
+    - name: repo-hooks
+      run: scripts/require-hooks.sh
     - name: prettier
       glob: '*.{ts,tsx,mts,mjs,js,json,md,yml,yaml,css}'
       run: pnpm exec prettier --check {staged_files}

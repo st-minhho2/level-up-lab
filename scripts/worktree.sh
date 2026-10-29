@@ -16,6 +16,7 @@ set -euo pipefail
 
 usage() { sed -n '2,14p' "$0"; exit 1; }
 [[ $# -ge 1 ]] || usage
+"$(dirname "$0")/require-hooks.sh" # a Claude Code session without the repo's hooks starts no task
 
 TASK="$1"
 BASE="${2:-main}"
