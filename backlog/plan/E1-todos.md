@@ -100,3 +100,15 @@ Prisma's `PrismaClientInitializationError` (database down) carries its code as `
 - **Acceptance:** AC-11.2 (cases (d)–(g); (a)–(c) stay green)
 - **Tier:** quick · **Depends on:** ~~B1.6~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.8/`
+
+### B1.9 · Redact every form of the database password in logs
+
+_F9 · §11_
+**Status: Open** — `src/lib/logger.ts:25` redacts only two strings: `return [url, new URL(url).password].filter((secret) => secret !== '');`.
+`new URL(url).password` is the percent-encoded userinfo as the URL parser normalizes it, so a driver message quoting the
+decoded password (`p@ss` for `p%40ss`), a differently encoded form, or a `password`/`sslpassword` query parameter of
+`DATABASE_URL` is written verbatim (B1.6 review note 1, plan review note 4). §11 REQ-11.4 names only the URL and "the
+password inside it": a §11 change, ruled by D-15.
+
+- **Tier:** quick · **Depends on:** ~~B1.8~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.9/`
