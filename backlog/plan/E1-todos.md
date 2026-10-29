@@ -25,11 +25,12 @@ _F6 · §6_
 ### B1.3 · Clear completed todos
 
 _F7 (new) · §9_
-**Status: Open** — §9 written (`spec/contracts/07-clear-completed.md`), no code: `clearCompletedTodos` and `clearCompletedTodosAction` are not in `src/` (grep).
+**Status: Done** — 1ec6cb0 (#8); 63 unit/component + 12 e2e green, mutation 82.22 % (actions 86.4, lib 80.9); red 74c5a3d, green db784ad
 
 - **Spec:** §9 — unchanged (section written from `work/B1.3/analysis.md`)
 - **Test:** `src/actions/todos.test.ts::AC-9.1: deletes every completed todo, returns the count and revalidates / once` — red because: `clearCompletedTodosAction` is not exported from `src/actions/todos.ts`
 - **Acceptance:** AC-9.1 … AC-9.3
+- **Work:** `work/B1.3/` — analysis, advice, plan (rounds 1/1), review (plan + diff, passes 1/3); squash `1ec6cb0` (#8)
 - **Tier:** quick · **Depends on:** ~~B1.1~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.3/` (analysis.md)
 - **Ruled:** D-10 — button always rendered, disabled while nothing is completed.
