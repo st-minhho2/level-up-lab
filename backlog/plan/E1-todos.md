@@ -50,9 +50,10 @@ _F8 (new) · §10_
 ### B1.5 · Feedback when creating a todo fails
 
 _F8 · §10_
-**Status: Open** — `createTodoAction` awaits `createTodo(parsed.data.title)` with no try/catch (`src/actions/todos.ts:26`), so a database failure rejects the form action and reaches Next's error boundary; `TodoForm` reads only `fieldErrors.title?.[0]` (`src/components/todo-form.tsx:9`). §10 lists the create path under "Out of scope"; D-11 names B1.5 as the card that covers it.
+**Status: Open** — `createTodoAction` awaits `createTodo(parsed.data.title)` with no try/catch (`src/actions/todos.ts:26`), so a database failure rejects the form action and reaches Next's error boundary; `TodoForm` reads only `fieldErrors.title?.[0]` (`src/components/todo-form.tsx:9`). D-11 names B1.5 as the card that covers it.
 
-- **Spec:** change: §10 extends to creating a todo (D-11) — the create action resolves `fieldErrors.form` instead of rejecting, and `TodoForm` shows it
-- **Test:** — (written with the section)
-- **Tier:** quick · **Depends on:** ~~B1.4~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Spec:** §10 — unchanged (amended within D-11 from `work/B1.5/analysis.md`)
+- **Test:** `src/actions/todos.test.ts::AC-10.4: resolves fieldErrors.form ["Could not save, try again"] when createTodo rejects and does not revalidate` — red because: `createTodoAction` awaits `createTodo` with no try/catch (`src/actions/todos.ts:26`), so the awaited promise rejects instead of resolving to `{ ok: false, fieldErrors: { form: [...] } }`
+- **Acceptance:** AC-10.4 … AC-10.5
+- **Tier:** full · **Depends on:** ~~B1.4~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.5/` (analysis.md, plan.md, review.md as the roles produce them)

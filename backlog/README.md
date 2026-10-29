@@ -27,8 +27,9 @@ flowchart TD
 
 ## Remaining
 
-| Step | ID  | Title | Spec § | Status | Blocked by | Owner | Size |
-| ---- | --- | ----- | ------ | ------ | ---------- | ----- | ---- |
+| Step | ID   | Title                               | Spec § | Status | Blocked by | Owner | Size         |
+| ---- | ---- | ----------------------------------- | ------ | ------ | ---------- | ----- | ------------ |
+| 5    | B1.5 | Feedback when creating a todo fails | §10    | Open   | ~~B1.4~~   | Lead  | S [estimate] |
 
 ## Waiting on human
 
