@@ -31,12 +31,11 @@ flowchart TD
 
 ## Remaining
 
-| Step | ID   | Title                                            | Spec § | Status | Blocked by     | Owner | Size         |
-| ---- | ---- | ------------------------------------------------ | ------ | ------ | -------------- | ----- | ------------ |
-| 8    | B1.8 | Log the Prisma error code of a failed connection | §11    | Open   | ~~B1.6~~, D-14 | Lead  | S [estimate] |
+| Step | ID   | Title                                            | Spec § | Status | Blocked by | Owner | Size         |
+| ---- | ---- | ------------------------------------------------ | ------ | ------ | ---------- | ----- | ------------ |
+| 8    | B1.8 | Log the Prisma error code of a failed connection | §11    | Open   | ~~B1.6~~   | Lead  | S [estimate] |
 
 ## Waiting on human
 
-| ID   | What                                                                                                                                                                                          | Blocks |
-| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| D-14 | Does a §11 entry record Prisma's `errorCode` (A: as `code` when `code` is not a string; B: as its own `errorCode` key; C: no, close B1.8 as Tier 0)? Request: `work/B1.8/decision-request.md` | B1.8   |
+| ID  | What | Blocks |
+| --- | ---- | ------ |
