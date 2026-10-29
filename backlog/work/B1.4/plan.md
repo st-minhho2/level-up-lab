@@ -22,6 +22,8 @@ no new query; the design is fixed by §10's function contracts).
 Skeleton: none needed (every function and component exists); the red commit's tests fail on assertions against the
 current behavior (actions reject; components ignore the result). `verify-red.sh B1.4` base = parent of the red commit.
 No e2e change: a real mutation cannot be made to fail mid-test (§10 out of scope); existing e2e stay green.
+Red-step constraints (plan review notes): the recovery assertions (REQ-10.5) sit inside the failure tests, never as
+standalone tests (they are already green); tests use the literal 'Could not save, try again' (no constant exists yet).
 
 ## Interfaces touched
 

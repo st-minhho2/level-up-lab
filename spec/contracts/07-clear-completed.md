@@ -38,7 +38,7 @@ completion are those of §5.
 // src/lib/todos.ts
 export function clearCompletedTodos(): Promise<number>; // deletes every row with completed = true in one statement; resolves to the deleted count (0 when none)
 // src/actions/todos.ts ('use server')
-export function clearCompletedTodosAction(): Promise<ActionResult<{ deleted: number }>>; // no input to parse; one lib call, then revalidatePath('/'); an unexpected failure resolves to failure('form', …) per §10 (D-11)
+export function clearCompletedTodosAction(): Promise<ActionResult<{ deleted: number }>>; // no input to parse; one lib call, then revalidatePath('/'); an unexpected failure resolves to failure('form', …) per §10
 // src/components/clear-completed-button.tsx ('use client')
 export function ClearCompletedButton({ disabled }: { readonly disabled: boolean }): ReactNode; // button "Clear completed"; calls the action in a transition; disabled also while pending
 // src/app/page.tsx: renders <ClearCompletedButton disabled={!todos.some((todo) => todo.completed)} /> between <TodoForm /> and the list or the "No todos yet" text, in both states
