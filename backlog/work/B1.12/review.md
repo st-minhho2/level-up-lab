@@ -165,3 +165,139 @@ PASS B9.2
 ```
 
 Cleanup: `git diff --numstat origin/main -- backlog/plan/E1-todos.md` → `0 23`; `check-backlog`, `check-spec-sections`, `check-features-map` OK; `bash -n scripts/card-status.sh` OK.
+
+## Diff review (round 1)
+
+SCOPE: none of lib | actions | ui (tooling: `scripts/card-status.sh`, `backlog/`). Diff `origin/main...HEAD`,
+`origin/main` = merge base = `24665de`, `HEAD` = `49611d7`. Probes ran on copies under `$TMPDIR/b112diff/`
+(`24665de`'s and `HEAD`'s script, `24665de`'s and `HEAD`'s `E1-todos.md`, six one-line reverts of the fix); the
+worktree was not edited. Every run used `/bin/bash` 3.2.57 and `/usr/bin/awk` (BSD awk 20200816), the only `awk` on
+`PATH`.
+
+### Commands
+
+```
+pnpm lint                                   All matched files use Prettier code style! (exit 0)
+pnpm typecheck · test · test:e2e · mutation not run: `git diff --name-only origin/main...HEAD -- src prisma e2e` = 0 files
+scripts/ci/check-suppressions.sh            [check-suppressions] OK: no new suppressions
+scripts/ci/check-config-change.sh           ::error::Protected configuration changed without the 'config-change-approved' label: scripts/card-status.sh (exit 1, expected until the lead adds the label)
+scripts/ci/check-feat-commits.sh            [check-feat-commits] OK: no feat commit touches tests
+scripts/ci/check-ac-coverage.sh             [check-ac-coverage] OK: every criterion of a shipped section has a test
+scripts/ci/check-spec-sections.sh           [check-spec-sections] OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11
+scripts/ci/check-features-map.sh            [check-features-map] OK
+scripts/ci/check-backlog.sh                 [check-backlog] OK: README matches the cards
+scripts/verify-red.sh B1.12                 not applicable: no `test(...)` commit (approved deviation); probe below instead
+bash -n scripts/card-status.sh              exit 0
+git diff --stat origin/main...HEAD          5 files changed, 289 insertions(+), 25 deletions(-)
+git diff --numstat origin/main -- backlog/plan/E1-todos.md   0	23
+```
+
+(`BASE_SHA=24665de… HEAD_SHA=49611d7…` for the three range guards.)
+
+### How the checklist was adapted to a tooling card
+
+| Row in `reviewer.md`                      | Read here as                                                                                     |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| every AC has a test matching its Then     | the card's Test/Acceptance lines have probe evidence: committed `probe.sh` + this review's edges |
+| no test weakened after the red commit     | `probe.sh` unchanged since the approved plan (`1fa2bbc`); no test file in the range              |
+| every changed file in `plan.md`           | unchanged                                                                                        |
+| interfaces match the section's contracts  | CLI matches `scripts/CLAUDE.md` and the plan's Interfaces block (usage, exit codes, messages)    |
+| Zod / Prisma / raw SQL / migration        | not applicable (no `src/`, `prisma/`)                                                            |
+| no secret, no suppression                 | unchanged                                                                                        |
+| features map row moved                    | not applicable (no feature, no §)                                                                |
+| revert one changed line, does a test fail | revert each changed awk line on a copy; run the committed probe and the edge probe               |
+
+### Checklist
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| card Test / Acceptance      | pass (confirmed): committed probe on `24665de`'s `E1-todos.md`: `24665de` script `FAIL B1.10 5 over · PASS B1.6 · FAIL B9.1 1 · FAIL B9.2 1` exit 1; `HEAD` script 4 PASS exit 0 (matches "Red and green evidence"). `check-backlog` OK.                                                              |
+| cleanup through the fix     | pass (confirmed): the `HEAD` script run on `24665de`'s file for B1.7–B1.11, each with its own current evidence, gives a file `cmp`-identical to `HEAD`'s `E1-todos.md`. 0 added, 23 deleted (5+3+4+5+6).                                                                                              |
+| first status lines kept     | pass (confirmed): `grep '^\*\*Status: '` on `24665de` and `HEAD` files is byte-identical (12 lines); in all five cleaned cards the line after the status line is now the blank line before `- **Spec:**`.                                                                                             |
+| every changed file in plan  | pass: `scripts/card-status.sh`, `backlog/plan/E1-todos.md`, `backlog/work/B1.12/{plan,review}.md`, `probe.sh`; nothing else. Commits per plan: `9dac5b4` (script only), `ae9a87e` (E1 only, 0/23), `49611d7` (review.md only). `scripts/CLAUDE.md` still says "rewrites a card's status line" (note). |
+| interface unchanged         | pass: lines 8–13 and 23–24 of the script (args, usage, `case`, file lookup, final `grep`, messages, exit codes) are untouched by the diff.                                                                                                                                                            |
+| `incard` → `incard == 1`    | pass (confirmed correct): before, `incard = 2` was still truthy, so every later `^**Status: ` line in the card was rewritten too; now only the first. Edge cases 5 and 6 below pass on `HEAD` and fail on `24665de`. Not exercised by the committed probe (finding 1).                                |
+| status paragraph ends EOF   | pass (confirmed): round 2's riskiest-unfalsified; cases 1–4 below (last in file, with and without trailing newline, one-line status as last line without newline, after another card) give the hand-written expected file. A missing final newline gains one (prettier-conformant).                   |
+| bash 3.2 / BSD awk          | pass (confirmed): all runs above on bash 3.2.57 and BSD awk 20200816; the added awk uses only POSIX patterns (`==`, `/^$/`, `/^- \*\*/`, `/^### /`, `                                                                                                                                                 |     | `, `next`, a `#`comment with no`'` inside the single-quoted program). Linux awk (dev container) [unverified]: no gawk/mawk locally. |
+| would a revert fail a probe | partial (table below): 5 of 6 reverts fail the committed probe; the `== 1` revert fails only this review's edge probe (finding 1).                                                                                                                                                                    |
+| no secret, no suppression   | pass: `check-suppressions` OK; diff holds no credential.                                                                                                                                                                                                                                              |
+| protected path              | pass: `check-config-change` exit 1 on `scripts/card-status.sh`, as the plan states; the label is the lead's.                                                                                                                                                                                          |
+
+### Edge probe (hand-written expected files, independent of the fix's awk)
+
+`probe.sh`'s `expected()` is the same awk as the fix, so it proves the planned rule only through round 2's variant
+table. These seven cases compare against literal files (`$TMPDIR/b112diff/edge.sh <script>`):
+
+```
+case                                                     HEAD (9dac5b4)   24665de
+1 status paragraph last in file, trailing newline        PASS             FAIL (b, c left over)
+2 same, no trailing newline                              PASS             FAIL (b, c left over)
+3 one-line status is the last line, no newline           PASS             PASS
+4 multi-line status of the last card, after another card PASS             FAIL (b left over)
+5 a later `**Status:` line after a blank stays           PASS             FAIL (later line rewritten too)
+6 a continuation line that starts with `**Status: `      PASS             FAIL (second new status line + c)
+7 the next card's multi-line status is untouched         PASS             PASS
+```
+
+### One-line reverts of `9dac5b4` (on copies)
+
+```
+revert                                       probe.sh (4 cases)                 edge.sh (7 cases)
+m1 `incard == 1` → `incard`                  4 PASS (survives)                  FAIL 5, 6
+m2 drop `skip = 1`                           FAIL B1.10, B9.1, B9.2             FAIL 1, 2, 4, 5, 6
+m3 drop `/^$/ ||`                            FAIL B1.10, B1.6 (1 lost each)     FAIL 5, 6, 7
+m4 drop `/^- \*\*/ ||`                       FAIL B9.1 (2 lost)                 all PASS
+m5 drop `|| /^### /`                         FAIL B9.2 (1 lost)                 all PASS
+m6 drop `skip { next }`                      FAIL B1.10, B9.1, B9.2             FAIL 1, 2, 4, 5, 6
+```
+
+### Findings
+
+```
+[1] KIND: coverage
+    WHERE: scripts/card-status.sh:17 (`incard == 1 &&`); backlog/work/B1.12/probe.sh:50 (case list)
+    DEFECT: the committed probe does not exercise the `incard` → `incard == 1` change; reverting it leaves probe.sh 4/4 PASS.
+    TRIGGER: a card whose status paragraph has a continuation line starting with `**Status: `, or a second
+             `**Status: ` line later in the card (edge cases 5 and 6), run with the m1 revert.
+    WRONG BEHAVIOUR: with the revert, case 6 prints two `**Status: Done** — x` lines and keeps `c`; case 5 rewrites
+             the later line too; the card's "every other line of the file is byte-identical" breaks, and the committed
+             evidence would not show it. HEAD's behavior is correct (cases 5, 6 PASS); only the rerunnable evidence is
+             missing. No card in `backlog/plan/` has either shape today (12 status lines, one per card).
+    CONFIDENCE: confirmed (ran the revert against both probes)
+```
+
+Not blocking: the change is correct and its evidence is now recorded above. Disposition options for `/review-loop`:
+add a `B9.4` fixture case (status, then a continuation line starting with `**Status: `) to `probe.sh` (dev-lead's
+write scope, no plan change: `probe.sh` is in Files), or "no change needed" citing edge cases 5 and 6 here.
+
+Notes (no change requested):
+
+- CRLF input (confirmed on a copy, outside every supported environment): a line `\r` does not match `/^$/`, so on a
+  CRLF file the skip runs to the next `- **` line and drops the paragraphs between (`b\r`, `\r`, `keep me\r` lost),
+  where `24665de` dropped nothing. The repo has 0 `\r` in `E1-todos.md`, `prettier --check` (`pnpm lint`, which covers
+  `backlog/`) enforces LF, and `scripts/CLAUDE.md` names macOS, the dev container and CI only.
+- A status paragraph followed directly (no blank line) by a plain `- ` bullet, `* ` item or a `## `/`#### ` heading
+  is swallowed up to the next end marker; this is the approved rule (blank, `- **`, `### `), and prettier inserts the
+  blank line before any of them, so only an unformatted file reaches it.
+- `scripts/CLAUDE.md` row still reads "rewrites a card's status line" (and its `|` inside the code span breaks the
+  table); the script header now says "status paragraph". Not in the plan's Files; a follow-up doc touch.
+- Round 2's note stands: `probe.sh:36` commits its throwaway scratch repo with `--no-verify` and no why comment, and
+  each run leaves its `mktemp -d` directory behind.
+- Round 1's notes on the final whole-file `grep` and `awk -v` escape rewriting still stand, out of scope.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the script on the dev container's / CI's awk (gawk or mawk): every construct is POSIX and the
+same as `24665de`'s, but no non-BSD awk was available to run the probes.
+
+### Dispositions (dev-lead, pass 1 of 3)
+
+| Pass | #   | Finding (file:line)                                                                                             | Source                          | Kind        | Disposition      | Justification                                                                                                                                                                                                 |
+| ---- | --- | --------------------------------------------------------------------------------------------------------------- | ------------------------------- | ----------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | 1   | `probe.sh` never exercises `incard == 1` (`card-status.sh:17`); reverting it still passes 4/4                   | reviewer                        | coverage    | fix now          | fixture B9.4 (a continuation line starting with `**Status: `) added to `probe.sh`; HEAD script 5/5 PASS; `24665de` script and the `incard &&` revert both `FAIL B9.4: 1 line(s) left over`                    |
+| 1    | —   | gawk/mawk in the dev container or CI not tried                                                                  | reviewer (riskiest unfalsified) | portability | no change needed | every construct is POSIX awk and was already used by `24665de` (`-v`, regex match, `==`, `next`); BSD awk 20200816 and bash 3.2.57 ran it                                                                     |
+| 1    | —   | CRLF file drops whole paragraphs; `scripts/CLAUDE.md` row still says "status line"; probe leaves its mktemp dir | reviewer (notes)                | docs        | out of scope     | prettier enforces LF (0 `\r` in the file); the `scripts/CLAUDE.md` wording and the pre-existing whole-file `grep` / `awk -v` escape notes are outside the plan's Files list; the probe dir is under `$TMPDIR` |
+
+Probe after the fix (5 cases), `bash backlog/work/B1.12/probe.sh scripts/card-status.sh <(git show 24665de:backlog/plan/E1-todos.md)`:
+`PASS B1.10 · PASS B1.6 · PASS B9.1 · PASS B9.2 · PASS B9.4` (exit 0); with `24665de`'s script: `FAIL B1.10` (5 left over),
+`PASS B1.6`, `FAIL B9.1`, `FAIL B9.2`, `FAIL B9.4` (1 left over each).

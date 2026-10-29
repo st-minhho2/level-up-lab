@@ -2,8 +2,9 @@
 # B1.12 probe: does <card-status.sh> replace a card's whole status paragraph and nothing else?
 #   bash backlog/work/B1.12/probe.sh <card-status.sh> <cards.md>
 # Copies <cards.md> into a scratch git repo, appends two synthetic cards whose status paragraph is followed directly
-# (no blank line) by a `- **` line (B9.1) and by a `### ` heading (B9.2), then rewrites four cards one at a time:
-# B1.10 (multi-line status, ends at a blank line), B1.6 (one line), B9.1, B9.2. For each, the expected file is the input
+# (no blank line) by a `- **` line (B9.1) and by a `### ` heading (B9.2), and one whose continuation line starts with
+# `**Status: ` (B9.4, only the first status line of a card is rewritten), then rewrites five cards one at a time:
+# B1.10 (multi-line status, ends at a blank line), B1.6 (one line), B9.1, B9.2, B9.4. For each, the expected file is the input
 # with that card's status paragraph (the `**Status:` line and every following line up to, not including, the first
 # blank line, `- **` line or `### ` heading) replaced by `**Status: Done** — x`. Prints PASS or FAIL with the count of
 # lines left over (`>`) and lines lost (`<`); exit 1 on any FAIL. Run it on main's file before the fix (24665de) so
@@ -31,8 +32,16 @@ second line
 ### B9.3 · Fixture: next card
 
 **Status: Open** — untouched
+
+### B9.4 · Fixture: a continuation line that starts like a status
+
+_tooling_
+**Status: Open** — first line
+**Status: written as prose, still part of the paragraph
+- **Spec:** none
 FIXTURE
 cp "$SCRIPT" "$work/scripts/card-status.sh"
+# The scratch repo is outside the project and has no hooks installed; --no-verify only keeps a global hook from firing.
 (cd "$work" && git init -q . && git add -A && git -c user.email=p@p -c user.name=p commit -qm base --no-verify) >/dev/null
 
 expected() { # expected <id> <file>: <file> with the card's status paragraph replaced by one line
@@ -47,7 +56,7 @@ expected() { # expected <id> <file>: <file> with the card's status paragraph rep
 }
 
 fail=0
-for id in B1.10 B1.6 B9.1 B9.2; do
+for id in B1.10 B1.6 B9.1 B9.2 B9.4; do
   (cd "$work" && git checkout -q -- backlog/plan/E1-todos.md && cp backlog/plan/E1-todos.md base.md)
   (cd "$work" && bash scripts/card-status.sh "$id" Done "x" >/dev/null 2>&1)
   d="$(diff <(expected "$id" "$work/base.md") "$work/backlog/plan/E1-todos.md")"
