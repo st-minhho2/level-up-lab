@@ -135,3 +135,18 @@ never reached the server's schema. The brief override now also covers "red at HE
   tree is then left for the human.
 
 Verdict: changes requested
+
+## Red evidence (D-16 A, dev-lead)
+
+Scratch worktree `red/B1.10-pre-b1-5` at `9327a03` (pre-B1.5), port 3883 checked free, own schema, `e2e/10-mutation-feedback.spec.ts` from `ef5725a` copied in, `pnpm exec playwright test e2e/10-mutation-feedback.spec.ts`; scratch tree, branch and schema pruned afterwards (dry-run listed only the scratch tree).
+
+```
+[WebServer] ConnectorError(ConnectorError { user_facing_error: None, kind: QueryError(PostgresError { code: "P0001", message: "e2e: insert rejected", severity: "ERROR", detail: None, column: None, hin
+Error: expect(locator).toHaveCount(expected) failed
+Expected: 1
+Received: 0
+> 59 |     await expect(newTodoFormAlerts(page)).toHaveCount(1);
+1 failed
+```
+
+Result: `1 failed` at the alert `toHaveCount(1)` (received 0), and the trigger fired in the server's schema (`P0001 "e2e: insert rejected"`): red for the missing behavior, not a misplaced fault. At HEAD the same file passes (`13 passed`).
