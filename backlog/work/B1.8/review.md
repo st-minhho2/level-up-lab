@@ -58,3 +58,61 @@ Notes (not blocking):
 3. Each of (d)–(g) should assert the absence of an `errorCode` key, as AC-11.2's last clause says ("in (d) to (g)
    `error` has no `errorCode` key"); with plain `Object.assign` errors that is a real property of the input, so a
    spread of the error would expose it.
+
+## Plan review (round 2)
+
+SCOPE: lib
+
+Reviewed: `backlog/work/B1.8/plan.md` at `25eeaab` (revised after round 1; `Plan approved by:` empty) against the
+same sources as round 1, plus `scripts/verify-red.sh` (base selection, "new test" match), `.claude/agents/test-writer.md`,
+`.claude/skills/tdd-loop/SKILL.md`, `backlog/CLAUDE.md` (commit order), `lefthook.yml` (commit-msg),
+`.github/workflows/ci.yml` (`verify-red.sh --auto`) and `docs/mistake-log.md:17`. Guards in this worktree on
+2026-10-29: `check-spec-sections`, `check-ac-coverage`, `check-features-map`, `check-backlog`, `check-feat-commits`,
+`check-suppressions` all OK; `git diff main...HEAD` touches no `src/`. Probe on a `git clone` of the worktree under
+`$TMPDIR/b18-plan-r2-probe` (`node_modules` symlinked, only `.env.example` present, no hooks bypassed): built the
+plan's step 1 (pin: (e), (g) and the `errorCodedError` helper) and step 2 (red: (d), (f)) as two commits with the
+plan's subjects, then:
+
+- `pnpm test` after the pin commit → `Tests 96 passed (96)`; after the red commit → `Tests 2 failed | 96 passed (98)`.
+- `scripts/verify-red.sh B1.8` (default range, explicit `--range 25eeaab..HEAD`, and `--auto` as CI runs it) → base
+  is the pin commit, `src/lib/logger.test.ts: 18 ran (2 new), 2 new failed, 0 new passed  OK (red on behavior)`,
+  exit 0.
+- Green-gate strength, `logger.ts` variants on the copy with all four cases present: D-14 as written → `18 passed`;
+  `typeof` on `errorCode` dropped (round 1's escape) → (g) fails, `1 failed | 17 passed`; `errorCode` ahead of
+  `code` → (e) fails; an extra `errorCode` key written → (d), (f) fail. Each wrong variant is now stopped at step 3.
+- `pnpm typecheck` with the helper `errorCodedError(message, errorCode, code?)` → clean.
+
+| Check                                                                             | pass / fail: reason                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: unchanged from round 1; `src/lib/logger.ts`, `src/lib/logger.test.ts`, both F9; closing commit per `backlog/CLAUDE.md` "Closing a card".                                                                                                                                                                                                                                                                                                                              |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass: `logMutationFailure(action: MutationActionName, error: unknown): void` unchanged; `LoggedError.code?: string` unchanged; no Prisma import, no action/env/dependency change (probe typechecks).                                                                                                                                                                                                                                                                        |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: no `advice.md`; "Advisor skipped (quick, D-14 settled the only choice)" stated; analysis Q1–Q4 followed.                                                                                                                                                                                                                                                                                                                                                              |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: §11 at 6 criteria; AC-11.2 (d)–(g) exact values and key order.                                                                                                                                                                                                                                                                                                                                                                                                        |
+| verification lists exact commands with expected numbers                           | pass: `verify-red.sh B1.8` 2 new failed / 0 new passed (confirmed); `pnpm test` 94 → 96 → 98 (96 and 98 confirmed by probe); e2e 12 unchanged and mutation ≥ 70 / logger ≥ 95 carried from round 1 [not re-run: plan stage].                                                                                                                                                                                                                                                |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: round 1 reason 1 resolved: (e), (g) land before the red commit, so the green gate sees all four (probe above); plan-review row added (round 1 note 2). Skeleton and map steps omitted with reasons (no new export; F9 already names both files). The pin subject is not in `backlog/CLAUDE.md`'s commit order; the plan states the deviation and its reason, `lefthook.yml` commit-msg accepts it, and `verify-red.sh --auto` ignores it (no `(red)`). See notes 1–2. |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7)          | pass: `spec/contracts/09-logging.md:6` `- [ ] Lead approves spec (lead, <date>)` unticked; plan says the gate's approve ticks it. Not ticked by me.                                                                                                                                                                                                                                                                                                                         |
+| no settled D-n contradicted                                                       | pass: D-14 (string `code`, else string `errorCode`, else absent; no other property read; no separate key) as written; D-12, D-11, D-7 untouched; no D-n newer than D-14.                                                                                                                                                                                                                                                                                                    |
+
+Verdict: approved (ready for the lead's gate, not approved for build)
+
+Notes (not blocking; costs the lead should see):
+
+1. **Step 1 asks `test-writer` to work against its own procedure; name it in "Brief overrides".** `test-writer.md`
+   steps 2–4 expect every new test to fail and the commit subject to end in `(red)`. If the test-writer follows its
+   default and marks the pin commit `(red)`, `verify-red.sh` takes the parent of that first `(red)` commit as base,
+   (e) and (g) become "new" and pass, and the red gate fails with "GREEN before implementation" (traced from
+   `scripts/verify-red.sh` lines 63–74 and the `isNew` filter). The gate catches it, so no defect ships, but the cost
+   is a redo of steps 1–2. One line in "Brief overrides" ("step 1: test-writer commits (e), (g) green, without
+   `(red)`, does not run verify-red") removes it.
+2. The cited precedent (`docs/mistake-log.md:17`) moved an already-green test into the **skeleton** commit, not
+   into a separate `test(...)` commit; it supports "green before the red commit", not the subject. The plan's stated
+   deviation is enough; the PR body (which copies `plan.md`) carries it.
+3. Red gate base: `/tdd-loop` step 2 checks `git diff --stat <skeleton>..HEAD`; with no skeleton, the dev-lead should
+   use the parent of the pin commit (the plan-approval commit) so the diff names only `src/lib/logger.test.ts`.
+4. Round 1 note 3 still applies at the test-writer's step: (d)–(g) each assert no `errorCode` key (AC-11.2's last
+   clause); the plan's Files row says "4 `AC-11.2:` tests" without naming it. The probe's (d) title
+   `AC-11.2: records a string errorCode as error.code when the Error has no string code` and (g) title
+   `AC-11.2: records no code key when the errorCode is a number and there is no code` pass verify-red's prefix
+   match (round 1 note 1); a (g) title beginning with `AC-11.2: records no code key when the code is a number` would not.
+5. The plan is 52 lines against the ≈ 40-line one-screen guide (`rules/planning.md`); the overage is the wide
+   tables, not scope. The footer still reads `Rounds: 1`; the dev-lead updates it to 2.

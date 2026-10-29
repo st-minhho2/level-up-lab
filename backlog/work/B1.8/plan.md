@@ -46,7 +46,7 @@ scripts/ci/check-ac-coverage.sh && scripts/ci/check-feat-commits.sh && scripts/c
 | 3 Green       | `code-writer` → green gate (dev-lead) | `logger.ts` change          | `feat(todos): B1.8 log Prisma's errorCode as the code`     |
 | 4 Review      | `reviewer` (diff), `/review-loop`     | `review.md` diff section    | `docs(backlog): B1.8 diff review …`                        |
 
-Brief overrides: code-writer leaves `docs/metrics.md` for the closing commit (lead's instruction for this run).
+Brief overrides: test-writer step 1 commits green tests without `(red)` and does not run verify-red; code-writer leaves `docs/metrics.md` for the closing commit (lead's instruction for this run).
 Approving this plan also ticks §11's new `Lead approves spec` box (D-7).
 
-Plan review: · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: · Rounds: 1
