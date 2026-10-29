@@ -9,11 +9,20 @@ export function TodoForm(): ReactNode {
   const [draft, setDraft] = useState('');
   const error = state !== null && !state.ok ? (state.fieldErrors.title?.[0] ?? state.fieldErrors.form?.[0]) : undefined;
   // React resets the form after the action; the reset lands on defaultValue, so it must already hold the draft
-  // (no client wrapper around the action: it would drop the server-rendered native POST).
+  // (no client wrapper around the action: it would drop the server-rendered native POST). The draft is read from
+  // the submitted form, not from onChange: text that reached the box without a change event (typed before
+  // hydration, set by an extension) would otherwise be lost or replaced by an older title.
   const kept = state !== null && !state.ok && state.fieldErrors.form !== undefined ? draft : '';
 
   return (
-    <form action={formAction} className="flex flex-col gap-2">
+    <form
+      action={formAction}
+      onSubmit={(event) => {
+        const title = new FormData(event.currentTarget).get('title');
+        setDraft(typeof title === 'string' ? title : '');
+      }}
+      className="flex flex-col gap-2"
+    >
       <div className="flex gap-2">
         <label htmlFor="new-todo" className="sr-only">
           New todo
@@ -25,9 +34,6 @@ export function TodoForm(): ReactNode {
           placeholder="What needs doing?"
           maxLength={200}
           defaultValue={kept}
-          onChange={(event) => {
-            setDraft(event.target.value);
-          }}
           aria-invalid={error !== undefined}
           aria-describedby={error !== undefined ? 'new-todo-error' : undefined}
           className="flex-1 rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
