@@ -410,3 +410,99 @@ form reset) is still checked only by hand in Chromium; a `next` upgrade could em
 the jsdom suite (react-dom 19.1.0) stays green.
 
 Rounds: 2
+
+## Diff review (pass 3)
+
+SCOPE: ui
+
+Reviewed: `git diff 3f80972..0e3d738 -- src` (`3fc71da` test, `0e3d738` fix) against pass 2 finding 1, pass 1
+finding 1, §10 (Intent, REQ-10.5, REQ-10.6, AC-10.5), §7 (`useActionState(createTodoAction)`), `plan.md` (round 2,
+B-2) and the dispositions; then a final full read of `git diff origin/main..HEAD` at `31442d7`. Run in this worktree
+on 2026-10-29, the gates one after another (e2e finished before Stryker started; the probe server started after
+Stryker finished). Probes on a copy under the session scratchpad (`rsync` without `node_modules`, `.git`, `.env`,
+`.next`; `node_modules` symlinked; probe-only fault in the copy's `createTodo`: a title starting `FAIL` throws, one
+containing `SLOW` waits 2.5 s), own `next dev` on port 3793 with this worktree's schema. The copy, the scripts and the
+2 probe rows are deleted; the worktree is clean.
+
+### Command results (last line of each)
+
+| Command                             | Last line                                                                                                     |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!`                                                                  |
+| `pnpm typecheck`                    | `tsc --noEmit` (no output, exit 0)                                                                            |
+| `pnpm test`                         | `Tests  72 passed (72)` (10 files)                                                                            |
+| `pnpm test:e2e`                     | `12 passed (19.7s)`                                                                                           |
+| `pnpm test:mutation`                | `Final mutation score of 82.98 is greater than or equal to break threshold 70` (`src/actions/todos.ts` 88.46) |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                                     |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                             |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                            |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test`                                                         |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 2 3 4 5 6 7 8 9 10`                                                                    |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                                          |
+| `scripts/ci/check-backlog.sh`       | `OK: README matches the cards`                                                                                |
+| `scripts/verify-red.sh B1.5`        | `RESULT: red for the right reason` (judges `311c8ef`)                                                         |
+| `git diff --stat origin/main..HEAD` | `15 files changed, 1048 insertions(+), 57 deletions(-)`                                                       |
+
+Mutation rerun although no `src/lib` or `src/actions` line changed since pass 1: same score.
+
+### Pass 2 finding 1: resolved
+
+- jsdom (react-dom 19.1.0): the new test `keeps text typed while the save is pending …` (`todo-form.test.tsx:115`)
+  fails with the input's `onChange` removed from HEAD's form and with `933962a`'s form (`1 failed | 8 passed`), passes
+  on HEAD.
+- Chromium (Next's vendored React): fill `FAIL SLOW`, click "Add", while "Add" is disabled type ` more` at the end →
+  box `FAIL SLOW more` during the save and after the failure, 1 alert `Could not save, try again`, "Add" enabled.
+
+### Pass 1 finding 1: still resolved
+
+| Scenario (Chromium, copy with the fault)                                | Box after                     | Alerts in form | "Add"   | Rows      |
+| ----------------------------------------------------------------------- | ----------------------------- | -------------- | ------- | --------- |
+| typed **before hydration** (JS chunks delayed 4 s), "Add" clicked after | `FAIL typed before hydration` | 1              | enabled | unchanged |
+| `Probe3 ok A` succeeds                                                  | `''`                          | 0              | enabled | +1        |
+| after that success, `FAIL z` set without an `input` event, "Add"        | `FAIL z`                      | 1              | enabled | unchanged |
+| `FAIL e1` (Enter) fails, type ` x`, Enter fails again                   | `FAIL e1`, then `FAIL e1 x`   | 1, 1           | enabled | unchanged |
+| `   ` → title error, then `FAIL after title` → form failure             | `''` (§5), then kept          | 1 each         | enabled | unchanged |
+| no JavaScript: `Probe3 nojs ok` posted natively, then `FAIL nojs`       | stored and listed; then `''`  | 0; then 1      | —       | +1; same  |
+
+jsdom probes on the copy (3 extra tests, not committed): pass 1's hydration recipe (server-render, value set without
+an event, `hydrate: true`, failing action) keeps `Buy milk`; typed before hydration plus more typed after keeps the
+whole text; fail → succeed (`''`) → value set without an event → fail keeps the new text. Server render unchanged:
+`curl /` → `<form … action="" encType="multipart/form-data" method="POST">` with `$ACTION_REF_1`, `$ACTION_1:0`,
+`$ACTION_1:1`, `$ACTION_KEY`. The no-JS `form` failure leaving `''` is plan review round 2 note 2 (spec silent).
+
+### Checklist
+
+| Check                                                  | Result                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-§.n has a test whose assertion matches Then   | pass: AC-10.4 `todos.test.ts:65`, title identical to the card's `Test:` line, exact object, `revalidatePath` 0, `createTodo` 1 with `Buy milk`, then the `title` error and still 1 call; AC-10.5 `todo-form.test.tsx:67` covers alert count and text inside the `<form>`, `Buy milk`, "Add" enabled, then 0 alerts and `''`.                                                 |
+| no test weakened after the red commit                  | pass: `git diff 311c8ef..HEAD -- '*.test.*' e2e/` is two added tests (`bbdf7cb`, `3fc71da`, each `test(todos): B1.5 review pass N -- …` with "Red because …"); no existing line changed.                                                                                                                                                                                     |
+| every changed file is in `plan.md`                     | pass: the `src/` files are the plan's `todos.ts`, `todo-form.tsx`, `CLAUDE.md` and the two test files; `spec/features-map.md` (F8 gains the form and its test) and `docs/metrics.md` (B1.5 row, `82.98 (actions 88.5, lib 80.9)`, matches this run) as planned; the rest is pre-plan `docs(spec)` / `docs(backlog)` and this file. §10 index ◐ stays for the closing commit. |
+| interfaces match the section's contracts               | pass: `createTodoAction(previous, formData)` unchanged, Zod above the `try`, bindingless `catch` → `failure('form', MUTATION_FAILED_MESSAGE)`, no rethrow; `TodoForm(): ReactNode`, `useActionState(createTodoAction, null)` literal (§7), one `<p id="new-todo-error" role="alert">`, `title ?? form`.                                                                      |
+| Zod / Prisma / raw SQL / migration                     | n/a since pass 1: no `src/lib`, `src/actions` or `prisma/` change.                                                                                                                                                                                                                                                                                                           |
+| no secret, no suppression, no `console`                | pass.                                                                                                                                                                                                                                                                                                                                                                        |
+| features map row moved                                 | pass: unchanged since pass 1, `check-features-map.sh` OK.                                                                                                                                                                                                                                                                                                                    |
+| no settled D-n contradicted                            | pass: D-5, D-7, D-11 as in pass 1.                                                                                                                                                                                                                                                                                                                                           |
+| would any test fail if one changed line were reverted? | pass: `onChange` removed fails the pending test; `onSubmit` removed fails the `AC-10.5` no-change-event test (and 2 probes); `event.preventDefault()` added fails 5 committed tests (AC-5.2, AC-5.3, both AC-10.5, the pending test).                                                                                                                                        |
+
+### Findings
+
+None.
+
+### Notes (not findings)
+
+1. Pass 2 note 1 stands: `todo-form.test.tsx:94` carries `AC-10.5:` although its Given (a value set without a change
+   event, no recovery half) is not AC-10.5's; the pending test (`:115`) is correctly unprefixed. Lead's call.
+2. `plan.md` Interfaces still reads `useState('') // written by the input's onChange`; the form now has two writers
+   (`onSubmit` seeds it from the submitted form, `onChange` follows typing). dev-lead: carry that wording into the PR
+   body's Plan section, with plan review round 2 note 1 (B-2's order on Next's vendored React).
+3. Closing commit (pass 1 note 2): §10 ◐ → ✅ and the metrics top table (second plan round).
+4. Residue named in pass 2, unchanged: text set without an event while the save is pending is not kept; not reachable
+   by typing.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: B-2's commit order on Next's vendored React (`defaultValue` committed before the post-action
+form reset) is checked only by hand in Chromium (plan review round 2, passes 1–3); a `next` upgrade could empty the
+box after a failure while the jsdom suite (react-dom 19.1.0) stays green.
+
+Rounds: 3
