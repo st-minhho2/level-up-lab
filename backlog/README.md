@@ -7,8 +7,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic      | File                                 | Done  | Partial | Open  | Total |
 | --------- | ------------------------------------ | ----- | ------- | ----- | ----- |
-| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 8     | 0       | 0     | 8     |
-| **Total** |                                      | **8** | **0**   | **0** | **8** |
+| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 8     | 0       | 1     | 9     |
+| **Total** |                                      | **8** | **0**   | **1** | **9** |
 
 ## Execution order
 
@@ -29,12 +29,15 @@ flowchart TD
   S6 --> S7
   S8["8 · Log Prisma errorCode<br/>~~B1.8~~"]
   S6 --> S8
+  S10["10 · E2E failed create keeps title<br/>B1.10"]
+  S5 --> S10
 ```
 
 ## Remaining
 
-| Step | ID  | Title | Spec § | Status | Blocked by | Owner | Size |
-| ---- | --- | ----- | ------ | ------ | ---------- | ----- | ---- |
+| Step | ID    | Title                                                       | Spec § | Status | Blocked by | Owner | Size         |
+| ---- | ----- | ----------------------------------------------------------- | ------ | ------ | ---------- | ----- | ------------ |
+| 10   | B1.10 | End-to-end proof that a failed create keeps the typed title | §10    | Open   | ~~B1.5~~   | Lead  | S [estimate] |
 
 ## Waiting on human
 

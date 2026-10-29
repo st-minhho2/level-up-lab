@@ -101,3 +101,16 @@ Prisma's `PrismaClientInitializationError` (database down) carries its code as `
 - **Tier:** quick · **Depends on:** ~~B1.6~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.8/` — decision request, analysis, plan (rounds 1/1), review (plan rounds 2, diff pass 1/3, 1 finding no change needed); squash `287c5a4` (#29)
 - **Ruled:** D-14 — the logged `code` is the string `code`, else the string `errorCode`, else absent.
+
+### B1.10 · End-to-end proof that a failed create keeps the typed title
+
+_F8 · §10_
+**Status: Open** — §10 REQ-10.6 ("keep the typed title in the box … and list no new todo") is proven only in jsdom:
+`src/components/todo-form.test.tsx` mocks `createTodoAction` (AC-10.5). No file in `e2e/` makes a create fail
+(`ls e2e`: `05-todos.spec.ts`, `06-edit-title.spec.ts`, `09-clear-completed.spec.ts`, `smoke.spec.ts`), so the real
+`useActionState` form, Server Action, Prisma error and §11 log line are never exercised together in Chromium.
+Fault injection is ruled (lead, option B): the e2e test adds a PostgreSQL trigger on `todos` that rejects inserts and
+drops it afterwards; no app, env or config change; the raw SQL in `e2e/` is reviewed by this card's reviewer.
+
+- **Tier:** quick · **Depends on:** ~~B1.5~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.10/`
