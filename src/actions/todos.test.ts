@@ -85,12 +85,16 @@ describe('toggleTodoAction', () => {
     expect(cache.revalidatePath).not.toHaveBeenCalled();
   });
 
-  it('rethrows a non-TodoNotFoundError from the lib (review: instanceof arm)', async () => {
+  it('AC-10.1: resolves fieldErrors.form ["Could not save, try again"] when the lib rejects with another error and does not revalidate', async () => {
     lib.toggleTodo.mockRejectedValue(new Error('db down'));
 
-    await expect(toggleTodoAction('todo-1')).rejects.toThrow('db down');
+    await expect(toggleTodoAction('todo-1')).resolves.toEqual({
+      ok: false,
+      fieldErrors: { form: ['Could not save, try again'] },
+    });
 
-    expect(cache.revalidatePath).not.toHaveBeenCalled();
+    expect(lib.toggleTodo).toHaveBeenCalledTimes(1);
+    expect(cache.revalidatePath).toHaveBeenCalledTimes(0);
   });
 });
 
@@ -153,12 +157,16 @@ describe('updateTodoTitleAction (§6)', () => {
     expect(cache.revalidatePath).not.toHaveBeenCalled();
   });
 
-  it('rethrows a non-TodoNotFoundError from the lib (review: instanceof arm)', async () => {
+  it('AC-10.1: resolves fieldErrors.form ["Could not save, try again"] when the lib rejects with another error and does not revalidate', async () => {
     lib.updateTodoTitle.mockRejectedValue(new Error('db down'));
 
-    await expect(updateTodoTitleAction('todo-1', 'Buy milk')).rejects.toThrow('db down');
+    await expect(updateTodoTitleAction('todo-1', 'Buy milk')).resolves.toEqual({
+      ok: false,
+      fieldErrors: { form: ['Could not save, try again'] },
+    });
 
-    expect(cache.revalidatePath).not.toHaveBeenCalled();
+    expect(lib.updateTodoTitle).toHaveBeenCalledTimes(1);
+    expect(cache.revalidatePath).toHaveBeenCalledTimes(0);
   });
 });
 
@@ -184,5 +192,17 @@ describe('clearCompletedTodosAction (§9)', () => {
     expect(lib.clearCompletedTodos).toHaveBeenCalledTimes(1);
     expect(cache.revalidatePath).toHaveBeenCalledTimes(1);
     expect(cache.revalidatePath).toHaveBeenCalledWith('/');
+  });
+
+  it('AC-10.1: resolves fieldErrors.form ["Could not save, try again"] when the lib rejects and does not revalidate', async () => {
+    lib.clearCompletedTodos.mockRejectedValue(new Error('db down'));
+
+    await expect(clearCompletedTodosAction()).resolves.toEqual({
+      ok: false,
+      fieldErrors: { form: ['Could not save, try again'] },
+    });
+
+    expect(lib.clearCompletedTodos).toHaveBeenCalledTimes(1);
+    expect(cache.revalidatePath).toHaveBeenCalledTimes(0);
   });
 });
