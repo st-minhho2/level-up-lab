@@ -90,4 +90,25 @@ describe('<TodoForm>', () => {
     expect(textbox).toHaveValue('');
     expect(actions.createTodoAction).toHaveBeenCalledTimes(2);
   });
+
+  it('AC-10.5: keeps the submitted title in the box after a failed save even when no change event wrote it', async () => {
+    actions.createTodoAction.mockResolvedValue({ ok: false, fieldErrors: { form: ['Could not save, try again'] } });
+    const user = userEvent.setup();
+    render(<TodoForm />);
+    const textbox = screen.getByRole('textbox', { name: 'New todo' });
+    const form = formOf(textbox);
+    if (!(textbox instanceof HTMLInputElement)) {
+      throw new Error('expected the "New todo" text box to be an <input>');
+    }
+    textbox.value = 'Buy milk';
+
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+
+    const alerts = await within(form).findAllByRole('alert');
+    expect(alerts.map((alert) => alert.textContent)).toEqual(['Could not save, try again']);
+    expect(textbox).toHaveValue('Buy milk');
+    expect(actions.createTodoAction).toHaveBeenCalledTimes(1);
+    const formData = actions.createTodoAction.mock.calls[0]?.[1] as FormData;
+    expect(formData.get('title')).toBe('Buy milk');
+  });
 });
