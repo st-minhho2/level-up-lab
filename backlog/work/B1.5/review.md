@@ -147,3 +147,145 @@ Notes (none blocking):
 4. `docs/metrics.md` names no role; dev-lead's hook allows it. `plan.md` is 59 lines (≈ 40; table width, as round 1).
 
 Rounds: 2
+
+## Diff review (pass 1)
+
+SCOPE: all
+
+Reviewed: `origin/main..HEAD` (red `311c8ef` → green `73db034`, no skeleton) against §10 (REQ-10.1, REQ-10.5,
+REQ-10.6, AC-10.4, AC-10.5, Function contracts), §5, §7, D-5, D-7, D-11, `plan.md` (round 2, approach B-2,
+approved 2026-10-29), `advice.md`, plan reviews rounds 1–2, every changed file in full. Run in this worktree on
+2026-10-29 (compose PostgreSQL on 5433, worktree schema). Probes on a copy under the session scratchpad (`rsync`
+without `node_modules`/`.git`/`.env`, `node_modules` symlinked, own dev server on port 3791 with a probe-only fault in
+the copy's `createTodo`: a title starting `FAIL` throws, a title containing `SLOW` waits 2.5 s); the copy, its server
+and the scripts are deleted. The probe left 2 rows (`Probe ok one`, `Probe ok two`) in the worktree schema; every e2e
+`beforeEach` deletes them.
+
+### Command results (last line of each)
+
+| Command                             | Last line                                                                                                 |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!`                                                              |
+| `pnpm typecheck`                    | `tsc --noEmit` (no output, exit 0)                                                                        |
+| `pnpm test`                         | `Tests  70 passed (70)` (10 files)                                                                        |
+| `pnpm test:e2e`                     | `12 passed (14.1s)`                                                                                       |
+| `pnpm test:mutation`                | `Final mutation score of 82.98 is greater than or equal to break threshold 70` (actions 88.46, lib 80.88) |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                                 |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                         |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                        |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test` (`§10 criteria=5 covered=5`)                        |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 2 3 4 5 6 7 8 9 10`                                                                |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                                      |
+| `scripts/ci/check-backlog.sh`       | `OK: README matches the cards`                                                                            |
+| `scripts/verify-red.sh B1.5`        | `RESULT: red for the right reason` (todo-form 1 new / 1 failed, actions 2 new / 2 failed, 0 new passed)   |
+| `git diff --stat origin/main..HEAD` | `15 files changed, 726 insertions(+), 56 deletions(-)`                                                    |
+
+Tooling note: the first `pnpm test:mutation` ran while `pnpm test:e2e`'s dev server was rewriting `.next/types` and
+died in the TypeScript checker (`TS6053 … .next/types/app/layout.ts not found`); rerun alone, clean. Do not run the
+two concurrently in one worktree.
+
+### Checklist
+
+| Check                                                | Result                                                                                                                                                                                                                                                                                                                                                                                        |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-§.n has a test whose assertion matches Then | pass: AC-10.4 `todos.test.ts:65`, title identical to the card's `Test:` line; `.resolves.toEqual` the exact object, `revalidatePath` 0, `createTodo` 1 with `'Buy milk'`, then the `title` error and still 1 call. AC-10.5 `todo-form.test.tsx:67`: alerts inside the `<form>` equal `['Could not save, try again']` (count and text), box `Buy milk`, "Add" enabled; then 0 alerts and `''`. |
+| no test weakened after the red commit                | pass: `git diff 311c8ef..HEAD -- '*.test.*' e2e/` is empty; the red commit only adds tests (3 new, 0 existing lines changed except one import).                                                                                                                                                                                                                                               |
+| every changed file is in `plan.md`                   | pass: `73db034` touches exactly the plan's 5 non-test files; `311c8ef` the 2 test files. Everything else on the branch is pre-plan `docs(spec)`/`docs(backlog)`. `spec/technical-requirements.md` §10 ◐ stays for the closing commit, as planned.                                                                                                                                             |
+| interfaces match the section's contracts             | pass: `createTodoAction(previous, formData)` unchanged; Zod above the `try`, `createTodo` + `revalidatePath('/')` + success inside, bindingless `catch` → `failure('form', MUTATION_FAILED_MESSAGE)`, no `TodoNotFoundError` arm, no rethrow. `TodoForm(): ReactNode`, `useActionState(createTodoAction, null)` literal (§7), single `<p id="new-todo-error" role="alert">`, `title ?? form`. |
+| Zod at every action boundary                         | pass (unchanged parse).                                                                                                                                                                                                                                                                                                                                                                       |
+| Prisma only in `src/lib`; no raw SQL                 | pass: no `src/lib` or `prisma/` change.                                                                                                                                                                                                                                                                                                                                                       |
+| migration reversible and indexed                     | n/a.                                                                                                                                                                                                                                                                                                                                                                                          |
+| no secret, no suppression, no `console`              | pass: check-suppressions OK; nothing logged (D-11).                                                                                                                                                                                                                                                                                                                                           |
+| features map row moved                               | pass: F8 gains `src/components/todo-form.tsx` and `src/components/todo-form.test.tsx`; `check-features-map.sh` OK. `docs/metrics.md` B1.5 row `82.98 (actions 88.5, lib 80.9)` matches this run.                                                                                                                                                                                              |
+| no settled D-n contradicted                          | pass: D-5 (`maxLength={200}`, trimmed by the action), D-7 (both boxes ticked by the lead), D-11 (`form` key, no revalidation, no log).                                                                                                                                                                                                                                                        |
+| would any test fail if one line were reverted?       | pass for every behavioral line, 9 probes (table below); 2 survivors are structural or out of scope.                                                                                                                                                                                                                                                                                           |
+
+Probes (copy; one edit each; `vitest run` on the two test files):
+
+| P   | Edit                                           | Fails                                                                          |
+| --- | ---------------------------------------------- | ------------------------------------------------------------------------------ |
+| 1   | action: try/catch removed                      | AC-10.4 and the `revalidatePath`-throws test                                   |
+| 2   | action: `revalidatePath` moved after the `try` | the `revalidatePath`-throws test (`todos.test.ts:85`)                          |
+| 3   | action: Zod parse moved inside the `try`       | none (22 passed): not observable, `safeParse` never throws; structure only     |
+| 4   | form: alert reads `title` only                 | AC-10.5                                                                        |
+| 5   | form: `kept` always `''`                       | AC-10.5                                                                        |
+| 6   | form: `kept = draft` always                    | AC-10.5 and AC-5.2                                                             |
+| 7   | form: keep the draft after any `ok: false`     | none: the box after a `title` error is §10 Out of scope (plan review 2 note 3) |
+| 8   | form: `onChange` no longer writes `draft`      | AC-10.5                                                                        |
+| 9   | form: `defaultValue={kept}` removed            | AC-10.5                                                                        |
+
+Stryker: 0 survivors on `todos.ts` 26–33 (the card's lines). Survivors on the file are `22:54` (`typeof rawTitle ===
+'string'` → `true`), `22:96` (no coverage, `''` fallback) and `43:20` (toggle's `'/'`), all pre-existing.
+
+Real browser (Chromium on Next's vendored React, copy, probe-only fault), REQ-10.6 / AC-10.5 and the B-2 edge cases:
+
+| Scenario                                                        | Box after               | Alerts in form                 | "Add"   | Rows      |
+| --------------------------------------------------------------- | ----------------------- | ------------------------------ | ------- | --------- |
+| first submit after load fails (`FAIL Buy milk`, click)          | `FAIL Buy milk`         | 1, `Could not save, try again` | enabled | unchanged |
+| fail → edit (`… 2`) → fail (Enter)                              | `FAIL Buy milk 2`       | 1                              | enabled | unchanged |
+| fail → clear, `   ` → title error                               | `''` (§5, out of scope) | 1, `Title is required`         | enabled | unchanged |
+| title error → `FAIL x` fails → edit to `Probe ok one` succeeds  | `FAIL x`, then `''`     | 1 (replaced), then 0           | enabled | +1        |
+| after that success, type `FAIL y` → fail (stale draft?)         | `FAIL y`                | 1                              | enabled | unchanged |
+| `FAIL SLOW` pending (button disabled), type ` more`, then fails | `FAIL SLOW more`        | 1                              | enabled | unchanged |
+| title typed **before hydration**, "Add" clicked after, fails    | `''`                    | 1                              | enabled | unchanged |
+| after a success, value set without an `input` event, fails      | previous title (stale)  | 1                              | enabled | unchanged |
+
+Every scenario a person reaches by typing after hydration holds. The last two rows are finding 1.
+
+### Findings
+
+```
+[1] KIND: spec-mismatch
+    WHERE: src/components/todo-form.tsx:13 (kept = … ? draft : ''), :28 (draft written only by onChange)
+    DEFECT: the box is reset to `draft`, a copy kept by onChange, not to the title that was submitted, so text that
+            reached the box without a React onChange is dropped (or replaced by an older title) after a `form` failure.
+    TRIGGER: real Chromium, Next's vendored React, copy with createTodo throwing for titles starting `FAIL`, JS chunks
+            delayed 4 s (Playwright route): keystrokes `FAIL typed before hydration` land before hydration
+            (`hydrated: false`, value present); after hydration click "Add" → `{ value: '', alerts: ['Could not save,
+            try again'] }`. Control, same flow typed after hydration → value kept. Second trigger, Browser pane: create
+            `Probe ok two` (success), then the box gets `FAIL z` without an `input` event (as an extension or a
+            password manager may set it), click "Add" → box shows `Probe ok two`, a title already saved; clicking
+            "Add" again stores a duplicate (D-5 allows it). Mechanism read in Next's vendored react-dom
+            (`initInput(…, isHydrating = true)` keeps the DOM value and queues no change event).
+    WRONG BEHAVIOUR: REQ-10.6 "keep the typed title in the box": the box is empty (or shows a different, already
+            saved title) instead of the title the person typed and submitted. AC-10.5 cannot see it (jsdom, client
+            render, user-event keystrokes after mount).
+    CONFIDENCE: confirmed (both triggers run; jsdom reproduces the first: server-render `<TodoForm />`, set the
+            input's value without an event, `render(…, { container, hydrate: true })`, failing action, click "Add"
+            → `toHaveValue('Buy milk')` fails with `''` on this branch).
+```
+
+For the test-writer / code-writer (not prescriptive): the hydration recipe above is red on `73db034`. One candidate,
+probed: capture the submitted title in the form's `onSubmit` (`new FormData(event.currentTarget).get('title')` →
+`setDraft`), keeping `action={formAction}` (no wrapper, native POST before hydration unchanged). With it the
+pre-hydration trigger keeps `FAIL typed before hydration` in Chromium and the component suite is 20/20 green (AC-5.2,
+AC-5.3, AC-5.7, AC-10.5, the hydration probe, todo-item, clear-completed-button). The new test has no AC id of its own
+(REQ-10.6; no criterion types before hydration), titled like the `revalidatePath` test.
+
+### Notes (not findings)
+
+1. P3: AC-10.4's blank-title half does not pin "Zod outside the `try`" (advice said it would); moving the parse
+   inside changes no observable result. The code is as §10 says; nothing to do.
+2. Closing commit (dev-lead): `spec/technical-requirements.md` §10 ◐ → ✅; the top table of `docs/metrics.md`. B1.5
+   used a second plan round (round 1 approach A, plan review asked to change the approach), so "Cards completed
+   without a second plan round" becomes 3/4 (75 %, target ≥ 90 %) and "PRs needing a second design round" counts
+   1; the metrics file's own rule opens a `docs/mistake-log.md` row if that stays below target at the next card.
+3. Plan review round 2 note 1 still stands for the PR body: AC-10.5 runs on `react-dom` 19.1.0 in jsdom, the browser
+   on Next's vendored 19.2 canary; the B-2 ordering held in Chromium again today (table above).
+
+Verdict: back to test-writer (finding 1: a failing test for REQ-10.6 first, then code-writer)
+
+Riskiest unfalsified: B-2's commit order (the `defaultValue` update lands before React's post-action form reset) is
+verified only by hand in Chromium (plan review round 2 and this pass); no automated test runs `TodoForm`'s failure
+path on Next's vendored React, so a `next` upgrade could empty the box after a failure while AC-10.5 (jsdom,
+`react-dom` 19.1.0) stays green.
+
+Rounds: 1
+
+## Dispositions (dev-lead, pass 1 of 3)
+
+| Pass | #   | Finding (file:line)                                                                | Source                          | Kind          | Disposition      | Justification                                                                                                                    |
+| ---- | --- | ---------------------------------------------------------------------------------- | ------------------------------- | ------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | 1   | `todo-form.tsx:13`, `:28` box reset to the onChange draft, not the submitted title | reviewer                        | spec-mismatch | fix now          | test `bbdf7cb` (red on the box value), fix `933962a`: draft read from the submitted FormData in `onSubmit`; 71 unit, 12 e2e      |
+| 1    | —   | B-2 commit order verified by hand only on Next's vendored React                    | reviewer (riskiest unfalsified) | coverage      | out of scope     | needs a fault-injection hook for an e2e (config change, ask first); carried into the PR body as a known risk of a `next` upgrade |
+| 1    | —   | §10 index ◐ → ✅; metrics top table (second plan round)                            | reviewer note 2                 | docs          | no change needed | closing commit after merge, per plan                                                                                             |
