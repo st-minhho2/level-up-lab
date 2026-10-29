@@ -125,12 +125,9 @@ jobs:
         with:
           fetch-depth: 0
       - uses: ./.github/actions/setup
+      # Push-safe: they read the diff or the tree, which a squash merge keeps.
       - name: No new eslint-disable / @ts-ignore / @ts-expect-error
         run: scripts/ci/check-suppressions.sh
-      - name: No lint / tsconfig / CI / hook changes without the config-change-approved label
-        run: scripts/ci/check-config-change.sh
-      - name: feat(...) commits do not touch test files
-        run: scripts/ci/check-feat-commits.sh
       - name: Every acceptance criterion of a shipped section has a test
         run: scripts/ci/check-ac-coverage.sh
       - name: Cited spec sections exist
@@ -139,5 +136,15 @@ jobs:
         run: scripts/ci/check-features-map.sh
       - name: Backlog board matches the cards
         run: scripts/ci/check-backlog.sh
+      # PR-only: a push to main carries no PR labels, and the squash merge folds the test(...) (red) and feat(...)
+      # commits into one commit titled after the PR, so these would fail (or verify nothing) on every merge. The
+      # ruleset forbids direct pushes, so each commit on main already passed them on its PR.
+      - name: No lint / tsconfig / CI / hook changes without the config-change-approved label
+        if: ${{ github.event_name == 'pull_request' }}
+        run: scripts/ci/check-config-change.sh
+      - name: feat(...) commits do not touch test files
+        if: ${{ github.event_name == 'pull_request' }}
+        run: scripts/ci/check-feat-commits.sh
       - name: test(...) commits are red for the right reason
+        if: ${{ github.event_name == 'pull_request' }}
         run: scripts/verify-red.sh --auto

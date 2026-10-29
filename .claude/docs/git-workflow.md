@@ -28,6 +28,10 @@ checks|comment`. Everything the project scripts do.
 Adding or removing a label (`config-change-approved`, `hotfix`) starts a fresh `ci` run that reads the new labels and
 cancels the one in flight. "Re-run jobs" replays the old event and never sees a label added after it.
 
+The label check, `check-feat-commits.sh` and `verify-red.sh --auto` run in `guards` on pull requests only. The push
+to `main` after a squash merge has no labels and one commit titled after the PR, so they cannot judge it; `guards`
+still runs the diff and tree checks there (suppressions, AC coverage, spec sections, features map, backlog).
+
 ## Bringing `main` in
 
 `git merge main` inside the worktree (the commit-msg hook accepts `Merge …`). Never rebase a pushed branch.
