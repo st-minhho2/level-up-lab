@@ -100,3 +100,42 @@ Notes (no change required):
    empty-query guard, `url.search` without `.slice(1)` (the written query covers the first pair), the line-45
    authority-end class, the outer catch's `return []` (pre-existing). The code-writer's shape decides the count.
 4. Analysis note (c), `?password=k#ey` giving the secret `k`, is pre-existing and unchanged by this card.
+
+## Plan review (round 2)
+
+SCOPE: lib
+
+Reviewed: `backlog/work/B1.11/plan.md` at `a7ef913` (`Plan approved by:` empty) against round 1's two reasons.
+`git diff 6c2ad44 a7ef913` touches only `plan.md` and `review.md`; no `src/`, `spec/`, `prisma/` or `e2e/` change,
+so round 1's passing checks stand. §11's `Lead approves spec` box (`spec/contracts/09-logging.md:8`) still unticked.
+Re-run on 2026-10-29 on a fresh clone of the round-1 probe (`$TMPDIR/b111-plan-r2-probe`, its commits are the plan's
+steps 1–2 with the plan's exact URLs, messages and fifth title): pin commit → `Tests 108 passed (108)`; red commit →
+`Tests 5 failed | 108 passed (113)`, the five being (h)–(k) and the first-`:` test; round-1 probe with the reference
+`logger.ts` → `Tests 113 passed (113)`. `verify-red.sh` matches only `(red)` subjects, so its base is the pin commit,
+as the plan states.
+
+| Check                                                                             | pass / fail: reason                                                                                                                                                                                                           |
+| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: unchanged, `logger.ts` and `logger.test.ts` (F9) only.                                                                                                                                                                  |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass: unchanged.                                                                                                                                                                                                              |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: unchanged; the approach paragraph now states round 1's additions.                                                                                                                                                       |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: still 6 criteria; the fifth red test and both pins state exact message → exact expected text.                                                                                                                           |
+| verification lists exact commands with expected numbers                           | pass (reason 1 of round 1 resolved): verify-red 5 new failed / 0 passed; 106 → 108 → 113 (probe matches); e2e 13; mutation "≥ 70 (base 89.47 %), `logger.ts` survivors listed by line" replaces the unreachable "all Killed". |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass (reason 2 resolved): pin step before `(red)`, subject `test(todos): B1.11 pin user name, fragment and no userinfo` (no `(red)`, as B1.7's hardening commit); no skeleton, no map step, both justified.                   |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7)          | pass: unticked; not ticked by me.                                                                                                                                                                                             |
+| no settled D-n contradicted                                                       | pass: unchanged; D-17 option A as written.                                                                                                                                                                                    |
+
+Round 1 reasons:
+
+1. First-`:` split: resolved as written, option (a). Fifth test in the red commit, URL
+   `postgresql://app:p@ä:%41@db.internal:5432/lab`, message `auth p@ä:%41` → `auth [redacted]`, title verbatim; red
+   today (probe), green on the reference.
+2. "None" rules, fragment cut, exact name: resolved as written. Both pins with the round-1 URLs and messages, landed
+   green before `(red)`; counts and verification updated; test-writer brief override states it commits them without
+   `(red)` and skips verify-red.
+
+Notes (no change required): the plan is 62 lines, over `planning.md`'s ≈ 40, the excess being the pin/fifth-test
+inputs a test-writer needs verbatim; the scope is still one function in one file. The footer still reads `Rounds: 1`;
+the lead updates it at the gate.
+
+Verdict: approved (ready for the lead's gate, not approved for build)

@@ -59,4 +59,4 @@ Brief overrides: test-writer step 1 commits green tests without `(red)` and does
 leaves `docs/metrics.md` for the closing commit; accepted survivors (review round 1 notes 1–3) are listed by line. Approving this plan also ticks §11's new
 `Lead approves spec` box (D-7).
 
-Plan review: · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: · Rounds: 1
