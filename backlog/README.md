@@ -29,11 +29,12 @@ flowchart TD
 
 ## Remaining
 
-| Step | ID   | Title                           | Spec §               | Status | Blocked by | Owner | Size         |
-| ---- | ---- | ------------------------------- | -------------------- | ------ | ---------- | ----- | ------------ |
-| 6    | B1.6 | Log swallowed mutation failures | — (section to write) | Open   | ~~B1.5~~   | Lead  | S [estimate] |
+| Step | ID   | Title                           | Spec § | Status | Blocked by | Owner | Size         |
+| ---- | ---- | ------------------------------- | ------ | ------ | ---------- | ----- | ------------ |
+| 6    | B1.6 | Log swallowed mutation failures | §11    | Open   | ~~B1.5~~   | Lead  | S [estimate] |
 
 ## Waiting on human
 
-| ID  | What | Blocks |
-| --- | ---- | ------ |
+| ID   | What                                                                                                                                                                    | Blocks |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| D-12 | Logger sink and what a log may contain (A in-repo stderr JSON / B console.error / C dependency; R2 scrub vs R3 name+code only) — `work/B1.6/analysis.md` Needs a ruling | B1.6   |

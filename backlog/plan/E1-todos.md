@@ -60,10 +60,11 @@ _F8 · §10_
 
 ### B1.6 · Log swallowed mutation failures
 
-_F9 (new) · § to be written_
+_F9 (new) · §11_
 **Status: Open** — the four `catch` arms in `src/actions/todos.ts` (lines 30, 45, 64, 80) resolve `failure('form', MUTATION_FAILED_MESSAGE)` and drop the cause: nothing in `src/` logs (`grep -rn 'console\.' src` outside tests is empty; `eslint.config.mjs:48` sets `no-console: error`). D-11 defers logging "until a logger card lands".
 
-- **Spec:** change: new section "Logging failures" (a swallowed mutation failure is recorded server-side with enough context to diagnose it; the person still sees only `Could not save, try again`)
-- **Test:** — (written with the section)
-- **Depends on:** ~~B1.5~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Spec:** §11 — change: new section "Logging failures" (a swallowed mutation failure is recorded server-side as one JSON line on stderr with the action name and the error, secrets redacted; the person still sees only `Could not save, try again`; written from `work/B1.6/analysis.md`)
+- **Test:** `src/lib/logger.test.ts::AC-11.1: writes one newline-terminated JSON line with level, time, msg, action and error to stderr and nothing to stdout` — red because: `src/lib/logger.ts` does not exist yet; once the skeleton stub throws `NotImplementedError`, `logMutationFailure` throws instead of writing the line
+- **Acceptance:** AC-11.1 … AC-11.6
+- **Tier:** full · **Depends on:** ~~B1.5~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.6/` (analysis.md, advice.md, plan.md, review.md as the roles produce them)
