@@ -14,7 +14,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §7  | [contracts/05-ui.md](contracts/05-ui.md)                               | Pages, components, the Server Action boundary, health | ✅     |
 | §8  | [contracts/06-change-requests.md](contracts/06-change-requests.md)     | How a behavior change enters the spec                 | ✅     |
 | §9  | [contracts/07-clear-completed.md](contracts/07-clear-completed.md)     | Todos: clear completed                                | ✅     |
-| §10 | [contracts/08-mutation-feedback.md](contracts/08-mutation-feedback.md) | Todos: feedback when a mutation fails                 | ✅     |
+| §10 | [contracts/08-mutation-feedback.md](contracts/08-mutation-feedback.md) | Todos: feedback when a mutation fails                 | ◐      |
 
 Reading order: §1 → §2 → the section your backlog card names → [features-map.md](features-map.md).
 
