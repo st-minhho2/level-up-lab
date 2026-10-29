@@ -72,4 +72,4 @@ misplaced fault). Anything else (pass, other line, no `[WebServer]` match) → s
 Brief override: test-writer commits a green test without `(red)` and does not run verify-red (D-13 shape); if the test
 is red at HEAD it stops and reports, never adjusts an assertion.
 
-Plan review: changes requested round 2 (one line, fixed after the round; review cap reached, lead decides) · Plan approved by: · Rounds: 1
+Plan review: changes requested round 2 (one line, fixed after the round; review cap reached, lead accepted the fix) · Plan approved by: lead (session reply "approve B1.10, D-16 option A"), 2026-10-29 · Rounds: 1
