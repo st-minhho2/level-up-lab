@@ -134,3 +134,18 @@ drops it afterwards; no app, env or config change; the raw SQL in `e2e/` is revi
 - **Tier:** quick · **Depends on:** ~~B1.5~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.10/` — analysis, plan (rounds 1/1), review (plan rounds 2, cap reached, fix accepted by the lead; diff pass 1/3, 1 finding out of scope); squash `c850ddb` (#33)
 - **Ruled:** D-16 — e2e-only tests-only cards: red evidence against the pre-card `src/`; DDL fault injection through `prisma.$executeRaw` allowed in `e2e/`.
+
+### B1.11 · Redact the database password exactly as written in `DATABASE_URL`
+
+_F9 · §11_
+**Status: Open** — §11 disagrees with itself: REQ-11.4 names the query values "as written", while its Function
+contracts take them from `url.search` and the password from `url.password`, both normalized by the URL parser
+(`src/lib/logger.ts:51`: `const url = new URL(value);`, then `url.password` and `querySecretsOf(url.search)`). Probe
+(`node -e`): `postgresql://app:pä%40ss@db.internal:5432/lab` gives `url.password` `p%C3%A4%40ss`, decoded `pä@ss`,
+re-encoded `p%C3%A4%40ss`, so the written form `pä%40ss` is no secret; `…/lab?password=a b%26c` gives `url.search`
+`?password=a%20b%26c`, so the written `a b%26c` is no secret. A driver message quoting either form would be logged
+verbatim (B1.9 diff review, riskiest unfalsified; no such driver found). A §11 change: D-17 requested (README
+"Waiting on human", `work/B1.11/decision-request.md`).
+
+- **Tier:** quick · **Depends on:** ~~B1.9~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.11/`
