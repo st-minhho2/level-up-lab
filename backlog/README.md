@@ -7,8 +7,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic      | File                                 | Done  | Partial | Open  | Total |
 | --------- | ------------------------------------ | ----- | ------- | ----- | ----- |
-| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 4     | 0       | 0     | 4     |
-| **Total** |                                      | **4** | **0**   | **0** | **4** |
+| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 4     | 0       | 1     | 5     |
+| **Total** |                                      | **4** | **0**   | **1** | **5** |
 
 ## Execution order
 
@@ -21,6 +21,8 @@ flowchart TD
   S4["4 · Mutation failure feedback<br/>~~B1.4~~"]
   S1 --> S3
   S3 --> S4
+  S5["5 · Create failure feedback<br/>B1.5"]
+  S4 --> S5
 ```
 
 ## Remaining

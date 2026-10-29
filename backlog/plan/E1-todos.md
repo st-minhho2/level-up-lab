@@ -46,3 +46,13 @@ _F8 (new) · §10_
 - **Tier:** quick · **Depends on:** ~~B1.1~~ ~~B1.2~~ ~~B1.3~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.4/` — analysis, plan (rounds 1/1), review (plan + diff, passes 1/3); squash `b605e3f` (#11)
 - **Ruled:** D-11 — Server Actions never reject for an expected failure; `fieldErrors.form` carries the message.
+
+### B1.5 · Feedback when creating a todo fails
+
+_F8 · §10_
+**Status: Open** — `createTodoAction` awaits `createTodo(parsed.data.title)` with no try/catch (`src/actions/todos.ts:26`), so a database failure rejects the form action and reaches Next's error boundary; `TodoForm` reads only `fieldErrors.title?.[0]` (`src/components/todo-form.tsx:9`). §10 lists the create path under "Out of scope"; D-11 names B1.5 as the card that covers it.
+
+- **Spec:** change: §10 extends to creating a todo (D-11) — the create action resolves `fieldErrors.form` instead of rejecting, and `TodoForm` shows it
+- **Test:** — (written with the section)
+- **Tier:** quick · **Depends on:** ~~B1.4~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.5/` (analysis.md, plan.md, review.md as the roles produce them)
