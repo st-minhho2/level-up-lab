@@ -1,0 +1,60 @@
+# B1.8 review
+
+## Plan review (round 1)
+
+SCOPE: lib
+
+Reviewed: `backlog/work/B1.8/plan.md` at `12c7e7f` (`Plan review: · Plan approved by: · Rounds: 1`, empty) against §11
+(`spec/contracts/09-logging.md` as extended in `c54edb6`, second `- [ ] Lead approves spec (lead, <date>)` box
+unticked), card B1.8 (`backlog/plan/E1-*.md`), D-14 and D-7 (`backlog/00-decisions.md`), `analysis.md`,
+`decision-request.md`, `src/lib/logger.ts`, `src/lib/logger.test.ts`, `scripts/verify-red.sh`,
+`scripts/ci/check-feat-commits.sh`, `backlog/CLAUDE.md` (commit order), `.claude/skills/review-loop/SKILL.md`,
+`docs/mistake-log.md`, `docs/metrics.md`, and the B1.5 / B1.6 plans as precedent. Run in this worktree on 2026-10-29:
+`pnpm test` → `Tests 94 passed (94)`; `check-spec-sections.sh`, `check-ac-coverage.sh`, `check-features-map.sh`,
+`check-backlog.sh`, `check-feat-commits.sh`, `check-suppressions.sh` all OK; `git log main..HEAD` = 5 docs commits, no
+`src/` change. Probes on a `git archive HEAD` copy under `$TMPDIR` (`node_modules` symlinked, only `.env.example`
+present, never the tree).
+
+| Check                                                                             | pass / fail: reason                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: `src/lib/logger.ts` and `src/lib/logger.test.ts` are both named by F9 (`spec/features-map.md:17`, ✅); no other `src/` file; no map change needed. Closing commit (card, §11 ✅ in the index, README row, metrics row) matches `backlog/CLAUDE.md` "Closing a card".                                                                                                                                                                                          |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass: `logMutationFailure(action: MutationActionName, error: unknown): void` unchanged and verbatim from §11 Function contracts; internal `LoggedError` keeps `code?: string`; no Prisma import (tests use plain `Error` + `Object.assign`, analysis Q2); no action, schema, env or dependency change. Probe: an `errorCode` read via `error as Error & { readonly code?: unknown; readonly errorCode?: unknown }` typechecks under vitest without `as unknown as`. |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: no `advice.md`; the plan states "Advisor skipped (quick, D-14 settled the only choice)", allowed for a quick card (`backlog/CLAUDE.md`). Follows analysis Q1 (keep (d)–(g)), Q2 (plain `Error`), Q3 (no skeleton; B1.5 precedent), Q4 (box ticked by the gate).                                                                                                                                                                                               |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: §11 stays at 6 criteria; AC-11.2 (d) exact key order and `P1001`, (e) `P2002`, (f) `P1001`, (g) no `code` key, (d)–(g) no `errorCode` key; no banned adjective in the added text.                                                                                                                                                                                                                                                                             |
+| verification lists exact commands with expected numbers                           | pass: `verify-red.sh B1.8` → 2 new failed, 0 new passed (probe: (d), (f) fail, (e), (g) pass on today's code, `Tests 2 failed \| 16 passed (18)`); `pnpm test` 94 → 98 (94 confirmed); e2e 12 (3 + 3 + 2 + 4 across the four spec files); mutation ≥ 70 from 85.09 (`docs/metrics.md:21`), logger ≥ 95 (B1.6 precedent); four guards named.                                                                                                                         |
+| work breakdown has skeleton → red → green → map → review with convention subjects | **fail**: no skeleton (justified: no new export) and no map step (justified: F9 already names both files) are fine; but step 3 lands two AC-11.2 cases **after** the `feat` commit, outside the green gate, under a subject that is neither `… (red)` nor `review pass N -- …` (reason 1). The plan-review step row of B1.5 / B1.6 is missing (cosmetic, note 2).                                                                                                   |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7)          | pass: `spec/contracts/09-logging.md:6` `- [ ] Lead approves spec (lead, <date>)` unticked; the plan says the gate's approve ticks it (D-7). Not ticked by me.                                                                                                                                                                                                                                                                                                       |
+| no settled D-n contradicted                                                       | pass: D-14 option A literally (string `code`, else string `errorCode`, else absent; no other property; no separate key; 6 criteria); D-12 (stderr, no `console`, caps, redaction) and D-11 untouched; D-7 box and approval line present.                                                                                                                                                                                                                            |
+
+Verdict: changes requested
+
+Reasons:
+
+1. **Cases (e) and (g) land after the green commit, so the green gate cannot catch the wrong implementation they
+   exist to catch.** Confirmed by probe: on the copy, `describeError` changed to
+   `typeof code === 'string' ? { code } : errorCode !== undefined ? { code: errorCode } : {}` (the `typeof` on
+   `errorCode` dropped, a spec violation of REQ-11.3 and AC-11.2 (g)) passes (d), (e), (f) and all 14 existing logger
+   tests; only (g) fails (`Tests 1 failed | 17 passed (18)`). Under the plan, step 2's green gate runs with (d), (f)
+   only, so that `feat` commit goes green, and the defect surfaces at step 3 as a test that is red on arrival, which
+   the plan does not route (it says "green on arrival"). It also breaks the stated order: invariant 2 and
+   `backlog/CLAUDE.md` put `test(...)` before `feat(...)`, and the only post-`feat` test commits the conventions
+   allow are `test(<pkg>): <card> review pass N -- …` inside `/review-loop`; `test(todos): B1.8 pin code precedence and
+errorCode type` is neither. Fix: land (e) and (g) **before** the red commit, as a green characterization commit
+   without the `(red)` marker (e.g. `test(todos): B1.8 pin code precedence and errorCode type`), the way
+   `docs/mistake-log.md` (2026-10-28) moved an already-green test ahead of the red commit. `verify-red.sh` takes the
+   parent of the first `(red)` commit as its base, so (e) and (g) count as pre-existing there and may pass; (d) and (f)
+   stay the only new tests (2 new failed, 0 new passed). The `pnpm test` count after step 1 becomes 96, after green 98;
+   state both. The code-writer then sees all four cases from the start of its step.
+
+Notes (not blocking):
+
+1. Test titles: `verify-red.sh` treats a test as old when its title **starts with** an existing title in the base
+   file. The new titles must not begin with `AC-11.2: records a string code as error.code, between message and stack`
+   or `AC-11.2: records no code key when the code is a number`; a (g) title such as
+   `AC-11.2: records no code key when the code is a number …` would hide from the red check. The card's (d) title
+   (`AC-11.2: records a string errorCode as error.code when the Error has no string code`) is safe.
+2. Add the plan-review row to the work breakdown (`docs(backlog): B1.8 plan review`) as B1.5 / B1.6 did, so the PR
+   body's Plan section lists every commit on the branch.
+3. Each of (d)–(g) should assert the absence of an `errorCode` key, as AC-11.2's last clause says ("in (d) to (g)
+   `error` has no `errorCode` key"); with plain `Object.assign` errors that is a real property of the input, so a
+   spread of the error would expose it.
