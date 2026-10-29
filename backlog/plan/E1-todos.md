@@ -146,5 +146,8 @@ re-encoded `p%C3%A4%40ss`, so the written form `pä%40ss` is no secret; `…/lab
 `?password=a%20b%26c`, so the written `a b%26c` is no secret. A driver message quoting either form would be logged
 verbatim (B1.9 diff review, riskiest unfalsified; no such driver found). A §11 change, ruled by D-17 (`work/B1.11/decision-request.md`).
 
+- **Spec:** §11 — unchanged (REQ-11.4, AC-11.3 cases (h)–(k) and Function contracts extended under D-17)
+- **Test:** `src/lib/logger.test.ts::AC-11.3: redacts the userinfo password as written in DATABASE_URL` — red because: `secretsOf` in `src/lib/logger.ts` takes the password only from `new URL(value).password` (`p%C3%A4%40ss`, decoded `pä@ss`), so for `postgresql://app:pä%40ss@db.internal:5432/lab` `error.message` is `auth pä%40ss` instead of `auth [redacted]` (fails on the message assertion, not on an import)
+- **Acceptance:** AC-11.3 (cases (h)–(k), all four red before the change; (a)–(g) stay green)
 - **Tier:** quick · **Depends on:** ~~B1.9~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.11/`
