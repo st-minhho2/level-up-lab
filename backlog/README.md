@@ -39,12 +39,11 @@ flowchart TD
 
 ## Remaining
 
-| Step | ID    | Title                                                             | Spec § | Status | Blocked by     | Owner | Size         |
-| ---- | ----- | ----------------------------------------------------------------- | ------ | ------ | -------------- | ----- | ------------ |
-| 11   | B1.11 | Redact the database password exactly as written in `DATABASE_URL` | §11    | Open   | ~~B1.9~~, D-17 | Lead  | S [estimate] |
+| Step | ID    | Title                                                             | Spec § | Status | Blocked by | Owner | Size         |
+| ---- | ----- | ----------------------------------------------------------------- | ------ | ------ | ---------- | ----- | ------------ |
+| 11   | B1.11 | Redact the database password exactly as written in `DATABASE_URL` | §11    | Open   | ~~B1.9~~   | Lead  | S [estimate] |
 
 ## Waiting on human
 
-| ID   | What                                                                                                                                                                                                                                            | Blocks |
-| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| D-17 | §11 REQ-11.4 "as written" vs the parser-normalized forms in its Function contracts: A also redact the raw-text forms; B reword REQ-11.4 to the parser forms (Tier 0); C list the gap as out of scope. Request: `work/B1.11/decision-request.md` | B1.11  |
+| ID  | What | Blocks |
+| --- | ---- | ------ |
