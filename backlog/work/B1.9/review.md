@@ -117,3 +117,107 @@ Notes (no change required):
 2. The trailer still reads `Rounds: 1`; the lead updates it with the approval line.
 3. Round 1 notes 1–5 stand (stale local `main`, metrics row, optional `readonly string[]`, expected equivalent
    survivors listed by line in the green gate, cosmetic `[[redacted]acted]`).
+
+## Diff review (round 1)
+
+SCOPE: lib
+
+Reviewed: `git diff origin/main...HEAD` at `e820652` (pin `45dd8c2`, red `8039100`, feat `e820652`) against §11
+(`spec/contracts/09-logging.md`, REQ-11.4 and Function contracts), `plan.md` (approved by lead, 2026-10-29),
+`analysis.md` and this file's plan reviews. Run in this worktree on 2026-10-29.
+
+### Command results (last line of each)
+
+| Command                              | Result                                                                                 |
+| ------------------------------------ | -------------------------------------------------------------------------------------- |
+| `pnpm lint`                          | `All matched files use Prettier code style!` (eslint clean)                            |
+| `pnpm typecheck`                     | `tsc --noEmit`, no output (clean)                                                      |
+| `pnpm test`                          | `Tests  106 passed (106)`                                                              |
+| `pnpm test:e2e`                      | `12 passed (11.8s)`                                                                    |
+| `pnpm test:mutation`                 | not re-run: relied on the code-writer's `reports/mutation/mutation.json` (see below)   |
+| `scripts/ci/check-suppressions.sh`   | `OK: no new suppressions`                                                              |
+| `scripts/ci/check-config-change.sh`  | `OK: no protected config changed`                                                      |
+| `scripts/ci/check-feat-commits.sh`   | `OK: no feat commit touches tests`                                                     |
+| `scripts/ci/check-ac-coverage.sh`    | `OK: every criterion of a shipped section has a test` (§11 criteria=6 covered=6)       |
+| `scripts/ci/check-spec-sections.sh`  | `OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11`                                          |
+| `scripts/ci/check-features-map.sh`   | `OK`                                                                                   |
+| `scripts/verify-red.sh B1.9`         | `RESULT: red for the right reason` (24 ran, 4 new, 4 new failed, 0 new passed; exit 0) |
+| `git diff --stat origin/main...HEAD` | `9 files changed, 416 insertions(+), 32 deletions(-)`                                  |
+
+Mutation report: `reports/mutation/mutation.json` (16:06 today); its `src/lib/logger.ts` source has the same SHA-1 as
+`git show HEAD:src/lib/logger.ts` (`b8be2f98…`), so it measures this commit. Totals 119 killed / 13 survived /
+1 no coverage = 89.47 %; `logger.ts` 37 killed / 2 survived / 29 compile errors. Every new line has a killed mutant:
+20 (the name list), 25 (`decoded` returns `[]`), 34–40 (`slice`, `split`, `startsWith` → `endsWith`, `name.length - 1`,
+`[raw, …]` → `[]`), 52 (password forms → `[]`), 53 (the `.filter` and the `.sort` removed), 54 (`!== ''` variants),
+55 (`b.length + a.length`).
+
+### Checklist
+
+| Check                                                    | Result                                                                                                                                                                         |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every AC-§.n has a test whose assertion matches its Then | pass: AC-11.3 (c)–(g) each `toBe` the exact §11 message; guard test pins the exact-name rule; AC-11.1–11.6 unchanged (check-ac-coverage 6/6).                                  |
+| no test weakened after the red commit                    | pass: `git diff 8039100..HEAD -- '*.test.*' e2e/` is empty; feat `e820652` touches only `src/lib/logger.ts`.                                                                   |
+| every changed file is in `plan.md`                       | pass: `src/` diff is `src/lib/logger.ts` and `src/lib/logger.test.ts`, both in Files; the rest are pre-plan `docs(spec)`/`docs(backlog)` commits.                              |
+| interfaces match the section's contracts                 | pass: `logMutationFailure` unchanged; `secretsOf(): string[]` internal as in the plan; secret list = value, `url.password`, decoded, re-encoded, raw and decoded query values. |
+| Zod at every action boundary / Prisma only in lib / SQL  | n/a: no action, Prisma or SQL change.                                                                                                                                          |
+| migration reversible and indexed                         | n/a: no migration.                                                                                                                                                             |
+| no secret, no suppression                                | pass: check-suppressions OK; test URLs are fixtures (`s3cret`, `p%40ss%2fw`, …) like the file's existing ones.                                                                 |
+| features map row moved                                   | pass by plan: F9 already names both files, no map change; check-features-map OK. Card close (status, README, metrics) is the closing commit's job.                             |
+| would a test fail if one changed line were reverted      | pass: Stryker kills a mutant on every new line (above); reverting the feat commit is the red state (4 failing, verify-red).                                                    |
+
+### dev-lead's three questions (probes on a `git clone` under `$TMPDIR/b19-diff-r1-probe`, `node_modules` symlinked)
+
+1. **`pair.startsWith(`${name}=`)` vs "the text before the pair's first `=` is exactly name".** Equivalent for
+   every input: neither name contains `=`, so a pair starting with `password=` has its first `=` at index 8 and the
+   text before it is exactly `password`, and conversely; `sslpassword=` and `password=` cannot both prefix one pair.
+   `pair.slice(name.length + 1)` is then exactly "the text after that `=`". Probe: `?password==x` → raw `=x` redacted
+   (`pw =x and x` → `pw [redacted] and x`); `?sslpassword=a=b` → `a=b` redacted; bare `?password` → nothing;
+   `?passwordx=zz&xpassword=yy` → nothing.
+2. **Sequential `replaceAll`, longest first.** No fragment of a longer secret is left by a shorter one: a longer
+   secret is replaced in full before any shorter one runs, and markers are only ever inserted, so a pass can break an
+   occurrence only where two occurrences overlap (`aba` in `ababa` → `[redacted]ba`; `ab`/`ba` in `aba` →
+   `[redacted]a`), which §11 Out of scope covers ("a fragment or prefix of a secret"). A shorter secret does re-match
+   inside an earlier marker, and B1.9 makes it deeper: the same string now appears up to three times in the list
+   (`url.password`, decoded, re-encoded when the password has no escapes; raw and decoded for a query value), and each
+   copy rescans. Probe: password `act` → `Can't reach [red[red[red[redacted]ed]ed]ed]` (before B1.9: one level);
+   `?password=a` → `[red[redacted]cted]`; password `e` → a ~200-character nest. No secret text survives in any case;
+   it is the cosmetic class `analysis.md` note (a) and round 1 note 5 already accepted, only nested deeper. Not a
+   finding; see note 1.
+3. **Survivors 27:12 and 57:12 (`return []` → `return ["Stryker was here"]`).** Not strictly equivalent, but only a
+   message containing Stryker's own sentinel tells them apart. Probe (mutant applied on the copy, then restored):
+   with 27:12, `DATABASE_URL` `postgresql://app:p%zz@h:5432/lab` and message `Stryker was here` → `[redacted]`; with
+   57:12, `DATABASE_URL` `not a url` and the same message → `[redacted]`; both mutants pass all 25 `logger.test.ts`
+   tests and change nothing for any other message. A test that kills them would test the tool's sentinel, not §11;
+   listing them as accepted survivors is right.
+
+### Findings
+
+None.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: a query value written with a literal space or non-ASCII character next to a percent-escape
+(`?password=pä%40ss`): `url.search` re-encodes it to `p%C3%A4%40ss`, so the secrets are `p%C3%A4%40ss` and `pä@ss`,
+and the form as written, `pä%40ss`, stays in a message (probe: `x pä%40ss x pä@ss x p%C3%A4%40ss` →
+`x pä%40ss x [redacted] x [redacted]`; the same for a userinfo password). The code follows the Function contracts
+(`url.search`, `url.password`) exactly; REQ-11.4's prose says "as written" for the query values. This is spec ≠ spec,
+not code ≠ spec, and only matters if a driver echoes that mixed form, which I could not show.
+
+Notes (no change required):
+
+1. Marker nesting (question 2): if the lead wants `[redacted]` never rescanned, that is a §11 rule (a D-n: replace
+   occurrences in the original text, or at least process each distinct secret once), then a test, then code;
+   de-duplicating the list alone would bring it back to the pre-B1.9 one level. Not a fix for this PR.
+2. The riskiest-unfalsified wording gap ("as written" vs `url.search`) goes to `/spec-trace` or `/advise` if the lead
+   cares; it needs no code change under the current contract.
+3. Probe copy left at `$TMPDIR/b19-diff-r1-probe` (untracked `src/lib/zz-probe.test.ts`, `probe-out.txt`); nothing
+   in the worktree was edited except this file.
+
+### Dispositions (dev-lead, pass 1 of 3)
+
+| Pass | #   | Finding (file:line)                                                                                                                   | Source                          | Kind     | Disposition      | Justification                                                                                                                                                                                                                                    |
+| ---- | --- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | -------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1    | —   | a value written with a non-ASCII character or space (`?password=pä%40ss`) is re-encoded by `url.search`, so the form as written stays | reviewer (riskiest unfalsified) | spec     | out of scope     | code follows §11 Function contracts (`url.search`, `url.password`); REQ-11.4's prose "as written" reads wider: a spec ≠ spec gap, not code ≠ spec. Reported for the lead (follow-up card + D-n if wanted); no driver found that echoes that form |
+| 1    | —   | `startsWith(`${name}=`)` vs "text before the first `=`"                                                                               | dev-lead (unsure)               | spec     | no change needed | equivalent for every input since neither name contains `=`; probes `password==x`, `sslpassword=a=b`, bare `password`, `xpassword=` behave as §11 says                                                                                            |
+| 1    | —   | a short secret re-matches inside earlier `[redacted]` markers, nesting deeper (`act` → `[red[red[red[redacted]ed]ed]ed]`)             | dev-lead (unsure)               | cosmetic | out of scope     | no secret text survives; same class accepted in analysis note (a) and plan review round 1 note 5; never rescanning markers would be a §11 change (D-n)                                                                                           |
+| 1    | —   | survivors `logger.ts` 27:12, 57:12 (catch returns `["Stryker was here"]`)                                                             | code-writer                     | coverage | no change needed | only a message containing Stryker's sentinel tells them apart (reviewer applied both on a copy); every other message unchanged                                                                                                                   |
