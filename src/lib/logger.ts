@@ -19,27 +19,47 @@ interface LoggedError {
 // Query parameters whose value is a secret (REQ-11.4); the name must match exactly, in this case.
 const SECRET_QUERY_PARAMETERS: readonly string[] = ['password', 'sslpassword'];
 
-// A form that cannot be percent-decoded is left out on its own, so the other forms of every secret still count.
-function decoded(text: string): string[] {
+// The text after the first `://`, up to the first `/`, `?` or `#`: the authority as written, which the parser may have
+// re-escaped (REQ-11.4).
+const WRITTEN_AUTHORITY = /:\/\/([^/?#]*)/;
+
+// A source as written, decoded, and decoded then re-encoded; when it cannot be percent-decoded only the written form
+// is left, so the other forms of every other secret still count.
+function formsOf(source: string): string[] {
   try {
-    return [decodeURIComponent(text)];
+    const plain = decodeURIComponent(source);
+    return [source, plain, encodeURIComponent(plain)];
   } catch {
-    return [];
+    return [source];
   }
 }
 
-// The value of each `name=value` pair named in SECRET_QUERY_PARAMETERS, as written and decoded; URLSearchParams is not
-// used because it reads `+` as a space and decodes leniently, which would miss the forms the driver may echo.
-function querySecretsOf(search: string): string[] {
-  return search
-    .slice(1)
+// The written userinfo is the authority before its last `@` and the password is after its first `:`, as the parser
+// splits them; no `@` or no `:` means no written password, so a user name or a port never becomes a secret.
+function writtenPasswordOf(value: string): string[] {
+  const authority = WRITTEN_AUTHORITY.exec(value)?.[1] ?? '';
+  const at = authority.lastIndexOf('@');
+  const userinfo = authority.slice(0, at);
+  const colon = userinfo.indexOf(':');
+  return at === -1 || colon === -1 ? [] : [userinfo.slice(colon + 1)];
+}
+
+// The value of each `&`-separated pair named exactly in SECRET_QUERY_PARAMETERS; URLSearchParams is not used because
+// it reads `+` as a space and decodes leniently, which would miss the forms the driver may echo.
+function queryPasswordsOf(query: string): string[] {
+  return query
     .split('&')
     .flatMap((pair) =>
-      SECRET_QUERY_PARAMETERS.filter((name) => pair.startsWith(`${name}=`)).flatMap((name) => {
-        const raw = pair.slice(name.length + 1);
-        return [raw, ...decoded(raw)];
-      }),
+      SECRET_QUERY_PARAMETERS.filter((name) => pair.startsWith(`${name}=`)).map((name) => pair.slice(name.length + 1)),
     );
+}
+
+// The written query is the value up to its first `#`, then after its first `?`; a fragment is never a secret.
+function writtenQueryOf(value: string): string[] {
+  const hash = value.indexOf('#');
+  const beforeFragment = hash === -1 ? value : value.slice(0, hash);
+  const question = beforeFragment.indexOf('?');
+  return question === -1 ? [] : queryPasswordsOf(beforeFragment.slice(question + 1));
 }
 
 // Longest first, so a secret that contains a shorter one is replaced whole; the whole URL is the longest of all, so
@@ -49,10 +69,13 @@ function secretsOf(): string[] {
   try {
     const value = getEnv().DATABASE_URL;
     const url = new URL(value);
-    const passwordForms = decoded(url.password).flatMap((plain) => [plain, encodeURIComponent(plain)]);
-    return [value, url.password, ...passwordForms, ...querySecretsOf(url.search)]
-      .filter((secret) => secret !== '')
-      .sort((a, b) => b.length - a.length);
+    const sources = [
+      url.password,
+      ...writtenPasswordOf(value),
+      ...queryPasswordsOf(url.search.slice(1)),
+      ...writtenQueryOf(value),
+    ];
+    return [value, ...sources.flatMap(formsOf)].filter((secret) => secret !== '').sort((a, b) => b.length - a.length);
   } catch {
     return [];
   }
