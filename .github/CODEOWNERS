@@ -1,8 +1,13 @@
 # Control-plane paths: a human owns every change here. Agents may propose (PR), never merge.
-# CLAUDE.md files, .claude/rules, .claude/agents, spec/ and backlog/ are deliberately not listed: roles edit them
-# through reviewed PRs and the CI guards (scripts/ci/check-config-change.sh) cover the protected subset.
+# .claude/agents, skills, rules and docs set the roles' own limits, so a role may propose a change but never land it
+# unlabeled (scripts/ci/check-config-change.sh). CLAUDE.md files, spec/ and backlog/ are deliberately not listed:
+# roles edit them through reviewed PRs.
 /.claude/settings.json      @st-minhho2
 /.claude/hooks/             @st-minhho2
+/.claude/agents/            @st-minhho2
+/.claude/skills/            @st-minhho2
+/.claude/rules/             @st-minhho2
+/.claude/docs/              @st-minhho2
 /.github/                   @st-minhho2
 /scripts/ci/                @st-minhho2
 /scripts/verify-red.sh      @st-minhho2
