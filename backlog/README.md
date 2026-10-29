@@ -25,9 +25,9 @@ flowchart TD
 
 ## Remaining
 
-| Step | ID   | Title                          | Spec §               | Status | Blocked by | Owner | Size         |
-| ---- | ---- | ------------------------------ | -------------------- | ------ | ---------- | ----- | ------------ |
-| 4    | B1.4 | Feedback when a mutation fails | — (section to write) | Open   | ~~B1.3~~   | Lead  | S [estimate] |
+| Step | ID   | Title                          | Spec § | Status | Blocked by | Owner | Size         |
+| ---- | ---- | ------------------------------ | ------ | ------ | ---------- | ----- | ------------ |
+| 4    | B1.4 | Feedback when a mutation fails | §10    | Open   | ~~B1.3~~   | Lead  | S [estimate] |
 
 ## Waiting on human
 

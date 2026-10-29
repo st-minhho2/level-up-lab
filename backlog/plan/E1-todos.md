@@ -37,10 +37,11 @@ _F7 (new) · §9_
 
 ### B1.4 · Feedback when a mutation fails
 
-_F8 (new) · § to be written_
+_F8 (new) · §10_
 **Status: Open** — `TodoItem.onToggle`, the edit Save and `ClearCompletedButton` ignore a rejected action promise; a database failure mid-click reaches Next's error boundary with no message (found by the B1.3 diff review).
 
-- **Spec:** change: new section "Mutation failure feedback" (a failed action shows a message next to the control and leaves the list unchanged)
-- **Test:** — (written with the section)
-- **Acceptance:** to be defined (≤ 3)
+- **Spec:** §10 — unchanged (section written from `work/B1.4/analysis.md`)
+- **Test:** `src/actions/todos.test.ts::AC-10.1: toggleTodoAction resolves fieldErrors.form ["Could not save, try again"] when the lib rejects and does not revalidate` — red because: `toggleTodoAction` rethrows a non-`TodoNotFoundError` (`todos.ts` `throw error`), so the awaited promise rejects instead of resolving to `{ ok: false, fieldErrors: { form: [...] } }`
+- **Acceptance:** AC-10.1 … AC-10.3
 - **Tier:** quick · **Depends on:** ~~B1.1~~ ~~B1.2~~ ~~B1.3~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.4/` (analysis.md as the roles produce them)
