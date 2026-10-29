@@ -88,3 +88,61 @@ Notes (no change requested):
 
 Riskiest unfalsified: a status paragraph that ends at `- **` or `### ` with no blank line (only reachable in a file
 prettier has not checked); untested until reason 1's fixture exists.
+
+## Plan review (round 2)
+
+SCOPE: none of lib | actions | ui (tooling: `scripts/card-status.sh`, `backlog/`). Plan and probe reviewed at
+`1fa2bbc`; `origin/main` = `24665de`. Probes ran on copies under `$TMPDIR/b112r2/` (`24665de`'s script and
+`E1-todos.md`, plus six hand-made fix variants of the script; the worktree was not edited).
+
+### Round 1 reasons
+
+| #   | Reason                                     | Result                                                                                                                                                                                                                                                                                                          |
+| --- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | probe cannot tell planned rule from weaker | resolved (confirmed): fixture adds B9.1 (status + continuation, then `- **Spec:**`) and B9.2 (then `### B9.3`); FAIL now counts both directions. Every weaker or over-deleting variant fails, only the planned rule passes (table below).                                                                       |
+| 2   | pin the "after" input                      | resolved: Verification runs both scripts on `<(git show 24665de:backlog/plan/E1-todos.md)`; process substitution works with the probe's `cp` (ran it). B9.1/B9.2 keep a multi-line case even on a cleaned file.                                                                                                 |
+| 3   | commit the probe, state the deviation      | resolved: `backlog/work/B1.12/probe.sh` committed (`bash -n` OK) and in Files; Approach states the invariant-2 deviation (no `test(...)` commit, red/green = probe output recorded in `review.md`, D-13/D-16 shape) for the lead to approve knowingly.                                                          |
+| 4   | name who edits `scripts/card-status.sh`    | resolved: Approach and step 1 name the orchestrating session on the lead's plan approval (also the CLAUDE.md "ask before a tool change"); dev-lead's write scope stated; label and red `check-config-change` job stated.                                                                                        |
+| 5   | numbers in Verification                    | resolved (confirmed): probe before = `FAIL B1.10 5 · PASS B1.6 · FAIL B9.1 1 · FAIL B9.2 1`, exit 1 (ran, exact match); after = 4 PASS, exit 0, 0 lost (ran with the planned rule); cleanup simulation on a copy = 23 deleted, 0 added (`0	23`); the three `check-*` OK lines and `bash -n` exit 0 at `1fa2bbc`. |
+
+### Probe runs (committed `probe.sh`, input `24665de:backlog/plan/E1-todos.md`)
+
+```
+variant (skip after the new status line until …)  B1.10            B1.6             B9.1             B9.2             exit
+unfixed (24665de)                                  FAIL 5 over      PASS             FAIL 1 over      FAIL 1 over      1
+planned: blank | `- **` | `### `                   PASS             PASS             PASS             PASS             0
+blank only (round 1's weaker rule)                 PASS             PASS             FAIL 2 lost      FAIL 1 lost      1
+`### ` only                                        FAIL 8 lost      FAIL 8 lost      FAIL 3 lost      PASS             1
+`- **` only                                        FAIL 1 lost      FAIL 1 lost      PASS             FAIL 3 lost      1
+blank | `- **`                                     PASS             PASS             PASS             FAIL 1 lost      1
+blank | `### `                                     PASS             PASS             FAIL 2 lost      PASS             1
+always drop exactly one following line             FAIL 4 over      FAIL 1 lost      PASS             PASS             1
+```
+
+### Checklist (rows unchanged from round 1 are not repeated)
+
+| Check                           | Result                                                                                                     |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| files belong to the card        | pass: probe now listed; no file outside the card's Acceptance and Work line.                               |
+| verification exact with numbers | pass (reason 5).                                                                                           |
+| work breakdown                  | pass: fix (orchestrating session) → cleanup (dev-lead, fixed script) → diff review → PR; subjects conform. |
+| red/green evidence              | pass: red reproduced from the committed probe; green only for the planned rule.                            |
+| nothing new broke               | pass: interface, protected-path/label handling and D-n rows as in round 1; `origin/main` still `24665de`.  |
+
+### Verdict: approved
+
+Ready for the lead's gate (not approved for build). The lead approves knowingly: no `test(...)` commit (probe
+evidence instead), a `scripts/` edit by the orchestrating session, and the `config-change-approved` label on the PR.
+
+Notes (no change requested):
+
+- `plan.md` is 55 lines against `planning.md`'s ≈ 40; the excess is the Approach paragraph carrying the deviations
+  round 1 asked for, not extra scope.
+- `probe.sh` commits its scratch repo with `--no-verify`. It is a throwaway `mktemp -d` repo with no hooks, not the
+  project's, and `settings.json` denies only a direct `git commit --no-verify`; the diff reviewer may still ask for
+  a one-line why comment so it is not read as a hook bypass. The probe also leaves its `mktemp -d` dir behind.
+- Round 1's notes on `card-status.sh` (whole-file final `grep`, `awk -v` escape rewriting) still stand, out of scope.
+
+Riskiest unfalsified: the fixed awk's rule order (skip rules after `incard && /^### /`) on a status paragraph that is
+the file's last card with no trailing blank line; the planned rule ends at EOF, so only a lost-line case is
+conceivable, and none was found in the variants run.
