@@ -53,4 +53,4 @@ scripts/ci/check-ac-coverage.sh && scripts/ci/check-features-map.sh && scripts/c
 | 4 Map         | dev-lead                              | F8 row, metrics row                    | `docs(map): F8 create path [B1.5]`                            |
 | 5 Review      | `reviewer` (diff), `/review-loop`     | `review.md` diff section, gate cleared | —                                                             |
 
-Plan approved by: · Rounds: 1
+Plan approved by: lead (session reply "approve"), 2026-10-29 · Rounds: 1
