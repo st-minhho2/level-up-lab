@@ -121,7 +121,7 @@ password inside it": a §11 change, ruled by D-15.
 ### B1.10 · End-to-end proof that a failed create keeps the typed title
 
 _F8 · §10_
-**Status: Open** — §10 REQ-10.6 ("keep the typed title in the box … and list no new todo") is proven only in jsdom:
+**Status: Done** — c850ddb (#33); 106 unit/component + 13 e2e green (e2e/10-mutation-feedback.spec.ts new), mutation 89.47 % unchanged (no src/ change); test ef5725a, red evidence at 9327a03 (D-16 A)
 `src/components/todo-form.test.tsx` mocks `createTodoAction` (AC-10.5). No file in `e2e/` makes a create fail
 (`ls e2e`: `05-todos.spec.ts`, `06-edit-title.spec.ts`, `09-clear-completed.spec.ts`, `smoke.spec.ts`), so the real
 `useActionState` form, Server Action, Prisma error and §11 log line are never exercised together in Chromium.
@@ -132,4 +132,5 @@ drops it afterwards; no app, env or config change; the raw SQL in `e2e/` is revi
 - **Test:** `e2e/10-mutation-feedback.spec.ts::AC-10.5: a create the database rejects shows 1 alert "Could not save, try again" in the form, keeps "Buy milk" in the box, "Add" enabled and the list unchanged; the next Add saves it once` — red because: green against the current code by design (behavior shipped in B1.5 `e7b3390`; tests-only card, D-13 shape, no `(red)` commit); against `9327a03`'s `src/` (pre-B1.5: `createTodoAction` has no `try`, `TodoForm` reads only `fieldErrors.title`) it fails on the alert-count assertion [unverified]; see `work/B1.10/analysis.md` Needs a ruling
 - **Acceptance:** AC-10.5 (end to end, through the real form, Server Action and PostgreSQL); REQ-10.6 "list no new todo"
 - **Tier:** quick · **Depends on:** ~~B1.5~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.10/`
+- **Work:** `work/B1.10/` — analysis, plan (rounds 1/1), review (plan rounds 2, cap reached, fix accepted by the lead; diff pass 1/3, 1 finding out of scope); squash `c850ddb` (#33)
+- **Ruled:** D-16 — e2e-only tests-only cards: red evidence against the pre-card `src/`; DDL fault injection through `prisma.$executeRaw` allowed in `e2e/`.
