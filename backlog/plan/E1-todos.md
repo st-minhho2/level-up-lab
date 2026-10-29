@@ -80,6 +80,8 @@ no test submits a form without a string `title`), `src/actions/todos.ts:46` (tog
 `src/lib/action-result.ts:18` (`|| 'form'`: no test builds a Zod issue without a path). Tests only; no behavior
 change.
 
+- **Spec:** §5 — unchanged (§7 and §10 unchanged too; tests only, no section edit)
+- **Test:** `src/actions/todos.test.ts::AC-5.3: returns fieldErrors.title ["Title is required"] when the form has no title field and stores nothing` — red because: against Stryker mutant `src/actions/todos.ts` 24:54 (`typeof rawTitle === 'string'` → `true`) the result is `title: ['Invalid input: expected string, received null']`, and against 24:96 (`''` → `"Stryker was here!"`) `createTodo` is called; green against the current code by design (tests-only card, no `(red)` commit; see `work/B1.7/analysis.md` Needs a ruling)
 - **Acceptance:** the three survivors above are killed; `pnpm test:mutation` above 85.09 %
 - **Tier:** quick · **Depends on:** ~~B1.6~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.7/`
+- **Work:** `work/B1.7/` — analysis (spec-analyst)
