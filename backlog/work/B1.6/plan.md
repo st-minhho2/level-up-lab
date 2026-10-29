@@ -51,4 +51,4 @@ scripts/ci/check-ac-coverage.sh && scripts/ci/check-features-map.sh && scripts/c
 | 4 Green       | `code-writer` → green gate (dev-lead) | behavior, guides, F9 map row, metrics row | `feat(todos): B1.6 log swallowed mutation failures`       |
 | 5 Review      | `reviewer` (diff), `/review-loop`     | `review.md` diff section, gate cleared    | —                                                         |
 
-Plan approved by: · Rounds: 1
+Plan approved by: lead (session reply "approve"), 2026-10-29 · Rounds: 1
