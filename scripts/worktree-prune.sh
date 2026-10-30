@@ -15,7 +15,9 @@
 #   tree      merging the branch into the base changes nothing (its diff is already in the base)
 #   cherry    every commit on the branch has a patch-equivalent commit in the base (git cherry)
 # A branch with no commits beyond the base is never merged by tree/cherry (it would match both): it is a worktree
-# nobody has committed to yet and is kept unless gh shows a merged PR or --all is given.
+# nobody has committed to yet and is kept unless gh shows a merged PR or --all is given. Nor is a branch whose
+# commits net to no change (a commit and its revert: tip tree = merge-base tree), which tree would also match: its
+# history never reached the base, so it is kept the same way.
 #
 # A worktree whose directory is already gone (app archive, rm, an outer worktree removed) loses its schema whatever
 # its merge state: wt_<directory name>, worktree.sh's rule, since its .worktree.env went with it. `git worktree prune`
@@ -138,9 +140,9 @@ git rev-parse -q --verify "$BASE_REF^{commit}" >/dev/null || { echo "[prune] unk
 BASE_SHOW="${BASE_REF#refs/remotes/}"
 
 # Prints why <branch> counts as merged into the base and returns 0; returns 2 when it has no commits beyond the
-# base (and no merged PR), 1 otherwise.
+# base, 3 when its commits net to no change (both without a merged PR), 1 otherwise.
 merged_reason() {
-  local branch="$1" tip pr tree cherry
+  local branch="$1" tip pr mb tree cherry
   tip="$(git rev-parse "refs/heads/$branch")"
   if command -v gh >/dev/null 2>&1; then
     pr="$(gh pr list --state merged --base "$BASE" --head "$branch" --json number,headRefOid \
@@ -149,6 +151,9 @@ merged_reason() {
   fi
   # Checked before tree/cherry: merging an ancestor of the base gives the base's tree, so it would read as merged.
   [[ "$(git rev-list --count "$BASE_REF..$tip")" -gt 0 ]] || return 2
+  # Same for a branch that changes nothing since it forked; a squash-merged branch still differs from its fork point.
+  mb="$(git merge-base "$BASE_REF" "$tip" 2>/dev/null || true)"
+  [[ -n "$mb" && "$(git rev-parse "$mb^{tree}")" == "$(git rev-parse "$tip^{tree}")" ]] && return 3
   # merge-tree --write-tree (git >= 2.38) exits non-zero on conflict or when unsupported: not merged by this test.
   tree="$(git merge-tree --write-tree "$BASE_REF" "$tip" 2>/dev/null | head -1 || true)"
   if [[ -n "$tree" && "$tree" == "$(git rev-parse "$BASE_REF^{tree}")" ]]; then echo "tree"; return 0; fi
@@ -174,6 +179,7 @@ handle() {
         reason="$(merged_reason "$branch")" && rc=0 || rc=$?
         # git refuses to delete a branch its stale worktree record still holds: deleted after `git worktree prune`
         if [[ $rc -eq 0 ]]; then gone_branches="$gone_branches $branch"; echo "  branch $branch merged ($reason)"
+        elif [[ $rc -eq 3 ]]; then echo "  branch $branch kept (commits net to no change vs $BASE_SHOW)"
         else echo "  branch $branch kept (not merged into $BASE_SHOW)"; fi
       fi
       gone=$((gone + 1))
@@ -187,7 +193,11 @@ handle() {
   fi
   reason="$(merged_reason "$branch")" && rc=0 || rc=$?
   if [[ $rc -ne 0 ]]; then
-    if [[ $rc -eq 2 ]]; then reason="no commits beyond $BASE_SHOW"; else reason="not merged into $BASE_SHOW"; fi
+    case $rc in
+      2) reason="no commits beyond $BASE_SHOW" ;;
+      3) reason="commits net to no change vs $BASE_SHOW" ;;
+      *) reason="not merged into $BASE_SHOW" ;;
+    esac
     if [[ $ALL -eq 0 ]] || ! ask "$branch: $reason. Remove anyway?"; then
       echo "[keep]  $branch  ($reason; $path)"
       claimed="$claimed $(schema_of "$path")"

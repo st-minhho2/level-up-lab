@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Smoke for scripts/worktree-prune.sh (B1.13) on a throwaway git repo and a throwaway database of the local compose
+# Smoke for scripts/worktree-prune.sh (B1.13, B1.14) on a throwaway git repo and a throwaway database of the local compose
 # server. Exit 1 on any FAIL. bash 3.2-safe.
 #   scripts/prune-smoke.sh [<prune-script>]      default scripts/worktree-prune.sh; needs the compose Postgres up
 #
@@ -19,6 +19,10 @@
 #   P11 run from inside a merged M worktree → that worktree kept ("current checkout")
 #   P12 a merged worktree whose .worktree.env names a non-wt_* schema (public) → removed, that schema not dropped
 #   P13 N directory deleted, merged → schema dropped, branch deleted, exit 0, a later merged worktree still removed
+#   P14 M branch = a commit and its revert, never on origin → kept with directory, schema and branch ([keep], net to
+#       no change)
+#   P15 N branch = a file added then dropped, directory deleted → schema dropped, branch kept (net to no change),
+#       metadata gone
 #
 # Isolation: the throwaway main checkout is named like the real one, so compose resolves the running server's
 # project; COMPOSE_* is unset. A docker shim first on PATH forwards only `compose -f <throwaway repo>/…/
@@ -229,6 +233,17 @@ check "exit $RC" rc_is 0; check "no 'done' line" said "[prune] done:"
 check "gone merged schema left" no_schema "$(sch gm-m)"; check "gone merged branch left" no_branch "feat/$P-gm-m"; check "gone merged metadata kept" unlisted "$WM"
 check "later merged worktree left" no_dir "$WN"; check "later merged schema left" no_schema "$(sch gm-n)"
 group P13 "N directory deleted, merged: schema dropped, branch deleted, exit 0, later worktrees still handled"
+
+WR="$(mkwt "$M" net-r)"; commit_wt "$WR" r.txt; git -C "$WR" revert --no-edit HEAD >/dev/null
+WS="$(mkwt "$A" net-s)"; commit_wt "$WS" s.txt; git -C "$WS" rm -q s.txt; git -C "$WS" commit -q -m "drop s.txt"; rm -rf "$WS"
+prune "$M"
+check "exit $RC" rc_is 0
+check "net-empty dir removed" has_dir "$WR"; check "net-empty schema dropped" has_schema "$(sch net-r)"; check "net-empty branch deleted" has_branch "feat/$P-net-r"
+check "no net-empty [keep] line" said "[keep]  feat/$P-net-r  (commits net to no change vs origin/main;"
+group P14 "M branch = a commit and its revert, never on origin: kept with directory, schema and branch"
+check "gone net-empty schema left" no_schema "$(sch net-s)"; check "gone net-empty branch deleted" has_branch "feat/$P-net-s"; check "gone net-empty metadata kept" unlisted "$WS"
+check "no 'kept (commits net to no change' line" said "branch feat/$P-net-s kept (commits net to no change vs origin/main)"
+group P15 "N branch = a file added then dropped, directory deleted: schema dropped, branch kept"
 
 # --- isolation ----------------------------------------------------------------------------------------------------
 iso=0
