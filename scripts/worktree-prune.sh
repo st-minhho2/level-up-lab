@@ -18,8 +18,8 @@
 # nobody has committed to yet and is kept unless gh shows a merged PR or --all is given.
 #
 # A worktree whose directory is already gone (app archive, rm, an outer worktree removed) loses its schema whatever
-# its merge state: wt_<directory name>, worktree.sh's rule, since its .worktree.env went with it. Its branch is
-# deleted only if merged; `git worktree prune` drops its metadata.
+# its merge state: wt_<directory name>, worktree.sh's rule, since its .worktree.env went with it. `git worktree prune`
+# drops its metadata; then its branch is deleted if merged.
 #
 # Every run then lists [orphan] wt_* schemas that no remaining worktree claims (its .worktree.env, else
 # wt_<directory name>); only --schemas --drop drops them.
@@ -172,7 +172,8 @@ handle() {
       drop_schema "$(schema_of "$path")"
       if [[ -n "$branch" ]]; then
         reason="$(merged_reason "$branch")" && rc=0 || rc=$?
-        if [[ $rc -eq 0 ]]; then run git branch -D "$branch" </dev/null
+        # git refuses to delete a branch its stale worktree record still holds: deleted after `git worktree prune`
+        if [[ $rc -eq 0 ]]; then gone_branches="$gone_branches $branch"; echo "  branch $branch merged ($reason)"
         else echo "  branch $branch kept (not merged into $BASE_SHOW)"; fi
       fi
       gone=$((gone + 1))
@@ -200,7 +201,7 @@ handle() {
   pruned=$((pruned + 1))
 }
 
-pruned=0; gone=0; claimed=""; wt_path=""; wt_branch=""
+pruned=0; gone=0; gone_branches=""; claimed=""; wt_path=""; wt_branch=""
 while IFS= read -r line <&3; do
   case "$line" in
     worktree\ *) wt_path="${line#worktree }" ;;
@@ -213,6 +214,9 @@ while IFS= read -r line <&3; do
 done 3< <(git worktree list --porcelain; echo)
 
 run git worktree prune
+for b in $gone_branches; do
+  run git branch -D "$b" </dev/null || echo "  WARNING: branch $b not deleted (locked worktree? git worktree unlock)" >&2
+done
 if postgres_running; then
   for s in $(list_orphans "$claimed $dropped"); do echo "[orphan] $s  (no worktree; scripts/worktree-prune.sh --schemas --drop drops it)"; done
 else
