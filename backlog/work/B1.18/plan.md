@@ -1,60 +1,72 @@
 # B1.18 plan — WIP limit: at most three cards in Doing, none sharing a planned file (tooling, Tier quick)
 
-Approach: the board state of a Remaining card is derived, not typed; `next-task.sh` enforces the limit at pick time
-and checks plan overlap at the plan gate. spec-analyst/advisor skipped (no section).
+Approach: derive each card's board state from one shared source and enforce the limit on every start. spec-analyst/
+advisor skipped (no section). Round 1 (9 reasons) addressed below.
 
-- **Board state** of a Remaining card: **Doing** = a local or `origin/` branch `<prefix>/<card>(-…)` exists, prefix not
-  `docs` (every session on this machine shares one git repo, so a card's worktree branch is visible to all);
-  **Review** = such a branch has an open, non-draft PR (`gh`; offline or no auth → Doing); **To do** = neither.
-  Merged cards leave Remaining in the closing lane, so a pruned branch never lingers as Doing.
-- **WIP:** `next-task.sh` (pick) refuses when 3 cards are Doing (Review does not count: its session is free, it waits
-  on the lead) and prints them. `next-task.sh --check <card>` (dev-lead, before the plan gate) refuses when a planned
-  Files token of `<card>` equals or glob-matches a token of another Doing/Review card's plan at its branch tip.
+- **Source:** "Remaining" of `origin/main:backlog/README.md` after `git fetch` (every checkout sees the same board),
+  card status lines from `origin/main:backlog/plan/E*.md`, branches local + `origin/`, PRs from **one** call
+  `gh pr list --state all --limit 300 --json headRefName,state,isDraft`. `gh` fails → stderr warning, merged PRs not
+  detected, every branch counts as Doing (conservative).
+- **State** of a Remaining card with status Open: branch `<prefix>/<card>(-…)$`, prefix ≠ `docs` (B9.1 ≠ B9.10), whose
+  PR is not MERGED → **Doing**; that PR open and not draft → **Review**; else **To do**. A Partial card ("merged,
+  pending") or a card whose feature PR is MERGED is **Closing** (not Doing).
+- **WIP = Doing only** (Review waits on the lead, its session is free). `WIP_LIMIT=3`.
+- **Every start enforces it:** `next-task.sh` (pick: skips Doing/Review/Closing, refuses at 3) and `next-task.sh
+--claim <card>` (start by id, tooling cards too: refuses at 3 unless `<card>` is already Doing). dev-lead Loop 1
+  runs pick or claim, then `scripts/worktree.sh` at once (the branch is the claim), then spec-analyst.
+- **Overlap:** `next-task.sh --check <card>`: paperwork exempt as `check-plan-scope.sh`; two tokens collide when equal
+  or either glob-matches the other; compared with the plan at the branch tip of every Doing/Review card. dev-lead runs
+  it before the plan review and at every re-approval; the reviewer's plan review quotes its output. Cost: history
+  says most §5 cards collide (10 of 21 past pairs on `src/actions/todos.ts`): they serialize; E2 cards will show
+  it at their plan gate.
 
-**Decision for the lead ((b) recommended):** (a) a `Board` column in `backlog/README.md` that dev-lead edits through
-small PRs at each move (To do → Doing → Review): two extra PRs per card, and three parallel sessions editing one table
-is the README conflict already seen (#58/#59); (b) derived as above: README rows stay as filed, `next-task.sh --list`
-prints the live `BOARD` column, `check-backlog.sh` checks the README note that says so, the board artifact shows it.
+**Decision for the lead ((b) recommended):** (a) a `Board` column in README "Remaining", moved by dev-lead in small
+PRs: per card 2 extra PRs and 2 extra lead merges, and parallel sessions edit one table (README conflicts, #58/#59).
+(b) derived as above — a stated deviation from the card's "the board shows … (`backlog/README.md`)": README keeps one
+line saying the board is `next-task.sh --list` (BOARD column) and the live board artifact; offline the list is
+conservative.
 
 ## Files
 
-| File                                      | Change                                                                    |
-| ----------------------------------------- | ------------------------------------------------------------------------- |
-| `scripts/next-task.sh`                    | derived board state; WIP refusal; `--check <card>`; `--list` BOARD column |
-| `scripts/ci/plan-files.sh`                | `--any`: Files at `<rev>` whether approved or not (for `--check`)         |
-| `scripts/ci/check-backlog.sh`             | README "Remaining" names where the board state lives                      |
-| `scripts/next-task-smoke.sh`              | new: probes W1–W8 on a throwaway repo with a `gh` shim                    |
-| `backlog/README.md`, `backlog/CLAUDE.md`  | board note under "Remaining"; WIP rule in "Eligible"                      |
-| `.claude/agents/dev-lead.md`              | Loop 1 "Pick" and 5 "Gate": run `--check <card>` before asking the lead   |
-| `scripts/CLAUDE.md`                       | rows for `next-task.sh` flags and the smoke                               |
-| `backlog/work/B1.18/plan.md`, `review.md` | plan, reviews                                                             |
+| File                           | Change                                                     |
+| ------------------------------ | ---------------------------------------------------------- |
+| `scripts/next-task.sh`         | source, state, WIP on pick and `--claim`, `--check`, BOARD |
+| `scripts/ci/plan-files.sh`     | `--any`: Files at `<rev>` whether approved or not          |
+| `scripts/ci/check-backlog.sh`  | the README board line is present                           |
+| `scripts/next-task-smoke.sh`   | new: W1–W14, throwaway repo + bare origin + `gh` shim      |
+| `backlog/README.md`            | board line under "Remaining"                               |
+| `backlog/CLAUDE.md`            | WIP rule under "Eligible"                                  |
+| `.claude/agents/dev-lead.md`   | Loop 1 claim + worktree first; Loop 3/5 `--check`          |
+| `.claude/agents/reviewer.md`   | plan review quotes `--check`                               |
+| `scripts/CLAUDE.md`            | rows for the flags and the smoke                           |
+| `backlog/work/B1.18/plan.md`   | plan                                                       |
+| `backlog/work/B1.18/review.md` | reviews                                                    |
 
 ## Interfaces touched
 
 ```bash
-scripts/next-task.sh                  # "B2.1 backlog/plan/E2-x.md" | exit 1 "WIP 3/3: Doing B2.1 B2.2 B2.3" or near-misses
-scripts/next-task.sh --list           # adds BOARD (To do|Doing|Review) per row
-scripts/next-task.sh --check <card>   # exit 0 "no overlap" | exit 1 "<file> also planned by <card'> (Doing)"
-scripts/ci/plan-files.sh --any <card> [<rev>]   # Files tokens at <rev>; exit 4 no plan
-WIP_LIMIT=3                           # constant in next-task.sh (D-n to change)
+scripts/next-task.sh                  # "B2.1 backlog/plan/E2-x.md" | exit 1 "WIP 3/3: Doing B2.1 B2.2 B2.3"
+scripts/next-task.sh --claim <card>   # exit 0 | 1 "WIP 3/3 …"
+scripts/next-task.sh --check <card>   # exit 0 "no overlap" | 1 "<token> also planned by <card'> (Doing)"
+scripts/next-task.sh --list           # + BOARD column (To do | Doing | Review | Closing)
+scripts/ci/plan-files.sh --any <card> [<rev>]   # exit 4 no plan
 ```
 
-Probes (cards B9.1–B9.5 eligible): W1 none in progress → B9.1; W2 branches for B9.1–B9.3 → exit 1 "WIP 3/3";
-W3 `docs/B9.1-done` only → not Doing; W4 B9.3's branch has a ready PR (shim) → Review, B9.4 picked; W5 a draft PR →
-still Doing; W6 `--check B9.4`, plan shares `src/lib/a.ts` with B9.1 → 1; W7 shares a glob `src/lib/*` → 1; W8 no
-shared token → 0; W9 `gh` fails → every branch Doing, no crash.
+Probes: W1 none → B9.1; W2 B9.1–B9.3 branches → pick exit 1; W3 `docs/B9.1-done` only → To do; W4 B9.3 PR ready →
+Review, B9.4 picked; W5 draft → Doing; W6 B9.3 PR MERGED → Closing, B9.4 picked; W7 B9.2 Partial → Closing; W8
+`feat/B9.10-x` does not make B9.1 Doing; W9 local README lists a card origin/main does not → ignored; W10 `--claim
+B9.5` at 3 → 1, `--claim B9.1` already Doing → 0; W11 `--check`, same file → 1; W12 glob vs file either way → 1;
+W13 only paperwork shared → 0; W14 `gh` fails → warning, conservative, exit as W2.
 
 ## Verification (in the card worktree)
 
 ```bash
-scripts/next-task-smoke.sh            # test commit: W2, W4–W9 FAIL (no WIP logic); green: 9 of 9 ok
-scripts/next-task.sh --list           # this repo: B1.18 Doing (its own branch exists)
+scripts/next-task-smoke.sh   # test commit: every probe needing state, --claim or --check FAILs (exact list in its body); green 14/14
 scripts/hook-smoke.sh && scripts/ci/check-backlog.sh && scripts/ci/check-plan-scope.sh && bash -n scripts/*.sh scripts/ci/*.sh
 ```
 
-Steps: `test(scripts): B1.18 next-task WIP probes` → `feat(scripts): B1.18 WIP limit and plan overlap` →
-`reviewer` diff → PR (`config-change-approved`: `scripts/next-task.sh`, `scripts/ci/`, `.claude/agents/`). As
-B1.12–B1.17 the orchestrating session edits `scripts/`; this card is the first under `plan-scope.sh` only in a session
-started after 25fee24 (this one predates it: its writes are not checked live; `check-plan-scope.sh` runs in CI).
+Steps: `test(scripts)` probes → `feat(scripts)` → `reviewer` diff → PR (`config-change-approved`: `scripts/next-task.sh`,
+`scripts/ci/`, `.claude/agents/`). Orchestrating session edits `scripts/`, as B1.12–B1.17.
 
-Plan review: <pending> · Plan approved by: <empty until the lead approves> · Rounds: 1
+Plan review: changes requested, round 1 (9 reasons, addressed) · Plan approved by: <empty until the lead approves> ·
+Rounds: 1
