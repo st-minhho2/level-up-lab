@@ -454,3 +454,78 @@ Riskiest unfalsified: the race in which two parallel E2 sessions pick or claim t
 | 3   | 5 surviving mutants (M14, M17, M19, M20, M23) | fix now     | W18–W21 in `bbc2d44` (fixture rows out of order, B9.6 Human, Review plan, origin-only plan)                    |
 | N   | fetch without `GIT_TERMINAL_PROMPT=0`         | fix now     | fix commit                                                                                                     |
 | N   | relative `HERE`                               | fix now     | `bb7133d`: `HERE` resolves before the `cd` to the top level; `(cd scripts/ci && ../next-task.sh --list)` works |
+
+## Diff review (pass 2)
+
+Range `06212fd..HEAD` (test `bbc2d44`, fix `9db597a`, fix `bb7133d`, docs `c69b866`, `b810e0c`). Scope: tooling; no
+`src/`, `prisma/`, `e2e/` change.
+
+### Commands (run by the reviewer at HEAD `b810e0c`; last line of each)
+
+| Command                                                                                                          | Result                                                                                            |
+| ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `pnpm lint` / `pnpm typecheck`                                                                                   | `All matched files use Prettier code style!` / `tsc --noEmit` clean                               |
+| `pnpm test`                                                                                                      | `Tests  115 passed (115)`                                                                         |
+| `pnpm test:e2e`                                                                                                  | `13 passed (14.8s)`                                                                               |
+| `pnpm test:mutation`                                                                                             | `Final mutation score of 89.02 is greater than or equal to break threshold 70`                    |
+| `scripts/next-task-smoke.sh` (bash 5 and `/bin/bash` 3.2, on a copy)                                             | `[next-task-smoke] 21 ok, 0 FAIL` both                                                            |
+| red: `bbc2d44`'s smoke against `06212fd`'s script, on a copy                                                     | `20 ok, 1 FAIL`: `FAIL W17 rc=0 … B9.4: no overlap` (matches the commit body)                     |
+| `check-suppressions` · `check-feat-commits` · `check-ac-coverage` · `check-spec-sections` · `check-features-map` | OK ×5                                                                                             |
+| `check-backlog` · `check-plan-scope` · `check-agent-frontmatter`                                                 | OK · `stays inside the approved plan of B1.18` · `OK: 13 files`                                   |
+| `check-config-change.sh`                                                                                         | exit 1: the same 6 protected files, label `config-change-approved` missing (the lead's label)     |
+| `scripts/verify-red.sh B1.18`                                                                                    | n/a: no `(red)` marker (tooling); red proven by the smoke rows above                              |
+| `bash -n scripts/*.sh scripts/ci/*.sh`                                                                           | clean                                                                                             |
+| `git diff bbc2d44..HEAD -- scripts/next-task-smoke.sh e2e '*.test.*'`                                            | empty                                                                                             |
+| `git diff --stat origin/main...HEAD`                                                                             | `12 files changed, 828 insertions(+), 35 deletions(-)` (local `main` is behind origin by #61/#62) |
+| `(cd scripts/ci && ../next-task.sh --check B1.18)` · `(cd scripts && ./next-task.sh --list)`                     | rc 0 `no overlap` · board printed, B1.18 Doing                                                    |
+
+### Checklist
+
+| Check                                         | Result                                                                                                                                                                                |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file changed since pass 1 in plan Files | pass: 5/5 (`next-task.sh`, `next-task-smoke.sh`, `dev-lead.md`, `work-next/SKILL.md`, `review.md`); branch total 12/12                                                                |
+| no test weakened                              | pass: `1e16ba4..bbc2d44` only adds W17–W21 and reorders/extends the fixture rows (B9.6 Human, rows 2,1,3,4,5); no W1–W16 assertion changed; nothing after `bbc2d44` touches the smoke |
+| test before fix                               | pass: `bbc2d44` (test) precedes `9db597a` (fix); neither fix commit touches the smoke                                                                                                 |
+| [1] fixed                                     | pass: line 131 tests `"$a" == "$t"` first; W17 kills M25 (literal compare removed)                                                                                                    |
+| [2] fixed                                     | pass: dev-lead Loop 1 and work-next "Resuming" skip pick and claim; inside the card worktree `--claim` returns 0 ("this checkout holds", W10)                                         |
+| [3] fixed                                     | pass: M14 (W19), M17 (W21), M19 (W1, W18 …), M20 (W20), M23 (W1, W18 …) now killed                                                                                                    |
+| pass-1 notes                                  | `GIT_TERMINAL_PROMPT=0` added (line 29); `HERE` resolved before the `cd` (line 17), run from `scripts/ci` and `scripts`                                                               |
+| pass-1 mutants re-run at HEAD (22 + 4 new)    | 22 killed, 4 survive: M6, M21 (equivalent, as pass 1), M24, M26/M27 (see notes). New: M22' equal-only (W12), M25 no-literal (W17) killed                                              |
+
+Correction to pass 1: it reported 15/22 killed. M24 (drop the `status not Open/Partial` line) also survived at
+`06212fd` (re-run on a copy: `16 ok, 0 FAIL`), so the true count was 14/22. It is equivalent on any `origin/main`
+that passes CI: `check-backlog.sh:20` fails a Remaining row whose card status is not Open/Partial, and the script
+reads only `origin/main`'s Remaining.
+
+### Findings
+
+None blocking.
+
+Non-blocking notes:
+
+- Per-rule eligibility mutants, run at HEAD on a copy, all survive with `21 ok`: M28 drop the blocked-by rule
+  (line 80), M29 drop the `Spec:` check (line 83), M30 drop the `Test:` check (line 84), M31 drop "no card" (line 82).
+  The logic is carried over verbatim from the old script, which had no probe at all; only the card source changed
+  (origin/main, killed by W9/M11). W18 pins the Owner rule only. A W22 with a blocked lower step and a contract-less
+  lower step would pin them; worth adding with the next change to `next-task.sh`, not a regression of this card.
+- M26 (`GIT_TERMINAL_PROMPT=0` removed) and M27 (`HERE` back after the `cd`) survive: the smoke runs from the top
+  level with an absolute `$SRC` and a local bare origin. Both were verified by hand (`(cd scripts/ci && ../next-task.sh
+--check B1.18)` rc 0). Adding a probe for M27 would be cheap: `(cd scripts && ./next-task.sh --check …)` in the
+  throwaway repo.
+- Brackets, remaining case: a Doing plan holding the glob `src/app/[id]/*` and a plan holding the file
+  `src/app/[id]/page.tsx` do not collide (bash 5 and 3.2: `no-collide`), because `[id]` is a bracket expression. This
+  is consistent with how Files tokens are read everywhere. The escaped form `src/app/\[id\]/*` matches. Pre-existing
+  and outside this card: `check-plan-scope.sh:25` and `.claude/hooks/plan-scope.sh:36` test `"$f" == $p` only, so a
+  plan listing `src/app/[id]/page.tsx` literally does **not** allow that file (`plan-scope-NOT-listed`). The first
+  dynamic-route card will be blocked loudly by the hook, not silently. File a card (B1.17 follow-up) applying the
+  same literal-first compare there.
+- Resume path: a second session given `/work-next <card>` while another session is still live in that card's
+  worktree now "resumes" into the same worktree. Before the fix, `--claim` refused from a foreign checkout. Its message
+  ("work there or ask the lead") pointed to the same place, so the plan's guarantee (no second branch for one card)
+  holds, and two sessions in one worktree is no newer a risk than before.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the pick/claim race. Two parallel sessions run `next-task.sh` (or `--claim` for the same id)
+before either `worktree.sh` creates its branch. Both get the same card. The design accepts this ("the branch is the
+claim"), and no probe can show how small the window is.
