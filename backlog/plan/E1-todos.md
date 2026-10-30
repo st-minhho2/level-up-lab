@@ -221,10 +221,7 @@ _tooling · no §_
 ### B1.17 · Plan-scope hook: a card worktree writes only the files of its approved plan
 
 _tooling · no §_
-**Status: Open** — `ls .claude/hooks` → no plan-scope script; `.claude/settings.json:41` wires only
-`format-after-edit.sh` (PostToolUse) on `Edit|Write|MultiEdit`, no PreToolUse write guard; today a file outside
-`work/<card>/plan.md` "Files" is caught only by the `reviewer` at diff time (`.claude/rules/planning.md` "Approval
-and changes")
+**Status: Done** — 25fee24 (#60); scripts/hook-smoke.sh 284 probes OK (b7fc272: 221 ok, 59 FAIL, scripts missing); plan-scope.sh in settings.json, check-plan-scope.sh in CI guards; no src/ change, mutation 89.02 % unchanged; red b7fc272, green 393aa38, hardening 9e4b64a + 487fe2a + f155633; live check pending in a session started after 25fee24 (this session loaded settings before it: a probe write was not refused)
 
 - **Spec:** none — tooling (`.claude/docs/hooks.md` hook table, `scripts/CLAUDE.md`); no `src/` change, no section
 - **Test:** new probes in `scripts/hook-smoke.sh` for each worktree layout (`.worktrees/<slug>`,
@@ -237,4 +234,4 @@ and changes")
   unaffected; probes pass for every layout; `.claude/` change → the PR needs the human-only `config-change-approved`
   label
 - **Tier:** quick · **Depends on:** ~~B1.16~~ · **Owner:** Lead · **Size:** M [estimate]
-- **Work:** `work/B1.17/`
+- **Work:** `work/B1.17/` — plan (rounds 1/1; lead chose (a) paperwork allow-list, (A) no skeleton test stubs), review (plan rounds 2, cap reached, round-2 fixes accepted by the lead; diff pass 3/3, 4 findings fixed by `9e4b64a` + `487fe2a` + `f155633`); squash `25fee24` (#60)
