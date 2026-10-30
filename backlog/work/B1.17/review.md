@@ -383,3 +383,90 @@ thread ([unverified] until after merge; S7–S9 pass on a synthetic payload only
 | N   | how to list migrations                           | fix now       | `487fe2a`: dev-lead plan template names `prisma/migrations/*`                                             |
 | N   | `a.TEST.ts` on case-insensitive APFS             | out of scope  | same gap in path-guard.sh; follow-up note in the PR body                                                  |
 | N   | `claude --agent test-writer` main session        | fix now (doc) | `487fe2a`: known limit in `.claude/docs/hooks.md`                                                         |
+
+## Diff review (pass 2)
+
+SCOPE: none of lib | actions | ui (tooling). Reviewed the delta `393aa38..5bf576a` (`9e4b64a` test, `487fe2a` fix,
+`5bf576a` docs) and the whole branch against `origin/main` (`986f925`, 17 files). Nothing in the worktree edited;
+probes on clones under the session scratchpad (`p2` at `5bf576a`, `p3` at `9e4b64a`, both with `node_modules`
+linked; `rv/mutants2.sh`, `rv/linux2.sh`).
+
+### Command results (last line each)
+
+| Command                                         | Result                                                                                                                         |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm lint` · `pnpm typecheck`                  | `All matched files use Prettier code style!` · `tsc --noEmit` exit 0                                                           |
+| `pnpm test`                                     | `Tests  115 passed (115)`                                                                                                      |
+| `pnpm test:e2e`                                 | `13 passed (13.4s)`                                                                                                            |
+| `pnpm test:mutation`                            | `Final mutation score of 89.02 is greater than or equal to break threshold 70` (no `src/` change)                              |
+| `scripts/hook-smoke.sh` (HEAD copy)             | `hook-smoke: 284 probes OK`                                                                                                    |
+| `scripts/hook-smoke.sh` at `9e4b64a` (copy)     | exactly 2 FAIL: C7 `check-plan-scope exit 0 (want 1)`, C8 `plan-files exit 0 (want 3)`: red as the dispositions state          |
+| check-suppressions · feat-commits · ac-coverage | OK · OK · OK                                                                                                                   |
+| spec-sections · features-map · backlog          | OK · OK · OK                                                                                                                   |
+| `check-agent-frontmatter.sh`                    | `OK: 13 files`                                                                                                                 |
+| `check-config-change.sh`                        | exit 1, protected files without `config-change-approved` (expected: human label)                                               |
+| `check-plan-scope.sh` (this branch)             | `OK: feat/B1.17-plan-scope-hook stays inside the approved plan of B1.17`; same in `node:24-bookworm` (bash 5.2.15, git 2.39.5) |
+| `plan-files.sh` in `node:24-bookworm`           | B1.17 → 17 tokens, exit 0; body-only approval → exit 3; `plan round 2 approved` subject → exit 0                               |
+| `verify-red.sh B1.17` · `--auto`                | exit 1 "no (red) commit" (vitest-only gate, n/a, as pass 1) · "nothing to verify"                                              |
+| `bash -n` hooks + `scripts/ci/*.sh`             | OK                                                                                                                             |
+
+### Checklist
+
+| Check                                                      | Result                                                                                                                                                                                          |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file changed since pass 1 in plan                    | pass: `hook-smoke.sh`, `check-plan-scope.sh`, `plan-files.sh`, `dev-lead.md`, `test-writer.md`, `hooks.md`, `review.md`: 7 of 7 in Files                                                        |
+| no test weakened                                           | pass: `9e4b64a` adds C6–C8 and adds `prisma/migrations/*` to the S fixture plan (S10 now needs the migration rule); no other probe depends on an unlisted migration; `487fe2a` touches no probe |
+| pass-1 rename triggers (`rv/rename.sh`, `rv/ren-paper.sh`) | pass: both now exit 1 and name the deleted path (`src/lib/todos.ts`; `e2e/05-todos.spec.ts` with plan-files exit 3)                                                                             |
+| pass-1 findings 1–3                                        | closed: P14 (`--no-renames` dropped) killed by C7; P15 (old `--grep`) killed by C8; P7 killed by C6; P9 killed by S10 (4 layouts)                                                               |
+| subject-only loop (`plan-files.sh:12-16`)                  | pass: `break` keeps the newest (P6 killed by S15); `%s` of a multi-line first paragraph is joined, still anchored at `^`; reads 80 first-parent commits in 0.03 s when unapproved               |
+| pass-1 dispositions applied                                | **fail** for the review-pass wording (finding 1); the other five pass                                                                                                                           |
+
+### Mutants (copy `p2`, `scripts/hook-smoke.sh` per mutant)
+
+M1–M3, M5–M9, P1–P4, P6 (now: drop `break`, oldest approval wins), P7, P8, P9, P12, P13 killed; P14 (no
+`--no-renames`) killed (1, C7); P15 (`--grep` on any line) killed (1, C8); P17 (migration `block` → no-op) killed (4).
+Survivors, unchanged from pass 1 and already explained there: M4, P5/P16 (`--first-parent`), P10, P11.
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: .claude/skills/review-loop/SKILL.md:38-40 (with .claude/agents/test-writer.md:22-23)
+    DEFECT: the pass-1 "fix now" for review-pass tests landed only in test-writer.md; review-loop, the one caller,
+            still dispatches test-writer with `Mode: red` and names the subject `test(<pkg>): <card> review -- … (red)`.
+    TRIGGER: /review-loop on any card with a `fix now` that needs a test (as this card's pass 1): step 3 dispatches
+             `Agent(test-writer)` with "Mode: red" and the finding.
+    WRONG BEHAVIOUR: test-writer never receives `Mode: review pass N` (grep: no file sends it), so its new clause is
+            dead; it follows the red procedure and commits `… (red)`, which backlog/CLAUDE.md:29 forbids for
+            hardening commits, and verify-red.sh then judges that test against the parent of the card's FIRST (red)
+            commit (the skeleton), not against the bug it was written for. This card's own `9e4b64a` followed
+            backlog/CLAUDE.md, not the skill. Fix: SKILL.md:38-39 → `Mode: review pass N`, subject
+            `test(<pkg>): <card> review pass N -- …` without `(red)`.
+    CONFIDENCE: confirmed (traced: grep for "Mode: review" / "Mode: red" over .claude and backlog/CLAUDE.md;
+            verify-red.sh header steps 1-4)
+```
+
+Notes (not blocking):
+
+- `plan-files.sh:3-4` still says "as scripts/metrics/lead-time.sh", but `lead-time.sh:31` keeps `--grep`, so the
+  metric can date an approval from a body line that plan-files now ignores. Metric only; a follow-up card or drop
+  the "as" in the comment.
+- The new OK wording (`check-plan-scope.sh:31-32`) has no probe: `cps` checks exit codes only.
+- `test-writer.md` "the rest of this file applies unchanged" keeps Procedure step 4 (`(red)` subject) and the
+  `RED:` report line in force for a review-pass test that is green by design (a pinning probe like C6); the
+  clause overrides the subject only by reference.
+
+Verdict: back to code-writer (finding 1: two lines in `review-loop/SKILL.md`, no probe needed; it is in the plan's
+Files).
+
+Riskiest unfalsified: `agent_type` = `test-writer` in a Task subagent's PreToolUse input and absent on the main
+thread ([unverified] until after merge; S7–S9 run on a synthetic payload only).
+
+### Dispositions (pass 2, dev-lead)
+
+| #   | Finding                                                   | Disposition  | Evidence                                                                                                       |
+| --- | --------------------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------- |
+| 1   | review-loop still sends `Mode: red` and a `(red)` subject | fix now      | `f155633`: `Mode: review pass N`, `test(<pkg>): <card> review pass N -- …` without `(red)`; test-writer step 4 |
+| N   | `lead-time.sh:31` still `--grep` (any message line)       | out of scope | B1.16's script; no commit today quotes the phrase in a body; follow-up note in the PR body                     |
+| N   | OK-line wording has no probe                              | no change    | output text only; exit code pinned by C3                                                                       |
+| N   | `plan-files.sh` comment "as lead-time.sh"                 | fix now      | `f155633`: "(subject only)"                                                                                    |
