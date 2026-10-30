@@ -145,3 +145,32 @@ _tooling · no §_
   line kept, leftover lines removed); `check-backlog.sh` OK
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.12/` — plan (rounds 1/1), probe.sh, review (plan rounds 2, diff pass 1/3, 1 finding fixed: fixture B9.4); squash `6ae7be3` (#39)
+
+### B1.13 · `worktree-prune.sh` drops the schema of every merged or removed worktree, in every layout
+
+_tooling · no §_
+**Status: Open** — `scripts/worktree-prune.sh:110` keeps only paths under `"$ROOT/.worktrees/"*` (`ROOT` = the
+current checkout, so `.claude/worktrees/<name>/.worktrees/<slug>` is skipped from the main checkout); `:40`/`:43` run
+`docker compose -f "$ROOT/docker-compose.yml"`, whose project is the checkout's directory name, so from
+`.claude/worktrees/loving-franklin-1d640f` `docker compose ps` reports `service "postgres" is not running` while
+`level-up-lab-postgres-1` is up (project `level-up-lab`) and every drop prints "schema … left in place"; `:24`
+`BASE="main"` compares with the local ref, never fetched; `:90` counts a branch with no commits beyond the base as
+merged (`ancestor`), so a just-created worktree is removed; a worktree whose directory is gone has no
+`.worktree.env` to read, and `git worktree prune` (`:136`) then forgets it. Observed 2026-10-30: 15 `wt_*` schemas of
+B1.7–B1.12 worktrees left in the compose database, dropped by hand.
+
+- **Spec:** none — tooling (`scripts/CLAUDE.md` row "`worktree-prune.sh` removes merged worktrees, branches,
+  schemas; `--schemas`: orphan schemas"); no `src/` change, no section
+- **Test:** shell smoke on a throwaway git repo (bare origin, worktrees under `.worktrees/`,
+  `.claude/worktrees/<name>/` and `.claude/worktrees/<name>/.worktrees/`) and a throwaway database on the local
+  compose server — red because: run from the main checkout or from the `.claude/worktrees/<name>` checkout against
+  main's script, a worktree squash-merged on `origin/main` while the local `main` is stale is kept, a nested merged
+  worktree is not listed, the schema of a worktree whose directory was deleted stays, an orphan `wt_*` schema is not
+  reported, and a worktree with no commits beyond the base is removed
+- **Acceptance:** the smoke passes on bash 3.2 from both checkouts: merged worktrees in every layout are removed with
+  their schema and branch, compared against `origin/<base>` after a fetch; a worktree whose directory is gone loses
+  its schema; a worktree with no commits beyond the base, the current checkout and the app's own
+  `.claude/worktrees/<name>` checkouts are never removed (`--all` asks); orphan `wt_*` schemas are reported and
+  dropped only with an explicit flag; no database other than the local compose server is touched
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.13/`
