@@ -147,3 +147,94 @@ Verdict: changes requested
 
 Riskiest unfalsified: whether `pull_request.base.sha` on a `synchronize`/`labeled` event can lag the `origin/main` a
 branch just merged. If it can, the three-dot guard reports main's files as outside the plan (reason 7).
+
+## Plan review (round 2)
+
+SCOPE: none of lib | actions | ui (tooling: `.claude/`, `scripts/`, `.github/`); checklist adapted as in round 1.
+Reviewed `plan.md` at `24f69a6` on HEAD `21ab69b` (merged `origin/main`, includes #58 and #59). Read-only runs:
+
+- `scripts/hook-smoke.sh` → `hook-smoke: 221 probes OK` (the plan's baseline).
+- `git diff --name-only origin/main...HEAD` → `backlog/work/B1.17/plan.md`, `backlog/work/B1.17/review.md` (round-1
+  reason 2 cleared).
+- The revised rule applied to every merged PR #5–#59 at its head (`gh pr list` heads, all present locally):
+  `/private/tmp/claude-502/-Users-minh-ho2-Documents-project-level-up-lab--claude-worktrees-lucid-bhabha-457da6/d2c80f70-0118-4c96-ab7e-42fbcdb4c157/scratchpad/scope-probe2.sh`
+  (branch `^[a-z]+/B<e>.<n>(-|$)`; paperwork `backlog/*`, `spec/*`, `docs/metrics.md`, `docs/mistake-log.md`; other
+  files against first-column backticked tokens of `## Files` at the latest approval commit; `git diff
+$(git merge-base origin/main <head>) <head>`; bash `[[ == ]]` matching). Run twice, once per reading of "approval
+  commit".
+
+### Probe: the revised rule on #5–#59
+
+| Reading of "latest approval commit"                                      | 16 card PRs (#5…#57)                                                                                                                                | 16 card-id lane PRs (`docs/B1.n-…`) | 23 other PRs |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- | ------------ |
+| commit subject `<card> plan approved` (B1.16's `lead-time.sh` precedent) | **0 fail**                                                                                                                                          | 0 fail (paperwork only)             | skipped      |
+| last commit whose diff touches a line `Plan approved by: lead` (`-G`)    | **2 fail**: #5 B1.2 (line reads `minh.ho2`, renamed later), #52 B1.15 (line wraps after `Plan`) → "unapproved", all `src/`/`scripts/` files refused | 0 fail                              | skipped      |
+
+Round 1: 9 of 14 failed, 0 build files caught. Round 2 (subject reading): 0 of 16, and still 0 build files caught on
+history (no merged card wrote outside its plan; the guard's value is prospective). Fixed-string subject also hides a
+re-approval: for #13 it picks `ef73bec` "B1.5 plan approved", not `9efec0b` "B1.5 plan round 2 approved" (B1.5's
+Files did not change between rounds, so the result held by luck).
+
+### Round-1 reasons
+
+| #   | Round-1 reason                                 | Round 2                                                                                                                                                       |
+| --- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | rule refuses pipeline paperwork                | resolved as a lead decision: (a) paperwork allow-list, (b)/(c) costed, (a) recommended; probe 0 of 16                                                         |
+| 2   | own verification line false                    | resolved: after the merge the diff is the work folder only; but see new reason 2 for the feat-time diff                                                       |
+| 3   | metrics row, features-map move                 | resolved: `docs/metrics.md` and `spec/*` are paperwork                                                                                                        |
+| 4   | Option A files, review-loop test step          | resolved: three SKILL.md files and `test-writer.md` in Files; review-pass tests via `test-writer` stated                                                      |
+| 5   | migrations through roles never holds           | resolved as a stated deviation: Edit/Write on `prisma/migrations/*` always refused; CI checks the plan only                                                   |
+| 6   | opt-in by branch name                          | resolved as a stated gap (`claude/…`, `main`, `hotfix/…` without id skipped); regex widened to any lowercase prefix and `(-                                   | $)`; S11, S12 probe it. `feat/B9.1` (no slug) has no probe (note) |
+| 7   | CI range                                       | resolved: `git merge-base origin/<base> HEAD`, C4 squash-then-merge probe; round-1 riskiest (stale `base.sha`) is moot                                        |
+| 8   | trusts plan as it is now; parser outside label | resolved in intent (approved-plan snapshot, S6; parser at `scripts/ci/plan-files.sh`, under `PROTECTED`); the snapshot's commit is not defined → new reason 1 |
+| 9   | red reason differs from card                   | resolved as a stated deviation (exit 127, not exit 0)                                                                                                         |
+
+### Checklist
+
+| Check                                    | Result                                                                                                                                                                                                                                                                                                               |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| files belong to the card                 | pass: every row serves the Acceptance or a stated deviation                                                                                                                                                                                                                                                          |
+| interfaces stated                        | **fail**: `plan-files.sh`'s "latest approval commit" is undefined, and both readings break on this repo's history (reason 1)                                                                                                                                                                                         |
+| advice                                   | pass: skip stated (no section, Tier quick)                                                                                                                                                                                                                                                                           |
+| follows the card or states the deviation | pass: paperwork allow-list, migration rule, red reason, branch gap all stated as deviations for the lead                                                                                                                                                                                                             |
+| criteria measurable                      | pass: S1–S13 × 4 layouts + C1–C5 = 57, counts consistent (221 + 52 + 5)                                                                                                                                                                                                                                              |
+| verification exact with numbers          | **fail**: `check-plan-scope.sh` on this branch after the feat commit reports 3 Files rows outside the plan (reason 2)                                                                                                                                                                                                |
+| work breakdown                           | pass: `test(scripts)` → `feat(hooks)` → reviewer diff → PR, label stated                                                                                                                                                                                                                                             |
+| protected path and label                 | pass: every non-paperwork file matches `PROTECTED`; `config-change-approved` stated                                                                                                                                                                                                                                  |
+| one screen / size                        | 69 lines against ≈ 40 (B1.13 approved at 68). 15 files (3 new scripts, 1 refactor, 4 role texts), +57 probes: upper end of M [estimate]. Not blocking; the split seam, if the lead wants one, is the role rule (S7–S9, `agent_type` [unverified], the three SKILL.md files and `test-writer.md`) as a follow-up card |
+| `Lead approves spec` box                 | n/a: no section                                                                                                                                                                                                                                                                                                      |
+| no settled D-n contradicted              | pass: D-7's same-step tick writes `spec/*`, now paperwork                                                                                                                                                                                                                                                            |
+
+### Reasons (changes requested)
+
+1. **The plan does not define which commit is "the latest `Plan approved by: lead` commit", and both readings fail
+   on this repo.** (confirmed: probe above and `git log -G`)
+   - Line reading: refuses every build write for B1.2-style and B1.15-style plans (#5, #52 above). It also reports
+     B1.17 approved today: `plan.md:12` contains the literal `` `Plan approved by: lead` `` in prose, so
+     `git log -G'Plan approved by: lead' -- backlog/work/B1.17/plan.md` → `24f69a6 … plan review round 1, plan
+revised`. With the hook live, an unapproved plan that quotes the line would let `src/` writes through (S4 fails).
+   - Fixed-string subject reading: misses `dev-lead`'s re-approval subjects (B1.5 `plan round 2 approved`), so a row
+     added and re-approved per `planning.md` stays refused.
+   - Fix: pin it in Interfaces as B1.16 did: latest commit reachable from `<rev>` whose subject matches
+     `^docs\(backlog\): <card> plan( round [0-9]+)? approved$` and which touches `backlog/work/<card>/plan.md`. Add
+     probes: S14 unapproved plan quoting the line in prose → 2; S15 row added, then a `plan round 2 approved` commit
+     → 0. State the cost: the approval commit is written by the session, so the hook proves an approval commit exists,
+     not that the lead replied; the reviewer's plan-vs-diff check stays the human-facing control.
+2. **The plan's own Files table fails its own rule.** (confirmed: matcher run on the 15 planned paths) The row
+   `` `.claude/skills/{new-feature-slice,tdd-loop,review-loop}/SKILL.md` `` is one token; `[[ $f == $p ]]` does no
+   brace expansion, so `new-feature-slice/SKILL.md`, `tdd-loop/SKILL.md` and `review-loop/SKILL.md` are "outside the
+   plan". The verification line "`scripts/ci/check-plan-scope.sh` … OK" then fails in CI's `guards` job on this PR.
+   Fix: one backticked path per file (and the `dev-lead.md` change states "one repo path or `*` glob per token, no
+   braces"), or have `plan-files.sh` expand braces and add a probe for it. The bare `` `review.md` `` token is
+   harmless (paperwork) but should be the full path for the same reason.
+
+Notes (not blocking): C3 should run with no `plan.md` at all, the closing-lane case after a squash erases the
+`plan approved` commit (13 lanes pass only because paperwork is filtered before the plan lookup; say that order). Add
+a `feat/B9.1` (no slug) probe for the `(-|$)` branch.
+
+Verdict: changes requested (round 2, the cap). Both reasons are two-line plan edits; per B1.13/B1.15/B1.16 the lead
+may accept them applied without a round 3, otherwise round 3 is "Waiting on human".
+
+Riskiest unfalsified: that Claude Code sends `agent_type` = `test-writer` in a Task subagent's PreToolUse input and
+omits it on the main thread ([unverified] until after merge); if it is absent for subagents, S7 never holds live and
+every red step is refused.
