@@ -353,3 +353,55 @@ dropped while `git worktree prune` keeps the metadata, so each run re-enters it;
 
 After the fix: `/bin/bash scripts/prune-smoke.sh` → `13 of 13 ok, 0 FAIL`; `git diff 3837abc..0cd8517 --
 scripts/prune-smoke.sh` empty; `hook-smoke: 221 probes OK`.
+
+## Diff review (pass 2)
+
+SCOPE: none of lib | actions | ui (tooling). Reviewed at `145335e`. New since pass 1: `3837abc` test(scripts) P11–P13,
+`0cd8517` fix(scripts), `145335e` dispositions. Same probe limits as pass 1: copies and throwaway repos under
+`$TMPDIR`, read-only listings of `level_up_lab`, the smoke's own throwaway databases. The worktree was not edited.
+
+### Command results (last line of each)
+
+| Command                                                             | Last line                                                                                                   |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `pnpm lint` / `pnpm typecheck`                                      | `All matched files use Prettier code style!` / `tsc --noEmit` (no error)                                    |
+| `pnpm test`                                                         | `Tests  115 passed (115)`                                                                                   |
+| `pnpm test:e2e`                                                     | `13 passed (14.7s)`                                                                                         |
+| `pnpm test:mutation`                                                | `Final mutation score of 89.02 is greater than or equal to break threshold 70` (no src diff)                |
+| `check-suppressions` / `config-change` / `feat-commits` / `backlog` | all `OK`                                                                                                    |
+| `verify-red.sh B1.13`                                               | exit 1 by design (no `(red)` commit; plan Deviations), unchanged from pass 1                                |
+| `prune-smoke.sh` (HEAD)                                             | `[prune-smoke] 13 of 13 ok, 0 FAIL`                                                                         |
+| `prune-smoke.sh` on `564e9ac`'s script                              | `12 of 13 ok, FAIL: P13` (`exit 1; no 'done' line; gone merged branch left; …; later merged worktree left`) |
+| live `wt_*` in `level_up_lab`, databases                            | `wt_fix_b1_13_prune_every_layout` before = after; `level_up_lab postgres template0 template1`               |
+| `git diff --stat origin/main...HEAD`                                | `5 files changed, 838 insertions(+), 80 deletions(-)`                                                       |
+
+### Pass 1 findings
+
+| #   | Finding                                   | Result                                                                                                                                                                                                                                                                                                                                                                                                    |
+| --- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | gone + merged: `branch -D` aborts the run | resolved: branches queued, deleted after `git worktree prune`, refusal is a warning. P13 red at `564e9ac`, green at HEAD. Mutant "queue never filled" → `FAIL: P13`; mutant "no `git worktree prune`" → `FAIL: P3 P13`. Also a locked, gone, merged worktree (throwaway repo): `WARNING: branch feat/a not deleted (locked worktree? …)`, `done` line, rc=0, so pass 1's riskiest spot is now tested too. |
+| 2   | `$ROOT` and `wt_*` guards unprobed        | resolved: mutant without `$ROOT` → `12 of 13 ok, FAIL: P11` (`exit 128; current checkout removed`); mutant without the name regex → `FAIL: P12` (`public dropped`).                                                                                                                                                                                                                                       |
+
+### Checklist
+
+| Check                               | Result                                                                                                                                                                                         |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| smoke not weakened                  | pass: the only smoke commit after `175dfb0` is `3837abc` (`test(scripts)`, own commit, reason in body, 23 lines added, none removed); `git diff 3837abc..HEAD -- scripts/prune-smoke.sh` empty |
+| every changed file in `plan.md`     | pass: same four rows                                                                                                                                                                           |
+| interfaces                          | pass: the prune row now lists `[--base main]`                                                                                                                                                  |
+| no secret, no suppression, bash 3.2 | pass                                                                                                                                                                                           |
+| revert one line, does a probe fail  | pass for every guard I mutated (fetch default, no-commit check, `git worktree prune`, gone branch queue, `$ROOT`, name regex)                                                                  |
+
+### Findings
+
+None blocking.
+
+Notes (no change requested): the `scripts/CLAUDE.md` smoke row still says "probes P1–P10" and the plan's
+Verification says "10 of 10". The smoke now has P1–P13 (13 of 13), so the PR body should say 13. P13's "later
+worktree still handled" check depends on git listing `feat-…-gm-m` before `feat-…-gm-n`. It held here: the check
+failed at `564e9ac`.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the `tree` reason counts a branch whose commits add up to no change (a commit and its revert)
+as merged, so `git branch -D` removes history that was never merged; no probe covers it.
