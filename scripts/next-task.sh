@@ -14,8 +14,8 @@
 #   scripts/next-task.sh --check <card>  the card's planned Files (at HEAD) against every Doing/Review card's plan
 #   scripts/next-task.sh --list          the board rows with eligibility and BOARD
 set -euo pipefail
+HERE="$(cd "$(dirname "$0")" && pwd)" # before the cd: $0 may be relative to the caller's directory
 cd "$(git rev-parse --show-toplevel)"
-HERE="$(cd "$(dirname "$0")" && pwd)"
 WIP_LIMIT=3
 MODE=pick; ARG=""
 case "${1:-}" in
