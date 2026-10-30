@@ -1,5 +1,8 @@
 # Local infrastructure only. Host port 5433 (5432 is taken by a sibling lab on this machine); override with
 # POSTGRES_PORT. Every worktree shares this one server and gets its own schema (scripts/worktree.sh).
+# A fixed project name: without it the project is the folder compose runs from, so a worktree would start a second
+# server on an empty volume instead of reaching this one (B1.15). Every clone on a machine shares it too.
+name: level-up-lab
 services:
   postgres:
     image: postgres:17-alpine
