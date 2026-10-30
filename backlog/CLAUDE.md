@@ -4,6 +4,11 @@
 ids (`~~B1.1~~` = done), whose Owner is Lead or Dev, and whose card carries both contract lines below. Owner Human
 → an agent may draft, never decide; those rows live in README "Waiting on human".
 
+**WIP** (B1.18): at most 3 cards Doing, state derived from origin/main, branches and PRs (`scripts/next-task.sh --list`).
+Every start goes through `scripts/next-task.sh` (pick) or `scripts/next-task.sh --claim <card>` (by id), then
+`scripts/worktree.sh` at once: the branch is the claim. Before a plan review, `scripts/next-task.sh --check <card>`
+must report no overlap with a Doing or Review card's plan (paperwork exempt); an overlap waits or re-plans.
+
 ## Card layout (`plan/E<epic>-<name>.md`)
 
 ```

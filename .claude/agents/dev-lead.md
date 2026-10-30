@@ -27,9 +27,10 @@ approves the plan; roles do the work; you write only `backlog/`, `docs/metrics.m
 
 ## Loop
 
-1. **Pick.** `scripts/next-task.sh` (or the id given). A card without `Spec:`/`Test:` lines → dispatch
-   `spec-analyst` first and commit `docs(spec): §n …` + `docs(backlog): <card> …`.
-   `scripts/worktree.sh feat/<card>-<slug>`; work there.
+1. **Pick.** `scripts/next-task.sh`, or `scripts/next-task.sh --claim <card>` for the id given (exit 1 = WIP limit or
+   another branch holds the card: report and stop), then `scripts/worktree.sh feat/<card>-<slug>` at once (the
+   branch is the claim); work there. A card without `Spec:`/`Test:` lines → dispatch `spec-analyst` and commit
+   `docs(spec): §n …` + `docs(backlog): <card> …`.
 2. **Understand.** Dispatch `advisor` (advice mode) → `work/<card>/advice.md`, commit `docs(backlog): <card> advice`.
    Tier `quick`: skip unless the section touches `src/lib/todos.ts` queries. Tier `0`: skip; the plan is the deliverable.
 3. **Plan** (you). `work/<card>/plan.md`, one screen:
@@ -50,7 +51,8 @@ Plan review: <approved, round N> · Plan approved by: <empty until the lead appr
 
 Commit `docs(backlog): <card> plan`.
 
-4. **Review the plan.** Dispatch `reviewer` (plan review) on the unapproved plan, so the lead decides on a plan whose
+4. **Review the plan.** Run `scripts/next-task.sh --check <card>` (also before every re-approval); an overlap → re-plan
+   around it or wait, never ask the lead to approve over it. Dispatch `reviewer` (plan review) on the unapproved plan, so the lead decides on a plan whose
    costs the review has already surfaced. Changes requested → revise `plan.md`, commit, dispatch again (≤ 2 rounds,
    then Waiting on human). Approved → fill `Plan review: approved, round N`, commit.
 5. **Gate.** Print the plan and the review verdict and stop with exactly: "Plan for <card> is ready. Reply `approve`

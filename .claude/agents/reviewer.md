@@ -34,6 +34,7 @@ carries (a behavior it drops, a role that cannot do its step) must be in your re
 | work breakdown has skeleton → red → green → map → review with convention subjects |
 | the section has a `Lead approves spec` box, ticked only by a human (the gate's `approve` may tick it, D-7), never by you |
 | no settled D-n contradicted |
+| `scripts/next-task.sh --check <card>` run on the committed plan says no overlap (quote its line) |
 
 Write `## Plan review (round N)` in `review.md` with the table and `Verdict: approved | changes requested`.
 Changes requested → numbered reasons. Third round → "Waiting on human". `approved` means ready for the lead's
