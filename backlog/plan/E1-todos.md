@@ -221,7 +221,7 @@ _tooling · no §_
 ### B1.17 · Plan-scope hook: a card worktree writes only the files of its approved plan
 
 _tooling · no §_
-**Status: Done** — 25fee24 (#60); scripts/hook-smoke.sh 284 probes OK (b7fc272: 221 ok, 59 FAIL, scripts missing); plan-scope.sh in settings.json, check-plan-scope.sh in CI guards; no src/ change, mutation 89.02 % unchanged; red b7fc272, green 393aa38, hardening 9e4b64a + 487fe2a + f155633; live check pending in a session started after 25fee24 (this session loaded settings before it: a probe write was not refused)
+**Status: Done** — 25fee24 (#60); scripts/hook-smoke.sh 284 probes OK (b7fc272: 221 ok, 59 FAIL, scripts missing); plan-scope.sh in settings.json, check-plan-scope.sh in CI guards; no src/ change, mutation 89.02 % unchanged; red b7fc272, green 393aa38, hardening 9e4b64a + 487fe2a + f155633; live check 5 of 5 in a session started at 25fee24: main-thread and code-writer writes outside the plan refused, main-thread test refused, test-writer test allowed (agent_type reaches the hook)
 
 - **Spec:** none — tooling (`.claude/docs/hooks.md` hook table, `scripts/CLAUDE.md`); no `src/` change, no section
 - **Test:** new probes in `scripts/hook-smoke.sh` for each worktree layout (`.worktrees/<slug>`,
