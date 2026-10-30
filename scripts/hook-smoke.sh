@@ -141,7 +141,7 @@ plan_md() { # plan_md <dir> <card> <files...>: a plan whose Files table lists th
 PS="$(mktemp -d)"; PS_OUT="$(mktemp -d)"
 gs "$PS" init -q -b main && gs "$PS" commit -q --allow-empty -m init
 gs "$PS" checkout -q -b feat/B9.1-main
-plan_md "$PS" B9.1 src/lib/a.ts src/lib/a.test.ts && gs "$PS" add -A && gs "$PS" commit -q -m "docs(backlog): B9.1 plan"
+plan_md "$PS" B9.1 src/lib/a.ts src/lib/a.test.ts "prisma/migrations/*" && gs "$PS" add -A && gs "$PS" commit -q -m "docs(backlog): B9.1 plan"
 gs "$PS" commit -q --allow-empty -m "docs(backlog): B9.1 plan approved"
 i=0; for lay in $LAYOUTS; do [[ "$lay" == . ]] || { i=$((i+1)); gs "$PS" worktree add -q -b "feat/B9.1-l$i" "$PS/$lay" feat/B9.1-main; }; done
 for lay in $LAYOUTS; do
@@ -156,7 +156,7 @@ for lay in $LAYOUTS; do
   ps 0 "$PS" "$w/src/lib/a.test.ts" test-writer "S7 $lay listed test as test-writer"
   ps 2 "$PS" "$w/src/lib/a.test.ts" - "S8 $lay listed test from the main thread"
   ps 2 "$PS" "$w/src/lib/a.test.ts" code-writer "S9 $lay listed test as code-writer"
-  ps 2 "$PS" "$w/prisma/migrations/1_x/migration.sql" code-writer "S10 $lay migration by Edit/Write"
+  ps 2 "$PS" "$w/prisma/migrations/1_x/migration.sql" code-writer "S10 $lay migration by Edit/Write, listed in the plan"
 done
 mk() { gs "$PS" worktree add -q -b "$2" "$PS/.claude/worktrees/$1" main; }
 mk unapproved feat/B9.2-x; W="$PS/.claude/worktrees/unapproved"
@@ -210,6 +210,22 @@ gs "$C" checkout -q feat/B9.6-x && gs "$C" fetch -q origin && gs "$C" merge -q -
 cps 0 "$C" "C4 cut before a sibling's squash merge, then origin/main merged"
 gs "$C" checkout -q -b claude/x main && mkdir -p "$C/src/lib" && echo q > "$C/src/lib/q.ts" && gs "$C" add -A && gs "$C" commit -q -m "chore: q"
 cps 0 "$C" "C5 branch without a card id is skipped"
+gs "$C" checkout -q -b feat/B9.7-x main
+plan_md "$C" B9.7 src/lib/w.ts && gs "$C" add -A && gs "$C" commit -q -m "docs(backlog): B9.7 plan approved"
+echo w > "$C/src/lib/w.ts" && gs "$C" add -A && gs "$C" commit -q -m "feat(todos): B9.7 w"
+gs "$C" checkout -q main && echo m > "$C/src/lib/m.ts" && gs "$C" add -A && gs "$C" commit -q -m "feat: m (#2)" && gs "$C" push -q origin main
+gs "$C" checkout -q feat/B9.7-x
+cps 0 "$C" "C6 main moved on (src/lib/m.ts), branch not merged: only the branch's own changes count (review pass 1)"
+gs "$C" checkout -q -b feat/B9.8-x main
+plan_md "$C" B9.8 src/lib/a2.ts && gs "$C" add -A && gs "$C" commit -q -m "docs(backlog): B9.8 plan approved"
+gs "$C" mv src/lib/z.ts src/lib/a2.ts && gs "$C" commit -q -m "feat(todos): B9.8 rename"
+cps 1 "$C" "C7 a rename into a listed path still reports the deleted src/lib/z.ts (review pass 1)"
+gs "$C" checkout -q -b feat/B9.9-x main
+plan_md "$C" B9.9 src/lib/a.ts && gs "$C" add -A
+gs "$C" commit -q -m "docs(backlog): B9.9 plan revised" -m "docs(backlog): B9.9 plan approved comes next"
+n=$((n+1)); rc=0; (cd "$C" && "$ROOT_DIR/scripts/ci/plan-files.sh" B9.9 >/dev/null 2>&1) || rc=$?
+if [[ $rc -eq 3 ]]; then echo "ok   plan-files exit 3  C8 an approval phrase in a commit body is not an approval (review pass 1)"
+else echo "FAIL plan-files exit $rc (want 3)  C8 an approval phrase in a commit body is not an approval (review pass 1)"; fail=1; fi
 rm -rf "$CO"
 
 echo "== review gate (require-review.sh / mark-reviewed.sh)"
