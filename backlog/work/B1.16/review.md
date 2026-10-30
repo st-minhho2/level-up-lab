@@ -217,3 +217,128 @@ carries exactly one `(#N)`. B1.12's card body also quotes `**Status: Done** — 
   Both reasons are one-line plan edits.
 
 Verdict: changes requested
+
+## Diff review (pass 1)
+
+SCOPE: none of lib | actions | ui (tooling). Diff `origin/main..56cebc7`: `scripts/metrics/lead-time.sh` (new, 51),
+`scripts/metrics/change-failure-rate.sh` (new, 55), `scripts/metrics-smoke.sh` (new, 130), `docs/metrics.md` (two rows,
+table re-padded), `scripts/CLAUDE.md` (three rows, table re-padded), `backlog/work/B1.16/{plan,review}.md`. `/bin/bash`
+3.2.57, git 2.39.5 (Apple). Probes ran on a copy (`$TMPDIR/b116copy/probe`) and in `$TMPDIR` scratch repos; the
+worktree was not edited (`git status` clean after every run).
+
+### Command results (last line, exit)
+
+```text
+pnpm lint                               All matched files use Prettier code style!                                  0
+pnpm typecheck                          tsc --noEmit                                                                0
+pnpm test                               Tests  115 passed (115)                                                     0
+pnpm test:e2e                           13 passed (19.4s)                                                           0
+pnpm test:mutation                      Final mutation score of 89.02 is greater than or equal to break threshold 70  0
+scripts/ci/check-suppressions.sh        [check-suppressions] OK: no new suppressions
+scripts/ci/check-config-change.sh       [check-config-change] OK: no protected config changed
+scripts/ci/check-feat-commits.sh        [check-feat-commits] OK: no feat commit touches tests
+scripts/ci/check-ac-coverage.sh         [check-ac-coverage] OK: every criterion of a shipped section has a test
+scripts/ci/check-spec-sections.sh       [check-spec-sections] OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11
+scripts/ci/check-features-map.sh        [check-features-map] OK
+scripts/ci/check-backlog.sh             [check-backlog] OK: README matches the cards
+scripts/hook-smoke.sh                   hook-smoke: 221 probes OK
+bash -n scripts/*.sh scripts/metrics/*  exit 0
+scripts/verify-red.sh B1.16             ::error::no 'test(<pkg>): B1.16 … (red)' commit  (expected: plan says no marker, as B1.12–B1.15)
+red  (25f66fe smoke, no scripts/metrics) [metrics-smoke] 0 ok, 10 FAIL
+green (HEAD smoke)                      [metrics-smoke] 10 ok, 0 FAIL                                               0
+25f66fe smoke vs HEAD scripts           [metrics-smoke] 9 ok, 1 FAIL (M5: BSD grep usage error; printed line was the expected one)
+scripts/metrics/lead-time.sh            median 35 min (0.6 h) over 14 cards; n/a: B1.1   (15 rows; range 15–396)    0
+scripts/metrics/change-failure-rate.sh  change failure rate 1/15 = 6.7 %   (B1.13 #46 repaired_by #50)              0
+gh pr view 46/50 files, intersection    scripts/CLAUDE.md scripts/prune-smoke.sh scripts/worktree-prune.sh (docs row accurate)
+git diff --stat main...HEAD             7 files changed, 564 insertions(+), 36 deletions(-)
+```
+
+### Checklist
+
+| Check                                         | Result                                                                                                                                                                                                                                                                                                                                                                                                |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every Acceptance item has a probe matching it | pass with a gap: M1–M10 match the plan's rules; [2] and [3] below are rules the plan states that no probe pins                                                                                                                                                                                                                                                                                        |
+| no test weakened after red                    | pass: `git diff 25f66fe..HEAD -- scripts/metrics-smoke.sh` is one line (`grep -qx` → `grep -qx --`), in its own `test(scripts)` commit before `feat`. Confirmed necessary: the 25f66fe smoke against the HEAD scripts fails M5 on grep usage while printing the expected line verbatim. Expected strings unchanged; it makes M5 passable, not looser. Acceptable deviation, stated in the commit body |
+| every changed file is in `plan.md`            | pass: the seven files are the plan's Files table                                                                                                                                                                                                                                                                                                                                                      |
+| interfaces match the plan                     | pass: both usage lines, TSV headers and last-line formats are the pinned ones; the shim whitelists the exact `gh` strings and denied nothing                                                                                                                                                                                                                                                          |
+| Zod / Prisma / raw SQL / migration            | n/a: no `src/`, no `prisma/`                                                                                                                                                                                                                                                                                                                                                                          |
+| no secret, no suppression, no new dependency  | pass: `git` + `gh` (`--jq`) only, as `worktree-prune.sh:149`                                                                                                                                                                                                                                                                                                                                          |
+| features map row                              | n/a: tooling, no section; `scripts/CLAUDE.md` rows added                                                                                                                                                                                                                                                                                                                                              |
+| docs numbers re-derive                        | pass: median 35 (sorted middle pair 35, 35), range 15–396, 1/15 = 6.7 %, #50 shares 3 files with #46                                                                                                                                                                                                                                                                                                  |
+| would a reverted line fail a probe            | partly: 19 single-line mutants on the copy. Killed: plan `tail -1`→`head -1`, tick `--first-parent` dropped (M4), `--no-merges` dropped, tick-wins comparison flipped, median lower-middle, round group dropped, `Revert "` dropped, `*.md` filter dropped, window +1 day. Survived: listed under [2], [3] and Notes                                                                                  |
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: scripts/metrics/lead-time.sh:29-33
+    DEFECT: `git log -G` compiles its pattern as an extended regex, so the parens in
+            "Lead approves spec ([^)]*$esc)" are a group, not literals; the pattern matches any
+            "Lead approves spec " line containing the card id as a prefix (B9.2 matches "B9.20)") or
+            with no parens at all, and the comment on line 29 states the opposite.
+    TRIGGER: in the smoke fixture (copy), one extra commit on main before the branches are cut:
+            spec/t.md "- [x] Lead approves spec (lead, d, B9.20)" at T0-500. B9.2's own tick (T0+600)
+            is then not the oldest match; the foreign tick is, it loses to the plan commit (T0), and
+            the own tick is ignored. Also confirmed in a scratch repo: pattern for 'B1\.2' lists the
+            commits adding "(lead, d, B1.20)" and "— B1.2 later"; a literal `spec (lead` aborts with
+            "parentheses not balanced" (ERE).
+    WRONG BEHAVIOUR: B9.2 → 30 min instead of 20; the smoke goes 8 ok, 2 FAIL (M2, M5 median).
+            Plan: "the tick by `)`, so B1.1 ≠ B1.10". Today's numbers are unaffected (with `\(…\)`
+            the 15 real rows are byte-identical), but the row says "re-measure after each batch":
+            any epic reaching card 10 (B2.1 vs B2.10–B2.19) in parallel delivery, the regime this
+            metric exists for, over-states the lower card's lead time or turns its n/a into a value.
+    CONFIDENCE: confirmed (ran)
+
+[2] KIND: coverage
+    WHERE: scripts/metrics-smoke.sh:75,82 (M8) vs scripts/metrics/change-failure-rate.sh:35
+    DEFECT: every fixture path under backlog/ and docs/ ends in .md, so the directory half of the
+            "outside *.md, backlog/, docs/, spec/" filter is never exercised.
+    TRIGGER: mutants `(backlog|docs|spec)` → `(backlog|spec)` and → `(docs|spec)` on the copy.
+    WRONG BEHAVIOUR: both mutants pass 10 ok, 0 FAIL; a fix PR sharing only a non-md file under
+            backlog/ (one exists: backlog/work/B1.12/probe.sh) would count as a repair without any
+            probe noticing. M8's header claims "sharing only *.md/backlog/docs → not".
+    CONFIDENCE: confirmed (ran)
+
+[3] KIND: coverage
+    WHERE: scripts/metrics-smoke.sh:80-85 vs scripts/metrics/change-failure-rate.sh:48,53
+    DEFECT: no fixture PR repairs two cards, so "k = distinct repair PRs" is unpinned.
+    TRIGGER: mutant `repair[r]` → `repair[r card]` (counts card/PR pairs) on the copy.
+    WRONG BEHAVIOUR: passes 10 ok, 0 FAIL; one fix PR sharing files with two cards would give
+            2/n instead of the plan's 1/n.
+    CONFIDENCE: confirmed (ran)
+```
+
+### Notes (not blocking)
+
+- Surviving mutants judged acceptable: `r == pr ||` removed (equivalent: the own PR has `merged[r] == merged[pr]`
+  and the window's `<=` already excludes it, so M9 is carried by the window); window `<=`→`<` and `>`→`>=` (no
+  fixture on an exact boundary); tick `head -1`→`tail -1` (one tick per card in the fixture; the plan's "oldest" is
+  unpinned); `-- spec/` dropped; plan-subject `--first-parent` dropped. A probe for the tick's "oldest" would be cheap
+  alongside [1].
+- Card vs plan: the card's Acceptance asks the script to print the approval time and the squash-merge time; the
+  pinned interface prints `approval_sha` and minutes/hours, not timestamps. The lead approved that interface, but
+  the plan's "Deviations" paragraph does not name it. State it in the PR body.
+- `m=$(( (merged - approval) / 60 ))` truncates toward zero, so an approval authored after the merge (amended or
+  rebased commit) gives 0 for −59 s, not ⌊⌋ = −1. Not reachable with today's data.
+- `gh pr list --limit 1000` truncates silently above 1000 merged PRs (55 today); `files` caps at 100 per PR (round 2
+  note); file paths with spaces split. The row already calls the rate an upper bound.
+
+Verdict: back to test-writer (a probe for [1], a foreign `B9.20` tick before branching, then probes for [2] and [3]
+in the same `test(scripts)` commit), then code-writer (escape the parens: `-G"Lead approves spec \([^)]*$esc\)"`
+and fix the line-29 comment).
+
+Riskiest unfalsified: the first-parent walk includes `main`'s history before the branch point, so an older tick or
+`plan approved` subject for the same card reaching `main` before branching (a docs PR, a re-filed card) is taken as
+that card's approval; no probe or real card exercises it, and I could not construct a non-contrived case from today's
+history.
+
+### Dispositions (pass 1, dev-lead)
+
+| #   | Finding                              | Disposition | Evidence                                                                                                         |
+| --- | ------------------------------------ | ----------- | ---------------------------------------------------------------------------------------------------------------- |
+| 1   | `-G` parens group, B9.20 ≠ B9.2      | fix now     | probe M11 red at cb42e66 (2a3f95e: 8 ok, 3 FAIL); `1b4d382` escapes the parens: 11 ok; real rows byte-identical  |
+| 2   | non-.md `backlog/`/`docs/` untested  | fix now     | M12 in 2a3f95e: PRs #207–#209 share only `backlog/…/probe.sh`, `docs/d.sh`, `spec/t.txt` with B9.4 → not counted |
+| 3   | distinct repair PRs not pinned       | fix now     | M13 in 2a3f95e: #210 repairs B9.1 and B9.2, rate 3/5 = 60.0 %                                                    |
+| N1  | timestamps vs `approval_sha`/minutes | PR body     | stated as a deviation in the PR body; the approved interface stands                                              |
+| N2  | negative minutes truncate toward 0   | no change   | a merge before its approval cannot happen on a card's own PR head; no real row is negative                       |
+| N3  | `--limit 1000`, 100 files, spaces    | PR body     | 56 merged PRs today; noted as limits                                                                             |
