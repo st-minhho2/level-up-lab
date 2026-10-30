@@ -185,21 +185,7 @@ _tooling · no §_
 ### B1.15 · `docker compose` reaches the one compose server from every checkout
 
 _tooling · no §_
-**Status: Open** — `docker-compose.yml:3` opens with `services:` and has no top-level `name:`, so the compose
-project is the directory of the checkout it runs from: from `.claude/worktrees/intelligent-rosalind-40022a`,
-`docker compose config` prints `name: intelligent-rosalind-40022a` and `docker compose ps` lists nothing while
-`level-up-lab-postgres-1` (project `level-up-lab`, `0.0.0.0:5433->5432/tcp`) is up. `up -d` from such a checkout
-creates a second project: its Postgres cannot bind 5433 while the main one runs, and starts on an empty volume when
-it does not (observed 2026-10-30: leftover volume `feat-b1-4-mutation-feedback_pgdata`). The advice points there:
-`CLAUDE.md:45` "Run from the worktree you were given" + `:57` "`docker compose up -d`", `scripts/setup-env.sh:31`
-`docker compose up -d`, `scripts/worktree.sh:101` "is Postgres up? docker compose up -d", and
-`.claude/skills/add-migration/SKILL.md:13` "wait for `docker compose ps` to show `healthy`" (never true from a
-worktree). B1.13 (fix PR #46, open) changes only `scripts/worktree-prune.sh`, to run compose with
-`-f "$MAIN/docker-compose.yml"`.
-Plan options, undecided: (a) top-level `name: level-up-lab` in `docker-compose.yml` (config change: needs the lead's
-OK; `.devcontainer/devcontainer.json:4` merges this file, so its project name changes too); (b) keep the file and
-make the advice and scripts name the main checkout's compose file or project (`-f "$MAIN/docker-compose.yml"` or
-`-p level-up-lab`; the skill edit needs `config-change-approved`).
+**Status: Done** — 225c4f6 (#52); docker-compose.yml name: level-up-lab; scripts/compose-smoke.sh 6 of 6 ok (6663614's file: 2 of 6, FAIL C2 C3 C4 C5), read-only, no volume/network/container created; no data volume renamed or dropped; no src/ change, mutation 89.02 % unchanged; red 5bf91da, green be8c673
 
 - **Spec:** none — tooling (`scripts/CLAUDE.md` row "`worktree.sh <branch> [base]` … compose PostgreSQL (optional)");
   no `src/` change, no section
@@ -212,4 +198,4 @@ make the advice and scripts name the main checkout's compose file or project (`-
   a compose command (`CLAUDE.md`, `README.md`, `scripts/setup-env.sh`, `scripts/worktree.sh`, the `add-migration`
   skill) reaches the same project; the devcontainer still starts its Postgres; no data volume is renamed or dropped
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.15/`
+- **Work:** `work/B1.15/` — plan (rounds 1/1, option (a)), review (plan rounds 2, cap reached, round-2 fixes accepted by the lead; diff pass 1/3, 0 findings); squash `225c4f6` (#52)
