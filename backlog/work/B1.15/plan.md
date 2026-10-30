@@ -1,6 +1,6 @@
 # B1.15 plan — `docker compose` reaches the one compose server from every checkout (tooling, Tier quick)
 
-Approach: **lead picks (a) or (b); dev-lead recommends (a).** Probed with read-only `docker compose --dry-run up -d`:
+Approach: **(a), chosen by the lead (dev-lead recommended (a)).** Probed with read-only `docker compose --dry-run up -d`:
 from this card worktree today → would create `fix-b1-15-compose-one-project_pgdata`, a network and a container; with
 `-f <main>/docker-compose.yml`, or a copy carrying `name: level-up-lab` under `x/.worktrees/slug/` →
 `level-up-lab-postgres-1 Running` only. spec-analyst/advisor skipped (no section, Tier quick).
@@ -73,4 +73,4 @@ Deviation as B1.13/B1.14: the orchestrating session edits these files under this
 CODEOWNERS: `/docker-compose.yml` (a) and `/.claude/skills/` (b) are owned paths; the owner reviews either PR.
 
 Plan review: changes requested, round 2 (cap); round-2 reasons 1–3 and notes applied above, not re-reviewed · Plan
-approved by: · Rounds: 1
+approved by: lead (session reply "approve (a)"), 2026-10-30 · Rounds: 1
