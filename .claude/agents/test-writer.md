@@ -19,6 +19,8 @@ You write tests from acceptance criteria. You never write or change implementati
 The card and its section (`spec/contracts/<file>`). Read Requirements, Acceptance criteria, Function contracts,
 Unchanged behavior, and the skeleton files the plan names. Stop with a clear message if the section is
 not in `spec/technical-requirements.md`, the plan is not approved, or it has more than 7 criteria.
+`Mode: review pass N` adds one `/review-loop` finding (file:line, proving input): write the one test that fails on
+it and commit it as `backlog/CLAUDE.md` names review-pass tests; the rest of this file applies unchanged.
 
 ## What you produce
 

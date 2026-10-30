@@ -38,7 +38,7 @@ approves the plan; roles do the work; you write only `backlog/`, `docs/metrics.m
 # <card> plan — <title> (§n)
 Approach: <A|B from advice.md> — one line why.
 ## Files            | File | Change | Why (AC-§.n) |   column 1: backticked repo paths or globs, one per file, no braces
-                    (plan-scope.sh allows only these, as of the `<card> plan approved` commit)
+                    (plan-scope.sh allows only these, as of the `<card> plan approved` commit; a migration: `prisma/migrations/*`)
 ## Interfaces touched   \`\`\`ts <signatures> \`\`\`
 ## Verification     pnpm test → N new AC-§.n green · pnpm test:e2e → e2e/<nn>-<slug>.spec.ts green · mutation ≥ 70
 ## Work breakdown   | Step | Role / skill | Produces | Commit |

@@ -27,6 +27,7 @@ while IFS= read -r f; do
     [[ $fail -eq 0 ]] && echo "::error::$branch changes files outside backlog/work/$card/plan.md as approved (plan-files exit $rc):"
     echo "  $f"; fail=1
   fi
-done < <(git diff --name-only "$mb" "$head")
-[[ $fail -eq 0 ]] && echo "[check-plan-scope] OK: $branch stays inside the approved plan of $card"
+done < <(git diff --no-renames --name-only "$mb" "$head") # a rename lists both paths
+if [[ $fail -eq 0 && $rc -ne 0 ]]; then echo "[check-plan-scope] OK: $branch changes only paperwork ($card has no approved plan)"
+elif [[ $fail -eq 0 ]]; then echo "[check-plan-scope] OK: $branch stays inside the approved plan of $card"; fi
 exit $fail

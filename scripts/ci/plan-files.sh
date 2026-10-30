@@ -9,8 +9,11 @@ set -uo pipefail
 card="${1:-}"; rev="${2:-HEAD}"
 [[ "$card" =~ ^B[0-9]+\.[0-9]+$ ]] || { echo "usage: scripts/ci/plan-files.sh <card> [<rev>]" >&2; exit 1; }
 esc="${card//./\\.}"
-sha="$(git log --first-parent -E -1 --format=%H \
-  --grep="^docs\(backlog\): $esc plan (round [0-9]+ )?approved" "$rev" 2>/dev/null)"
+re="^docs\(backlog\): $esc plan (round [0-9]+ )?approved"
+sha="" # subjects only: --grep would also match a body line that quotes the phrase
+while read -r h subject; do
+  [[ "$subject" =~ $re ]] && { sha="$h"; break; }
+done < <(git log --first-parent --format='%H %s' "$rev" 2>/dev/null)
 [[ -n "$sha" ]] || exit 3
 plan="backlog/work/$card/plan.md"
 git cat-file -e "$sha:$plan" 2>/dev/null || exit 4
