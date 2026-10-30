@@ -215,3 +215,35 @@ create nothing, no denial → ok. `2 of 6 ok, FAIL: C2 C3 C4 C5; exit 1` is corr
 - CODEOWNERS (round 1) still unstated; the PR body can name it next to the label.
 
 Verdict: changes requested
+
+## Red and green evidence
+
+Run in the card worktree. Red at `5bf91da` (`test(scripts): B1.15 compose smoke`) on the unchanged
+`docker-compose.yml` (= `6663614`; same result with `scripts/compose-smoke.sh "$TMPDIR/compose-main.yml"`), exit 1:
+
+```text
+ok   C1 main checkout: reaches level-up-lab-postgres-1, up -d creates nothing
+FAIL C2 M worktree: reaches level-up-lab-postgres-1, up -d creates nothing: ps -q postgres is not level-up-lab-postgres-1; dry-run does not show level-up-lab-postgres-1 Running; dry-run creates or recreates
+FAIL C3 A app checkout: reaches level-up-lab-postgres-1, up -d creates nothing: ps -q postgres is not level-up-lab-postgres-1; dry-run does not show level-up-lab-postgres-1 Running; dry-run creates or recreates
+FAIL C4 N worktree: reaches level-up-lab-postgres-1, up -d creates nothing: ps -q postgres is not level-up-lab-postgres-1; dry-run does not show level-up-lab-postgres-1 Running; dry-run creates or recreates
+FAIL C5 devcontainer overlay from N: shares level-up-lab-postgres-1, no postgres or pgdata created: dry-run does not show level-up-lab-postgres-1 Running or Healthy; dry-run creates or recreates postgres or pgdata
+ok   C6 nothing created; no shim denial
+[compose-smoke] 2 of 6 ok, FAIL: C2 C3 C4 C5
+```
+
+Green at `be8c673` (`fix(compose): B1.15 one compose project from every checkout`), exit 0:
+
+```text
+ok   C1 main checkout: reaches level-up-lab-postgres-1, up -d creates nothing
+ok   C2 M worktree: reaches level-up-lab-postgres-1, up -d creates nothing
+ok   C3 A app checkout: reaches level-up-lab-postgres-1, up -d creates nothing
+ok   C4 N worktree: reaches level-up-lab-postgres-1, up -d creates nothing
+ok   C5 devcontainer overlay from N: shares level-up-lab-postgres-1, no postgres or pgdata created
+ok   C6 nothing created; no shim denial
+[compose-smoke] 6 of 6 ok, 0 FAIL
+```
+
+`git diff --stat 5bf91da..be8c673` touches only `docker-compose.yml` (+3) and `scripts/CLAUDE.md` (+1), no smoke line.
+`docker compose config` in the card worktree now prints `name: level-up-lab` and `docker compose ps` lists
+`level-up-lab-postgres-1`. `bash -n scripts/*.sh` exit 0; `hook-smoke: 221 probes OK`; `[check-backlog] OK`;
+`[prune-smoke] 15 of 15 ok, 0 FAIL`.
