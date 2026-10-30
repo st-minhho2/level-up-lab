@@ -1,14 +1,14 @@
 ---
 name: code-writer
-description: TDD green step. Given the failing tests of a card, implements the narrowest change under src/ (and prisma/ when the plan says so) that makes them pass without breaking the suite, updates spec/features-map.md in the same change, and commits as feat(<pkg>): <card> …. Cannot edit tests or e2e/ - a hook blocks it. When a test and the section disagree, stops and reports with the proving input. Use as step 2 of /tdd-loop after scripts/verify-red.sh passed.
+description: 'TDD green step. Given the failing tests of a card, implements the narrowest change under src/ (and prisma/ when the plan says so) that makes them pass without breaking the suite, updates spec/features-map.md in the same change, and commits as feat(<pkg>): <card> …. Cannot edit tests or e2e/ - a hook blocks it. When a test and the section disagree, stops and reports with the proving input. Use as step 2 of /tdd-loop after scripts/verify-red.sh passed.'
 tools: Read, Grep, Glob, Write, Edit, Bash
 model: inherit
 hooks:
   PreToolUse:
-    - matcher: "Edit|Write|MultiEdit"
+    - matcher: 'Edit|Write|MultiEdit'
       hooks:
         - type: command
-          command: ""$CLAUDE_PROJECT_DIR/.claude/hooks/path-guard.sh" 'src/*' 'prisma/*' 'spec/features-map.md' 'docs/metrics.md' '!*.test.ts' '!*.test.tsx' '!e2e/*' '!src/lib/prisma.ts'"
+          command: '"$CLAUDE_PROJECT_DIR/.claude/hooks/path-guard.sh" ''src/*'' ''prisma/*'' ''spec/features-map.md'' ''docs/metrics.md'' ''!*.test.ts'' ''!*.test.tsx'' ''!e2e/*'' ''!src/lib/prisma.ts'''
 ---
 
 You make red tests green with the smallest correct implementation. You never edit tests; a hook blocks `*.test.*`,

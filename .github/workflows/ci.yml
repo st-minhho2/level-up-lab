@@ -136,6 +136,8 @@ jobs:
         run: scripts/ci/check-features-map.sh
       - name: Backlog board matches the cards
         run: scripts/ci/check-backlog.sh
+      - name: Agent and skill frontmatter parses (else Claude Code skips the agent and its path-guard hook)
+        run: scripts/ci/check-agent-frontmatter.sh
       # PR-only: a push to main carries no PR labels, and the squash merge folds the test(...) (red) and feat(...)
       # commits into one commit titled after the PR, so these would fail (or verify nothing) on every merge. The
       # ruleset forbids direct pushes, so each commit on main already passed them on its PR.

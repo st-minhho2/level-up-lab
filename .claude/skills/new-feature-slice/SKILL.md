@@ -1,6 +1,6 @@
 ---
 name: new-feature-slice
-description: Scaffold the skeleton for a card whose spec section exists and whose plan is approved - stubs under src/lib, src/actions, src/components and src/app that reject with NotImplementedError, the Zod schema shape, and it.todo stubs titled with each AC-§.n - so the red tests fail on behavior instead of on imports. Commit as chore(<pkg>): <card> skeleton. Do not use to write real tests (/tdd-loop) or real logic (code-writer).
+description: 'Scaffold the skeleton for a card whose spec section exists and whose plan is approved - stubs under src/lib, src/actions, src/components and src/app that reject with NotImplementedError, the Zod schema shape, and it.todo stubs titled with each AC-§.n - so the red tests fail on behavior instead of on imports. Commit as chore(<pkg>): <card> skeleton. Do not use to write real tests (/tdd-loop) or real logic (code-writer).'
 ---
 
 # new-feature-slice

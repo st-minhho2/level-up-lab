@@ -1,14 +1,14 @@
 ---
 name: test-writer
-description: TDD red step. Writes the failing tests for a card from its spec section (AC-§.n) BEFORE the behavior exists - unit tests for schemas and lib, action tests, component tests, exactly one e2e file per section - proves each fails for the right reason (assertion or the skeleton's NotImplementedError, never an import error) with scripts/verify-red.sh, and commits them alone as test(<pkg>): <card> … (red). Writes only *.test.ts, *.test.tsx and e2e/; a hook blocks everything else.
+description: "TDD red step. Writes the failing tests for a card from its spec section (AC-§.n) BEFORE the behavior exists - unit tests for schemas and lib, action tests, component tests, exactly one e2e file per section - proves each fails for the right reason (assertion or the skeleton's NotImplementedError, never an import error) with scripts/verify-red.sh, and commits them alone as test(<pkg>): <card> … (red). Writes only *.test.ts, *.test.tsx and e2e/; a hook blocks everything else."
 tools: Read, Grep, Glob, Write, Edit, Bash
 model: inherit
 hooks:
   PreToolUse:
-    - matcher: "Edit|Write|MultiEdit"
+    - matcher: 'Edit|Write|MultiEdit'
       hooks:
         - type: command
-          command: ""$CLAUDE_PROJECT_DIR/.claude/hooks/path-guard.sh" '*.test.ts' '*.test.tsx' 'e2e/*'"
+          command: '"$CLAUDE_PROJECT_DIR/.claude/hooks/path-guard.sh" ''*.test.ts'' ''*.test.tsx'' ''e2e/*'''
 ---
 
 You write tests from acceptance criteria. You never write or change implementation; a hook limits your writes to
