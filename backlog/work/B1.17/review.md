@@ -238,3 +238,148 @@ may accept them applied without a round 3, otherwise round 3 is "Waiting on huma
 Riskiest unfalsified: that Claude Code sends `agent_type` = `test-writer` in a Task subagent's PreToolUse input and
 omits it on the main thread ([unverified] until after merge); if it is absent for subagents, S7 never holds live and
 every red step is refused.
+
+## Diff review (pass 1)
+
+SCOPE: none of lib | actions | ui (tooling: `.claude/`, `scripts/`, `.github/`); checklist adapted as in B1.12–B1.16.
+Reviewed `git diff 986f925..393aa38` (17 files, +572 −54). Nothing in the worktree edited; probes ran on clones
+under the session scratchpad (`probe1`, `ci2`, `rv/`).
+
+### Command results (last line each)
+
+| Command                                         | Result                                                                                                                                                                          |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint` · `pnpm typecheck`                  | `All matched files use Prettier code style!` · `tsc --noEmit` exit 0                                                                                                            |
+| `pnpm test`                                     | `Tests  115 passed (115)`                                                                                                                                                       |
+| `pnpm test:e2e`                                 | `13 passed (19.3s)`                                                                                                                                                             |
+| `pnpm test:mutation`                            | `Final mutation score of 89.02 is greater than or equal to break threshold 70` (no `src/` change)                                                                               |
+| `scripts/hook-smoke.sh` (HEAD)                  | `hook-smoke: 281 probes OK` (222 pre-existing incl. the new `wired plan-scope.sh` row + 54 plan-scope + 5 guard)                                                                |
+| `scripts/hook-smoke.sh` at `b7fc272` (copy)     | `hook-smoke: FAILURES above`: 221 ok, 59 FAIL, all 59 with exit 127 (red as the plan states)                                                                                    |
+| check-suppressions · feat-commits · ac-coverage | OK · OK · OK                                                                                                                                                                    |
+| spec-sections · features-map · backlog          | OK · OK · OK                                                                                                                                                                    |
+| `check-agent-frontmatter.sh`                    | `OK: 13 files`                                                                                                                                                                  |
+| `check-config-change.sh`                        | exit 1, 13 protected files without `config-change-approved` (expected: human label, stated in the plan)                                                                         |
+| `check-plan-scope.sh` (this branch)             | `OK: feat/B1.17-plan-scope-hook stays inside the approved plan of B1.17`                                                                                                        |
+| same, CI shape (copy `ci2`)                     | HEAD = synthetic merge ref (parents `986f925`, `393aa38`), `GITHUB_HEAD_REF`, `GITHUB_BASE_REF=main`, `HEAD_SHA=393aa38` → OK; also OK in `node:24-bookworm` (git 2.39.5, mawk) |
+| `verify-red.sh B1.17`                           | exit 1 "no `test(<pkg>): B1.17 … (red)` commit" — vitest-only gate, n/a for hook probes (B1.16 precedent); `--auto` → "nothing to verify" (CI passes)                           |
+| `bash -n` hooks + `scripts/ci/*.sh`             | OK (bash 3.2.57 here, 5.2.15 in the CI image)                                                                                                                                   |
+
+### Checklist
+
+| Check                                | Result                                                                                                                                                                                                                                           |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every changed file in `plan.md`      | pass: 17 of 17 (`plan-files.sh B1.17 393aa38` prints the same 17 tokens on macOS and in the CI image)                                                                                                                                            |
+| interfaces match the plan            | pass for the hook, `repo_rel`, the guard's range and `HEAD_SHA`; **deviation**: `plan-files.sh` matches the approval pattern on any message line, the plan says "subject" (finding 2)                                                            |
+| no test weakened after red           | pass: `git diff b7fc272..HEAD -- scripts/hook-smoke.sh` empty                                                                                                                                                                                    |
+| `repo_rel` refactor keeps path-guard | pass: block messages byte-identical; mutants below (9 on `repo_rel`/`path-guard.sh`: 8 killed by the 221 old probes; M4 survives on old code too: drops "worktree top inside the project", only reachable when the project dir is below the top) |
+| pipeline writes                      | pass (traced, hook run against this branch with both project dirs): plan.md/review.md/map/metrics are paperwork; prettier/eslint PostToolUse rewrites only the allowed file; `mark-reviewed.sh`, `worktree.sh`, `pnpm db:migrate` write by Bash  |
+| CI-only behavior                     | pass with `HEAD_SHA` set (the job sets it). Without it the merge ref's first parent is main → `plan-files` exit 3 → every non-paperwork file reported; worth a comment in the script, not blocking                                               |
+| no secret, no suppression            | pass                                                                                                                                                                                                                                             |
+| features map / spec                  | n/a (no section)                                                                                                                                                                                                                                 |
+
+### Mutants (copy `probe1`, `scripts/hook-smoke.sh` per mutant)
+
+| Id  | Mutant                                                                       | Result                                     |
+| --- | ---------------------------------------------------------------------------- | ------------------------------------------ |
+| M1  | `repo_rel`: drop the `..`-through-a-new-dir check                            | killed (8)                                 |
+| M2  | `repo_rel`: outside the project returns 0                                    | killed (3)                                 |
+| M3  | `repo_rel`: drop "same common dir"                                           | killed (1, nested clone)                   |
+| M4  | `repo_rel`: drop "top inside the project"                                    | survived (same on old code; see checklist) |
+| M5  | `repo_rel`: drop `.claude/worktrees/*/` strip                                | killed (12)                                |
+| M6  | `repo_rel`: REL from ROOT_REAL instead of TOP                                | killed (37)                                |
+| M7  | `repo_rel`: no `pwd -P` canonicalization                                     | killed (87)                                |
+| M8  | `path-guard.sh`: return 1 → exit 0                                           | killed (8)                                 |
+| M9  | `repo_rel`: drop `.worktrees/*/` strip                                       | killed (12)                                |
+| P1  | hook: `docs/metrics.md` not paperwork                                        | killed (4)                                 |
+| P2  | hook: no test-writer check                                                   | killed (8)                                 |
+| P3  | branch regex `(-\|$)` → `-`                                                  | killed (1)                                 |
+| P4  | `plan-files`: no `round N` re-approval                                       | killed (1)                                 |
+| P5  | `plan-files`: drop `--first-parent`                                          | survived (note)                            |
+| P6  | `plan-files`: drop `-1` (all approvals)                                      | killed (1)                                 |
+| P7  | guard: `git diff "$base" "$head"` (two-dot from main's tip) instead of `$mb` | **survived** (finding 3)                   |
+| P8  | guard: no paperwork filter                                                   | killed (3)                                 |
+| P9  | hook: no migration rule                                                      | **survived** (finding 3)                   |
+| P10 | hook: no `[[ -n $TOP ]]` exit                                                | survived (note)                            |
+| P11 | `plan-files`: every backticked token of the row, not column 1                | survived (note)                            |
+| P12 | `plan-files`: any `## ` heading counts as Files                              | killed (4)                                 |
+| P13 | guard: branch regex `(-\|$)` → `-)` (broken)                                 | killed (5)                                 |
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: scripts/ci/check-plan-scope.sh:30 (git diff --name-only "$mb" "$head")
+    DEFECT: rename detection (git's default) lists only a renamed file's new path, so the deletion of the old path is
+            never checked against the plan or the paperwork list.
+    TRIGGER: card branch feat/B9.7-x, no plan at all, `git mv e2e/05-todos.spec.ts backlog/old.spec.ts` committed;
+             or feat/B9.1-x whose approved plan lists only src/lib/a.ts, `git mv src/lib/todos.ts src/lib/a.ts`.
+    WRONG BEHAVIOUR: guard prints "OK … stays inside the approved plan" and exits 0 (ran both, macOS git and the
+            node:24-bookworm image); the plan says the guard checks "files of git diff … by the same rule" and catches
+            Bash writes not in the plan, so the deleted e2e/05-todos.spec.ts / src/lib/todos.ts must be reported.
+            `git diff --no-renames --name-only` lists both paths. Probe first (C6), then the one-flag fix.
+    CONFIDENCE: confirmed (scratch scripts rv/rename.sh, rv/ren-paper.sh)
+
+[2] KIND: plan-mismatch
+    WHERE: scripts/ci/plan-files.sh:12-13 (git log -E --grep="^docs\(backlog\): $esc plan (round [0-9]+ )?approved")
+    DEFECT: `--grep` with `^` matches any line of the commit message, not only the subject the plan names.
+    TRIGGER: commit "docs(backlog): B9.8 plan revised" whose body has a line "docs(backlog): B9.8 plan approved comes
+             next" → plan-files.sh B9.8 returns 4 (approval commit found), not 3.
+    WRONG BEHAVIOUR: a plan revision whose body quotes the approval subject counts as the approval, so the hook (S4)
+            and the guard let unapproved Files rows through. No commit in `git log --all` does this today.
+    CONFIDENCE: confirmed (ran on a scratch repo; impact needs a body line that starts with the subject)
+
+[3] KIND: coverage
+    WHERE: scripts/hook-smoke.sh C4 and S10 (rules at check-plan-scope.sh:18,30 and plan-scope.sh:24-26)
+    DEFECT: two rules the plan relies on are not pinned by any probe: the guard's merge-base range (P7) and the
+            migration rule (P9) both survive mutation with 281 probes OK.
+    TRIGGER: P7 — replace "$mb" by "$base" in the guard: C4 still exits 0, because after `merge origin/main` the
+             two-dot diff equals the merge-base diff. P9 — delete the prisma/migrations/* block: S10 still exits 2,
+             because the fixture plan does not list the migration, so the "not in Files" rule refuses it.
+    WRONG BEHAVIOUR: a regression to two-dot (round-1 reason 7: main moves after the branch's last merge → main's
+            new files reported as outside the plan) or the loss of "never by Edit/Write" for a plan that lists
+            `prisma/migrations/*` ships green. Probes needed: C6 main advances with a src/ file after the cut, branch
+            does not merge → 0; S10 with the migration path listed in the fixture plan → 2.
+    CONFIDENCE: confirmed (mutants run on the probe1 copy)
+```
+
+Notes (not blocking):
+
+- Plan Verification says "221 + 60 + 5"; actual 222 + 54 + 5 = 281 (S1–S15 = 11 × 4 layouts + 10; the extra
+  pre-existing row is the wiring probe for the new hook). The test commit body states 59 correctly.
+- The guard's OK line says "stays inside the approved plan" also when `plan-files` exited 3/4 and only paperwork
+  changed (C3); "only paperwork changed" would be accurate.
+- `review-loop` step 3 now sends the review-pass test to `test-writer` "with `Mode: red`" and keeps the `(red)` subject;
+  `backlog/CLAUDE.md` says hardening commits carry no `(red)` marker, and `test-writer.md` has no review-pass input
+  (it asks for one test per AC and `verify-red.sh` exit 0). Pre-existing wording conflict, now routed through a role
+  that follows the AC procedure.
+- Migrations: CI requires the generated `prisma/migrations/<timestamp>_<name>/migration.sql` in Files, but neither
+  `dev-lead.md` nor `add-migration` says to list it as a glob; the first migration card learns it from a CI failure.
+- Case-insensitive APFS: `pwd -P` canonicalizes directories, not the file name, so a `src/lib/*` glob plus a write
+  to `src/lib/a.TEST.ts` (same file as `a.test.ts`) skips the test-writer rule. Needs a glob row; path-guard has the
+  same gap.
+
+- Mutant survivors without a finding: P5 (`--first-parent`) only differs when a merged-in branch has its own
+  approval commit for the same card; P10 (no-git fallback) is reachable only in a project dir without git; P11
+  (column 1 only) survives because the fixture's column 2 has no backticks.
+
+Verdict: back to test-writer. Red probes first, then the fixes: finding 1, a rename of an unlisted file (and one into
+`backlog/`) → 1, fixed by `--no-renames`; finding 2, an approval line in a commit body only → 2, fixed by matching the
+subject only (e.g. `git log --format='%H %s'` piped to `grep -E`); finding 3, the two probes named there (they pass
+today; they pin the rules).
+
+Riskiest unfalsified: `agent_type` = `test-writer` in a Task subagent's PreToolUse input and absent on the main
+thread ([unverified] until after merge; S7–S9 pass on a synthetic payload only).
+
+### Dispositions (pass 1, dev-lead)
+
+| #   | Finding                                          | Disposition   | Evidence                                                                                                  |
+| --- | ------------------------------------------------ | ------------- | --------------------------------------------------------------------------------------------------------- |
+| 1   | rename hides the deleted path                    | fix now       | C7 red at 393aa38 (exit 0); `487fe2a` `--no-renames`: C7 exit 1                                           |
+| 2   | `--grep` matches a body line                     | fix now       | C8 red at 393aa38 (exit 0); `487fe2a` subjects only: exit 3                                               |
+| 3   | merge-base range and migration rule unpinned     | fix now       | C6 (main moved on, not merged) and S10 with `prisma/migrations/*` listed, in `9e4b64a`; hook-smoke 284 OK |
+| N   | probe count "221 + 60 + 5" in the plan           | PR body       | real: 222 (221 + wiring row) + 54 + 8 = 284 after pass 1                                                  |
+| N   | OK line claims a plan when there is none         | fix now       | `487fe2a`: "changes only paperwork (<card> has no approved plan)"                                         |
+| N   | review-pass tests: wording and test-writer input | fix now       | `487fe2a`: `test-writer.md` "Mode: review pass N"; commit shape stays `backlog/CLAUDE.md`'s               |
+| N   | how to list migrations                           | fix now       | `487fe2a`: dev-lead plan template names `prisma/migrations/*`                                             |
+| N   | `a.TEST.ts` on case-insensitive APFS             | out of scope  | same gap in path-guard.sh; follow-up note in the PR body                                                  |
+| N   | `claude --agent test-writer` main session        | fix now (doc) | `487fe2a`: known limit in `.claude/docs/hooks.md`                                                         |
