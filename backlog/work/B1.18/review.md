@@ -338,3 +338,119 @@ This is round 2, the cap (dev-lead Loop 4: ≤ 2 review rounds, then Waiting on 
 these seven are revised before the gate or accepted as stated costs, as with B1.17's round 2. Items 1, 2 and 4
 change what gets built. Items 3, 5, 6 and 7 can be one clause or one probe each. One card, not a split (seam above).
 This verdict is a plan review. It does not approve the plan for the lead's gate or for build.
+
+## Diff review (pass 1)
+
+Range `513859e..06212fd` (test `1e16ba4`, feat `06212fd`). Scope: tooling (scripts, agents, backlog docs); no `src/`,
+`prisma/`, `e2e/` change.
+
+### Commands (run by the reviewer at HEAD; last line of each)
+
+| Command                                                                                                          | Result                                                                                         |
+| ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `pnpm lint` / `pnpm typecheck`                                                                                   | `All matched files use Prettier code style!` / `tsc --noEmit` clean                            |
+| `pnpm test`                                                                                                      | `Tests  115 passed (115)`                                                                      |
+| `pnpm test:e2e`                                                                                                  | `13 passed (19.9s)`                                                                            |
+| `pnpm test:mutation`                                                                                             | `Final mutation score of 89.02 is greater than or equal to break threshold 70`                 |
+| `scripts/next-task-smoke.sh` (bash 5 and `/bin/bash` 3.2)                                                        | `[next-task-smoke] 16 ok, 0 FAIL` both                                                         |
+| red, reproduced on a copy of `1e16ba4`                                                                           | `[next-task-smoke] 1 ok, 15 FAIL` (matches the commit body)                                    |
+| `scripts/hook-smoke.sh`                                                                                          | `hook-smoke: 284 probes OK`                                                                    |
+| `check-suppressions` · `check-feat-commits` · `check-ac-coverage` · `check-spec-sections` · `check-features-map` | OK ×5                                                                                          |
+| `check-backlog` · `check-plan-scope` · `check-agent-frontmatter`                                                 | OK · `stays inside the approved plan of B1.18` · `OK: 13 files`                                |
+| `check-config-change.sh`                                                                                         | exit 1: 6 protected files, label `config-change-approved` missing (expected; the lead's label) |
+| `scripts/verify-red.sh B1.18`                                                                                    | n/a: no `(red)` marker; tooling red proven by the smoke instead (row above)                    |
+| `bash -n scripts/*.sh scripts/ci/*.sh`                                                                           | clean                                                                                          |
+| `git diff 1e16ba4..HEAD -- scripts/next-task-smoke.sh`                                                           | empty (no test touched after red)                                                              |
+
+### Checklist
+
+| Check                                               | Result                                                                                                                                                                                                                                                                                                |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every acceptance item has a probe asserting it      | pass, except the gaps in [3]                                                                                                                                                                                                                                                                          |
+| no test weakened after the red commit               | pass: smoke unchanged since `1e16ba4`                                                                                                                                                                                                                                                                 |
+| every changed file in `plan.md` Files               | pass: 12/12                                                                                                                                                                                                                                                                                           |
+| interfaces match the plan                           | pass: pick, `--claim`, `--check`, `--list` BOARD, `plan-files.sh --any` exit 4                                                                                                                                                                                                                        |
+| eligibility rules kept from the old script          | pass (probed: blocked, owner Human, no `Spec:` line skipped; lowest step among eligible picked). Changes: read from `origin/main` not the working tree; `--list` STATUS is the card status, not the README column; equal steps now tie-break on the whole line, not README order (steps unique today) |
+| `set -euo pipefail` abort paths                     | pass (probed): no origin remote, `gh` absent from PATH, `gh` failing, empty Remaining, detached HEAD `--claim`; the `for … [[ ]] && …` in claim does not abort (W15 asserts the message)                                                                                                              |
+| Partial no longer pickable                          | accepted: matches backlog/CLAUDE.md "Closing" step 4 (Partial = merged); the old script would re-pick a merged card. 0 Partial cards in history. Cost stated in the plan: a Partial card's new branch is Closing, so it is not counted toward WIP, `--claim` returns 0 and `--check` skips it         |
+| `gh` order assumption (`pr_of` takes the first row) | pass: `gh pr list --state all` returns newest first (#62, #61, #60 …); 62 PRs, under `--limit 300`                                                                                                                                                                                                    |
+| no secret, no suppression, no `src/`                | pass                                                                                                                                                                                                                                                                                                  |
+| one-line revert probes (22 mutants on a copy)       | 15 killed; 7 survive, see [3]                                                                                                                                                                                                                                                                         |
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: scripts/next-task.sh:130
+    DEFECT: `--check` compares tokens only as glob patterns, so two identical paths that contain glob metacharacters
+            never collide.
+    TRIGGER: B9.5 (Doing) and B9.4 both plan `src/app/[id]/page.tsx`; `scripts/next-task.sh --check B9.4` from
+             B9.4's worktree.
+    WRONG BEHAVIOUR: exit 0 "B9.4: no overlap with any Doing or Review card". The plan says "two tokens collide when
+            equal". `[id]` is a bracket expression matching one character, so neither `"$a" == $t` nor `"$t" == $a`
+            matches the literal. No bracketed path exists in history today. A dynamic App Router segment is the
+            usual way to add a per-todo route, so the first one passes silently. Fix: test `"$a" == "$t"` first.
+    CONFIDENCE: confirmed (ran on a throwaway repo: rc=0, "no overlap")
+
+[2] KIND: plan-mismatch
+    WHERE: .claude/skills/work-next/SKILL.md:15-19, .claude/agents/dev-lead.md:30-32
+    DEFECT: a resumed card cannot pass the Entry, because `--claim` run from the session checkout treats the card's
+            own worktree branch as "another checkout".
+    TRIGGER: on this repo, from the session checkout `.claude/worktrees/lucid-bhabha-457da6` (branch
+             `docs/B1.18-file-card`), run `.worktrees/feat-b1-18-wip-limit/scripts/next-task.sh --claim B1.18`.
+             This is what `/work-next B1.18` does when resuming. The E2 sessions run from `claude/<name>` checkouts
+             in the same way.
+    WRONG BEHAVIOUR: exit 1 "B1.18 is already held by feat/B1.18-wip-limit; work there or ask the lead". Loop 1 then
+            says "report and stop", which contradicts work-next's "Resuming … continue at the first Loop step whose
+            artifact is missing". Only a claim run from inside the card worktree returns 0 (W10). Fix (docs): a
+            resume skips pick/claim and works in the existing worktree. Alternatively, Loop 1 treats "held by
+            `feat/<card>-…`" as a resume when `backlog/work/<card>/` exists on that branch.
+    CONFIDENCE: confirmed (ran it: rc=1)
+
+[3] KIND: coverage
+    WHERE: scripts/next-task-smoke.sh (probe set W1-W16) against scripts/next-task.sh:103, :121, :66, :124
+    DEFECT: several behaviours the plan names have no probe. A one-line revert of each leaves the smoke at 16 ok.
+    TRIGGER: on a copy, each mutant applied alone, then `scripts/next-task-smoke.sh`:
+             M19 drop `$8 == "eligible" &&` from pick (line 103): 16 ok. Every fixture card is eligible, so the pick
+                 never skips a blocked, Human-owned or contract-less card (the old script's core rule).
+             M14 `--check` considers Doing only, not Review (line 121): 16 ok (plan: "every Doing/Review card").
+             M23 drop the `sort -k1,1n` (line 103): 16 ok (fixture rows are already in step order).
+             M20 Review before Doing when a card has two branches (line 66): 16 ok.
+             M17 drop the `origin/$b` fallback in `--check` (line 124): 16 ok (no probe with a remote-only branch).
+             M6 drop `paper "$t"` (equivalent while `paper "$a"` is kept) and M21 (`GH_OK=0`, equivalent) are
+             not counted.
+    WRONG BEHAVIOUR: a later edit can make the pick choose an ineligible card, or make `--check` ignore Review cards,
+            and the smoke stays green. Add probes: an ineligible lower-step card is skipped (M19, M23 with rows out
+            of step order); `--check` hits a Review card's plan (M14); `--check` reads a branch that exists only on
+            origin (M17); add W17 for [1] before the fix.
+    CONFIDENCE: confirmed (mutation runner on a copy: 15/22 killed, the 5 above survive)
+```
+
+Non-blocking notes:
+
+- `git fetch` has no `GIT_TERMINAL_PROMPT=0`. The remote is HTTPS, so a human terminal with expired credentials gets a
+  prompt; an agent session has no tty, fails fast and warns.
+- Two sessions picking within seconds of each other both get the same card. The plan accepts this: "the branch is
+  the claim".
+- `--check` against a Doing card with no committed plan yet prints "no overlap". The second card to plan sees the
+  first one's plan, so the advisory rule still holds.
+- A card started before its row reaches `origin/main` Remaining is not counted toward WIP and is invisible to
+  `--check`.
+- Calling the script by a relative path from a subdirectory (e.g. `cd scripts && ./next-task.sh --check B1.18`):
+  `HERE` resolves after the `cd` to the top level, so `plan-files.sh` is not found and the script reports "has no
+  plan at HEAD" [traced, not run].
+
+Verdict: back to test-writer (probes for [1] and [3] first, then code-writer for [1] and the docs fix [2])
+
+Riskiest unfalsified: the race in which two parallel E2 sessions pick or claim the same card before either
+`worktree.sh` creates its branch. The design accepts this, and no probe can show the window is small.
+
+### Dispositions (pass 1, dev-lead)
+
+| #   | Finding                                       | Disposition | Evidence                                                                                                                   |
+| --- | --------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------- |
+| 1   | identical bracketed paths never collide       | fix now     | W17 red at 06212fd (rc 0, "no overlap"); fix commit: literal compare first; smoke 21/21                                    |
+| 2   | resume contradicts "claim, report and stop"   | fix now     | fix commit: dev-lead Loop 1 and work-next "Resuming": no pick or claim, existing worktree                                  |
+| 3   | 5 surviving mutants (M14, M17, M19, M20, M23) | fix now     | W18–W21 in `bbc2d44` (fixture rows out of order, B9.6 Human, Review plan, origin-only plan)                                |
+| N   | fetch without `GIT_TERMINAL_PROMPT=0`         | fix now     | fix commit                                                                                                                 |
+| N   | relative `HERE`                               | no change   | `HERE="$(cd "$(dirname "$0")" && pwd)"` runs before any `cd`; the smoke calls it by absolute path and from three worktrees |
