@@ -4,8 +4,8 @@
 #
 # Which worktrees: every <checkout>/.worktrees/<slug> under the main checkout, whatever the checkout (the main one,
 # a .claude/worktrees/<name> app checkout, …) and wherever this runs from. Never the main checkout, an app
-# checkout, or the checkout this runs in. The compose server is always the main checkout's project: from another
-# checkout `docker compose` would name the project after that directory and find no server.
+# checkout, or the checkout this runs in. Compose always runs with the main checkout's file: a checkout whose own
+# docker-compose.yml predates its `name: level-up-lab` (B1.15) or differs would name another project.
 #
 # The base is origin/<base> after `git fetch origin <base>` (the local <base> is never pulled in a worktree session);
 # without an origin remote, the local <base>. PRs are squash-merged, so a merged branch is rarely an ancestor of the
