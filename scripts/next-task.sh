@@ -26,7 +26,7 @@ case "${1:-}" in
 esac
 warn() { echo "[next-task] warning: $*" >&2; }
 
-git fetch -q origin </dev/null 2>/dev/null || warn "git fetch failed; using the last fetched origin/main"
+GIT_TERMINAL_PROMPT=0 git fetch -q origin </dev/null 2>/dev/null || warn "git fetch failed; using the last fetched origin/main"
 BASE=origin/main
 git rev-parse -q --verify "$BASE^{commit}" >/dev/null || { warn "no origin/main; using HEAD"; BASE=HEAD; }
 TMP="$(mktemp -d)"
@@ -127,7 +127,8 @@ case "$MODE" in
           [[ -z "$a" ]] && continue; paper "$a" && continue
           while IFS= read -r t; do
             [[ -z "$t" ]] && continue; paper "$t" && continue
-            if [[ "$a" == $t || "$t" == $a ]]; then echo "[next-task] $a also planned by $other ($state, $t on $b)"; hit=1; fi
+            # literal first: a path with [ ] never glob-matches itself
+            if [[ "$a" == "$t" || "$a" == $t || "$t" == $a ]]; then echo "[next-task] $a also planned by $other ($state, $t on $b)"; hit=1; fi
           done <<< "$theirs"
         done <<< "$mine"
       done

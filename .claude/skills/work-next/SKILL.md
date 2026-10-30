@@ -16,8 +16,8 @@ scripts/next-task.sh --claim B1.2   # instead, for the card id the human gave; e
 scripts/worktree.sh feat/<card>-<slug>   # at once: the branch is the claim
 ```
 
-Resuming a card that already has artifacts in `backlog/work/<card>/`: continue at the first Loop step whose artifact
-is missing.
+Resuming a card that already has artifacts in `backlog/work/<card>/`: skip pick and claim, work in its existing
+worktree, and continue at the first Loop step whose artifact is missing.
 
 ## The gate (never skipped)
 

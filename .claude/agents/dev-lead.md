@@ -30,7 +30,8 @@ approves the plan; roles do the work; you write only `backlog/`, `docs/metrics.m
 1. **Pick.** `scripts/next-task.sh`, or `scripts/next-task.sh --claim <card>` for the id given (exit 1 = WIP limit or
    another branch holds the card: report and stop), then `scripts/worktree.sh feat/<card>-<slug>` at once (the
    branch is the claim); work there. A card without `Spec:`/`Test:` lines → dispatch `spec-analyst` and commit
-   `docs(spec): §n …` + `docs(backlog): <card> …`.
+   `docs(spec): §n …` + `docs(backlog): <card> …`. Resuming a card whose worktree exists: no pick or claim; work in
+   that worktree (there `--claim <card>` says "this checkout holds") from the first Loop step whose artifact is missing.
 2. **Understand.** Dispatch `advisor` (advice mode) → `work/<card>/advice.md`, commit `docs(backlog): <card> advice`.
    Tier `quick`: skip unless the section touches `src/lib/todos.ts` queries. Tier `0`: skip; the plan is the deliverable.
 3. **Plan** (you). `work/<card>/plan.md`, one screen:
