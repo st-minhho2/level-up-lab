@@ -247,3 +247,98 @@ ok   C6 nothing created; no shim denial
 `docker compose config` in the card worktree now prints `name: level-up-lab` and `docker compose ps` lists
 `level-up-lab-postgres-1`. `bash -n scripts/*.sh` exit 0; `hook-smoke: 221 probes OK`; `[check-backlog] OK`;
 `[prune-smoke] 15 of 15 ok, 0 FAIL`.
+
+## Diff review (pass 1)
+
+SCOPE: none of lib | actions | ui (tooling). Diff `6663614..bdc4c10`: `docker-compose.yml` (+3), `scripts/compose-smoke.sh`
+(new), `scripts/CLAUDE.md` (+1 row), `backlog/work/B1.15/{plan,review}.md`. Docker Compose v5.6.1, `/bin/bash` 3.2.57.
+Only read-only Docker ran (`config`, `ps`, `inspect`, `volume ls`, `network ls`, `--dry-run up -d`, all through the
+smoke or directly); `docker volume ls -q`, `network ls -q`, `ps -aq` were identical before and after every run. Variant
+compose files lived in the session scratchpad and were passed as the smoke's argument; the worktree was not edited.
+
+### Command results (last line, exit)
+
+```text
+pnpm lint                          All matched files use Prettier code style!                 0
+pnpm typecheck                     tsc --noEmit                                               0
+pnpm test                          Tests  115 passed (115)                                    0
+pnpm test:e2e                      13 passed (20.5s)                                          0
+pnpm test:mutation                 Final mutation score of 89.02 is greater than or equal to break threshold 70   0
+scripts/ci/check-suppressions.sh   [check-suppressions] OK: no new suppressions
+scripts/ci/check-config-change.sh  [check-config-change] OK: no protected config changed
+scripts/ci/check-feat-commits.sh   [check-feat-commits] OK: no feat commit touches tests
+scripts/ci/check-ac-coverage.sh    [check-ac-coverage] OK: every criterion of a shipped section has a test
+scripts/ci/check-spec-sections.sh  [check-spec-sections] OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11
+scripts/ci/check-features-map.sh   [check-features-map] OK
+scripts/ci/check-backlog.sh        [check-backlog] OK: README matches the cards
+scripts/hook-smoke.sh              hook-smoke: 221 probes OK
+bash -n scripts/*.sh               exit 0
+scripts/verify-red.sh B1.15        ::error::no 'test(<pkg>): B1.15 … (red)' commit  (expected: plan deviation, as B1.13/B1.14)
+red  (smoke vs 6663614's file)     [compose-smoke] 2 of 6 ok, FAIL: C2 C3 C4 C5   exit 1
+green (smoke, default file)        [compose-smoke] 6 of 6 ok, 0 FAIL              exit 0 (also under /bin/bash 3.2)
+docker compose config (worktree)   name: level-up-lab; `docker compose ps` lists level-up-lab-postgres-1 (healthy)
+git diff --stat main...HEAD        5 files changed, 440 insertions(+)
+```
+
+`scripts/prune-smoke.sh` not re-run by me (it creates a throwaway database through `compose exec`, outside this
+review's read-only Docker allowance); the evidence section's `15 of 15` is [unverified] here. Its script is unchanged
+and its throwaway main checkout is named like the real one, so `name:` does not change what it resolves.
+
+### Checklist
+
+| Check                                         | Result                                                                                                                                                                                       |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| card Test/Acceptance has a probe that matches | pass: C2 (`.worktrees/<slug>`), C3 (`.claude/worktrees/<name>`), C4 (nested), C1 (main): `ps -q postgres` = live id, dry-run `Running`, no `Creat`; C6 volumes/networks/containers unchanged |
+| devcontainer still starts its Postgres        | pass for the project it resolves: C5 overlay dry-run shows `level-up-lab-postgres-1 Running`, no `postgres-1`/`pgdata` created (plain compose, not the devcontainer CLI; see riskiest)       |
+| no data volume renamed or dropped             | pass: `pgdata` key unchanged, `level-up-lab_pgdata` is what the live container mounts; no `down`/`rm` anywhere in the diff                                                                   |
+| no test weakened after red                    | pass: `git diff 5bf91da..HEAD -- scripts/compose-smoke.sh '*.test.*' e2e/` empty                                                                                                             |
+| every changed file in `plan.md`               | pass: the (a) column of the plan's Files table, nothing else                                                                                                                                 |
+| interfaces match the plan                     | pass: `compose-smoke.sh [<compose-file>]`, default `./docker-compose.yml`, exit 1 on FAIL or missing file, refuses when `level-up-lab-postgres-1` is not running                             |
+| round-2 plan-review fixes hold in the code    | pass: (1) C5 scoped to `postgres-1`/`pgdata`, `app-1`/`pnpm-store` creation allowed; (2) cost text only; (3) moot under (a); note: smoke's own reads use the real docker, as asked           |
+| commit order and subjects                     | pass: `test(scripts)` → `fix(compose)` → `docs(backlog)`; `git diff 5bf91da..be8c673 --stat` = `docker-compose.yml`, `scripts/CLAUDE.md` only; red body states "Red because …"               |
+| isolation of the smoke                        | pass: shim forwards only `compose -f <tmp>/…/docker-compose.yml [-f …] ps -q postgres` or `--dry-run up -d`; `POSTGRES_PORT=5434` in the caller's shell → still 6 of 6 (unset works)         |
+| Zod / Prisma / raw SQL / migration            | n/a: no `src/`, `prisma/` change                                                                                                                                                             |
+| no secret, no suppression                     | pass (guards above); no `.env` read                                                                                                                                                          |
+| config label                                  | `docker-compose.yml` is not in CI `PROTECTED` (guard OK) but is a compose config (CLAUDE.md "ask before") and CODEOWNERS-owned: the PR needs `config-change-approved` from a human           |
+| features map row                              | n/a: no feature, no section                                                                                                                                                                  |
+
+### Probes (one-line variants of the fix, passed as the smoke's argument)
+
+```text
+v0 name: line removed (= 6663614)                     2 of 6 ok, FAIL: C2 C3 C4 C5        killed
+v1 name: level_up_lab                                 1 of 6 ok, FAIL: C1 C2 C3 C4 C5     killed
+v2 name kept, default host port 5434                  1 of 6 ok, FAIL: C1 C2 C3 C4 C5     killed (Recreate caught)
+v3 name: ${COMPOSE_PROJECT_NAME:-level-up-lab}        6 of 6 ok, 0 FAIL                   survives (equivalent with the env unset)
+docker volume ls / network ls / ps -aq                identical before and after all runs
+```
+
+### Findings
+
+None blocking.
+
+### Not blocking
+
+- `scripts/worktree-prune.sh:7-8` ("from another checkout `docker compose` would name the project after that
+  directory and find no server") becomes false for every checkout that carries this file. The `-f "$MAIN/…"` it
+  justifies stays right (a branch cut before this merge still has the unnamed file), so only the "why" is stale. Not
+  in the plan's Files; a one-line follow-up or the closing PR can restate it.
+- C5 runs plain `docker compose -f base -f overlay`, not the devcontainer CLI. The CLI's project-name order
+  (`COMPOSE_PROJECT_NAME`, then `.env`, then the config's `name`, then the folder) puts `name:` ahead of the folder,
+  so it agrees with C5 [read in round 1, not run].
+- The smoke's assertions match compose's dry-run wording (`Running`, `Creating`, `Recreate`) as printed by v5.6.1; a
+  compose release that rewords them turns C1–C5 into false FAILs (never false passes for C1–C4, since `ps -q` = the
+  live id is checked as well; C5 has no `ps -q` check, so a reworded `Creat` could hide a created `pgdata`).
+
+Verdict: ready-for-PR
+
+Riskiest unfalsified: the devcontainer CLI's own compose invocation (its generated override and labels) on a machine
+where `level-up-lab` exists; C5 proves plain compose with both files resolves `level-up-lab-postgres-1`, not that the
+CLI does.
+
+### Dispositions (dev-lead)
+
+0 findings. Non-blocking notes: (1) `scripts/worktree-prune.sh:7-8` comment turns stale after merge: out of scope (file not
+in the approved plan); its `-f "$MAIN/…"` stays correct; reported to the lead as a follow-up. (2) dry-run wording
+tied to compose v5.6.1: accepted, the smoke fails loudly (C1–C4 `Running` check) if the words change. (3) label
+`config-change-approved`: named in the PR body for the lead. `prune-smoke.sh` 15 of 15 was run by dev-lead at
+`be8c673` (evidence section). No change.
