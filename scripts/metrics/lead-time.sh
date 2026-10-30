@@ -26,11 +26,11 @@ while read -r card pr; do
   want "$card" "$@" || continue
   git fetch -q origin "refs/pull/$pr/head" </dev/null
   head="$(git rev-parse FETCH_HEAD)"
-  esc="${card//./\\.}" # -G is a basic regex: literal parens, escaped dot
+  esc="${card//./\\.}" # -G and -E --grep are extended regexes: escape the dot and literal parens
   plan="$(git log --first-parent --no-merges -E --format='%at %h' \
     --grep="^docs\(backlog\): $esc plan (round [0-9]+ )?approved" "$head" | sort -n | tail -1)"
   tick="$(git log --first-parent --no-merges --format='%at %h' \
-    -G"Lead approves spec ([^)]*$esc)" "$head" -- spec/ | sort -n | head -1)"
+    -G"Lead approves spec \\([^)]*$esc\\)" "$head" -- spec/ | sort -n | head -1)"
   best="$plan"
   [[ -n "$tick" && ( -z "$best" || "${tick%% *}" -gt "${best%% *}" ) ]] && best="$tick"
   if [[ -z "$best" ]]; then
