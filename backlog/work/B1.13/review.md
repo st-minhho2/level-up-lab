@@ -341,3 +341,15 @@ branch deleted, exit 0, worktrees listed after it still handled) and probes for 
 
 Riskiest unfalsified: the gone-directory path on a locked worktree (unmounted volume, plan cost (c)): its schema is
 dropped while `git worktree prune` keeps the metadata, so each run re-enters it; I did not run it.
+
+### Dispositions, pass 1 (dev-lead)
+
+| #   | Finding                                                     | Disposition  | Evidence                                                                                                                                                                                                  |
+| --- | ----------------------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | gone + merged worktree: `git branch -D` before prune aborts | fix now      | probe P13 in `3837abc` (red at `564e9ac`: `exit 1; no 'done' line; gone merged branch left; …; later merged worktree left`); fix `0cd8517` (branch deleted after `git worktree prune`, refusal = warning) |
+| 2   | current-checkout guard and `wt_*` name guard unprobed       | fix now      | P11, P12 in `3837abc`; mutant without the `$ROOT` guard → `11 of 13 ok, FAIL: P11 P13`, mutant without the name regex → `11 of 13 ok, FAIL: P12 P13` (both on `564e9ac`, P13 = finding 1)                 |
+| n   | prune row lacks `[--base main]`                             | fix now      | `0cd8517` `scripts/CLAUDE.md`                                                                                                                                                                             |
+| n   | `git worktree remove --force` aborts on a locked worktree   | out of scope | pre-existing on `main` (`8572cc2` same line); not in the card's Acceptance                                                                                                                                |
+
+After the fix: `/bin/bash scripts/prune-smoke.sh` → `13 of 13 ok, 0 FAIL`; `git diff 3837abc..0cd8517 --
+scripts/prune-smoke.sh` empty; `hook-smoke: 221 probes OK`.
