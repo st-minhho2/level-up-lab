@@ -170,16 +170,7 @@ _tooling · no §_
 ### B1.14 · `worktree-prune.sh` keeps a branch whose commits net to no change
 
 _tooling · no §_
-**Status: Open** — `scripts/worktree-prune.sh:153`–`:154` count a branch as merged (`tree`) when
-`git merge-tree --write-tree "$BASE_REF" "$tip"` equals `"$BASE_REF^{tree}"`; a branch whose commits add up to no
-change (a commit and its revert, a file added then deleted) matches, and `:200` (`git branch -D "$branch"`) or, for
-a gone directory, `:176` then `:218` delete history that never reached the base. `:151` (`rev-list --count` > 0) does
-not stop it: such a branch has commits. Same test on main before B1.13 (`aaf046c`, `:97`). Reproduced 2026-10-30 on a
-throwaway repo (bare origin, `.worktrees/feat-revert` = "add x" + `git revert HEAD`, never pushed; gh offline, docker
-shim with Postgres down) with main's script: `[prune] feat/revert  (tree; …/.worktrees/feat-revert)`,
-`Deleted branch feat/revert (was 0a154af).`, `[prune] done: 1 worktree(s) removed, 0 gone worktree(s) cleaned (base
-origin/main)`, exit 0; "add x" + "drop x" gives the same. Raised by the `reviewer` as the riskiest unfalsified spot
-of B1.13 (`work/B1.13/review.md`, diff review pass 2); `prune-smoke.sh` P1–P13 have no such probe.
+**Status: Done** — 5400d6a (#50); scripts/prune-smoke.sh 15 of 15 ok (557797e's script: 13 of 15, FAIL P14 P15); prune after merge removed the card's worktree (reason pr #50) and dropped wt_fix_b1_14_prune_keeps_net_empty; no src/ change, mutation 89.02 % unchanged; red cdb93f1, green fbbd9dc
 
 - **Spec:** none — tooling (`scripts/CLAUDE.md` row "`worktree-prune.sh` … removes merged worktrees of every layout
   (vs fetched `origin/main`), branches, schemas"); no `src/` change, no section
@@ -189,7 +180,7 @@ of B1.13 (`work/B1.13/review.md`, diff review pass 2); `prune-smoke.sh` P1–P13
 - **Acceptance:** the new probe passes, also for a gone directory (branch kept); P1–P13 still pass (a squash-merged
   branch is still removed); `scripts/CLAUDE.md` names the new probe range; `check-backlog.sh` OK
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.14/`
+- **Work:** `work/B1.14/` — plan (rounds 1/1), review (plan round 1 approved; diff pass 1/3, 0 findings); squash `5400d6a` (#50)
 
 ### B1.15 · `docker compose` reaches the one compose server from every checkout
 
