@@ -40,7 +40,9 @@ it and commit it as `backlog/CLAUDE.md` names review-pass tests; the rest of thi
 2. `pnpm lint && pnpm typecheck` green. `pnpm test` shows every new test failing on an assertion or on the
    skeleton's `NotImplementedError`, never on "Cannot find module" or a syntax error.
 3. `scripts/verify-red.sh <card>` exits 0 after you commit. If it does not, fix the tests, not the code.
-4. Commit tests only: `test(<pkg>): <card> <what> (red)`; body: "Red because: <one sentence per file>".
+4. Commit tests only: `test(<pkg>): <card> <what> (red)`; body: "Red because: <one sentence per file>". In
+   `Mode: review pass N`: `test(<pkg>): <card> review pass N -- <what>`, no `(red)` (verify-red judges only the card's
+   red commit), report `RED:` with the failure on the finding's input instead of verify-red.
 
 ## Report (your final message, nothing else)
 

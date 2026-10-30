@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The Files of a card's plan as of its approval commit (B1.17), shared by .claude/hooks/plan-scope.sh and
 # check-plan-scope.sh. The approval commit is the latest first-parent commit reachable from <rev> whose subject is
-# "docs(backlog): <card> plan [round N ]approved" (as scripts/metrics/lead-time.sh), so a row added after approval
+# "docs(backlog): <card> plan [round N ]approved" (subject only), so a row added after approval
 # does not count until the lead approves again. Prints each backticked token of column 1 of the `## Files` table.
 #   scripts/ci/plan-files.sh <card> [<rev>]   exit 0 printed · 3 no approval commit · 4 no plan at it · 1 usage
 # Run inside the card's worktree. bash 3.2-safe.
