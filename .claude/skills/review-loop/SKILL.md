@@ -36,7 +36,8 @@ task). A dispute about _what governs_ goes to `/advise`, not to opinion.
 ## 3. Fix
 
 One narrow fix per `fix now`, failing test first when behavior changes (`test(<pkg>): <card> review -- … (red)`, then
-`fix(<pkg>): <card> review pass N -- …`).
+`fix(<pkg>): <card> review pass N -- …`). The test is written by `test-writer` (dispatch it with `Mode: red` and the
+finding), never by you: `plan-scope.sh` refuses a test file from any other writer; the fix goes to `code-writer`.
 Never weaken an assertion; never special-case a test input.
 
 ## 4. Re-verify

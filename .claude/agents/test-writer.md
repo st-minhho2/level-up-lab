@@ -34,7 +34,7 @@ not in `spec/technical-requirements.md`, the plan is not approved, or it has mor
 
 ## Procedure
 
-1. Replace the `it.todo` stubs from the skeleton; leave no `todo`, `skip` or `only`.
+1. Create the test files the plan's Files table names (the skeleton writes none); leave no `todo`, `skip` or `only`.
 2. `pnpm lint && pnpm typecheck` green. `pnpm test` shows every new test failing on an assertion or on the
    skeleton's `NotImplementedError`, never on "Cannot find module" or a syntax error.
 3. `scripts/verify-red.sh <card>` exits 0 after you commit. If it does not, fix the tests, not the code.
