@@ -133,14 +133,7 @@ _F9 · §11_
 ### B1.12 · `card-status.sh` replaces the whole status paragraph
 
 _tooling · no §_
-**Status: Open** — `scripts/card-status.sh` rewrites only the first line of a card's status paragraph:
-`incard && /^\*\*Status: / { print "**Status: " new "** — " ev; incard = 2; next }` prints the new line and then
-copies every following line unchanged, so a status written over several lines keeps its old continuation lines under
-the new `**Status: Done**` line. Five closed cards show it on `main` (`75c0ecf`): B1.7 (5 leftover lines), B1.8 (3),
-B1.9 (4), B1.10 (5), B1.11 (6), e.g. B1.10's "Done — c850ddb (#33) …" is followed by "`src/components/todo-form.test.tsx`
-mocks `createTodoAction` (AC-10.5). No file in `e2e/` makes a create fail …". `scripts/ci/check-backlog.sh` reads only
-the first status line, so CI stays green. `scripts/card-status.sh` is a protected path
-(`scripts/ci/check-config-change.sh` `PROTECTED`): the fix PR needs the human-only `config-change-approved` label.
+**Status: Done** — 6ae7be3 (#39); probe backlog/work/B1.12/probe.sh 5/5 PASS (24665de: 4 FAIL); B1.7–B1.11 cleaned (0 added / 23 deleted); no src/ change, mutation 89.02 % unchanged
 
 - **Spec:** none — tooling (`scripts/CLAUDE.md` row "`card-status.sh <id> <Open|Partial|Done> "<evidence>"` rewrites a
   card's status line"); no `src/` change, no section
@@ -151,4 +144,4 @@ the first status line, so CI stays green. `scripts/card-status.sh` is a protecte
 - **Acceptance:** the probe above for a one-line and a multi-line status; the five cards B1.7–B1.11 cleaned (status
   line kept, leftover lines removed); `check-backlog.sh` OK
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.12/`
+- **Work:** `work/B1.12/` — plan (rounds 1/1), probe.sh, review (plan rounds 2, diff pass 1/3, 1 finding fixed: fixture B9.4); squash `6ae7be3` (#39)
