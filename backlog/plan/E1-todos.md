@@ -167,6 +167,30 @@ _tooling · no §_
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.13/` — plan (rounds 1/1), review (plan rounds 2, cap reached, round-2 fixes accepted by the lead; diff pass 2/3, 2 findings fixed by hardening `3837abc` + `0cd8517`); squash `957780e` (#46)
 
+### B1.14 · `worktree-prune.sh` keeps a branch whose commits net to no change
+
+_tooling · no §_
+**Status: Open** — `scripts/worktree-prune.sh:153`–`:154` count a branch as merged (`tree`) when
+`git merge-tree --write-tree "$BASE_REF" "$tip"` equals `"$BASE_REF^{tree}"`; a branch whose commits add up to no
+change (a commit and its revert, a file added then deleted) matches, and `:200` (`git branch -D "$branch"`) or, for
+a gone directory, `:176` then `:218` delete history that never reached the base. `:151` (`rev-list --count` > 0) does
+not stop it: such a branch has commits. Same test on main before B1.13 (`aaf046c`, `:97`). Reproduced 2026-10-30 on a
+throwaway repo (bare origin, `.worktrees/feat-revert` = "add x" + `git revert HEAD`, never pushed; gh offline, docker
+shim with Postgres down) with main's script: `[prune] feat/revert  (tree; …/.worktrees/feat-revert)`,
+`Deleted branch feat/revert (was 0a154af).`, `[prune] done: 1 worktree(s) removed, 0 gone worktree(s) cleaned (base
+origin/main)`, exit 0; "add x" + "drop x" gives the same. Raised by the `reviewer` as the riskiest unfalsified spot
+of B1.13 (`work/B1.13/review.md`, diff review pass 2); `prune-smoke.sh` P1–P13 have no such probe.
+
+- **Spec:** none — tooling (`scripts/CLAUDE.md` row "`worktree-prune.sh` … removes merged worktrees of every layout
+  (vs fetched `origin/main`), branches, schemas"); no `src/` change, no section
+- **Test:** new probe in `scripts/prune-smoke.sh` — red because: an M worktree whose branch is a commit plus its
+  revert, never on origin, is removed and its branch deleted (reason `tree`); expected: kept with its directory,
+  schema and branch, and listed as `[keep]`
+- **Acceptance:** the new probe passes, also for a gone directory (branch kept); P1–P13 still pass (a squash-merged
+  branch is still removed); `scripts/CLAUDE.md` names the new probe range; `check-backlog.sh` OK
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.14/`
+
 ### B1.15 · `docker compose` reaches the one compose server from every checkout
 
 _tooling · no §_
