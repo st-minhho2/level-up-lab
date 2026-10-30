@@ -199,3 +199,21 @@ _tooling · no §_
   skill) reaches the same project; the devcontainer still starts its Postgres; no data volume is renamed or dropped
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.15/` — plan (rounds 1/1, option (a)), review (plan rounds 2, cap reached, round-2 fixes accepted by the lead; diff pass 1/3, 0 findings); squash `225c4f6` (#52)
+
+### B1.16 · Baseline for parallel delivery: lead time and change failure rate per card
+
+_tooling · no §_
+**Status: Open** — `ls scripts/metrics` → "No such file or directory"; `grep -ni "lead time\|change failure" docs/metrics.md` → no row
+
+- **Spec:** none — tooling (`scripts/CLAUDE.md` row to add for `scripts/metrics/`); no `src/` change, no section
+- **Test:** shell smoke on a throwaway git repo with a `gh` shim (approval commits, squash merges, fix/revert PRs at
+  known times) — red because: `scripts/metrics/lead-time.sh` does not exist, so no per-card value or median is printed
+  (red on a missing script, as B1.15 option (b))
+- **Acceptance:** `scripts/metrics/lead-time.sh` prints, for each card B1.1–B1.15, the approval time (the later of the
+  commit adding `Plan approved by: lead` to `work/<card>/plan.md` and the commit ticking the section's
+  `Lead approves spec` box for that card), the squash-merge time of the card's feature PR, the hours between, and the
+  median; change failure rate = PRs titled `fix`/`revert` that repair an already-merged card within 14 days
+  [estimate] ÷ cards, computed for B1.1–B1.15 by a script or a documented query; `docs/metrics.md` top table gains
+  both rows (value, date, how to re-measure); bash 3.2, `git` + `gh` only, no new dependency
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.16/`

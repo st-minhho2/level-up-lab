@@ -7,8 +7,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic      | File                                 | Done   | Partial | Open  | Total  |
 | --------- | ------------------------------------ | ------ | ------- | ----- | ------ |
-| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 15     | 0       | 0     | 15     |
-| **Total** |                                      | **15** | **0**   | **0** | **15** |
+| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 15     | 0       | 1     | 16     |
+| **Total** |                                      | **15** | **0**   | **1** | **16** |
 
 ## Execution order
 
@@ -39,12 +39,14 @@ flowchart TD
   S13["13 · worktree-prune.sh every layout<br/>~~B1.13~~"]
   S14["14 · worktree-prune.sh keeps a net-empty branch<br/>~~B1.14~~"]
   S15["15 · compose project from every checkout<br/>~~B1.15~~"]
+  S16["16 · lead time and change failure baseline<br/>B1.16"]
 ```
 
 ## Remaining
 
-| Step | ID  | Title | Spec § | Status | Blocked by | Owner | Size |
-| ---- | --- | ----- | ------ | ------ | ---------- | ----- | ---- |
+| Step | ID    | Title                                                                      | Spec § | Status | Blocked by | Owner | Size         |
+| ---- | ----- | -------------------------------------------------------------------------- | ------ | ------ | ---------- | ----- | ------------ |
+| 16   | B1.16 | Baseline for parallel delivery: lead time and change failure rate per card | —      | Open   |            | Lead  | S [estimate] |
 
 ## Waiting on human
 
