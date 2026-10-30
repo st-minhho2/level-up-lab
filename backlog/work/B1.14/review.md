@@ -88,3 +88,27 @@ no change` (`noff_only` above). Such a branch carries no change of its own; keep
 Verdict: approved
 
 Ready for the lead's gate; not approved for build until `Plan approved by:` is written by the lead.
+
+## Red and green evidence
+
+Red at `cdb93f1` (`test(scripts): B1.14 smoke P14-P15 net-empty branch`), smoke run on the unchanged
+`scripts/worktree-prune.sh` (= `557797e`), exit 1:
+
+```text
+FAIL P14 M branch = a commit and its revert, never on origin: kept with directory, schema and branch: net-empty dir removed; net-empty schema dropped; net-empty branch deleted; no net-empty [keep] line
+FAIL P15 N branch = a file added then dropped, directory deleted: schema dropped, branch kept: gone net-empty branch deleted; no 'kept (commits net to no change' line
+ok   level_up_lab wt_* schemas unchanged; no shim denial
+[prune-smoke] 13 of 15 ok, FAIL: P14 P15
+```
+
+Green at `fbbd9dc` (`fix(scripts): B1.14 keep a branch whose commits net to no change`), exit 0:
+
+```text
+ok   P14 M branch = a commit and its revert, never on origin: kept with directory, schema and branch
+ok   P15 N branch = a file added then dropped, directory deleted: schema dropped, branch kept
+ok   level_up_lab wt_* schemas unchanged; no shim denial
+[prune-smoke] 15 of 15 ok, 0 FAIL
+```
+
+`git diff --stat cdb93f1..fbbd9dc -- scripts/prune-smoke.sh` empty. `bash -n` both scripts exit 0;
+`hook-smoke: 221 probes OK`; `[check-backlog] OK: README matches the cards`.
