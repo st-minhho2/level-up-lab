@@ -252,3 +252,92 @@ hook-smoke: 221 probes OK · [check-backlog] OK: README matches the cards
 ```
 
 `scripts/verify-red.sh B1.13` exits 1 by design (no `(red)` commit, as B1.12).
+
+## Diff review (pass 1)
+
+SCOPE: none of lib | actions | ui (tooling: `scripts/worktree-prune.sh`, `scripts/prune-smoke.sh`, `scripts/CLAUDE.md`,
+`backlog/work/B1.13/`). Reviewed at `9c3646a`, red `175dfb0`, green `564e9ac`. Probes ran on copies under `$TMPDIR`
+(throwaway git repos with a logging `docker` shim, and single-line mutants of the prune script fed to the smoke).
+Live database: read-only listings only; the smoke's own throwaway databases were created and dropped by it. The
+real repository was only run with `--dry-run --no-fetch` and `--schemas --dry-run`. The worktree was not edited.
+
+### Command results (last line of each)
+
+| Command                                                                  | Last line                                                                                     |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                                              | `All matched files use Prettier code style!`                                                  |
+| `pnpm typecheck`                                                         | `tsc --noEmit` (no error)                                                                     |
+| `pnpm test`                                                              | `Tests  115 passed (115)`                                                                     |
+| `pnpm test:e2e`                                                          | `13 passed (21.5s)`                                                                           |
+| `pnpm test:mutation`                                                     | `Final mutation score of 89.02 is greater than or equal to break threshold 70` (no src diff)  |
+| `check-suppressions.sh`                                                  | `[check-suppressions] OK: no new suppressions`                                                |
+| `check-config-change.sh`                                                 | `[check-config-change] OK: no protected config changed`                                       |
+| `check-feat-commits.sh`                                                  | `[check-feat-commits] OK: no feat commit touches tests`                                       |
+| `check-ac-coverage.sh`                                                   | `[check-ac-coverage] OK: every criterion of a shipped section has a test`                     |
+| `check-spec-sections.sh`                                                 | `[check-spec-sections] OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11`                           |
+| `check-features-map.sh`                                                  | `[check-features-map] OK`                                                                     |
+| `check-backlog.sh`                                                       | `[check-backlog] OK: README matches the cards`                                                |
+| `verify-red.sh B1.13`                                                    | `::error::no 'test(<pkg>): B1.13 … (red)' commit …` (exit 1 by design, plan Deviations)       |
+| `prune-smoke.sh` (green, HEAD)                                           | `[prune-smoke] 10 of 10 ok, 0 FAIL` (exit 0)                                                  |
+| `prune-smoke.sh` on `8572cc2`'s script                                   | `[prune-smoke] 3 of 10 ok, FAIL: P1 P2 P3 P4 P7 P8 P10` (exit 1), as the plan expects         |
+| live `wt_*` in `level_up_lab`, databases                                 | `wt_fix_b1_13_prune_every_layout` before = after; `level_up_lab postgres template0 template1` |
+| real repo `--dry-run --no-fetch` (both checkouts), `--schemas --dry-run` | `0 worktree(s) removed, 0 gone …`; `[schemas] no orphan schema`                               |
+| `git diff --stat main...HEAD`                                            | `5 files changed, 710 insertions(+), 80 deletions(-)`                                         |
+
+### Checklist
+
+| Check                               | Result                                                                                                                                                                         |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every Acceptance clause has a probe | fail: "branch deleted only if merged" for a gone worktree and "the current checkout is never removed" have none ([1], [2])                                                     |
+| smoke not weakened after red        | pass: `git diff 175dfb0..HEAD -- scripts/prune-smoke.sh` empty; green touches only `worktree-prune.sh`, `scripts/CLAUDE.md`                                                    |
+| every changed file in `plan.md`     | pass: the four rows of Files, nothing else                                                                                                                                     |
+| interfaces match the plan           | pass: the three CLI lines; `scripts/CLAUDE.md` prune row omits `[--base main]` (note)                                                                                          |
+| Zod / Prisma / raw SQL / migration  | n/a: no `src/`, `prisma/` change; SQL is `psql` in tooling, schema names regex-checked                                                                                         |
+| no secret, no suppression           | pass (`check-suppressions` OK; no `.env` read by either script)                                                                                                                |
+| features map row                    | n/a: no §                                                                                                                                                                      |
+| bash 3.2                            | pass: smoke and real runs on `GNU bash 3.2.57`                                                                                                                                 |
+| revert one line, does a probe fail  | partly: fetch default (P1 P2 P8 P10), no-commit guard (P4 P7), `git worktree prune` (P3) are caught; the current-checkout guard and the `drop_schema` name guard are not ([2]) |
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: scripts/worktree-prune.sh:175 (with :215)
+    DEFECT: for a gone worktree whose branch is merged, `git branch -D` runs while the worktree's metadata still
+            holds the branch, git refuses, and `set -e` aborts the whole run.
+    TRIGGER: a card worktree squash-merged on origin/main whose directory is gone (the card's own case: an archived
+            .claude/worktrees/<name> took its .worktrees/<slug> with it). Throwaway repo, git 2.39.5:
+              [gone]  feat/gm  (directory removed; …/.worktrees/feat-gm)
+                schema wt_feat_gm dropped
+              error: Cannot delete branch 'feat/gm' checked out at '…/.worktrees/feat-gm'
+              rc=1      (branch list afterwards: "+ feat/gm"; worktree list: "feat-gm … prunable")
+    WRONG BEHAVIOUR: plan: "Directory gone → wt_<slug> dropped …, branch deleted only if merged" and exit 0. Instead the
+            branch stays, `git worktree prune` (:215) never runs, every worktree after it in the list is not
+            handled, no orphan list, no "done" line, exit 1, and every later run aborts at the same entry until
+            someone runs `git worktree prune` by hand. `--dry-run` hides it (`run` only echoes). P3 probes only the
+            unmerged gone case, so the smoke is green.
+    CONFIDENCE: confirmed (ran it)
+
+[2] KIND: coverage
+    WHERE: scripts/prune-smoke.sh (no probe); guards at scripts/worktree-prune.sh:182 and :75
+    DEFECT: two safety lines the plan states can be deleted with the smoke still 10 of 10 green.
+    TRIGGER: mutant m1 = :182 without `[[ "$path" == "$ROOT" ]] ||` (a merged current checkout would remove itself
+            from under the caller); mutant m2 = :75 replaced by `:` (a `.worktree.env` with WORKTREE_SCHEMA=public
+            would send DROP SCHEMA "public" CASCADE to level_up_lab). Both: `[prune-smoke] 10 of 10 ok, 0 FAIL`.
+    WRONG BEHAVIOUR: card Acceptance "the current checkout … never removed" and plan "drop_schema refuses names
+            outside ^wt_[a-z0-9_]+$" have no probe; reverting either goes unnoticed. The real script does keep a
+            merged current checkout today (probed: "[keep] feat/cur (current checkout; …)").
+    CONFIDENCE: confirmed (ran both mutants through the smoke)
+```
+
+Notes (no change requested): `scripts/CLAUDE.md`'s prune row lists `[--dry-run] [--all] [--no-fetch]` but not
+`[--base main]`. Pre-existing and not in this card: a locked worktree makes `git worktree remove --force` (:198)
+fail (it needs `-f -f`), which also aborts under `set -e`. The mutation run left `reports/` and `.stryker-tmp/`
+untracked-but-ignored; `git status` stays clean.
+
+Verdict: back to test-writer: a `test(scripts): B1.13 …` commit adding a red probe (gone + merged: schema dropped,
+branch deleted, exit 0, worktrees listed after it still handled) and probes for the current checkout and the
+`drop_schema` name guard; then the code fix in its own `fix(scripts)` commit.
+
+Riskiest unfalsified: the gone-directory path on a locked worktree (unmounted volume, plan cost (c)): its schema is
+dropped while `git worktree prune` keeps the metadata, so each run re-enters it; I did not run it.
