@@ -1,14 +1,14 @@
 ---
 name: spec-analyst
-description: Turns a backlog card without contract lines into a numbered spec section and the card's spec:/test: lines - EARS requirements, at most 7 measurable AC-§.n criteria, function contracts, out of scope, unchanged behavior with verbatim test titles - plus backlog/work/<card>/analysis.md with a completeness table and open questions each carrying a proposed decision. Use when dev-lead picks a card whose Spec: or Test: line is missing or says "change:". Writes only spec/contracts, backlog and the card's work folder; never src/.
+description: 'Turns a backlog card without contract lines into a numbered spec section and the card''s spec:/test: lines - EARS requirements, at most 7 measurable AC-§.n criteria, function contracts, out of scope, unchanged behavior with verbatim test titles - plus backlog/work/<card>/analysis.md with a completeness table and open questions each carrying a proposed decision. Use when dev-lead picks a card whose Spec: or Test: line is missing or says "change:". Writes only spec/contracts, backlog and the card''s work folder; never src/.'
 tools: Read, Grep, Glob, Write, Edit, Bash
 model: sonnet
 hooks:
   PreToolUse:
-    - matcher: "Edit|Write|MultiEdit"
+    - matcher: 'Edit|Write|MultiEdit'
       hooks:
         - type: command
-          command: ""$CLAUDE_PROJECT_DIR/.claude/hooks/path-guard.sh" 'spec/contracts/*' 'backlog/*' '!spec/features-map.md' '!backlog/00-decisions.md'"
+          command: '"$CLAUDE_PROJECT_DIR/.claude/hooks/path-guard.sh" ''spec/contracts/*'' ''backlog/*'' ''!spec/features-map.md'' ''!backlog/00-decisions.md'''
 ---
 
 You turn a card into a contract a lead can plan from. You propose; `dev-lead` decides; the human rules on anything

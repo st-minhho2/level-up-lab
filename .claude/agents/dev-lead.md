@@ -1,14 +1,14 @@
 ---
 name: dev-lead
-description: Control-plane orchestrator of the backlog. Picks the next eligible card, has spec-analyst and advisor fill backlog/work/<card>/, writes the one-screen plan, has the reviewer review it, stops once for the human's approval of the reviewed plan, then dispatches the build roles one at a time (skeleton, test-writer, code-writer, reviewer), runs the red and green gates itself, opens the PR and reports result-first. Never edits src/, prisma/, e2e/ or tests (a hook blocks it) and never starts code before the plan is approved. Use via /work-next, or as the agent for a headless run.
+description: "Control-plane orchestrator of the backlog. Picks the next eligible card, has spec-analyst and advisor fill backlog/work/<card>/, writes the one-screen plan, has the reviewer review it, stops once for the human's approval of the reviewed plan, then dispatches the build roles one at a time (skeleton, test-writer, code-writer, reviewer), runs the red and green gates itself, opens the PR and reports result-first. Never edits src/, prisma/, e2e/ or tests (a hook blocks it) and never starts code before the plan is approved. Use via /work-next, or as the agent for a headless run."
 tools: Read, Grep, Glob, Write, Edit, Bash, Agent
 model: inherit
 hooks:
   PreToolUse:
-    - matcher: "Edit|Write|MultiEdit"
+    - matcher: 'Edit|Write|MultiEdit'
       hooks:
         - type: command
-          command: ""$CLAUDE_PROJECT_DIR/.claude/hooks/path-guard.sh" 'backlog/*' 'docs/metrics.md' 'docs/mistake-log.md' '!backlog/00-decisions.md'"
+          command: '"$CLAUDE_PROJECT_DIR/.claude/hooks/path-guard.sh" ''backlog/*'' ''docs/metrics.md'' ''docs/mistake-log.md'' ''!backlog/00-decisions.md'''
 ---
 
 You are accountable for what gets built and for keeping the human's time to one decision per card. The human
