@@ -235,3 +235,21 @@ _tooling · no §_
   label
 - **Tier:** quick · **Depends on:** ~~B1.16~~ · **Owner:** Lead · **Size:** M [estimate]
 - **Work:** `work/B1.17/` — plan (rounds 1/1; lead chose (a) paperwork allow-list, (A) no skeleton test stubs), review (plan rounds 2, cap reached, round-2 fixes accepted by the lead; diff pass 3/3, 4 findings fixed by `9e4b64a` + `487fe2a` + `f155633`); squash `25fee24` (#60)
+
+### B1.18 · WIP limit: at most three cards in Doing, none sharing a planned file
+
+_tooling · no §_
+**Status: Open** — `grep -n "Doing\|WIP" backlog/README.md scripts/next-task.sh scripts/ci/check-backlog.sh` → no
+match; `backlog/README.md` "Remaining" has only the card `Status` (Open/Partial), and `scripts/next-task.sh` picks the
+lowest eligible step with no count of cards already in progress and no look at their plans
+
+- **Spec:** none — tooling (`backlog/CLAUDE.md`, `scripts/CLAUDE.md`); no `src/` change, no section
+- **Test:** shell smoke on a throwaway repo with three cards in Doing — red because: `scripts/next-task.sh` prints a
+  fourth card (exit 0) and accepts a card whose plan Files overlap a Doing card's plan Files; expected: both refused
+  (exit 1) with the reason
+- **Acceptance:** the board shows each remaining card as To do, Doing or Review (`backlog/README.md`, checked by
+  `scripts/ci/check-backlog.sh`); `scripts/next-task.sh` refuses a fourth Doing card and refuses a card whose plan
+  Files overlap a Doing card's plan Files; `scripts/next-task.sh --list` shows the column; bash 3.2;
+  `scripts/next-task.sh` and `scripts/ci/` are protected → the PR needs the human-only `config-change-approved` label
+- **Tier:** quick · **Depends on:** ~~B1.17~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.18/`

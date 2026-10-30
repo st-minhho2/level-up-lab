@@ -7,8 +7,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic      | File                                 | Done   | Partial | Open  | Total  |
 | --------- | ------------------------------------ | ------ | ------- | ----- | ------ |
-| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 17     | 0       | 0     | 17     |
-| **Total** |                                      | **17** | **0**   | **0** | **17** |
+| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 17     | 0       | 1     | 18     |
+| **Total** |                                      | **17** | **0**   | **1** | **18** |
 
 ## Execution order
 
@@ -41,13 +41,16 @@ flowchart TD
   S15["15 · compose project from every checkout<br/>~~B1.15~~"]
   S16["16 · lead time and change failure baseline<br/>~~B1.16~~"]
   S17["17 · plan-scope hook<br/>~~B1.17~~"]
+  S18["18 · WIP limit<br/>B1.18"]
+  S17 --> S18
   S16 --> S17
 ```
 
 ## Remaining
 
-| Step | ID  | Title | Spec § | Status | Blocked by | Owner | Size |
-| ---- | --- | ----- | ------ | ------ | ---------- | ----- | ---- |
+| Step | ID    | Title                                                                | Spec § | Status | Blocked by | Owner | Size         |
+| ---- | ----- | -------------------------------------------------------------------- | ------ | ------ | ---------- | ----- | ------------ |
+| 18   | B1.18 | WIP limit: at most three cards in Doing, none sharing a planned file | —      | Open   | ~~B1.17~~  | Lead  | S [estimate] |
 
 ## Waiting on human
 
