@@ -65,4 +65,4 @@ Risk for the lead: −30 % of 35 min is ≤ 24.5 min. Today one card runs at a t
 batched review adds queue time per card, so this metric may rise while throughput rises. The target is the lead's call.
 
 Plan review: changes requested, round 2 (cap); round-2 reasons 1–2 and the median rounding applied above, not
-re-reviewed · Plan approved by: <empty until the lead approves> · Rounds: 1
+re-reviewed · Plan approved by: lead (session reply "approve"), 2026-10-30 · Rounds: 1
