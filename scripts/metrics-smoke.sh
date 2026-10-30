@@ -9,6 +9,8 @@
 #   M5  no approval → n/a, out of the even-count median     M6  fix PR sharing a script within 14 days → counted
 #   M7  the same after 15 days → not                        M8  sharing only *.md/backlog/docs, or a feat title → not
 #   M9  a card's own fix PR → not its own repair            M10 a fix merged before the card → not
+#   M11 a B9.20 tick on main → not B9.2's approval          M12 sharing only non-.md backlog/, docs/, spec/ files → not
+#   M13 one fix PR repairing two cards counts once in the rate (review pass 1)
 set -uo pipefail
 cd "$(git rev-parse --show-toplevel)"
 SRC="$PWD/scripts/metrics"
@@ -50,11 +52,12 @@ cat > "$REPO/E9.md" <<'EOF'
 EOF
 mkdir -p "$REPO/backlog/plan"; mv "$REPO/E9.md" "$REPO/backlog/plan/E9-fixture.md"
 at $((T0 - 1000)) "chore: base" README.md base
+at $((T0 - 500)) "docs(spec): tick B9.20" spec/s.md "- [x] Lead approves spec (lead, d, B9.20)"
 for b in b1 b2 b3 b4 b5; do g branch -q "$b"; done
 g checkout -q main; at $((T0 + 1000)) "docs: tick B9.4 on main" spec/s.md "- [x] Lead approves spec (lead, d, B9.4)"
 g checkout -q b1; at "$T0" "docs(backlog): B9.1 plan approved" backlog/work/B9.1/plan.md "Plan approved by: lead"; pin 101
 g checkout -q b2; at "$T0" "docs(backlog): B9.2 plan approved" backlog/work/B9.2/plan.md "Plan approved by: lead"
-at $((T0 + 600)) "docs(spec): tick B9.2" spec/s.md "- [x] Lead approves spec (lead, d, B9.2)"; pin 102
+at $((T0 + 600)) "docs(spec): tick B9.2" spec/s.md "- [x] Lead approves spec (lead, d, B9.2)"; pin 102; TICK2="$(g rev-parse --short HEAD)"
 g checkout -q b3; at "$T0" "docs(backlog): B9.3 plan approved" backlog/work/B9.3/plan.md "Plan approved by: lead"
 at $((T0 + 300)) "docs(backlog): B9.3 plan round 2 approved" backlog/work/B9.3/plan.md "round 2"; pin 103
 g checkout -q b4; at "$T0" "docs(backlog): B9.4 plan approved" backlog/work/B9.4/plan.md "Plan approved by: lead"
@@ -75,7 +78,7 @@ echo "$M4" > "$FIX/view.104"; echo "$M5" > "$FIX/view.105"
   printf '101\t%s\tfeat(scripts): B9.1 one\tscripts/a.sh backlog/work/B9.1/plan.md\n' "$M1"
   printf '102\t%s\tfeat(todos): B9.2 two\tsrc/b.ts\n' "$M2"
   printf '103\t%s\tfix(scripts): B9.3 three\tscripts/c.sh\n' "$M3"
-  printf '104\t%s\tfeat: B9.4 four\tsrc/d.ts docs/x.md README.md\n' "$M4"
+  printf '104\t%s\tfeat: B9.4 four\tsrc/d.ts docs/x.md README.md backlog/work/B9.4/probe.sh docs/d.sh spec/t.txt\n' "$M4"
   printf '105\t%s\tfeat: B9.5 five\tsrc/e.ts\n' "$M5"
   printf '201\t%s\tfix(scripts): repair a\tscripts/a.sh\n' "$((M1 + 5 * DAY))"
   printf '202\t%s\tfix: late b\tsrc/b.ts\n' "$((M2 + 15 * DAY))"
@@ -83,6 +86,10 @@ echo "$M4" > "$FIX/view.104"; echo "$M5" > "$FIX/view.105"
   printf '204\t%s\tfeat: more e\tsrc/e.ts\n' "$((M5 + DAY))"
   printf '205\t%s\tfix: early b\tsrc/b.ts\n' "$((M2 - DAY))"
   printf '206\t%s\tRevert "feat: B9.5 five"\tsrc/e.ts\n' "$((M5 + 2 * DAY))"
+  printf '207\t%s\tfix: probe of d\tbacklog/work/B9.4/probe.sh\n' "$((M4 + DAY))"
+  printf '208\t%s\tfix: doc script of d\tdocs/d.sh\n' "$((M4 + DAY))"
+  printf '209\t%s\tfix: spec file of d\tspec/t.txt\n' "$((M4 + DAY))"
+  printf '210\t%s\tfix: a and b at once\tscripts/a.sh src/b.ts\n' "$((M1 + DAY))"
 } > "$FIX/list.tsv"
 
 # --- gh shim ------------------------------------------------------------------------------------------------------
@@ -108,6 +115,7 @@ if [[ -x "$SRC/lead-time.sh" ]]; then run lead-time.sh > "$TMP/out"; rc=$?; else
   echo "lead-time.sh: not found" > "$TMP/out"; rc=127; fi
 cut -f1,2,4,5 <<< "$(row B9.1)" | grep -qx $'B9.1\t101\t30\t0.5' && ok M1 || fail "M1 $(row B9.1)"
 cut -f4 <<< "$(row B9.2)" | grep -qx 20 && ok M2 || fail "M2 $(row B9.2)"
+[[ "$(cut -f3 <<< "$(row B9.2)")" == "$TICK2" ]] && ok M11 || fail "M11 $(row B9.2), tick $TICK2"
 cut -f4 <<< "$(row B9.3)" | grep -qx 10 && ok M3 || fail "M3 $(row B9.3)"
 cut -f4 <<< "$(row B9.4)" | grep -qx 40 && ok M4 || fail "M4 $(row B9.4)"
 if [[ $rc -eq 0 ]] && cut -f3,4 <<< "$(row B9.5)" | grep -qx -- $'-\tn/a' && [[ -z "$(row B9.6)" ]] \
@@ -117,13 +125,13 @@ else fail "M5 rc=$rc $(tail -1 "$TMP/out")"; fi
 # --- change failure rate ------------------------------------------------------------------------------------------
 if [[ -x "$SRC/change-failure-rate.sh" ]]; then run change-failure-rate.sh > "$TMP/out"; rc=$?; else
   echo "change-failure-rate.sh: not found" > "$TMP/out"; rc=127; fi
-cut -f3 <<< "$(row B9.1)" | grep -qx '#201' && ok M6 || fail "M6 $(row B9.1)"
-cut -f3 <<< "$(row B9.2)" | grep -qx -- '-' && ok "M7 M10" || fail "M7 M10 $(row B9.2)"
-[[ "$(cut -f3 <<< "$(row B9.4)")" == "-" ]] && [[ "$(cut -f3 <<< "$(row B9.5)")" == "#206" ]] && ok M8 \
-  || fail "M8 $(row B9.4) | $(row B9.5)"
+cut -f3 <<< "$(row B9.1)" | grep -qx '#201,#210' && ok M6 || fail "M6 $(row B9.1)"
+cut -f3 <<< "$(row B9.2)" | grep -qx '#210' && ok "M7 M10" || fail "M7 M10 $(row B9.2)"
+[[ "$(cut -f3 <<< "$(row B9.4)")" == "-" ]] && [[ "$(cut -f3 <<< "$(row B9.5)")" == "#206" ]] && ok "M8 M12" \
+  || fail "M8 M12 $(row B9.4) | $(row B9.5)"
 cut -f3 <<< "$(row B9.3)" | grep -qx -- '-' && ok M9 || fail "M9 $(row B9.3)"
-[[ $rc -eq 0 ]] && tail -1 "$TMP/out" | grep -qx 'change failure rate 2/5 = 40.0 %' && ok "rate" \
-  || fail "rate rc=$rc $(tail -1 "$TMP/out")"
+[[ $rc -eq 0 ]] && tail -1 "$TMP/out" | grep -qx 'change failure rate 3/5 = 60.0 %' && ok "M13 rate" \
+  || fail "M13 rate rc=$rc $(tail -1 "$TMP/out")"
 
 [[ -s "$FIX/denied.log" ]] && { fail "gh shim denied:"; sed 's/^/  /' "$FIX/denied.log"; }
 echo "[metrics-smoke] $oks ok, $fails FAIL"
