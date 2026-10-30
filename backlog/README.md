@@ -7,8 +7,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic      | File                                 | Done   | Partial | Open  | Total  |
 | --------- | ------------------------------------ | ------ | ------- | ----- | ------ |
-| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 16     | 0       | 1     | 17     |
-| **Total** |                                      | **16** | **0**   | **1** | **17** |
+| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 17     | 0       | 0     | 17     |
+| **Total** |                                      | **17** | **0**   | **0** | **17** |
 
 ## Execution order
 
@@ -40,15 +40,14 @@ flowchart TD
   S14["14 · worktree-prune.sh keeps a net-empty branch<br/>~~B1.14~~"]
   S15["15 · compose project from every checkout<br/>~~B1.15~~"]
   S16["16 · lead time and change failure baseline<br/>~~B1.16~~"]
-  S17["17 · plan-scope hook<br/>B1.17"]
+  S17["17 · plan-scope hook<br/>~~B1.17~~"]
   S16 --> S17
 ```
 
 ## Remaining
 
-| Step | ID    | Title                                                                       | Spec § | Status | Blocked by | Owner | Size         |
-| ---- | ----- | --------------------------------------------------------------------------- | ------ | ------ | ---------- | ----- | ------------ |
-| 17   | B1.17 | Plan-scope hook: a card worktree writes only the files of its approved plan | —      | Open   | ~~B1.16~~  | Lead  | M [estimate] |
+| Step | ID  | Title | Spec § | Status | Blocked by | Owner | Size |
+| ---- | --- | ----- | ------ | ------ | ---------- | ----- | ---- |
 
 ## Waiting on human
 
