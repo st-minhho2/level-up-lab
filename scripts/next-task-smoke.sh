@@ -12,6 +12,9 @@
 #   W11 --check, same file → 1                      W12 glob against file, either way → 1
 #   W13 only paperwork shared → 0 "no overlap"      W14 gh fails → warning, every branch Doing, refused as W2
 #   W15 --claim while another checkout holds a branch of the card → 1    W16 B9.3's PR CLOSED unmerged → To do
+#   review pass 1: W17 an identical path with [ ] collides; W18 a lower, ineligible step (B9.6, Human) is skipped and
+#   rows out of order still pick the lowest step; W19 --check sees a Review card's plan; W20 a ready PR on one branch
+#   and none on another → Doing; W21 --check reads a Doing card's plan from an origin-only branch
 set -uo pipefail
 cd "$(git rev-parse --show-toplevel)"
 SRC="$PWD/scripts/next-task.sh"
@@ -31,9 +34,10 @@ gw() { local d="$1"; shift; git -C "$d" -c user.name=s -c user.email=s@x -c comm
 mkdir -p "$R/backlog/plan"
 { printf '# Backlog\n\n## Remaining\n\n| Step | ID | Title | Spec § | Status | Blocked by | Owner | Size |\n'
   printf '| ---- | -- | ----- | ------ | ------ | ---------- | ----- | ---- |\n'
-  for i in 1 2 3 4 5; do printf '| %s | B9.%s | card %s | §5 | Open | | Dev | S |\n' "$i" "$i" "$i"; done
+  printf '| 0 | B9.6 | human only | §5 | Open | | Human | S |\n'
+  for i in 2 1 3 4 5; do printf '| %s | B9.%s | card %s | §5 | Open | | Dev | S |\n' "$i" "$i" "$i"; done
   printf '\n## Waiting on human\n'; } > "$R/backlog/README.md"
-for i in 1 2 3 4 5; do
+for i in 1 2 3 4 5 6; do
   printf '### B9.%s · card %s\n**Status: Open** — fixture\n- **Spec:** §5 — unchanged\n- **Test:** `x.test.ts::AC-5.%s t` — red because: x\n\n' "$i" "$i" "$i"
 done > "$R/backlog/plan/E9-fixture.md"
 g init -q -b main && g add -A && g commit -q -m init
@@ -59,6 +63,7 @@ prs() { printf '%b' "$1" > "$FIX/prs.tsv"; }
 
 # --- board and WIP -------------------------------------------------------------------------------------------------
 nt "$R"; picked B9.1 && ok W1 || fail "W1 rc=$rc $(head -1 "$TMP/out")"
+picked B9.1 && ok "W18 (B9.6 Human at step 0 skipped; rows 2,1,… still pick step 1)" || fail "W18 $(head -1 "$TMP/out")"
 awk '{print} /^\| ---- \|/{print "| 0 | B9.0 | local only | §5 | Open | | Dev | S |"}' "$R/backlog/README.md" > "$TMP/rd" && mv "$TMP/rd" "$R/backlog/README.md"
 printf '### B9.0 · local only\n**Status: Open** — fixture\n- **Spec:** §5 — unchanged\n- **Test:** `x.test.ts::AC-5.9 t` — red because: x\n' >> "$R/backlog/plan/E9-fixture.md"
 g commit -qam "local row, never pushed"
@@ -111,6 +116,17 @@ plan_on "$TMP/wt4" B9.4 'src/lib/*'; nt "$TMP/wt4" --check B9.4; r2=$rc
 [[ $r1 -eq 1 && $r2 -eq 1 ]] && ok W12 || fail "W12 file-in-their-glob rc=$r1, our-glob-over-their-file rc=$r2 (want 1, 1)"
 plan_on "$TMP/wt4" B9.4 backlog/README.md src/other.ts; nt "$TMP/wt4" --check B9.4
 [[ $rc -eq 0 ]] && grep -q 'no overlap' "$TMP/out" && ok W13 || fail "W13 rc=$rc $(head -1 "$TMP/out")"
+prs 'feat/B9.3-a\tOPEN\tfalse\n'
+gw "$R" worktree add -q "$TMP/wt3" feat/B9.3-a
+plan_on "$TMP/wt3" B9.3 src/lib/r.ts; plan_on "$TMP/wt4" B9.4 src/lib/r.ts; nt "$TMP/wt4" --check B9.4
+[[ $rc -eq 1 ]] && grep -q 'B9.3' "$TMP/out" && ok W19 || fail "W19 rc=$rc $(head -1 "$TMP/out")"
+gw "$C" checkout -q -b feat/B9.5-o && plan_on "$C" B9.5 src/lib/o.ts && gw "$C" push -q origin feat/B9.5-o
+plan_on "$TMP/wt4" B9.4 src/lib/o.ts; nt "$TMP/wt4" --check B9.4
+[[ $rc -eq 1 ]] && grep -q 'B9.5' "$TMP/out" && ok W21 || fail "W21 rc=$rc $(head -1 "$TMP/out")"
+plan_on "$TMP/wt1" B9.1 'src/app/[id]/page.tsx'; plan_on "$TMP/wt4" B9.4 'src/app/[id]/page.tsx'; nt "$TMP/wt4" --check B9.4
+[[ $rc -eq 1 ]] && grep -q 'B9.1' "$TMP/out" && ok W17 || fail "W17 rc=$rc $(head -1 "$TMP/out")"
+prs 'feat/B9.5-o\tOPEN\tfalse\n'; g branch feat/B9.5-b main
+nt "$R" --list; board B9.5 Doing && ok W20 || fail "W20 $(grep 'B9.5 ' "$TMP/out")"
 
 [[ -s "$FIX/denied.log" ]] && { fail "gh shim denied:"; sed 's/^/  /' "$FIX/denied.log"; }
 echo "[next-task-smoke] $oks ok, $fails FAIL"
