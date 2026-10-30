@@ -55,4 +55,4 @@ Steps: 1 red `test(scripts): B1.14 smoke P14-P15 net-empty branch` → 2 green `
 whose commits net to no change` → 3 `docs(backlog): B1.14 red and green evidence` → 4 `reviewer` diff (≤ 3 passes)
 → 5 PR by dev-lead; closing PR + prune after the lead merges.
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: approved, round 1 · Plan approved by: · Rounds: 1
