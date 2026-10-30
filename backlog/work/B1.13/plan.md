@@ -65,4 +65,4 @@ bash -n scripts/worktree-prune.sh scripts/prune-smoke.sh && scripts/hook-smoke.s
 Steps: 1 red `test(scripts): B1.13 prune smoke` → 2 green `fix(scripts): B1.13 prune every layout's schemas` → 3
 `reviewer` diff (≤ 3 passes) → 4 PR by dev-lead; closing PR + prune after the lead merges.
 
-Plan review: changes requested, round 2 (cap); both round-2 reasons applied above, not re-reviewed · Plan approved by: · Rounds: 1
+Plan review: changes requested, round 2 (cap); both round-2 reasons applied above, not re-reviewed · Plan approved by: lead (session reply "approve"), 2026-10-30 · Rounds: 1
