@@ -110,7 +110,7 @@ cut -f1,2,4,5 <<< "$(row B9.1)" | grep -qx $'B9.1\t101\t30\t0.5' && ok M1 || fai
 cut -f4 <<< "$(row B9.2)" | grep -qx 20 && ok M2 || fail "M2 $(row B9.2)"
 cut -f4 <<< "$(row B9.3)" | grep -qx 10 && ok M3 || fail "M3 $(row B9.3)"
 cut -f4 <<< "$(row B9.4)" | grep -qx 40 && ok M4 || fail "M4 $(row B9.4)"
-if [[ $rc -eq 0 ]] && cut -f3,4 <<< "$(row B9.5)" | grep -qx $'-\tn/a' && [[ -z "$(row B9.6)" ]] \
+if [[ $rc -eq 0 ]] && cut -f3,4 <<< "$(row B9.5)" | grep -qx -- $'-\tn/a' && [[ -z "$(row B9.6)" ]] \
   && tail -1 "$TMP/out" | grep -qx 'median 25 min (0.4 h) over 4 cards; n/a: B9.5'; then ok M5
 else fail "M5 rc=$rc $(tail -1 "$TMP/out")"; fi
 
