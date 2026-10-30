@@ -74,5 +74,5 @@ Steps: `test(scripts)` probes → `feat(scripts)` → `reviewer` diff → PR (`c
 `scripts/ci/`, `.claude/agents/`). Orchestrating session edits `scripts/`, as B1.12–B1.17.
 
 Plan review: changes requested, round 2 (cap); round-1 and round-2 reasons applied above, not re-reviewed; size
-M [estimate] (card says S) · Plan approved by: <empty until the lead approves> ·
+M [estimate] (card says S) · Plan approved by: lead (session reply "approve (b), không tách"), 2026-10-30 ·
 Rounds: 1
