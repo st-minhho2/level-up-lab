@@ -12,6 +12,9 @@ and the reviewer discovers at diff time that the direction was wrong. Re-doing i
 
 - Any task that will touch more than one file, or whose scope is unclear after reading the request once.
 - A one-sentence diff (rename, typo, a single-line fix with an obvious test) skips the plan; say so in the commit.
+- The two fixed lanes in `backlog/CLAUDE.md`, "Filing a card" and "Closing a card", count as planned: the checklist
+  is the plan, so their PRs carry no `Plan approved by` line. A PR touching a file outside its lane's checklist is
+  not in the lane and needs a plan.
 
 ## What a plan is
 

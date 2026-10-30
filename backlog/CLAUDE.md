@@ -29,6 +29,23 @@ section is rewritten (§8).
 `test(<pkg>): B<e>.<n> review pass N -- …`, without the `(red)` marker: `verify-red.sh` judges only `(red)` commits) → PR (`B<e>.<n>: <summary> (§n) (#PR)`
 on squash). `<pkg>` is the `src/` folder: `todos`, `health`, `env`, `ui`.
 
+## Filing a card (one commit, its own PR)
+
+A card found during other work (a spec gap, a tooling bug) is filed alone, before anyone works on it. Filing decides
+nothing: the lead rules any D-n later, and `dev-lead` plans the card when it is picked. This checklist is the plan,
+so the PR counts as planned (`.claude/rules/planning.md`) and needs no `Plan approved by` line.
+
+1. Add the card at the end of `plan/E<epic>-<name>.md` in the layout above, with the next unused id and
+   `**Status: Open** — <grep/line evidence>`. `Spec:` / `Test:` lines only where they need no ruling; without them
+   the card is not eligible until `spec-analyst` lands them.
+2. `README.md`: fix the status-summary totals, add the "Remaining" row and the card's node in "Execution order"
+   (`scripts/ci/check-backlog.sh` fails on wrong totals).
+3. Needs a ruling (optional) → `work/<card>/decision-request.md` with the D-n options and the recommended one, a
+   "Waiting on human" row `D-<n>`, and `D-<n>` in the card's "Blocked by".
+4. Nothing else: no `spec/`, `src/`, test, `00-decisions.md`, `docs/` or `.claude/` change. A PR that touches any
+   other file is not this lane and needs a plan line.
+5. Commit and PR title `docs(backlog): card B<e>.<n> <summary>`; the PR body names this lane and lists the files.
+
 ## Closing a card (one commit, with the PR)
 
 1. Replace the status line: `**Status: Done** — <sha>, <tests that went green>, <mutation %>`.
