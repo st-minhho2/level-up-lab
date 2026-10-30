@@ -7,7 +7,7 @@
 | `next-task.sh [--list]`                                            | the next eligible card (or the board) from `backlog/`                                                                       | —                                        |
 | `card-status.sh <id> <Open\|Partial\|Done> "<evidence>"`           | rewrites a card's status line                                                                                               | —                                        |
 | `verify-red.sh <card> [--auto]`                                    | the card's `test(...)` commit fails on behavior at its parent                                                               | node_modules; `--auto` PR only in CI     |
-| `hook-smoke.sh`                                                    | every hook probe (guards, each role's path-guard per worktree layout, gate)                                                 | —                                        |
+| `hook-smoke.sh`                                                    | every hook probe (guards; per worktree layout each role's path-guard and plan-scope S1–S15; check-plan-scope C1–C5; gate)   | —                                        |
 | `prune-smoke.sh [<prune-script>]`                                  | `worktree-prune.sh` probes P1–P15 on a throwaway repo and database (every layout, both checkouts)                           | compose PostgreSQL                       |
 | `compose-smoke.sh [<compose-file>]`                                | `docker compose` from every checkout layout and the devcontainer overlay reaches `level-up-lab` (C1–C6, read-only)          | compose PostgreSQL                       |
 | `metrics/lead-time.sh [<card>…]`                                   | approval → feature PR merge per Done card, whole minutes, and the median (`docs/metrics.md`)                                | `gh` (auth), fetch of `refs/pull/N/head` |
@@ -23,6 +23,8 @@
 | `ci/check-features-map.sh`                                         | every path and section in the map resolves                                                                                  | —                                        |
 | `ci/check-backlog.sh`                                              | README totals equal card status lines; remaining rows are Open/Partial cards                                                | —                                        |
 | `ci/check-agent-frontmatter.sh`                                    | agent/skill frontmatter is YAML with `name`, `description` (`--commands`)                                                   | node_modules (js-yaml)                   |
+| `ci/plan-files.sh <card> [<rev>]`                                  | the Files of a card's plan as of its approval commit (exit 3 unapproved, 4 no plan)                                         | git; run in the card's worktree          |
+| `ci/check-plan-scope.sh`                                           | a card branch's diff (from merge-base with `origin/<base>`) stays inside its approved plan; paperwork passes                | git range; `GITHUB_HEAD_REF` in CI       |
 
 All scripts are bash 3.2-safe (macOS) and run unchanged in the dev container and CI. No script is paid or
 destructive; none touches a non-local database.

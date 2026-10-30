@@ -124,6 +124,110 @@ gs "$REPO" worktree add -q --detach "$OUTSIDE/wt"
 pg 2 "$REPO" "$OUTSIDE/wt/src/a.ts" "git worktree of the project outside it" "${pats[@]}"
 rm -rf "$REPO" "$PLAIN" "$OUTSIDE"
 
+echo "== plan-scope.sh (B1.17): a card worktree writes only its approved plan's Files, per layout"
+# Fixture: a repo whose checkouts sit in every layout, each on a card branch of B9.1 cut after the plan's approval
+# commit; extra worktrees hold the other plan states. CLAUDE_PROJECT_DIR stays the repo root, as in a session.
+ps() { # ps <expected-exit> <project-dir> <file> <agent_type|-> <label>
+  local want="$1" root="$2" file="$3" who="$4" label="$5" json rc; n=$((n+1))
+  if [[ "$who" == - ]]; then json="$(read_path "$file")"; else json="$(printf '{"tool_input":{"file_path":"%s"},"agent_type":"%s"}' "$file" "$who")"; fi
+  printf '%s' "$json" | CLAUDE_PROJECT_DIR="$root" "$H/plan-scope.sh" >/dev/null 2>&1; rc=$?
+  if [[ $rc -eq $want ]]; then echo "ok   plan-scope exit $rc  $label"; else echo "FAIL plan-scope exit $rc (want $want)  $label"; fail=1; fi
+}
+plan_md() { # plan_md <dir> <card> <files...>: a plan whose Files table lists the given paths
+  local d="$1/backlog/work/$2" f; mkdir -p "$d"; shift 2
+  { printf '# plan\n\n## Files\n\n| File | Change |\n| ---- | ------ |\n'; for f in "$@"; do printf '| `%s` | x |\n' "$f"; done
+    printf '\n## Interfaces touched\n\n| `src/lib/not-a-file-row.ts` | x |\n'; } > "$d/plan.md"
+}
+PS="$(mktemp -d)"; PS_OUT="$(mktemp -d)"
+gs "$PS" init -q -b main && gs "$PS" commit -q --allow-empty -m init
+gs "$PS" checkout -q -b feat/B9.1-main
+plan_md "$PS" B9.1 src/lib/a.ts src/lib/a.test.ts "prisma/migrations/*" && gs "$PS" add -A && gs "$PS" commit -q -m "docs(backlog): B9.1 plan"
+gs "$PS" commit -q --allow-empty -m "docs(backlog): B9.1 plan approved"
+i=0; for lay in $LAYOUTS; do [[ "$lay" == . ]] || { i=$((i+1)); gs "$PS" worktree add -q -b "feat/B9.1-l$i" "$PS/$lay" feat/B9.1-main; }; done
+for lay in $LAYOUTS; do
+  w="$PS/$lay"
+  ps 0 "$PS" "$w/src/lib/a.ts" - "S1 $lay listed file"
+  ps 2 "$PS" "$w/src/lib/b.ts" code-writer "S2 $lay unlisted file"
+  ps 0 "$PS" "$w/backlog/README.md" - "S3 $lay paperwork backlog/"
+  ps 0 "$PS" "$w/spec/contracts/x.md" spec-analyst "S3 $lay paperwork spec/"
+  ps 0 "$PS" "$w/docs/metrics.md" - "S3 $lay paperwork docs/metrics.md"
+  ps 2 "$PS" "$w/docs/design/x.md" - "S3 $lay docs/ beyond the paperwork list"
+  ps 2 "$PS" "$w/src/lib/not-a-file-row.ts" - "S3 $lay a row outside ## Files"
+  ps 0 "$PS" "$w/src/lib/a.test.ts" test-writer "S7 $lay listed test as test-writer"
+  ps 2 "$PS" "$w/src/lib/a.test.ts" - "S8 $lay listed test from the main thread"
+  ps 2 "$PS" "$w/src/lib/a.test.ts" code-writer "S9 $lay listed test as code-writer"
+  ps 2 "$PS" "$w/prisma/migrations/1_x/migration.sql" code-writer "S10 $lay migration by Edit/Write, listed in the plan"
+done
+mk() { gs "$PS" worktree add -q -b "$2" "$PS/.claude/worktrees/$1" main; }
+mk unapproved feat/B9.2-x; W="$PS/.claude/worktrees/unapproved"
+plan_md "$W" B9.2 src/lib/a.ts && gs "$W" add -A && gs "$W" commit -q -m "docs(backlog): B9.2 plan"
+ps 2 "$PS" "$W/src/lib/a.ts" - "S4 listed, plan not approved"
+ps 0 "$PS" "$W/backlog/work/B9.2/plan.md" - "S4 the card's work folder before approval"
+mk noplan feat/B9.3
+ps 2 "$PS" "$PS/.claude/worktrees/noplan/src/lib/a.ts" - "S5 no plan (branch without a slug)"
+mk later feat/B9.1-later; W="$PS/.claude/worktrees/later"
+plan_md "$W" B9.1 src/lib/a.ts && gs "$W" add -A && gs "$W" commit -q -m "docs(backlog): B9.1 plan approved"
+plan_md "$W" B9.1 src/lib/a.ts src/lib/c.ts && gs "$W" add -A && gs "$W" commit -q -m "docs(backlog): B9.1 plan adds c.ts"
+ps 2 "$PS" "$W/src/lib/c.ts" - "S6 row added after the approval commit"
+gs "$W" commit -q --allow-empty -m "docs(backlog): B9.1 plan round 2 approved"
+ps 0 "$PS" "$W/src/lib/c.ts" - "S15 the same row after a round-2 approval"
+mk lane docs/B9.1-done
+ps 2 "$PS" "$PS/.claude/worktrees/lane/src/lib/a.ts" - "S11 docs/ lane branch writing src/ (no plan on main)"
+ps 0 "$PS" "$PS/.claude/worktrees/lane/backlog/README.md" - "S11 docs/ lane branch writing paperwork"
+mk other claude/x
+ps 0 "$PS" "$PS/.claude/worktrees/other/src/lib/z.ts" - "S12 branch without a card id"
+ps 0 "$PS" "$PS_OUT/src/lib/a.ts" - "S13 file outside the project"
+mk quote feat/B9.4-x; W="$PS/.claude/worktrees/quote"
+plan_md "$W" B9.4 src/lib/a.ts && printf '\nPlan approved by: lead (quoted in prose)\n' >> "$W/backlog/work/B9.4/plan.md"
+gs "$W" add -A && gs "$W" commit -q -m "docs(backlog): B9.4 plan"
+ps 2 "$PS" "$W/src/lib/a.ts" - "S14 plan quoting the approval line, no approval commit"
+rm -rf "$PS" "$PS_OUT"
+
+echo "== check-plan-scope.sh (B1.17): a card branch's diff stays inside its approved plan"
+cps() { # cps <expected-exit> <dir> <label>
+  local want="$1" dir="$2" label="$3" rc; n=$((n+1))
+  (cd "$dir" && env -u GITHUB_HEAD_REF -u GITHUB_BASE_REF "$ROOT_DIR/scripts/ci/check-plan-scope.sh") >/dev/null 2>&1; rc=$?
+  if [[ $rc -eq $want ]]; then echo "ok   check-plan-scope exit $rc  $label"; else echo "FAIL check-plan-scope exit $rc (want $want)  $label"; fail=1; fi
+}
+ROOT_DIR="$PWD"; CO="$(mktemp -d)"; C="$CO/c"
+git init -q --bare "$CO/origin.git" && git clone -q "$CO/origin.git" "$C" 2>/dev/null
+gs "$C" checkout -q -b main && gs "$C" commit -q --allow-empty -m init && gs "$C" push -q origin main
+gs "$C" checkout -q -b feat/B9.1-x
+plan_md "$C" B9.1 src/lib/a.ts && gs "$C" add -A && gs "$C" commit -q -m "docs(backlog): B9.1 plan approved"
+mkdir -p "$C/src/lib" && echo a > "$C/src/lib/a.ts" && gs "$C" add -A && gs "$C" commit -q -m "feat(todos): B9.1 a"
+cps 0 "$C" "C1 every changed file in the plan"
+echo b > "$C/src/lib/b.ts" && gs "$C" add -A && gs "$C" commit -q -m "feat(todos): B9.1 b"
+cps 1 "$C" "C2 src/lib/b.ts outside the plan"
+gs "$C" checkout -q -b docs/B9.5-done main && mkdir -p "$C/backlog" && echo r > "$C/backlog/README.md"
+gs "$C" add -A && gs "$C" commit -q -m "docs(backlog): B9.5 done"
+cps 0 "$C" "C3 lane branch with paperwork only"
+gs "$C" checkout -q -b sib main && mkdir -p "$C/src/lib" && echo z > "$C/src/lib/z.ts" && gs "$C" add -A && gs "$C" commit -q -m "feat: sibling"
+gs "$C" checkout -q -b feat/B9.6-x sib
+plan_md "$C" B9.6 src/lib/y.ts && gs "$C" add -A && gs "$C" commit -q -m "docs(backlog): B9.6 plan approved"
+echo y > "$C/src/lib/y.ts" && gs "$C" add -A && gs "$C" commit -q -m "feat(todos): B9.6 y"
+gs "$C" checkout -q main && mkdir -p "$C/src/lib" && echo z > "$C/src/lib/z.ts" && gs "$C" add -A && gs "$C" commit -q -m "feat: sibling (#1)" && gs "$C" push -q origin main
+gs "$C" checkout -q feat/B9.6-x && gs "$C" fetch -q origin && gs "$C" merge -q --no-edit origin/main
+cps 0 "$C" "C4 cut before a sibling's squash merge, then origin/main merged"
+gs "$C" checkout -q -b claude/x main && mkdir -p "$C/src/lib" && echo q > "$C/src/lib/q.ts" && gs "$C" add -A && gs "$C" commit -q -m "chore: q"
+cps 0 "$C" "C5 branch without a card id is skipped"
+gs "$C" checkout -q -b feat/B9.7-x main
+plan_md "$C" B9.7 src/lib/w.ts && gs "$C" add -A && gs "$C" commit -q -m "docs(backlog): B9.7 plan approved"
+echo w > "$C/src/lib/w.ts" && gs "$C" add -A && gs "$C" commit -q -m "feat(todos): B9.7 w"
+gs "$C" checkout -q main && echo m > "$C/src/lib/m.ts" && gs "$C" add -A && gs "$C" commit -q -m "feat: m (#2)" && gs "$C" push -q origin main
+gs "$C" checkout -q feat/B9.7-x
+cps 0 "$C" "C6 main moved on (src/lib/m.ts), branch not merged: only the branch's own changes count (review pass 1)"
+gs "$C" checkout -q -b feat/B9.8-x main
+plan_md "$C" B9.8 src/lib/a2.ts && gs "$C" add -A && gs "$C" commit -q -m "docs(backlog): B9.8 plan approved"
+gs "$C" mv src/lib/z.ts src/lib/a2.ts && gs "$C" commit -q -m "feat(todos): B9.8 rename"
+cps 1 "$C" "C7 a rename into a listed path still reports the deleted src/lib/z.ts (review pass 1)"
+gs "$C" checkout -q -b feat/B9.9-x main
+plan_md "$C" B9.9 src/lib/a.ts && gs "$C" add -A
+gs "$C" commit -q -m "docs(backlog): B9.9 plan revised" -m "docs(backlog): B9.9 plan approved comes next"
+n=$((n+1)); rc=0; (cd "$C" && "$ROOT_DIR/scripts/ci/plan-files.sh" B9.9 >/dev/null 2>&1) || rc=$?
+if [[ $rc -eq 3 ]]; then echo "ok   plan-files exit 3  C8 an approval phrase in a commit body is not an approval (review pass 1)"
+else echo "FAIL plan-files exit $rc (want 3)  C8 an approval phrase in a commit body is not an approval (review pass 1)"; fail=1; fi
+rm -rf "$CO"
+
 echo "== review gate (require-review.sh / mark-reviewed.sh)"
 STATE="node_modules/.cache/level-up-lab"; saved=""; [[ -f "$STATE/reviewed" ]] && saved="$(cat "$STATE/reviewed")"
 rm -f "$STATE/gate-warned"

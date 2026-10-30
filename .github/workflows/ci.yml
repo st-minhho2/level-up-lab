@@ -136,6 +136,8 @@ jobs:
         run: scripts/ci/check-features-map.sh
       - name: Backlog board matches the cards
         run: scripts/ci/check-backlog.sh
+      - name: Card branches stay inside their approved plan (B1.17)
+        run: scripts/ci/check-plan-scope.sh
       - name: Agent and skill frontmatter parses (else Claude Code skips the agent and its path-guard hook)
         run: scripts/ci/check-agent-frontmatter.sh
       # PR-only: a push to main carries no PR labels, and the squash merge folds the test(...) (red) and feat(...)

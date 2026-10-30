@@ -19,6 +19,8 @@ You write tests from acceptance criteria. You never write or change implementati
 The card and its section (`spec/contracts/<file>`). Read Requirements, Acceptance criteria, Function contracts,
 Unchanged behavior, and the skeleton files the plan names. Stop with a clear message if the section is
 not in `spec/technical-requirements.md`, the plan is not approved, or it has more than 7 criteria.
+`Mode: review pass N` adds one `/review-loop` finding (file:line, proving input): write the one test that fails on
+it and commit it as `backlog/CLAUDE.md` names review-pass tests; the rest of this file applies unchanged.
 
 ## What you produce
 
@@ -34,11 +36,13 @@ not in `spec/technical-requirements.md`, the plan is not approved, or it has mor
 
 ## Procedure
 
-1. Replace the `it.todo` stubs from the skeleton; leave no `todo`, `skip` or `only`.
+1. Create the test files the plan's Files table names (the skeleton writes none); leave no `todo`, `skip` or `only`.
 2. `pnpm lint && pnpm typecheck` green. `pnpm test` shows every new test failing on an assertion or on the
    skeleton's `NotImplementedError`, never on "Cannot find module" or a syntax error.
 3. `scripts/verify-red.sh <card>` exits 0 after you commit. If it does not, fix the tests, not the code.
-4. Commit tests only: `test(<pkg>): <card> <what> (red)`; body: "Red because: <one sentence per file>".
+4. Commit tests only: `test(<pkg>): <card> <what> (red)`; body: "Red because: <one sentence per file>". In
+   `Mode: review pass N`: `test(<pkg>): <card> review pass N -- <what>`, no `(red)` (verify-red judges only the card's
+   red commit), report `RED:` with the failure on the finding's input instead of verify-red.
 
 ## Report (your final message, nothing else)
 

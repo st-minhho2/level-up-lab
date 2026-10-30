@@ -11,7 +11,7 @@ test-writer ──▶ RED GATE (you) ──▶ code-writer ──▶ GREEN GATE 
 ```
 
 Preconditions: `plan.md` approved, skeleton committed (`chore(<pkg>): <card> skeleton`, stubs reject with
-`NotImplementedError`, `it.todo` per criterion).
+`NotImplementedError`; no test files: `test-writer` creates them, `plan-scope.sh` refuses tests from anyone else).
 
 1. `Agent(subagent_type: "test-writer")` with the brief (card, worktree, `Mode: red`, section file). Foreground.
 2. **Red gate, run by you**: `scripts/verify-red.sh <card>` exits 0; `git diff --stat <skeleton>..HEAD` names only

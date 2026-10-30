@@ -1,6 +1,6 @@
 ---
 name: new-feature-slice
-description: 'Scaffold the skeleton for a card whose spec section exists and whose plan is approved - stubs under src/lib, src/actions, src/components and src/app that reject with NotImplementedError, the Zod schema shape, and it.todo stubs titled with each AC-§.n - so the red tests fail on behavior instead of on imports. Commit as chore(<pkg>): <card> skeleton. Do not use to write real tests (/tdd-loop) or real logic (code-writer).'
+description: 'Scaffold the skeleton for a card whose spec section exists and whose plan is approved - stubs under src/lib, src/actions, src/components and src/app that reject with NotImplementedError, the Zod schema shape, and no test files (test-writer creates them in the red step) - so the red tests fail on behavior instead of on imports. Commit as chore(<pkg>): <card> skeleton. Do not use to write real tests (/tdd-loop) or real logic (code-writer).'
 ---
 
 # new-feature-slice
@@ -20,11 +20,10 @@ Input: the card id, its section file and a slice name in kebab-case (`todo-list`
    - `src/app/<slice>/page.tsx` (or `src/app/page.tsx` when the spec says the slice is the home page): Server
      Component that calls the list function and renders a placeholder `<main>` with an `<h1>`.
    - `src/components/<slice>-*.tsx` client components only if the spec needs interactivity; empty shells.
-   - Test stubs: `src/lib/<slice>-schema.test.ts`, `src/lib/<slice>.test.ts`, `src/actions/<slice>.test.ts`,
-     component `*.test.tsx` as needed, `e2e/<nn>-<slice>.spec.ts`; each contains only
-     `it.todo('AC-§.n: <criterion summary>')` lines so `pnpm test` stays green and the AC list is visible.
+   - No test files: `test-writer` creates every `*.test.ts(x)` and `e2e/` file in the red step, and
+     `.claude/hooks/plan-scope.sh` refuses a test file from any other writer (B1.17).
 3. If the spec needs a table, stop and run the `add-migration` skill first, then continue.
-4. `pnpm lint && pnpm typecheck && pnpm test` must pass (todos are not failures).
+4. `pnpm lint && pnpm typecheck && pnpm test` must pass.
 5. Commit alone: `chore(<pkg>): <card> skeleton`. No behavior, no real assertions in this commit.
 
 ## Guardrails
