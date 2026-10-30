@@ -70,5 +70,4 @@ merge and a main-checkout update: one live refusal of a `code-writer` write to a
 
 Plan review: changes requested, round 2 (cap); round-1 reasons 1–9 and round-2 reasons 1–2 applied above, round-2 fixes
 not re-reviewed. Riskiest: `agent_type` absent for subagents would make S7 fail live and refuse every red step;
-fallback = drop the role rule (seam: S7–S9, the skills, `test-writer.md`) in a follow-up card · Plan approved by: <empty until the lead
-approves> · Rounds: 1
+fallback = drop the role rule (seam: S7–S9, the skills, `test-writer.md`) in a follow-up card · Plan approved by: lead (session reply "approve (a) (A)"), 2026-10-30 · Rounds: 1
