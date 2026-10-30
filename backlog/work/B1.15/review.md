@@ -127,3 +127,91 @@ volume ls / network ls / ps -aq: identical before and after
   as reason 2, seen from the other side.
 
 Verdict: changes requested
+
+## Plan review (round 2)
+
+SCOPE: none of lib | actions | ui (tooling; `docker-compose.yml` or `scripts/`, advice files, `backlog/work/B1.15/`).
+Reviewed `plan.md` at `13388e8` (diff against `a2dba3a` read in full). Read-only Docker only: `config`, `ps -q`,
+`--dry-run up -d` on copies under the session scratchpad; `docker volume ls -q`, `network ls -q`, `ps -aq` identical
+before and after. The worktree was not edited. Adaptation of the checklist to a tooling card: as round 1.
+
+### Round-1 reasons
+
+| #   | Resolved? | Evidence                                                                                                                                                                                                                                                  |
+| --- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | yes       | New "Both, unchanged by this card" bullet: devcontainer already `level-up-lab`, `stopCompose` stated for both, `[unverified]` dropped. The card's `devcontainer.json:4` sentence is still wrong; that is the lead's note, not the plan's.                 |
+| 2   | yes       | (a) cost (1): every clone and copy joins the one project; `down -v` from any of them deletes `level-up-lab_pgdata`.                                                                                                                                       |
+| 3   | yes       | (a) cost (3) (shell confirmed, `.env` marked `[unverified]`, honestly: the `guard-bash` hook blocks writing a `.env` even in the scratchpad, so I could not run it either); (b) cost (4); smoke unsets `POSTGRES_PORT COMPOSE_PROJECT_NAME COMPOSE_FILE`. |
+| 4   | yes       | `docker` shim first on `PATH`, allowlist `config`/`ps`/`--dry-run up -d` on `-f <tmp>/…`, exit 99 fails the run. See "Not blocking" for its allowlist vs C6.                                                                                              |
+| 5   | partly    | Red line is now exact and true (traced below): `2 of 6 ok, FAIL: C2 C3 C4 C5; exit 1`, run from the card worktree. The green line is not (reason 1 below).                                                                                                |
+
+### Checklist
+
+| Check                           | Result                                                                                                                                                                                         |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| files belong to the card        | pass. Unchanged from round 1; `git grep` still finds no other compose advice site (`prune-smoke.sh`, `worktree-prune.sh` already use `-f "$MAIN/…"`).                                          |
+| interfaces stated               | pass. `compose-smoke.sh [<compose-file>]`, exit 1 on FAIL, needs `level-up-lab-postgres-1`; `compose.sh <args…>` (b).                                                                          |
+| advice                          | pass. No `advice.md` (Tier quick); recommendation (a) stated, lead chooses.                                                                                                                    |
+| costs stated and true           | fail (confirmed). (a) cost (2) is false on this machine (reason 2). Every other cost checked true: (a)(1) `other/myclone` reached the live container in round 1; (a)(3) `Recreate` in round 1. |
+| criteria measurable             | fail. C5's "same" includes "no `Creat`/`Recreat`", which the overlay cannot meet on green (reason 1).                                                                                          |
+| verification exact with numbers | fail. (a) green `6 of 6 ok` is false (reason 1); (b) has no command and no numbers (reason 3).                                                                                                 |
+| work breakdown                  | pass. Red `test(scripts): B1.15 compose smoke` → green `fix(compose): B1.15 …` → evidence → reviewer diff → PR; deviation stated as B1.13/B1.14.                                               |
+| protected path and label        | pass. (a) label by `CLAUDE.md` rule (not CI `PROTECTED`); (b) `.claude/skills/` is CI-`PROTECTED`. CODEOWNERS still unstated (not blocking, round 1).                                          |
+| one screen                      | 68 lines, above ≈ 40; equal to B1.13's approved plan. Not blocking.                                                                                                                            |
+| `Lead approves spec` box        | n/a: no section.                                                                                                                                                                               |
+| no settled D-n contradicted     | pass. D-13 shape for the red commit, invariants 2 and 6 respected.                                                                                                                             |
+
+### Probe runs (round 2)
+
+```
+N = x/level-up-lab/.claude/worktrees/app/.worktrees/s, copies of docker-compose.yml + .devcontainer/docker-compose.yml
+green (name: level-up-lab), overlay --dry-run up -d:
+  Container level-up-lab-postgres-1 Running
+  Volume level-up-lab_pnpm-store Creating / Created                 <- reason 1
+  Container level-up-lab-app-1 Creating / Created / Started          <- reason 1
+  overlay ps -q postgres = f46a9483…
+red (6663614 file), overlay --dry-run up -d:
+  Network s_default Creating, Volume s_pnpm-store / s_pgdata Creating, Container s-postgres-1 / s-app-1 Creating
+docker volume ls -q: level-up-lab_pgdata present (live container level-up-lab-postgres-1 on 5433)   <- reason 2
+volume ls / network ls / ps -aq: identical before and after
+```
+
+Red trace for (a) on `6663614`'s file: C1 (`level-up-lab/`) resolves `level-up-lab` → ok; C2 `s`, C3 `app`, C4 `s` →
+`ps -q` empty, dry-run `Creating` → FAIL; C5 overlay from N → `s_pgdata`, `s-postgres-1 Creating` → FAIL; C6 dry-runs
+create nothing, no denial → ok. `2 of 6 ok, FAIL: C2 C3 C4 C5; exit 1` is correct.
+
+### Reasons (changes requested)
+
+1. **(a) green expectation `6 of 6 ok` is false: C5 fails on the fix (confirmed).** C5 is "devcontainer overlay from
+   N: same, no `pgdata` volume", and "same" means C1–C4's "dry-run prints no `Creat`/`Recreat`". With
+   `name: level-up-lab` the overlay dry-run prints `Volume level-up-lab_pnpm-store Creating` and
+   `Container level-up-lab-app-1 Creating` (the app service and its volume have never existed here). So C5 FAILs on
+   green, the smoke exits 1, and the plan's step 2 cannot go green as written. Restate C5's assertion as what it is
+   meant to prove: `ps -q postgres` = the live id, the dry-run prints `Container level-up-lab-postgres-1 Running`,
+   and no line names `pgdata` or `postgres-1` with `Creat`/`Recreat`; creation of `app-1` and `pnpm-store` is
+   expected and allowed. Red stays red under that wording (`s_pgdata`, `s-postgres-1 Creating`).
+2. **(a) cost (2) is false whenever a `level-up-lab` project already exists on the machine, which is this machine
+   (confirmed).** It says a clone in a folder not named `level-up-lab` "moves to a new, empty `level-up-lab_pgdata`".
+   With `name:`, that clone resolves the same project as the main checkout (round 1: `other/myclone` `ps -q` =
+   `f46a9483…`, dry-run `Running`), so it joins the existing, non-empty `level-up-lab_pgdata` and the running
+   container, with whatever migrations and seed the other checkout applied. "New, empty" holds only if no
+   `level-up-lab` project exists yet. Restate: such a clone leaves its `<dir>_pgdata` behind (never dropped) and
+   joins the machine's one `level-up-lab` project, its data included, or creates it empty if none exists; its old
+   container holds 5433 until stopped. This is the cost the lead weighs against (b), so it must be true.
+3. **(b) has no verification command and no numbers.** The Verification block gives only (a)'s red and green. If the
+   lead picks (b), the plan states neither which command proves red, nor why it is red, nor the expected counts. The
+   red input for (b) is not a compose file (the smoke's `<compose-file>` argument does not change `compose.sh -f
+"$MAIN/…"`); on `6663614` `scripts/compose.sh` does not exist, so red would be a missing-script failure, which
+   `testing.md` treats like an import failure unless stated as the deviation. State for (b): the red command and the
+   reason it is red on behavior (or the accepted deviation), and `<k> of 5 ok, FAIL: …; exit 1` / `5 of 5 ok, exit 0`.
+
+### Not blocking
+
+- The shim's allowlist excludes the smoke's own reads: C1–C4's "id of `level-up-lab-postgres-1`" and C6's
+  `docker volume ls`, `network ls`, `ps -aq`. If the whole smoke runs with the shim first on `PATH`, C6 reports its
+  own denial. `prune-smoke.sh` resolves `REAL_DOCKER` before the shim and puts the shim on `PATH` only for the probed
+  call; one clause saying the same here removes the ambiguity.
+- `Rounds: 1` on the plan's last line will need the round count after this review.
+- CODEOWNERS (round 1) still unstated; the PR body can name it next to the label.
+
+Verdict: changes requested
