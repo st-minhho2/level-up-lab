@@ -59,11 +59,11 @@ role_patterns() { # the patterns each role's path-guard.sh must receive, in orde
 role_probes() { # <exit> <path> pairs: one write the role may make, one it may not
   case "$1" in
     advisor) echo "0 backlog/work/B1.2/advice.md 2 src/lib/todos.ts" ;;
-    code-writer) echo "0 src/lib/todos.ts 2 src/lib/todos.test.ts" ;;
+    code-writer) echo "0 src/lib/todos.ts 2 src/lib/todos.test.ts 2 e2e/x.spec.ts" ;;
     dev-lead) echo "0 backlog/work/B1.2/plan.md 2 src/lib/todos.ts 2 backlog/00-decisions.md" ;;
     reviewer) echo "0 backlog/work/B1.2/review.md 2 backlog/work/B1.2/plan.md" ;;
     spec-analyst) echo "0 spec/contracts/04-edit-title.md 2 src/lib/todos.ts 2 spec/features-map.md" ;;
-    test-writer) echo "0 src/lib/todos.test.ts 2 src/lib/todos.ts" ;;
+    test-writer) echo "0 src/lib/todos.test.ts 0 e2e/x.spec.ts 2 src/lib/todos.ts" ;;
   esac
 }
 FAKE="$(mktemp -d)"; mkdir -p "$FAKE/.claude/hooks"
@@ -84,6 +84,45 @@ $(scripts/ci/check-agent-frontmatter.sh --commands 2>/dev/null)
 EOF
 rm -rf "$FAKE"
 n=$((n+1)); if [[ $roles -eq 6 ]]; then echo "ok   6 roles declare a path-guard.sh hook"; else echo "FAIL $roles roles declare a path-guard.sh hook (want 6)"; fail=1; fi
+
+echo "== path-guard.sh per layout (main, .worktrees/<slug>, .claude/worktrees/<name>, nested) x role, with and without git"
+# CLAUDE_PROJECT_DIR stays the main checkout while the write lands in a worktree: patterns must see the path
+# relative to that worktree, and every refused write must stay refused.
+ROLES='advisor code-writer dev-lead reviewer spec-analyst test-writer'
+LAYOUTS='. .worktrees/s .claude/worktrees/n .claude/worktrees/n/.worktrees/b'
+pg() { # pg <expected-exit> <project-dir> <file> <label> <patterns...>
+  local want="$1" root="$2" file="$3" label="$4" rc; shift 4; n=$((n+1))
+  read_path "$file" | CLAUDE_PROJECT_DIR="$root" "$H/path-guard.sh" "$@" >/dev/null 2>&1; rc=$?
+  if [[ $rc -eq $want ]]; then echo "ok   path-guard exit $rc  $label"; else echo "FAIL path-guard exit $rc (want $want)  $label"; fail=1; fi
+}
+patterns_of() { set -f; pats=($(role_patterns "$1")); set +f; } # into pats, unglobbed
+layout_probes() { # layout_probes <mode> <project-dir>: each role's allowed and refused writes in every layout
+  local mode="$1" root="$2" lay role
+  for lay in $LAYOUTS; do
+    for role in $ROLES; do
+      patterns_of "$role"; set -- $(role_probes "$role")
+      while [[ $# -ge 2 ]]; do pg "$1" "$root" "$root/$lay/$2" "$mode $lay $role $2" "${pats[@]}"; shift 2; done
+    done
+    patterns_of test-writer
+    pg 2 "$root" "$root/$lay/e2e/new/../../src/lib/x.ts" "$mode $lay test-writer climbs out of a new dir" "${pats[@]}"
+  done
+}
+gs() { git -C "$1" -c core.hooksPath=/dev/null -c commit.gpgsign=false -c user.name=smoke -c user.email=smoke@localhost "${@:2}" >/dev/null 2>&1; }
+REPO="$(mktemp -d)"; PLAIN="$(mktemp -d)"; OUTSIDE="$(mktemp -d)"
+gs "$REPO" init -q && gs "$REPO" commit -q --allow-empty -m init
+for lay in $LAYOUTS; do [[ "$lay" == . ]] || gs "$REPO" worktree add -q --detach "$REPO/$lay"; mkdir -p "$PLAIN/$lay"; done
+n=$((n+1)); if [[ "$(git -C "$REPO" worktree list | wc -l | tr -d ' ')" == 4 ]]; then echo "ok   fixture repo has 4 worktrees"; else echo "FAIL fixture repo worktrees not created"; fail=1; fi
+layout_probes git "$REPO"
+layout_probes plain "$PLAIN"
+patterns_of code-writer
+mkdir -p "$REPO/vendor/other" && gs "$REPO/vendor/other" init -q
+pg 2 "$REPO" "$REPO/vendor/other/src/a.ts" "git nested clone (own .git) is not a worktree root" "${pats[@]}"
+gs "$REPO" worktree add -q --detach "$REPO/elsewhere/wt"
+pg 0 "$REPO" "$REPO/elsewhere/wt/src/lib/todos.ts" "git worktree at a path no prefix rule knows" "${pats[@]}"
+pg 2 "$REPO" "$REPO/elsewhere/wt/e2e/x.spec.ts" "git worktree at a path no prefix rule knows, refused" "${pats[@]}"
+gs "$REPO" worktree add -q --detach "$OUTSIDE/wt"
+pg 2 "$REPO" "$OUTSIDE/wt/src/a.ts" "git worktree of the project outside it" "${pats[@]}"
+rm -rf "$REPO" "$PLAIN" "$OUTSIDE"
 
 echo "== review gate (require-review.sh / mark-reviewed.sh)"
 STATE="node_modules/.cache/level-up-lab"; saved=""; [[ -f "$STATE/reviewed" ]] && saved="$(cat "$STATE/reviewed")"

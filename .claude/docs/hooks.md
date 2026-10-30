@@ -18,6 +18,13 @@ Every script is bash 3.2-safe and parses JSON with node. Probe table:
 `permissions.deny` also stops `git commit --no-verify`, `-n`, `core.hooksPath`, `LEFTHOOK=0`, `gh pr merge|review`,
 `gh api`, environment dumps and `.env` edits. `permissions.allow` pre-approves the routine project commands.
 
+`path-guard.sh` matches the path relative to the worktree that holds the file, not to `CLAUDE_PROJECT_DIR` (the main
+checkout when a session writes into `.worktrees/<slug>/` or the desktop app's `.claude/worktrees/<name>/`): it asks
+`git rev-parse --show-toplevel` from the file's nearest existing directory, accepts the answer only inside the project
+and with the same git common dir, and otherwise strips `.worktrees/*/` and `.claude/worktrees/*/` prefixes at any
+nesting. `..` is resolved first; a `..` through a directory that does not exist yet is refused. `hook-smoke.sh` probes
+every role in each layout, with and without git.
+
 Role write scopes (`path-guard.sh` arguments, as each agent's frontmatter passes them; `hook-smoke.sh` pins them):
 
 | Role           | May write                                                                                                      |

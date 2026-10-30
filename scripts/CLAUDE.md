@@ -7,7 +7,7 @@
 | `next-task.sh [--list]`                  | the next eligible card (or the board) from `backlog/`                        | —                                    |
 | `card-status.sh <id> <Open               | Partial                                                                      | Done> "<evidence>"`                  | rewrites a card's status line | —   |
 | `verify-red.sh <card> [--auto]`          | the card's `test(...)` commit fails on behavior at its parent                | node_modules; `--auto` PR only in CI |
-| `hook-smoke.sh`                          | every hook probe (guards, each role's path-guard, review gate)               | —                                    |
+| `hook-smoke.sh`                          | every hook probe (guards, each role's path-guard per worktree layout, gate)  | —                                    |
 | `require-hooks.sh`                       | exit 1 in a Claude Code session that did not load `.claude/settings.json`    | Lefthook pre-commit, `worktree.sh`   |
 | `setup-env.sh`, `port.sh`, `load-env.ts` | env bootstrap helpers                                                        | —                                    |
 | `ci/check-suppressions.sh`               | no new `eslint-disable` / `@ts-*`                                            | git range                            |
