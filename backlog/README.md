@@ -7,8 +7,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic      | File                                 | Done   | Partial | Open  | Total  |
 | --------- | ------------------------------------ | ------ | ------- | ----- | ------ |
-| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 13     | 0       | 0     | 13     |
-| **Total** |                                      | **13** | **0**   | **0** | **13** |
+| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 13     | 0       | 1     | 14     |
+| **Total** |                                      | **13** | **0**   | **1** | **14** |
 
 ## Execution order
 
@@ -37,12 +37,14 @@ flowchart TD
   S9 --> S11
   S12["12 · card-status.sh whole paragraph<br/>~~B1.12~~"]
   S13["13 · worktree-prune.sh every layout<br/>~~B1.13~~"]
+  S15["15 · compose project from every checkout<br/>B1.15"]
 ```
 
 ## Remaining
 
-| Step | ID  | Title | Spec § | Status | Blocked by | Owner | Size |
-| ---- | --- | ----- | ------ | ------ | ---------- | ----- | ---- |
+| Step | ID    | Title                                                               | Spec § | Status | Blocked by | Owner | Size         |
+| ---- | ----- | ------------------------------------------------------------------- | ------ | ------ | ---------- | ----- | ------------ |
+| 15   | B1.15 | `docker compose` reaches the one compose server from every checkout | —      | Open   |            | Lead  | S [estimate] |
 
 ## Waiting on human
 
