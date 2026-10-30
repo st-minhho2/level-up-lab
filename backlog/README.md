@@ -7,8 +7,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic      | File                                 | Done   | Partial | Open  | Total  |
 | --------- | ------------------------------------ | ------ | ------- | ----- | ------ |
-| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 12     | 0       | 1     | 13     |
-| **Total** |                                      | **12** | **0**   | **1** | **13** |
+| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 13     | 0       | 0     | 13     |
+| **Total** |                                      | **13** | **0**   | **0** | **13** |
 
 ## Execution order
 
@@ -36,14 +36,13 @@ flowchart TD
   S11["11 · Redact password as written<br/>~~B1.11~~"]
   S9 --> S11
   S12["12 · card-status.sh whole paragraph<br/>~~B1.12~~"]
-  S13["13 · worktree-prune.sh every layout<br/>B1.13"]
+  S13["13 · worktree-prune.sh every layout<br/>~~B1.13~~"]
 ```
 
 ## Remaining
 
-| Step | ID    | Title                                                                                     | Spec § | Status | Blocked by | Owner | Size         |
-| ---- | ----- | ----------------------------------------------------------------------------------------- | ------ | ------ | ---------- | ----- | ------------ |
-| 13   | B1.13 | `worktree-prune.sh` drops the schema of every merged or removed worktree, in every layout | —      | Open   |            | Lead  | S [estimate] |
+| Step | ID  | Title | Spec § | Status | Blocked by | Owner | Size |
+| ---- | --- | ----- | ------ | ------ | ---------- | ----- | ---- |
 
 ## Waiting on human
 
