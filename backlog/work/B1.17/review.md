@@ -470,3 +470,56 @@ thread ([unverified] until after merge; S7–S9 run on a synthetic payload only)
 | N   | `lead-time.sh:31` still `--grep` (any message line)       | out of scope | B1.16's script; no commit today quotes the phrase in a body; follow-up note in the PR body                     |
 | N   | OK-line wording has no probe                              | no change    | output text only; exit code pinned by C3                                                                       |
 | N   | `plan-files.sh` comment "as lead-time.sh"                 | fix now      | `f155633`: "(subject only)"                                                                                    |
+
+## Diff review (pass 3)
+
+SCOPE: none of lib | actions | ui (tooling). Narrow pass, as the brief asks: the delta `5bf576a..bdba010`
+(`f155633` fix: `review-loop/SKILL.md`, `test-writer.md`, `plan-files.sh` comment; `bdba010` dispositions), checked
+for closure of pass-2 finding 1, consistency of the three documents that name review-pass tests, and breakage.
+Nothing in the worktree edited.
+
+### Command results (last line each, run at `bdba010`)
+
+| Command                                                            | Result                                                                                                  |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| `pnpm lint` · `pnpm typecheck`                                     | `All matched files use Prettier code style!` · exit 0                                                   |
+| `pnpm test`                                                        | `Tests  115 passed (115)`                                                                               |
+| `pnpm test:e2e`                                                    | `13 passed (14.0s)` (the `e2e: insert rejected` log line is the AC fixture, not a failure)              |
+| `pnpm test:mutation`                                               | `Final mutation score of 89.02 is greater than or equal to break threshold 70` (no `src/`)              |
+| `scripts/hook-smoke.sh`                                            | `hook-smoke: 284 probes OK`                                                                             |
+| suppressions · feat-commits · ac-coverage                          | OK · OK · OK                                                                                            |
+| spec-sections · features-map                                       | OK · OK                                                                                                 |
+| `check-plan-scope.sh`                                              | `OK: feat/B1.17-plan-scope-hook stays inside the approved plan of B1.17`                                |
+| `check-agent-frontmatter.sh`                                       | `OK: 13 files`                                                                                          |
+| `check-config-change.sh`                                           | lists protected files (`scripts/ci/plan-files.sh` last): needs the human `config-change-approved` label |
+| `verify-red.sh B1.17`                                              | "no … (red) commit" (vitest-only gate, n/a for a tooling card, as passes 1–2)                           |
+| `git diff --stat origin/main...HEAD`                               | `17 files changed, 830 insertions(+), 56 deletions(-)`                                                  |
+| `git diff 9e4b64a..HEAD -- hook-smoke metrics-smoke *.test.* e2e/` | empty: no probe or test changed after the last test commit                                              |
+
+### Checklist (delta only)
+
+| Check                                         | Result                                                                                                                                                                                                                                                     |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| pass-2 finding 1 closed                       | pass: `SKILL.md:38-40` sends `Mode: review pass N` and the subject `test(<pkg>): <card> review pass N -- …` without `(red)`; grep over `.claude/`, `scripts/`, `backlog/CLAUDE.md`: `Mode: red` now only in `tdd-loop/SKILL.md:16` (the red step, correct) |
+| three documents agree                         | pass: `backlog/CLAUDE.md:28-29`, `review-loop/SKILL.md:38-39`, `test-writer.md:22-23,43-45` give the same subject, no `(red)`, same reason (`verify-red.sh` header step 1 selects only `(red)` subjects)                                                   |
+| test-writer pass-2 note (step 4, `RED:` line) | closed: step 4 now overrides subject and report for review-pass mode explicitly                                                                                                                                                                            |
+| `plan-files.sh` comment                       | pass: "(subject only)" matches `plan-files.sh` behavior; C8 still pins it (284 OK)                                                                                                                                                                         |
+| every changed file in plan                    | pass: `test-writer.md`, `review-loop/SKILL.md`, `plan-files.sh`, `review.md` are in Files (`check-plan-scope.sh` OK)                                                                                                                                       |
+| no test weakened                              | pass: no probe file touched after `9e4b64a`                                                                                                                                                                                                                |
+| anything new broken by `f155633`              | none found: comment-only change in `plan-files.sh` (`bash -n` via hook-smoke), two Markdown files lint-clean                                                                                                                                               |
+
+### Findings
+
+None blocking.
+
+Note (not blocking, pre-existing in `393aa38`, not introduced by `f155633`): `review-loop/SKILL.md:39-40` says the
+review-pass test is written by `test-writer` "never by you". For a tooling card, whose probes live in
+`scripts/hook-smoke.sh` (this card's `9e4b64a`), `test-writer`'s path-guard (`test-writer.md:11`: `*.test.ts`,
+`*.test.tsx`, `e2e/*`) refuses that file, so the instruction cannot be followed as written; `plan-scope.sh` does not
+gate non-test files by role, so nothing breaks, only the sentence is too wide. The skill's scope is `src/`, `prisma/`,
+`e2e/` changes, so a one-line follow-up ("tooling probes: the writer the plan names") is enough; PR-body note.
+
+Verdict: ready for PR (the `config-change-approved` label is the lead's).
+
+Riskiest unfalsified: `agent_type` = `test-writer` in a Task subagent's PreToolUse payload and absent on the main
+thread ([unverified] until a real dispatch after merge; S7–S9 use a synthetic payload).
