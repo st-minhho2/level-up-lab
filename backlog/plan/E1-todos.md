@@ -217,3 +217,24 @@ _tooling · no §_
   both rows (value, date, how to re-measure); bash 3.2, `git` + `gh` only, no new dependency
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.16/` — plan (rounds 1/1), review (plan rounds 2, cap reached, round-2 fixes accepted by the lead; diff pass 2/3, 3 findings fixed by `2a3f95e` + `1b4d382`); squash `f53fbf4` (#57)
+
+### B1.17 · Plan-scope hook: a card worktree writes only the files of its approved plan
+
+_tooling · no §_
+**Status: Open** — `ls .claude/hooks` → no plan-scope script; `.claude/settings.json:41` wires only
+`format-after-edit.sh` (PostToolUse) on `Edit|Write|MultiEdit`, no PreToolUse write guard; today a file outside
+`work/<card>/plan.md` "Files" is caught only by the `reviewer` at diff time (`.claude/rules/planning.md` "Approval
+and changes")
+
+- **Spec:** none — tooling (`.claude/docs/hooks.md` hook table, `scripts/CLAUDE.md`); no `src/` change, no section
+- **Test:** new probes in `scripts/hook-smoke.sh` for each worktree layout (`.worktrees/<slug>`,
+  `.claude/worktrees/<name>`, nested) — red because: in a worktree on branch `feat/B9.1-x` whose approved plan lists
+  only `src/lib/a.ts`, a Write to `src/lib/b.ts` is allowed (exit 0); expected: refused (exit 2) naming the plan
+- **Acceptance:** in a card worktree (card id from the branch name) a PreToolUse `Edit|Write|MultiEdit` hook refuses
+  a write to a file not listed in the approved `backlog/work/<card>/plan.md` Files table, and every write outside the
+  card's work folder while the plan carries no `Plan approved by: lead`; test files (`*.test.ts(x)`, `e2e/`) and
+  migrations (`prisma/migrations/`) only through their roles; the filing and closing lanes and non-card checkouts are
+  unaffected; probes pass for every layout; `.claude/` change → the PR needs the human-only `config-change-approved`
+  label
+- **Tier:** quick · **Depends on:** ~~B1.16~~ · **Owner:** Lead · **Size:** M [estimate]
+- **Work:** `work/B1.17/`
