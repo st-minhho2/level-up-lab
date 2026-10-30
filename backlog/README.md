@@ -7,8 +7,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic      | File                                 | Done   | Partial | Open  | Total  |
 | --------- | ------------------------------------ | ------ | ------- | ----- | ------ |
-| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 14     | 0       | 1     | 15     |
-| **Total** |                                      | **14** | **0**   | **1** | **15** |
+| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 15     | 0       | 0     | 15     |
+| **Total** |                                      | **15** | **0**   | **0** | **15** |
 
 ## Execution order
 
@@ -38,14 +38,13 @@ flowchart TD
   S12["12 · card-status.sh whole paragraph<br/>~~B1.12~~"]
   S13["13 · worktree-prune.sh every layout<br/>~~B1.13~~"]
   S14["14 · worktree-prune.sh keeps a net-empty branch<br/>~~B1.14~~"]
-  S15["15 · compose project from every checkout<br/>B1.15"]
+  S15["15 · compose project from every checkout<br/>~~B1.15~~"]
 ```
 
 ## Remaining
 
-| Step | ID    | Title                                                               | Spec § | Status | Blocked by | Owner | Size         |
-| ---- | ----- | ------------------------------------------------------------------- | ------ | ------ | ---------- | ----- | ------------ |
-| 15   | B1.15 | `docker compose` reaches the one compose server from every checkout | —      | Open   |            | Lead  | S [estimate] |
+| Step | ID  | Title | Spec § | Status | Blocked by | Owner | Size |
+| ---- | --- | ----- | ------ | ------ | ---------- | ----- | ---- |
 
 ## Waiting on human
 
