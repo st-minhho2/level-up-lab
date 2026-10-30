@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Rewrite a backlog card's status line. The only way agents change a card's state.
+# Rewrite a backlog card's status paragraph (the `**Status:` line and its continuation lines, up to the first blank
+# line, `- **` line or `### ` heading) as one line. The only way agents change a card's state.
 #   scripts/card-status.sh B1.2 Done "c7153b2, 12 tests green, mutation 80.1"
 #   scripts/card-status.sh B1.2 Partial "merged a1b2c3d, pending e2e"
 set -euo pipefail
@@ -13,7 +14,10 @@ tmp="$(mktemp)"
 awk -v id="$ID" -v new="$NEW" -v ev="$EVIDENCE" '
   $0 ~ "^### " id " · " { incard = 1; print; next }
   incard && /^### / { incard = 0 }
-  incard && /^\*\*Status: / { print "**Status: " new "** — " ev; incard = 2; next }
+  incard == 1 && /^\*\*Status: / { print "**Status: " new "** — " ev; incard = 2; skip = 1; next }
+  # The old status may run over several lines; drop them, or they stay under the new line.
+  skip && (/^$/ || /^- \*\*/ || /^### /) { skip = 0 }
+  skip { next }
   { print }
 ' "$FILE" > "$tmp" && mv "$tmp" "$FILE"
 grep -qE "^\*\*Status: $NEW\*\* — " "$FILE" || { echo "card $ID has no status line to rewrite" >&2; exit 1; }
