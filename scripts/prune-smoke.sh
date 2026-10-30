@@ -16,6 +16,9 @@
 #   P8  run from A: a merged N worktree is removed with its schema
 #   P9  --dry-run changes no worktree, branch or schema
 #   P10 Postgres down: exit 0, merged worktree removed, "left in place" and "orphan list skipped" printed, schema stays
+#   P11 run from inside a merged M worktree → that worktree kept ("current checkout")
+#   P12 a merged worktree whose .worktree.env names a non-wt_* schema (public) → removed, that schema not dropped
+#   P13 N directory deleted, merged → schema dropped, branch deleted, exit 0, a later merged worktree still removed
 #
 # Isolation: the throwaway main checkout is named like the real one, so compose resolves the running server's
 # project; COMPOSE_* is unset. A docker shim first on PATH forwards only `compose -f <throwaway repo>/…/
@@ -206,6 +209,26 @@ SMOKE_PG_DOWN=1 prune "$M"
 check "exit $RC" rc_is 0; check "merged dir left" no_dir "$WK"; check "schema dropped while down" has_schema "$(sch merged-k)"
 check "no 'left in place'" said "left in place"; check "no 'orphan list skipped'" said "orphan list skipped"
 group P10 "Postgres down: worktree removed, schema left, both messages"
+
+WP="$(mkwt "$M" cur-p)"; commit_wt "$WP" p.txt; squash_merge "$WP" p.txt
+prune "$WP"
+check "exit $RC" rc_is 0; check "current checkout removed" has_dir "$WP"; check "current checkout schema dropped" has_schema "$(sch cur-p)"
+check "no '(current checkout' line" said "(current checkout;"
+group P11 "run from inside a merged worktree: that worktree is kept"
+
+WQ="$(mkwt "$M" bad-q)"; commit_wt "$WQ" q.txt; squash_merge "$WQ" q.txt
+printf 'WORKTREE_SCHEMA=public\n' > "$WQ/.worktree.env"
+prune "$M"
+check "exit $RC" rc_is 0; check "public dropped" has_schema public; check "no refusal message" said "not a wt_* schema name"; check "bad-name worktree left" no_dir "$WQ"
+group P12 "a .worktree.env naming a non-wt_* schema: worktree removed, that schema not dropped"
+
+WM="$(mkwt "$A" gm-m)"; commit_wt "$WM" m.txt; squash_merge "$WM" m.txt; rm -rf "$WM"
+WN="$(mkwt "$M" gm-n)"; commit_wt "$WN" n.txt; squash_merge "$WN" n.txt
+prune "$M"
+check "exit $RC" rc_is 0; check "no 'done' line" said "[prune] done:"
+check "gone merged schema left" no_schema "$(sch gm-m)"; check "gone merged branch left" no_branch "feat/$P-gm-m"; check "gone merged metadata kept" unlisted "$WM"
+check "later merged worktree left" no_dir "$WN"; check "later merged schema left" no_schema "$(sch gm-n)"
+group P13 "N directory deleted, merged: schema dropped, branch deleted, exit 0, later worktrees still handled"
 
 # --- isolation ----------------------------------------------------------------------------------------------------
 iso=0
