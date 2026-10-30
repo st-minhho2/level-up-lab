@@ -133,3 +133,77 @@ Notes (no change requested):
 
 Riskiest unfalsified: the claim set behind `--schemas --drop` (which worktrees count as surviving, in which layout,
 from which checkout); a mistake there drops a live worktree's schema with no prompt, and no planned probe asserts it.
+
+## Plan review (round 2)
+
+SCOPE: none of lib | actions | ui (tooling: `scripts/worktree-prune.sh`, `scripts/prune-smoke.sh`, `scripts/CLAUDE.md`,
+`backlog/work/B1.13/`). Plan reviewed at `1619e44`. I ran the baseline commands from the plan's Verification:
+`check-backlog.sh` → `[check-backlog] OK: README matches the cards`, `hook-smoke.sh` → `221 probes OK`,
+`bash -n scripts/worktree-prune.sh` → exit 0, `/usr/bin/perl -MPOSIX -e setsid` → succeeds from a non-interactive shell,
+live `wt_*` schemas in `level_up_lab` → `wt_fix_b1_13_prune_every_layout` only (read-only). Round 1's throwaway repo
+and shim under `$TMPDIR/b113rev/` were reused. The worktree was not edited.
+
+### Round 1 reasons
+
+| #   | Reason                                                    | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| --- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | isolation vs red claim                                    | resolved in direction: no production seam; the main checkout is named after the real one, `COMPOSE_*` is unset, a `docker` shim rewrites `-d level_up_lab` to `prune_smoke_<pid>`, slugs are unique to the run, so `8572cc2`'s script runs on behavior (its `-d level_up_lab` is rewritten; P8 stays red because its `-f <app checkout>` resolves to an empty project, as confirmed in round 1). The shim's rule is still a blacklist, and that leaves one path to the live database open (new reason 2). |
+| 2   | keep-assertion on `--drop`, flag gaps                     | partly resolved: `--schemas --drop --dry-run` drops nothing (Interfaces); Postgres down → exit 0, worktrees still removed, the two messages printed, P10 added. **Not resolved:** the keep-assertion appears nowhere. The plan dropped P1–P9's definitions ("listed in its header"), but the smoke does not exist until after approval (new reason 1).                                                                                                                                                    |
+| 3   | costs for the lead                                        | resolved: (a)–(d) stated in their own paragraph.                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| 4   | pinned verification, numbers                              | resolved: red input `git show 8572cc2:…`, red = 7 FAIL / 3 ok / exit 1, green = 10 of 10 / exit 0, both `psql` commands with today's values (match what I read), `verify-red.sh B1.13` exit 1 by design and `--auto` exit 0. Only the last line has no expected output (note).                                                                                                                                                                                                                            |
+| 5   | smoke untouched after red                                 | resolved: the green commit touches no line of the smoke; the diff review checks `git diff <test>..HEAD -- scripts/prune-smoke.sh`; any later change is its own `test(scripts)` commit.                                                                                                                                                                                                                                                                                                                    |
+| n   | notes (globstar, `pwd -P`, merge-tree order, `\|` escape) | taken: a `case` pattern with a slash-free slug, `pwd -P` of a mktemp dir, the no-commit check first with its reason, the `card-status.sh` row escape in Files.                                                                                                                                                                                                                                                                                                                                            |
+
+### Checklist
+
+| Check                           | Result                                                                                                           |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| files belong to the card        | pass: unchanged from round 1, plus a one-character `\|` escape in the same `scripts/CLAUDE.md` table (in Files). |
+| interfaces stated               | pass: three CLI lines pasted; `WORKTREE_PRUNE_DB` gone; `--drop --dry-run` and Postgres-down behavior stated.    |
+| advice                          | pass: skip stated.                                                                                               |
+| criteria measurable             | fail: P1–P10 are named in Verification but defined nowhere a reader can see before approval (reason 1).          |
+| smoke isolation                 | fail: blacklist shim (reason 2).                                                                                 |
+| verification exact with numbers | pass (note on the last line).                                                                                    |
+| work breakdown                  | pass: red `test(scripts)` → green `fix(scripts)` → review → PR; subjects match `lefthook.yml:31`.                |
+| who edits `scripts/`, protected | pass: orchestrating session under this approval; no path matches `check-config-change.sh:10`.                    |
+| costs stated for the lead       | pass: (a)–(d).                                                                                                   |
+| `Lead approves spec` box        | n/a: no section.                                                                                                 |
+| no settled D-n contradicted     | pass: none governs `scripts/`; D-13 shape for the test commit.                                                   |
+
+### Verdict: changes requested
+
+1. **Put P1–P10 back in the plan.** The Verification line "FAIL P1 P2 P3 P4 P7 P8 P10, ok P5 P6 P9" now refers to probes
+   defined only in a smoke header that lands in step 1, after the lead approves. So the lead approves expected results
+   without knowing what they test, and round 1's reason 2 (after `--schemas --drop`, run from both checkouts, the
+   schemas of the kept worktrees in all three layouts still exist and exactly one schema, the orphan, is gone) is in
+   no committed artifact the diff review can hold the smoke to. Round 1's note suggested the smoke header; that was
+   wrong advice, since the header cannot be reviewed before approval. Restore a compact list (3–5 lines, one clause per
+   probe) that states P7's keep-assertion and P10's expected end state, and cut the Approach prose to pay for it.
+2. **Make the shim a whitelist. With a blacklist, one query reaching the live database lets P7 drop this card's own
+   schema.** "Rewrites `-d level_up_lab` … aborts on any other `-d`" passes every database selector that is not the
+   literal token `-d`: `--dbname=level_up_lab`, `-dlevel_up_lab`, `-e PGDATABASE=level_up_lab`, or a connection URI.
+   The run-unique slugs only protect the per-worktree drops. The orphan path drops whatever the `SELECT` returns, and
+   `level_up_lab` holds `wt_fix_b1_13_prune_every_layout`, which no throwaway worktree claims. So a fixed script that
+   spells the database any other way lists it as `[orphan]`, and P7's `--schemas --drop` drops it, before the
+   after-run `psql` check can report it (round 1 showed the old `--schemas` classifying unclaimed names this way).
+   State the shim as a whitelist: it forwards only `compose -f <path under the throwaway repo> ps …` and
+   `compose -f … exec … postgres psql …` carrying exactly one database selector, `-d level_up_lab`, rewritten to
+   `prune_smoke_<pid>`. Every other invocation (another selector form, a missing selector, `-e PG*`, any other
+   subcommand such as `up`/`down`/`stop`) exits non-zero and the smoke reports FAIL. Under `SMOKE_PG_DOWN=1`, every
+   call reports the server down, not only `ps`, so P10 does not depend on which command the fixed script uses to
+   detect Postgres.
+
+Notes (no change requested):
+
+- The plan is 71 lines, longer than round 1's 61, against planning.md's "≈ 40 … not on one screen is two tasks". The
+  Deviations paragraph and the boilerplate Work breakdown rows are where the room is. Not blocking, as in round 1,
+  but reason 1 adds lines.
+- The Verification's last line (`bash -n … && hook-smoke.sh && check-backlog.sh`) has no expected output. Today it
+  gives exit 0, `hook-smoke: 221 probes OK` and `[check-backlog] OK: README matches the cards`.
+- `perl … setsid` fails when the process is a process-group leader (an interactive shell with job control). Inside
+  the smoke's non-interactive bash it succeeds (I ran it). A human calling the prune script directly through it would
+  keep the tty, which only matters for `--all`.
+- `Rounds: 1` in the plan's last line should read 2 after this revision.
+
+Riskiest unfalsified: the shim's argument matching. It is new bash code that alone stands between the smoke and
+`level_up_lab`, and nothing tests it except the after-run `psql` comparison, which reports a drop after it has happened.
