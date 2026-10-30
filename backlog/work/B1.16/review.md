@@ -342,3 +342,82 @@ history.
 | N1  | timestamps vs `approval_sha`/minutes | PR body     | stated as a deviation in the PR body; the approved interface stands                                              |
 | N2  | negative minutes truncate toward 0   | no change   | a merge before its approval cannot happen on a card's own PR head; no real row is negative                       |
 | N3  | `--limit 1000`, 100 files, spaces    | PR body     | 56 merged PRs today; noted as limits                                                                             |
+
+## Diff review (pass 2)
+
+SCOPE: none of lib | actions | ui (tooling). Delta since pass 1: `2a3f95e` (test: smoke M11–M13, +17/−9 in
+`scripts/metrics-smoke.sh`), `1b4d382` (fix: `scripts/metrics/lead-time.sh` lines 29 and 33 only), `94a79e0` (this
+file). Probes ran on an archive copy of HEAD (`$TMPDIR/…/probe2`, one exact-string mutant at a time, restored after
+each run); the worktree was not edited (`git status` clean after every run, mutation report under ignored `reports/`).
+
+### Command results (last line, exit)
+
+```text
+pnpm lint                               All matched files use Prettier code style!                                  0
+pnpm typecheck                          tsc --noEmit                                                                0
+pnpm test                               Tests  115 passed (115)                                                     0
+pnpm test:e2e                           13 passed (15.5s)                                                           0
+pnpm test:mutation                      Final mutation score of 89.02 is greater than or equal to break threshold 70  0
+scripts/ci/check-suppressions.sh        [check-suppressions] OK: no new suppressions                                0
+scripts/ci/check-config-change.sh       [check-config-change] OK: no protected config changed                       0
+scripts/ci/check-feat-commits.sh        [check-feat-commits] OK: no feat commit touches tests                       0
+scripts/ci/check-ac-coverage.sh         [check-ac-coverage] OK: every criterion of a shipped section has a test     0
+scripts/ci/check-spec-sections.sh       [check-spec-sections] OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11           0
+scripts/ci/check-features-map.sh        [check-features-map] OK                                                     0
+scripts/ci/check-backlog.sh             [check-backlog] OK: README matches the cards                                0
+bash -n scripts/metrics/*.sh scripts/metrics-smoke.sh                                                               0
+scripts/verify-red.sh B1.16             ::error::no 'test(<pkg>): B1.16 … (red)' commit  (expected, as pass 1: the plan carries no marker)
+scripts/metrics-smoke.sh (HEAD)         [metrics-smoke] 11 ok, 0 FAIL
+HEAD smoke vs cb42e66 tick pattern      [metrics-smoke] 8 ok, 3 FAIL (M2, M11, M5): M11 red before the fix, as 2a3f95e states
+scripts/metrics/lead-time.sh            median 35 min (0.6 h) over 14 cards; n/a: B1.1   (rows identical to pass 1)  0
+scripts/metrics/change-failure-rate.sh  change failure rate 1/15 = 6.7 %   (only hit: B1.13 #46 → #50)               0
+git diff --stat main...HEAD             9 files changed, 721 insertions(+), 40 deletions(-)
+```
+
+### Pass-1 findings, re-run
+
+| #   | Mutant on the copy                                                                                | Pass 1          | Pass 2                                         |
+| --- | ------------------------------------------------------------------------------------------------- | --------------- | ---------------------------------------------- |
+| 1   | tick pattern back to unescaped `([^)]*$esc)` (cb42e66)                                            | 10 ok, 0 FAIL   | killed: 8 ok, 3 FAIL (M2, M11, M5)             |
+| 1   | closing `\)` dropped (`B9.20` then matches `B9.2`)                                                | not run         | killed: 8 ok, 3 FAIL (M2, M11, M5)             |
+| 1   | only the opening paren unescaped (unbalanced ERE)                                                 | not run         | killed: 5 ok, 6 FAIL (git exits 128)           |
+| 2   | `(backlog\|docs\|spec)` → drop `docs`, drop `backlog`, drop `spec`, drop the whole directory test | 2 of 2 survived | 4 of 4 killed: 9 ok, 2 FAIL (M8 M12, M13 rate) |
+| 3   | `repair[r]` → `repair[r card]`                                                                    | survived        | killed: 10 ok, 1 FAIL (M13 rate)               |
+
+All three findings are closed by a probe that fails when the fix is reverted.
+
+### Checklist
+
+| Check                                 | Result                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every Acceptance item has a probe     | pass: M1–M13; pass-1 gaps [2], [3] now pinned                                                                                                                                                                                                                                                                                                                                                                                                |
+| no test weakened                      | pass: `git diff 25f66fe..HEAD -- scripts/metrics-smoke.sh` is 9d2a0e3 (accepted in pass 1) plus 2a3f95e. 2a3f95e changes three expected values because of fixture PR #210 (`#201`→`#201,#210`, `-`→`#210`, `2/5 = 40.0 %`→`3/5 = 60.0 %`); each stays an exact `grep -qx`/`==`. M7/M10 still fail when #202 (late) or #205 (early) leak in: window +1 day and dropped lower bound both killed (9 ok, 2 FAIL). No `*.test.*` or `e2e/` change |
+| commit order                          | pass: hardening `test(scripts): B1.16 review pass 1 -- …` before `fix(scripts)`; the fix touches only `lead-time.sh`                                                                                                                                                                                                                                                                                                                         |
+| every changed file is in `plan.md`    | pass: delta files are `lead-time.sh`, `metrics-smoke.sh`, `review.md`, all in the Files table                                                                                                                                                                                                                                                                                                                                                |
+| interfaces match the plan             | pass: usage, TSV headers, last-line formats unchanged; real rows byte-identical to pass 1; line-29 comment now says ERE                                                                                                                                                                                                                                                                                                                      |
+| Zod / Prisma / raw SQL / migration    | n/a: no `src/`, no `prisma/`                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| no secret, no suppression, no new dep | pass                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| features map row                      | n/a (tooling); `docs/metrics.md` rows unchanged and still re-derive (35, 15–396, 1/15 = 6.7 %)                                                                                                                                                                                                                                                                                                                                               |
+| would a reverted line fail a probe    | 28 mutants this pass (the pass-1 set re-run plus variants of each finding). Killed 19; the 9 survivors are under Notes                                                                                                                                                                                                                                                                                                                       |
+
+### Findings
+
+None blocking.
+
+### Notes (not blocking)
+
+- Survivors already judged acceptable in pass 1, unchanged: tick `head -1`→`tail -1` (the "oldest" is still unpinned: the
+  new B9.20 fixture no longer matches B9.2 once escaped, so it does not exercise it), `-- spec/` dropped, plan
+  `--first-parent` dropped, window `<=`→`<` and `>`→`>=`, `r == pr ||` dropped (equivalent, carried by the window).
+- New survivors, near-equivalent: tick `[^)]*` → `.*` (differs only for a `)` between "spec (" and the id on one line);
+  plan `--no-merges` dropped (a merge commit would need a `docs(backlog): <card> plan approved` subject);
+  title filter `(fix|revert)(\(|:|!)` → `(fix|revert)` (would count a title such as `fixture: …` or `fixes …`; no
+  such prefix is in this repo's commit types). None has a trigger in today's history.
+- Pass-1 notes N1 (timestamps vs `approval_sha`) and N3 (limits) are dispositioned "PR body"; check the PR body carries
+  both when it is opened.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the first-parent walk still includes `main`'s history before the branch point, so a tick or
+`plan approved` subject for the same card (not a prefix-sharing one, which M11 now covers) reaching `main` before the
+branch is cut would be taken as that card's approval; no probe or real card exercises it.
