@@ -18,15 +18,20 @@ Every script is bash 3.2-safe and parses JSON with node. Probe table:
 `permissions.deny` also stops `git commit --no-verify`, `-n`, `core.hooksPath`, `LEFTHOOK=0`, `gh pr merge|review`,
 `gh api`, environment dumps and `.env` edits. `permissions.allow` pre-approves the routine project commands.
 
-Role write scopes (`path-guard.sh` arguments):
+Role write scopes (`path-guard.sh` arguments, as each agent's frontmatter passes them; `hook-smoke.sh` pins them):
 
-| Role                      | May write                                                                                   |
-| ------------------------- | ------------------------------------------------------------------------------------------- |
-| `spec-analyst`, `advisor` | `spec/contracts/*`, `backlog/*`, `backlog/work/*` (not `spec/features-map.md`)              |
-| `dev-lead`                | `backlog/*`, `backlog/work/*`, `docs/metrics.md`, `docs/mistake-log.md`                     |
-| `reviewer`                | `backlog/work/*/review.md`                                                                  |
-| `test-writer`             | `*.test.ts`, `*.test.tsx`, `e2e/*`                                                          |
-| `code-writer`             | `src/*`, `prisma/*`, `spec/features-map.md`; not tests, not `e2e/`, not `src/lib/prisma.ts` |
+| Role           | May write                                                                                                      |
+| -------------- | -------------------------------------------------------------------------------------------------------------- |
+| `spec-analyst` | `spec/contracts/*`, `backlog/*`; not `spec/features-map.md`, not `backlog/00-decisions.md`                     |
+| `advisor`      | `backlog/work/*`                                                                                               |
+| `dev-lead`     | `backlog/*`, `docs/metrics.md`, `docs/mistake-log.md`; not `backlog/00-decisions.md`                           |
+| `reviewer`     | `backlog/work/*/review.md`                                                                                     |
+| `test-writer`  | `*.test.ts`, `*.test.tsx`, `e2e/*`                                                                             |
+| `code-writer`  | `src/*`, `prisma/*`, `spec/features-map.md`, `docs/metrics.md`; not tests, not `e2e/`, not `src/lib/prisma.ts` |
+
+Claude Code skips an agent whose frontmatter is not valid YAML, and with it the agent's `path-guard.sh` hook.
+`scripts/ci/check-agent-frontmatter.sh` (CI `guards`, `hook-smoke.sh`) parses every agent and skill frontmatter;
+write a hook command as one quoted scalar (prettier makes it single-quoted, inner `'` doubled).
 
 Merge policy (D-8, D-9): the ruleset on `main` requires the CI checks `lint typecheck test e2e mutation semgrep guards`,
 a pull request (0 approvals while the repo has one account, 1 once a second person joins), forbids direct and force

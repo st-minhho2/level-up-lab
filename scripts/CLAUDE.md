@@ -7,7 +7,7 @@
 | `next-task.sh [--list]`                  | the next eligible card (or the board) from `backlog/`                        | —                                    |
 | `card-status.sh <id> <Open               | Partial                                                                      | Done> "<evidence>"`                  | rewrites a card's status line | —   |
 | `verify-red.sh <card> [--auto]`          | the card's `test(...)` commit fails on behavior at its parent                | node_modules; `--auto` PR only in CI |
-| `hook-smoke.sh`                          | every hook probe (guards, role write scopes, review gate)                    | —                                    |
+| `hook-smoke.sh`                          | every hook probe (guards, each role's path-guard, review gate)               | —                                    |
 | `require-hooks.sh`                       | exit 1 in a Claude Code session that did not load `.claude/settings.json`    | Lefthook pre-commit, `worktree.sh`   |
 | `setup-env.sh`, `port.sh`, `load-env.ts` | env bootstrap helpers                                                        | —                                    |
 | `ci/check-suppressions.sh`               | no new `eslint-disable` / `@ts-*`                                            | git range                            |
@@ -17,6 +17,7 @@
 | `ci/check-spec-sections.sh`              | every `§n` cited in `src/`, the map and cards exists                         | —                                    |
 | `ci/check-features-map.sh`               | every path and section in the map resolves                                   | —                                    |
 | `ci/check-backlog.sh`                    | README totals equal card status lines; remaining rows are Open/Partial cards | —                                    |
+| `ci/check-agent-frontmatter.sh`          | agent/skill frontmatter is YAML with `name`, `description` (`--commands`)    | node_modules (js-yaml)               |
 
 All scripts are bash 3.2-safe (macOS) and run unchanged in the dev container and CI. No script is paid or
 destructive; none touches a non-local database.

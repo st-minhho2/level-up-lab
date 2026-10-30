@@ -44,6 +44,47 @@ probe 2 path-guard.sh "$(read_path "$PWD/spec/contracts/04-edit-title.md")" "${D
 probe 2 path-guard.sh "$(read_path "$PWD/backlog/work/../../src/lib/x.ts")" "${DOCS[@]}"
 probe 2 path-guard.sh "$(read_path "/etc/hosts")" "${DOCS[@]}"
 
+echo "== agent frontmatter (parses; each role's hook command, as the YAML yields it, reaches path-guard.sh)"
+n=$((n+1)); if out="$(scripts/ci/check-agent-frontmatter.sh 2>&1)"; then echo "ok   $out"; else printf 'FAIL %s\n' "$out"; fail=1; fi
+role_patterns() { # the patterns each role's path-guard.sh must receive, in order
+  case "$1" in
+    advisor) echo "backlog/work/*" ;;
+    code-writer) echo "src/* prisma/* spec/features-map.md docs/metrics.md !*.test.ts !*.test.tsx !e2e/* !src/lib/prisma.ts" ;;
+    dev-lead) echo "backlog/* docs/metrics.md docs/mistake-log.md !backlog/00-decisions.md" ;;
+    reviewer) echo "backlog/work/*/review.md" ;;
+    spec-analyst) echo "spec/contracts/* backlog/* !spec/features-map.md !backlog/00-decisions.md" ;;
+    test-writer) echo "*.test.ts *.test.tsx e2e/*" ;;
+  esac
+}
+role_probes() { # <exit> <path> pairs: one write the role may make, one it may not
+  case "$1" in
+    advisor) echo "0 backlog/work/B1.2/advice.md 2 src/lib/todos.ts" ;;
+    code-writer) echo "0 src/lib/todos.ts 2 src/lib/todos.test.ts" ;;
+    dev-lead) echo "0 backlog/work/B1.2/plan.md 2 src/lib/todos.ts 2 backlog/00-decisions.md" ;;
+    reviewer) echo "0 backlog/work/B1.2/review.md 2 backlog/work/B1.2/plan.md" ;;
+    spec-analyst) echo "0 spec/contracts/04-edit-title.md 2 src/lib/todos.ts 2 spec/features-map.md" ;;
+    test-writer) echo "0 src/lib/todos.test.ts 2 src/lib/todos.ts" ;;
+  esac
+}
+FAKE="$(mktemp -d)"; mkdir -p "$FAKE/.claude/hooks"
+printf '#!/bin/sh\nprintf "%%s\\n" "$@"\n' > "$FAKE/.claude/hooks/path-guard.sh"; chmod +x "$FAKE/.claude/hooks/path-guard.sh"
+roles=0
+while IFS="$(printf '\t')" read -r role cmd; do
+  roles=$((roles+1)); n=$((n+1)); want="$(role_patterns "$role")"
+  got="$(printf '{}' | CLAUDE_PROJECT_DIR="$FAKE" sh -c "$cmd" | tr '\n' ' ')"; got="${got% }"
+  if [[ -n "$want" && "$got" == "$want" ]]; then echo "ok   $role passes: $got"; else printf 'FAIL %s passes [%s] (want [%s])\n' "$role" "$got" "$want"; fail=1; fi
+  set -- $(role_probes "$role")
+  while [[ $# -ge 2 ]]; do
+    n=$((n+1)); rc=0; printf '%s' "$(read_path "$PWD/$2")" | sh -c "$cmd" >/dev/null 2>&1 || rc=$?
+    if [[ $rc -eq $1 ]]; then echo "ok   $role exit $rc  $2"; else echo "FAIL $role exit $rc (want $1)  $2"; fail=1; fi
+    shift 2
+  done
+done <<EOF
+$(scripts/ci/check-agent-frontmatter.sh --commands 2>/dev/null)
+EOF
+rm -rf "$FAKE"
+n=$((n+1)); if [[ $roles -eq 6 ]]; then echo "ok   6 roles declare a path-guard.sh hook"; else echo "FAIL $roles roles declare a path-guard.sh hook (want 6)"; fail=1; fi
+
 echo "== review gate (require-review.sh / mark-reviewed.sh)"
 STATE="node_modules/.cache/level-up-lab"; saved=""; [[ -f "$STATE/reviewed" ]] && saved="$(cat "$STATE/reviewed")"
 rm -f "$STATE/gate-warned"
