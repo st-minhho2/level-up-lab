@@ -207,3 +207,48 @@ Notes (no change requested):
 
 Riskiest unfalsified: the shim's argument matching. It is new bash code that alone stands between the smoke and
 `level_up_lab`, and nothing tests it except the after-run `psql` comparison, which reports a drop after it has happened.
+
+## Build evidence (dev-lead)
+
+Red `175dfb0` (`test(scripts): B1.13 prune smoke`), green `564e9ac` (`fix(scripts): B1.13 prune every layout's
+schemas`); `git diff 175dfb0..564e9ac -- scripts/prune-smoke.sh` is empty.
+
+```
+$ git show 8572cc2:scripts/worktree-prune.sh > "$TMPDIR/prune-main.sh"
+$ /bin/bash scripts/prune-smoke.sh "$TMPDIR/prune-main.sh"
+ok   P9 --dry-run changes nothing
+FAIL P1 …: M merged dir left; M merged schema left; M merged branch left
+FAIL P2 …: N merged dir left; N merged schema left; N merged branch left
+FAIL P3 …: gone schema left
+FAIL P4 …: no-commit dir removed; no-commit schema dropped; no-commit branch deleted
+ok   P5 M and N unmerged: kept
+ok   P6 main and app checkouts untouched
+FAIL P7 …: default run did not list the orphan; --schemas exit 1; --schemas lists live live-g as orphan; --drop --dry-run exit 1; …
+FAIL P8 …: N merged dir left; N merged schema left; N merged branch left
+FAIL P10 …: merged dir left; no 'left in place'; no 'orphan list skipped'
+ok   level_up_lab wt_* schemas unchanged; no shim denial
+[prune-smoke] 3 of 10 ok, FAIL: P1 P2 P3 P4 P7 P8 P10          (exit 1)
+```
+
+Old-script lines behind the red (`SMOKE_VERBOSE=1`): `[prune] feat/psN-empty-d (ancestor; …)` then `schema
+wt_feat_psN_empty_d dropped`; `[keep] feat/psN-merged-a not merged into main`; from the main checkout `--schemas`
+listed `[orphan] wt_feat_psN_live_g` (a live nested worktree) then `line 78: /dev/tty: Device not configured`;
+`unknown argument: --drop`; from the app checkout `[keep] feat/psN-merged-h not merged into main`.
+
+```
+$ /bin/bash scripts/prune-smoke.sh
+ok   P9 … ok   P1 … ok   P2 … ok   P3 … ok   P4 … ok   P5 … ok   P6 … ok   P7 … ok   P8 … ok   P10 …
+ok   level_up_lab wt_* schemas unchanged; no shim denial
+[prune-smoke] 10 of 10 ok, 0 FAIL                               (exit 0, ~10 s)
+$ scripts/worktree-prune.sh --dry-run          # real repo, from the card worktree
+[keep]  fix/B1.13-prune-every-layout  (current checkout; …/.claude/worktrees/loving-franklin-1d640f/.worktrees/fix-b1-13-prune-every-layout)
+[prune] done: 0 worktree(s) removed, 0 gone worktree(s) cleaned (base origin/main)
+$ (cd <app checkout> && <card>/scripts/worktree-prune.sh --dry-run)   # no "postgres not running"
+[keep]  fix/B1.13-prune-every-layout  (not merged into origin/main; …)
+$ scripts/worktree-prune.sh --schemas
+[schemas] no orphan schema
+$ bash -n scripts/worktree-prune.sh scripts/prune-smoke.sh && scripts/hook-smoke.sh && scripts/ci/check-backlog.sh
+hook-smoke: 221 probes OK · [check-backlog] OK: README matches the cards
+```
+
+`scripts/verify-red.sh B1.13` exits 1 by design (no `(red)` commit, as B1.12).
