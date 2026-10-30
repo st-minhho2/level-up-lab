@@ -174,3 +174,35 @@ B1.7–B1.12 worktrees left in the compose database, dropped by hand.
   dropped only with an explicit flag; no database other than the local compose server is touched
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.13/`
+
+### B1.15 · `docker compose` reaches the one compose server from every checkout
+
+_tooling · no §_
+**Status: Open** — `docker-compose.yml:3` opens with `services:` and has no top-level `name:`, so the compose
+project is the directory of the checkout it runs from: from `.claude/worktrees/intelligent-rosalind-40022a`,
+`docker compose config` prints `name: intelligent-rosalind-40022a` and `docker compose ps` lists nothing while
+`level-up-lab-postgres-1` (project `level-up-lab`, `0.0.0.0:5433->5432/tcp`) is up. `up -d` from such a checkout
+creates a second project: its Postgres cannot bind 5433 while the main one runs, and starts on an empty volume when
+it does not (observed 2026-10-30: leftover volume `feat-b1-4-mutation-feedback_pgdata`). The advice points there:
+`CLAUDE.md:45` "Run from the worktree you were given" + `:57` "`docker compose up -d`", `scripts/setup-env.sh:31`
+`docker compose up -d`, `scripts/worktree.sh:101` "is Postgres up? docker compose up -d", and
+`.claude/skills/add-migration/SKILL.md:13` "wait for `docker compose ps` to show `healthy`" (never true from a
+worktree). B1.13 (fix PR #46, open) changes only `scripts/worktree-prune.sh`, to run compose with
+`-f "$MAIN/docker-compose.yml"`.
+Plan options, undecided: (a) top-level `name: level-up-lab` in `docker-compose.yml` (config change: needs the lead's
+OK; `.devcontainer/devcontainer.json:4` merges this file, so its project name changes too); (b) keep the file and
+make the advice and scripts name the main checkout's compose file or project (`-f "$MAIN/docker-compose.yml"` or
+`-p level-up-lab`; the skill edit needs `config-change-approved`).
+
+- **Spec:** none — tooling (`scripts/CLAUDE.md` row "`worktree.sh <branch> [base]` … compose PostgreSQL (optional)");
+  no `src/` change, no section
+- **Test:** shell probe from a `.worktrees/<slug>` and a `.claude/worktrees/<name>` checkout while the main
+  checkout's compose Postgres is up — red because: `docker compose ps -q postgres` prints nothing and
+  `docker compose config` names the project after the checkout's directory; expected: the advised command lists
+  `level-up-lab-postgres-1`, and the advised `up -d` creates no new container, network or volume
+  (`docker volume ls` unchanged)
+- **Acceptance:** the probe passes from both checkout layouts and from the main checkout; every place that advises
+  a compose command (`CLAUDE.md`, `README.md`, `scripts/setup-env.sh`, `scripts/worktree.sh`, the `add-migration`
+  skill) reaches the same project; the devcontainer still starts its Postgres; no data volume is renamed or dropped
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.15/`
