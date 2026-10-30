@@ -168,3 +168,173 @@ Verdict: changes requested
 9. Fix the probe list and the red claim, add probes for 1–4, and bring the plan back toward one screen ([9]).
 
 This verdict is a plan review. It does not approve the plan for the lead's gate or for build.
+
+## Plan review (round 2)
+
+SCOPE: none of lib | actions | ui (tooling: `scripts/`, `scripts/ci/`, `.claude/agents/`, `backlog/`), as in round 1.
+
+I reviewed the plan at `b83a5e8` (72 lines, 60 non-blank). The branch includes `c2501b8` (merge of origin/main with
+the filing PR #62). All runs were read-only:
+
+- Every past plan's `## Files` column 1 was extracted with `plan-files.sh`'s awk. The plan's `--check` rule was
+  applied to each pair: paperwork exempt (`backlog/*`, `spec/*`, `docs/metrics.md`, `docs/mistake-log.md`), and a
+  collision is `[[ $x == $y || $y == $x ]]`. This was an inline `bash -s`.
+- `gh pr list --state all --limit 300` returned 62 PRs, all MERGED, none CLOSED. No card has two non-`docs` PR
+  branches.
+- `git branch -a` and `scripts/worktree.sh` lines 45–47 (the branch is created by `git worktree add -b`).
+  `.claude/skills/work-next/SKILL.md` was read in full. `type -a bash` gives only `/bin/bash` 3.2.57.
+
+### Round-1 reasons
+
+| R1  | State                                                                                                                                                                                                                                                                                                                              |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | resolved: the card set is `origin/main` "Remaining" after a fetch. Residual (stated by W9): a card whose filing PR is unmerged is invisible. This card was planned in exactly that state (`ffc2c08` before #62), but the filing lane says "filed alone, before anyone works on it", so the rule is consistent. Fetch failure: [4]. |
+| 2   | resolved: MERGED PR or Partial row → Closing. Offline counts every branch as Doing, stated as conservative. A CLOSED PR is still Doing: [6].                                                                                                                                                                                       |
+| 3   | resolved in `dev-lead.md` only. The `/work-next` entry block, which is the one a human starts, still has no claim: [1].                                                                                                                                                                                                            |
+| 4   | partly: "skips Doing/Review/Closing" is stated, and worktree comes right after the pick. The residual race is neither closed nor stated as a cost: [3].                                                                                                                                                                            |
+| 5   | resolved for §5 cards. My re-tally agrees: 11/21 pairs, 10 of them on `src/actions/todos.ts`. The cost for tooling cards is missing: [2].                                                                                                                                                                                          |
+| 6   | partly: `--check` runs before the plan review and at every re-approval, and the reviewer quotes it. "Advisory, no CI net" and the reinterpretation of the card's wording are not stated: [5].                                                                                                                                      |
+| 7   | partly: one `gh` call, with a stderr warning on failure. The call has no bound, and no accepted hang is stated: [5].                                                                                                                                                                                                               |
+| 8   | partly: (b) is labelled a deviation, and (a) carries its 2 PRs and 2 merges. "The live board artifact" is still undefined (it appears only in plan.md line 26): [5].                                                                                                                                                               |
+| 9   | resolved: W1–W14 agree with the Files row, W8 covers B9.1 vs B9.10, and R1 [2]–[4] have probes (W6, W7, W9, W10, W4). The red list is deferred to a commit body: [7].                                                                                                                                                              |
+
+### Overlap re-tally (plan's rule)
+
+| Set                       | Pairs overlapping | On what                                                                                                                                                                                    |
+| ------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| B1.2–B1.6, B1.10, B1.11   | 11/21             | 10 on `src/actions/todos.ts` (+ `.test.ts`, `src/actions/CLAUDE.md`), 1 on `src/lib/logger.ts` (B1.6×B1.11)                                                                                |
+| B1.2–B1.11 (all feature)  | 21/45             | —                                                                                                                                                                                          |
+| B1.12–B1.18 (all tooling) | 15/21             | 13 only on `scripts/CLAUDE.md`. B1.16×B1.17 also on a bare `review.md` token. B1.13×B1.14 on the prune scripts. B1.17×B1.18 on `scripts/ci/plan-files.sh` and `.claude/agents/dev-lead.md` |
+
+### Checklist
+
+| Check                                                                | Result                                                                                                                                                                                                                                                                                                                            |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file belongs to the section's features (map)                   | fail: no section. Every listed file traces to the Acceptance or to the prose that runs it. One needed file is missing: `.claude/skills/work-next/SKILL.md` ([1]).                                                                                                                                                                 |
+| interfaces follow `ts-style.md`; mutations in actions; Prisma in lib | pass: n/a (bash only). All five CLI forms are pasted with their output and exit code.                                                                                                                                                                                                                                             |
+| follows `advice.md` or states the deviation                          | pass: the advisor was skipped (Tier quick, no section), as stated. The deviation (b) from the card's Acceptance is stated for the lead.                                                                                                                                                                                           |
+| ≤ 7 criteria, every Then measurable                                  | pass: the card's Acceptance has 6 clauses. The 14 probes each name an input and an exit or state.                                                                                                                                                                                                                                 |
+| verification lists exact commands with expected numbers              | pass, with a note: green is 14/14, plus hook-smoke, check-backlog, check-plan-scope and `bash -n`. The red set is deferred to the commit body ([7]).                                                                                                                                                                              |
+| work breakdown skeleton → red → green → map → review                 | pass: `test(scripts)` → `feat(scripts)` → reviewer → PR. Skeleton and map are n/a, as in B1.17.                                                                                                                                                                                                                                   |
+| `Lead approves spec` box                                             | pass: n/a, no section.                                                                                                                                                                                                                                                                                                            |
+| no settled D-n contradicted                                          | pass: none found. `WIP_LIMIT=3` sits in a protected file, so changing it needs the label (D-18, "D-n to change").                                                                                                                                                                                                                 |
+| one screen / size                                                    | 72 lines (60 non-blank) against ≈ 40. This is in line with the approved B1.13 (68), B1.15 (76) and B1.17 (73), so it is one card and not blocking. Size S is low: 11 files (12 with [1]), a new smoke harness with a bare origin and a `gh` shim, and 14 probes make it M [estimate]. Seam, if the lead wants a split: see below. |
+
+**Split seam (lead's call, not required).** Card A covers the WIP count: source, state, BOARD, refusal on pick and
+`--claim`, the README line, `check-backlog.sh`, `backlog/CLAUDE.md`, dev-lead Loop 1, `work-next/SKILL.md`, and
+W1–W10 plus W14. Card B covers overlap: `--check`, `plan-files.sh --any`, dev-lead Loop 3/5, `reviewer.md`, and
+W11–W13. B depends on A's Doing/Review set. The split has a cost: a filing PR for B, and this card's Acceptance
+loses its overlap clause, which needs the lead's ruling. It does not shrink A much, because the state rules are the
+bulk of the plan.
+
+### Findings
+
+```
+[1] KIND: plan-mismatch
+    WHERE: plan.md "Every start enforces it" and the Files table; .claude/skills/work-next/SKILL.md "Entry" (line 14)
+    DEFECT: the WIP check on a card started by id is added to dev-lead.md Loop 1 only. The /work-next entry block
+            still says `scripts/next-task.sh  # or the card id the human gave`, then worktree.sh, with no --claim.
+            The SKILL.md is not in Files.
+    TRIGGER: the lead types `/work-next B1.19` while three cards are Doing. SKILL.md says "This file only fixes
+             entry and exit", so its entry block runs: no next-task.sh call is made for a given id, and worktree.sh
+             creates the fourth branch.
+    WRONG BEHAVIOUR: the card's "refuses a fourth Doing card" fails on the most common entry, because every tooling
+            card is started by id (R1 [3]). Adding the file mid-build is refused by plan-scope.sh (B1.17) until a
+            re-approval. Add the row: `.claude/skills/` is protected, and the label is already planned.
+    CONFIDENCE: confirmed (read SKILL.md and dev-lead.md Loop 1; the Files table has no such row)
+
+[2] KIND: plan-mismatch
+    WHERE: plan.md "Overlap" bullet, "Cost: history says most §5 cards collide"
+    DEFECT: the cost given to the lead covers §5 cards only. Under the plan's rule, tooling cards collide even more,
+            nearly always on one index file.
+    TRIGGER: the re-tally above. 15 of 21 pairs among B1.12–B1.18 collide, and 13 of them share only
+             `scripts/CLAUDE.md`, which every tooling card since B1.13 lists for its row. Separately, a plan that
+             writes "`backlog/work/B1.16/plan.md`, `review.md`" in one cell yields a bare `review.md` token. That
+             token is not under `backlog/*`, so it collides with any other plan doing the same (B1.16×B1.17).
+    WRONG BEHAVIOUR: the effective WIP is 1 for tooling cards, which are the cards being started now, and the lead
+            does not see this before approving. Either state it, with the number, as an accepted cost, or exempt
+            index tables (for example `scripts/CLAUDE.md`, whose rows are appended, not shared), and count only
+            path-shaped tokens (containing `/` or `.`) consistently with plan-files.sh. Also, "most" is wrong:
+            10 of 21 is less than half.
+    CONFIDENCE: confirmed (ran the tally)
+
+[3] KIND: correctness
+    WHERE: plan.md "Every start enforces it" (pick, then worktree.sh "at once"); W10 "`--claim B9.1` already Doing → 0"
+    DEFECT: the pick-to-branch window is shorter but still open, and no tool can detect a duplicate afterwards.
+            R1 [4] asked for the race to be closed or stated as a cost. It is neither.
+    TRIGGER: sessions S1 and S2 both run `next-task.sh` before either runs worktree.sh, and both get B9.1. S1
+             creates `feat/B9.1-a`, S2 creates `feat/B9.1-b` (worktree.sh line 47, `git worktree add -b`, succeeds
+             because the names differ). A later `--claim B9.1` from either session exits 0 by W10. Also, a branch
+             that exists only in another clone is invisible until it is pushed at Loop 9, so "every checkout sees
+             the same board" holds for the worktrees of one clone only.
+    WRONG BEHAVIOUR: two sessions build one card, the WIP count is 1 (one card) where 2 sessions run, and both
+            plans are identical, so `--check` refuses the second only if it runs after the first's plan commit.
+            Either refuse a second card-id branch (claim/worktree: "B9.1 already has feat/B9.1-a"), or state both
+            the race and the one-clone scope as costs.
+    CONFIDENCE: confirmed (traced the plan's rules and worktree.sh)
+
+[4] KIND: correctness
+    WHERE: plan.md "Source" bullet ("after `git fetch`"); scripts/next-task.sh line 6 (`set -euo pipefail`)
+    DEFECT: the plan does not say what happens when the fetch fails, and the script aborts on any error.
+    TRIGGER: the session is offline, or origin is unreachable or needs credentials, and `git fetch` exits 128.
+    WRONG BEHAVIOUR: if it is implemented literally, next-task.sh exits non-zero with git's message before printing
+            a pick. The `/work-next` entry reads "exit 1 = nothing eligible", so the session stops for the wrong
+            reason. W14 covers `gh` failure only. State the rule (for example "fetch fails → warning, use the last
+            fetched origin/main"), and add it to W14 or a new probe.
+    CONFIDENCE: plausible (the behaviour is unspecified; traced from line 6)
+
+[5] KIND: plan-mismatch
+    WHERE: plan.md "Overlap", "Source" and "Decision for the lead" paragraphs
+    DEFECT: three costs R1 asked to be stated are still absent.
+    TRIGGER: (i) R1 [6]: nothing enforces `--check`. It is dev-lead prose plus a quote in the reviewer's table, CI
+             cannot see other branches, and the card's "next-task.sh refuses a card whose plan Files overlap" is met
+             at plan time, not pick time. Neither point is written. (ii) R1 [7]: `gh pr list` has no bound
+             (`timeout` is absent on macOS bash 3.2). A hung call hangs the pick, and the plan neither bounds it nor
+             accepts the hang. (iii) R1 [8]: "the live board artifact" is undefined. The README line would point
+             at something that does not exist.
+    WRONG BEHAVIOUR: the lead approves (b) without seeing that the overlap rule is advisory and that the pick can
+            hang, and the README gets a dangling reference. Three short clauses fix it: "advisory: no CI net", "gh
+            hang accepted (no timeout on bash 3.2)" or a bound, and delete "and the live board artifact" or name it.
+    CONFIDENCE: confirmed (plan text compared with R1 [6]–[8]; grep finds "live board" only in plan.md:26)
+
+[6] KIND: correctness
+    WHERE: plan.md "State" bullet ("whose PR is not MERGED → Doing"; "A Partial card … is Closing")
+    DEFECT: two branch states fall into the wrong bucket.
+    TRIGGER: (i) a PR closed without merge, for example an abandoned approach. Origin branches are never deleted
+             here (`origin/feat/B1.16-metrics-baseline` still exists), and the card stays Open in Remaining.
+             (ii) A Partial card reopened for its pending part on a new branch.
+    WRONG BEHAVIOUR: (i) the card is Doing forever. It holds one of 3 slots and blocks every overlapping card
+            until someone deletes the branch. (ii) The active work is Closing, so it counts 0 toward WIP and is
+            invisible to `--check`. Today 62/62 PRs are MERGED, so (i) is latent. State CLOSED → To do (or
+            accept it), and state (ii) as a cost or make a Partial card with an unmerged branch Doing.
+    CONFIDENCE: plausible (latent: no CLOSED PR exists yet; traced the rule)
+
+[7] KIND: coverage
+    WHERE: plan.md Verification, "every probe needing state, --claim or --check FAILs (exact list in its body)"
+    DEFECT: the red set can be computed now but is deferred, and one probe can pass at red for the wrong reason.
+    TRIGGER: today's next-task.sh parses only `--list` (line 7), so `--check B9.x` and `--claim B9.x` run a plain
+             pick (exit 0). W1 and W8 (pick B9.1) pass at red, as do W3 and W13 if they assert only the pick or
+             exit 0. W13 ("only paperwork shared → 0") passes at red unless it asserts the `no overlap` line, the
+             same trap as R1 [9](i).
+    WRONG BEHAVIOUR: the lead approves without knowing which probes are regression guards and which prove the
+            change. W13 could stay green against a `--check` that does nothing. Name the set now (red: W2, W4–W7,
+            W9–W12, W14, and W3/W13 if they assert their text; passing: W1, W8), and require W13 to match
+            `no overlap`.
+    CONFIDENCE: confirmed (read next-task.sh line 7 and the probe list)
+```
+
+Verdict: changes requested
+
+1. Add `.claude/skills/work-next/SKILL.md` to Files and make its Entry run pick or `--claim` ([1]).
+2. Give the lead the tooling cost (15/21, 13 only on `scripts/CLAUDE.md`). Either accept it, or exempt index
+   tables and non-path tokens ([2]).
+3. Close the duplicate-branch race, or state it and the one-clone scope as costs ([3]).
+4. State the `git fetch` failure rule and probe it ([4]).
+5. Write "advisory, no CI net", the `gh` bound or the accepted hang, and drop or define "live board artifact" ([5]).
+6. State CLOSED PRs and reopened Partial cards ([6]).
+7. Name the red set now, and make W13 assert `no overlap` ([7]).
+
+This is round 2, the cap (dev-lead Loop 4: ≤ 2 review rounds, then Waiting on human). The lead decides whether
+these seven are revised before the gate or accepted as stated costs, as with B1.17's round 2. Items 1, 2 and 4
+change what gets built. Items 3, 5, 6 and 7 can be one clause or one probe each. One card, not a split (seam above).
+This verdict is a plan review. It does not approve the plan for the lead's gate or for build.
