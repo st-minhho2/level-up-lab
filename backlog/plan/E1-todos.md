@@ -149,15 +149,7 @@ _tooling · no §_
 ### B1.13 · `worktree-prune.sh` drops the schema of every merged or removed worktree, in every layout
 
 _tooling · no §_
-**Status: Open** — `scripts/worktree-prune.sh:110` keeps only paths under `"$ROOT/.worktrees/"*` (`ROOT` = the
-current checkout, so `.claude/worktrees/<name>/.worktrees/<slug>` is skipped from the main checkout); `:40`/`:43` run
-`docker compose -f "$ROOT/docker-compose.yml"`, whose project is the checkout's directory name, so from
-`.claude/worktrees/loving-franklin-1d640f` `docker compose ps` reports `service "postgres" is not running` while
-`level-up-lab-postgres-1` is up (project `level-up-lab`) and every drop prints "schema … left in place"; `:24`
-`BASE="main"` compares with the local ref, never fetched; `:90` counts a branch with no commits beyond the base as
-merged (`ancestor`), so a just-created worktree is removed; a worktree whose directory is gone has no
-`.worktree.env` to read, and `git worktree prune` (`:136`) then forgets it. Observed 2026-10-30: 15 `wt_*` schemas of
-B1.7–B1.12 worktrees left in the compose database, dropped by hand.
+**Status: Done** — 957780e (#46); scripts/prune-smoke.sh 13 of 13 ok (8572cc2's script: 3 of 10, FAIL P1 P2 P3 P4 P7 P8 P10); first real run pruned the card's own worktree and dropped wt_fix_b1_13_prune_every_layout from an app checkout; no src/ change, mutation 89.02 % unchanged; red 175dfb0, green 564e9ac, hardening 3837abc + 0cd8517
 
 - **Spec:** none — tooling (`scripts/CLAUDE.md` row "`worktree-prune.sh` removes merged worktrees, branches,
   schemas; `--schemas`: orphan schemas"); no `src/` change, no section
@@ -173,7 +165,7 @@ B1.7–B1.12 worktrees left in the compose database, dropped by hand.
   `.claude/worktrees/<name>` checkouts are never removed (`--all` asks); orphan `wt_*` schemas are reported and
   dropped only with an explicit flag; no database other than the local compose server is touched
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.13/`
+- **Work:** `work/B1.13/` — plan (rounds 1/1), review (plan rounds 2, cap reached, round-2 fixes accepted by the lead; diff pass 2/3, 2 findings fixed by hardening `3837abc` + `0cd8517`); squash `957780e` (#46)
 
 ### B1.15 · `docker compose` reaches the one compose server from every checkout
 
