@@ -112,3 +112,91 @@ ok   level_up_lab wt_* schemas unchanged; no shim denial
 
 `git diff --stat cdb93f1..fbbd9dc -- scripts/prune-smoke.sh` empty. `bash -n` both scripts exit 0;
 `hook-smoke: 221 probes OK`; `[check-backlog] OK: README matches the cards`.
+
+## Diff review (pass 1)
+
+SCOPE: none of lib | actions | ui (tooling). Diff `557797e..6ec3c97`: `scripts/worktree-prune.sh`, `scripts/prune-smoke.sh`,
+`scripts/CLAUDE.md`, `backlog/work/B1.14/{plan,review}.md`. Probes ran on copies in the session scratchpad (git 2.39.5,
+`/bin/bash` 3.2.57); the worktree was not edited.
+
+### Command results (last line, exit)
+
+```text
+pnpm lint                          All matched files use Prettier code style!                 0
+pnpm typecheck                     tsc --noEmit                                               0
+pnpm test                          Tests  115 passed (115)                                    0
+pnpm test:e2e                      13 passed (19.5s)                                          0
+pnpm test:mutation                 Final mutation score of 89.02 is greater than or equal to break threshold 70   0
+scripts/ci/check-suppressions.sh   [check-suppressions] OK: no new suppressions
+scripts/ci/check-config-change.sh  [check-config-change] OK: no protected config changed
+scripts/ci/check-feat-commits.sh   [check-feat-commits] OK: no feat commit touches tests
+scripts/ci/check-ac-coverage.sh    [check-ac-coverage] OK: every criterion of a shipped section has a test
+scripts/ci/check-spec-sections.sh  [check-spec-sections] OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11
+scripts/ci/check-features-map.sh   [check-features-map] OK
+scripts/ci/check-backlog.sh        [check-backlog] OK: README matches the cards
+scripts/hook-smoke.sh              hook-smoke: 221 probes OK
+bash -n both scripts               exit 0
+scripts/verify-red.sh B1.14        ::error::no 'test(<pkg>): B1.14 … (red)' commit  (expected: plan deviation, vitest only)
+red  (smoke vs 557797e's script)   [prune-smoke] 13 of 15 ok, FAIL: P14 P15
+green (smoke vs HEAD)              [prune-smoke] 15 of 15 ok, 0 FAIL; level_up_lab wt_* schemas unchanged; no shim denial
+git diff --stat main...HEAD        5 files changed, 203 insertions(+), 6 deletions(-)
+```
+
+### Checklist
+
+| Check                                         | Result                                                                                                                                                     |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| card Test/Acceptance has a probe that matches | pass: P14 (M, commit+revert: dir, schema, branch kept, `[keep] … net to no change`), P15 (gone dir: schema dropped, branch kept, metadata gone); P1–P13 ok |
+| no test weakened after red                    | pass: `git diff cdb93f1..HEAD -- scripts/prune-smoke.sh '*.test.*' e2e/` empty                                                                             |
+| every changed file in `plan.md`               | pass: the four rows of the plan's Files table, nothing else                                                                                                |
+| interfaces match the plan                     | pass: flags unchanged; `merged_reason` 0/1/2/3 as pasted; both messages verbatim as quoted in the plan                                                     |
+| commit order and subjects                     | pass: `test(scripts)` → `fix(scripts)` → `docs(backlog)`; the fix commit touches no smoke line (`git show --stat fbbd9dc`)                                 |
+| never prunes more than before                 | pass (traced): the new line only returns 3 earlier; rc 3 takes the same keep/ask path as rc 1/2; `--all` still asks                                        |
+| bash 3.2, `set -euo pipefail`                 | pass: `merge-base … \|\| true`, `-n "$mb"` guards orphan history; `[[ … ]] && return 3` is not the last command, so errexit is not tripped                 |
+| Zod / Prisma / raw SQL / migration            | n/a: no `src/`, `prisma/` change                                                                                                                           |
+| no secret, no suppression, no protected path  | pass (guards above)                                                                                                                                        |
+| features map row                              | n/a: no feature, no section                                                                                                                                |
+| stale `P1–P13` references                     | pass: only the card text (history) still says P1–P13; `scripts/CLAUDE.md` says P1–P15                                                                      |
+
+### Probes on copies
+
+```text
+merged_reason extracted from HEAD, throwaway repo with bare origin, gh off:
+  s1 add+revert on an old fork, main moved on            rc=3 (kept)
+  s2 add x, git merge main, revert x                      rc=3 (kept)
+  s3 add y1, add y2, revert y2 (net change), unmerged     rc=1 (kept, not merged)
+  s4 squash-merged, then main edits base.txt              rc=0 tree (still pruned)
+  s5 squash-merged, then branch drops its file locally    rc=3 (kept; was tree; same class as the plan's cost (a))
+  s6 base.txt 9→5→9 by hand, no revert                    rc=3 (kept)
+  s7 criss-cross merge of two side branches, then drop    rc=3 (kept)
+  s8 orphan history (no merge-base)                       rc=1 (check skipped, as before)
+one-line mutants of the fix, run through prune-smoke.sh:
+  m1 the return-3 line removed (= 557797e)                13 of 15, FAIL P14 P15   killed
+  m2 gone-path `elif [[ $rc -eq 3 ]]` line removed        14 of 15, FAIL P15       killed
+  m3 `3) reason="commits net to no change…"` removed      14 of 15, FAIL P14       killed
+  m4 new check moved above the rev-list --count line      15 of 15, 0 FAIL         survived (see note)
+```
+
+### Findings
+
+None blocking.
+
+### Not blocking
+
+- m4 survives: with the merge-base check placed before `rev-list --count`, a branch with no commits beyond the base
+  returns 3 and prints `commits net to no change` instead of `no commits beyond origin/main`. Both keep the worktree,
+  so behavior is the same; only the reason text changes, and P4 asserts no message. A `said "[keep]  feat/$P-empty-d
+(no commits beyond origin/main;"` check in P4 would pin the order. Pre-existing gap in P4, not this card's Acceptance.
+- s5 widens cost (a) by one more shape (squash-merged, then a local cleanup commit undoing the change): now kept
+  instead of pruned. Nothing is lost; `--all` or `git branch -D` removes it.
+
+Verdict: ready-for-PR
+
+Riskiest unfalsified: the order of the two keep checks in `merged_reason` (m4) is guarded by no probe; reordering
+changes only the reason text, not what is pruned.
+
+### Dispositions (dev-lead)
+
+0 findings. Non-blocking notes: (1) P4 asserting its "no commits beyond" message to pin the check order: out of
+scope, both orders keep the branch (mutant m4 15 of 15); (2) squash-merged then a local commit that undoes it, now
+kept: falls under plan cost (a), the history differs from the base, keeping it loses nothing. No change.
