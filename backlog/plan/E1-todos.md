@@ -203,7 +203,7 @@ _tooling · no §_
 ### B1.16 · Baseline for parallel delivery: lead time and change failure rate per card
 
 _tooling · no §_
-**Status: Open** — `ls scripts/metrics` → "No such file or directory"; `grep -ni "lead time\|change failure" docs/metrics.md` → no row
+**Status: Done** — f53fbf4 (#57); scripts/metrics-smoke.sh 11 of 11 ok (25f66fe: 0 of 10, scripts missing); lead time median 35 min (0.6 h) over 14 cards, B1.1 n/a; change failure rate 1/15 = 6.7 % (#50 → B1.13); no src/ change, mutation 89.02 % unchanged; red 25f66fe, green cb42e66, hardening 2a3f95e + 1b4d382
 
 - **Spec:** none — tooling (`scripts/CLAUDE.md` row to add for `scripts/metrics/`); no `src/` change, no section
 - **Test:** shell smoke on a throwaway git repo with a `gh` shim (approval commits, squash merges, fix/revert PRs at
@@ -216,4 +216,4 @@ _tooling · no §_
   [estimate] ÷ cards, computed for B1.1–B1.15 by a script or a documented query; `docs/metrics.md` top table gains
   both rows (value, date, how to re-measure); bash 3.2, `git` + `gh` only, no new dependency
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.16/`
+- **Work:** `work/B1.16/` — plan (rounds 1/1), review (plan rounds 2, cap reached, round-2 fixes accepted by the lead; diff pass 2/3, 3 findings fixed by `2a3f95e` + `1b4d382`); squash `f53fbf4` (#57)
