@@ -447,10 +447,10 @@ Riskiest unfalsified: the race in which two parallel E2 sessions pick or claim t
 
 ### Dispositions (pass 1, dev-lead)
 
-| #   | Finding                                       | Disposition | Evidence                                                                                                                   |
-| --- | --------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------- |
-| 1   | identical bracketed paths never collide       | fix now     | W17 red at 06212fd (rc 0, "no overlap"); fix commit: literal compare first; smoke 21/21                                    |
-| 2   | resume contradicts "claim, report and stop"   | fix now     | fix commit: dev-lead Loop 1 and work-next "Resuming": no pick or claim, existing worktree                                  |
-| 3   | 5 surviving mutants (M14, M17, M19, M20, M23) | fix now     | W18–W21 in `bbc2d44` (fixture rows out of order, B9.6 Human, Review plan, origin-only plan)                                |
-| N   | fetch without `GIT_TERMINAL_PROMPT=0`         | fix now     | fix commit                                                                                                                 |
-| N   | relative `HERE`                               | no change   | `HERE="$(cd "$(dirname "$0")" && pwd)"` runs before any `cd`; the smoke calls it by absolute path and from three worktrees |
+| #   | Finding                                       | Disposition | Evidence                                                                                                       |
+| --- | --------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------- |
+| 1   | identical bracketed paths never collide       | fix now     | W17 red at 06212fd (rc 0, "no overlap"); fix commit: literal compare first; smoke 21/21                        |
+| 2   | resume contradicts "claim, report and stop"   | fix now     | fix commit: dev-lead Loop 1 and work-next "Resuming": no pick or claim, existing worktree                      |
+| 3   | 5 surviving mutants (M14, M17, M19, M20, M23) | fix now     | W18–W21 in `bbc2d44` (fixture rows out of order, B9.6 Human, Review plan, origin-only plan)                    |
+| N   | fetch without `GIT_TERMINAL_PROMPT=0`         | fix now     | fix commit                                                                                                     |
+| N   | relative `HERE`                               | fix now     | `bb7133d`: `HERE` resolves before the `cd` to the top level; `(cd scripts/ci && ../next-task.sh --list)` works |
