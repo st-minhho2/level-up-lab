@@ -118,3 +118,102 @@ gh pr list default --limit = 30; merged PRs today = 54
   `.` and a following space or `)`. M-probes with B1.1 and B1.10 together would pin this.
 
 Verdict: changes requested
+
+## Plan review (round 2)
+
+SCOPE: none of lib | actions | ui (unchanged from round 1: `scripts/`, `docs/metrics.md`, `backlog/work/B1.16/`).
+
+Plan reviewed at `6786a45`; `origin/main` at `58cee7c`, the plan's prototype base. I re-derived both numbers on a
+scratch clone (outside this worktree's `.git`) with `refs/pull/N/head` for the 15 card PRs fetched into it, plus
+read-only `gh pr view` and `gh pr list`. I edited nothing in the worktree except this section. Checklist adapted
+to a tooling card as in round 1.
+
+### Round-1 reasons
+
+| #   | Round-1 reason                              | Now                                                                                                                                                                                                                                                                                                                             |
+| --- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | median does not follow from the rule        | resolved: option (b) chosen (`--first-parent --no-merges` drops ticks merged in from `main`), floor pinned (⌊s/60⌋), exact expected line, Risk −30 % = ≤ 24.5 min follows from 35. The deviation sentence states B1.2's consequence backwards (new reason 2).                                                                   |
+| 2   | unstated deviations (a)–(d)                 | resolved: (a) the output now has `minutes` and `hours` columns, so the card's "hours" is printed, not a deviation; (b) the subject rule is stated with B1.3's rename and B1.15's wrap as the reasons; (c) "distinct repair PRs ÷ cards (card's wording)"; (d) "latest plan-approved commit" is stated, with B1.5 at 45, not 54. |
+| 3   | change-failure rule contradicts its example | resolved: "other than card C's own feature PR (another card's feature PR may count)", the window is (merge, merge + 14 d], M9 (own `fix` PR not its own repair) and M10 (fix merged before the card) added.                                                                                                                     |
+| 4   | `gh` calls and time conversion not pinned   | partly resolved: the `view` call is pinned with `fromdateiso8601` and the `list` call with `--limit 1000`. The `list` call has no conversion and no `--jq`, and the shim rejects any other call (new reason 1).                                                                                                                 |
+
+### Re-derivation (the plan's own rules, on the PR heads)
+
+```
+card  PR   latest plan-approved   first-parent tick   s       ⌊min⌋
+B1.1  #1   none                   none                n/a
+B1.2  #5   4810825                none (6cb96a3 is off the first-parent chain)  3487  58
+B1.3  #8   63686be                63686be             2651    44
+B1.4  #11  f5f53fe                f5f53fe             1776    29
+B1.5  #13  9efec0b (round 2)      ef73bec (earlier)   2737    45
+B1.6  #15  43f0da1                43f0da1             2151    35
+B1.7  #27  771c68e                none                2014    33
+B1.8  #29  cd5d1c7                cd5d1c7              964    16
+B1.9  #31  2c45607                2c45607             1244    20
+B1.10 #33  7826bf0                none                1617    26
+B1.11 #36  bcec946                bcec946            23818   396
+B1.12 #39  1c563f7                none                6259   104
+B1.13 #46  ea6eb8f                none                4109    68
+B1.14 #50  ebe9934                none                2102    35
+B1.15 #52  cbaf169                none                 942    15
+sorted: 15 16 20 26 29 33 [35 35] 44 45 58 68 104 396 → median 35 min, 35/60 = 0.6 h, over 14; n/a: B1.1   ✔ plan
+
+gh pr list --state merged --limit 1000 --json number,title,mergedAt,files → 55 PRs, exit 0
+fix/revert titles: #21 #22 #39 #41 #44 #46 #50 #52; rule (self excluded, (m, m+14d], non-doc overlap):
+  #46 (B1.13) repaired_by [50]; every other card [] → 1/15 = 6.7 %   ✔ plan
+max files per PR in that output: 100 (#3, the bootstrap chore PR; gh returns at most 100 files per PR)
+```
+
+Both expected lines in the Verification block follow from the stated rules. Each card's `**Status: Done**` line
+carries exactly one `(#N)`. B1.12's card body also quotes `**Status: Done** — x` (E1-todos.md:143, indented, no
+`(#N)`); "15 rows" catches a parser that matches it.
+
+### Checklist
+
+| Check                                    | Result                                                                                                                                                                                                                                                                           |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| files belong to the card                 | pass: unchanged from round 1. `git diff --stat origin/main...HEAD` shows `plan.md` and `review.md` only.                                                                                                                                                                         |
+| interfaces stated                        | **fail**: the `list` call is pinned in a form whose output (raw JSON, ISO `mergedAt`) the script cannot use under "git + gh only" (reason 1).                                                                                                                                    |
+| advice                                   | pass: the skip is stated (no section, Tier quick).                                                                                                                                                                                                                               |
+| follows the card or states the deviation | **fail**: all four deviations are now stated, but the B1.2 one gives the wrong consequence (reason 2).                                                                                                                                                                           |
+| criteria measurable                      | pass: M1–M10 each name an input and an outcome. M5 pins an even-count median. The way it rounds (mean of the two middle ⌊min⌋, or of seconds) is not stated; today both give 35. The test-writer's expected number in M5 will settle it.                                         |
+| verification exact with numbers          | pass: "10 of 10 ok", "15 rows", the median line and the `1/15 = 6.7 %` line are exact, and both re-derive (above).                                                                                                                                                               |
+| work breakdown                           | pass: `test(scripts)` → `feat(scripts)` → `docs(metrics)` → reviewer diff → PR. No `(red)`, as B1.12–B1.15.                                                                                                                                                                      |
+| protected path and label                 | pass: no planned path matches `PROTECTED` (`scripts/ci/check-config-change.sh:10`). No new dependency.                                                                                                                                                                           |
+| one screen                               | 65 lines against ≈ 40. Not blocking (B1.13's approved plan was 68).                                                                                                                                                                                                              |
+| `Lead approves spec` box                 | n/a: no section.                                                                                                                                                                                                                                                                 |
+| no settled D-n contradicted              | pass: the subject rule reads the commit that writes D-2's `Plan approved by:` line. D-7's tick is the second signal. Ignoring a tick merged in from `main` is a stated measurement choice, not a change to D-7's gate. The merged-in B1.2 tick came from docs PR #4 (`6cb96a3`). |
+
+### Reasons (changes requested)
+
+1. **The pinned `gh pr list` call cannot be consumed under the plan's own constraints (confirmed).** The plan pins
+   `gh pr list --state merged --limit 1000 --json number,title,mergedAt,files` with no `--jq`. Its output is a
+   single JSON array: nested `files[].path` and ISO `mergedAt` (`2026-10-30T06:07:05Z`). M6, M7 and M10 need
+   `mergedAt` as epoch to test (m, m + 14 d], but the plan names no conversion for this call ("no `date` flavour"
+   covers only `view`). The card allows `git` + `gh` only, and no script here uses `jq`; the one precedent,
+   `scripts/worktree-prune.sh:149`, uses `gh … --jq`. That leaves the code-writer two paths, both costly. One is a
+   JSON parser plus a civil-date → epoch routine in bash 3.2/awk. The other is adding `--jq`, which changes the call
+   the shim whitelists ("any other exits 99 and FAILs"), fails M6–M10 and forces a mid-build re-approval
+   (`planning.md`). Pin the call with its `--jq`, for example
+   `--jq '.[] | [.number, (.mergedAt | fromdateiso8601), ([.files[].path] | join(" ")), .title] | @tsv'`
+   (title last, since it may contain anything). The shim then whitelists that string.
+2. **The B1.2 deviation states its consequence backwards (confirmed).** The plan says "spec ticks merged in from
+   `main` ignored (B1.2's tick arrives in #4's squash: 7 min, not 58)". The sibling "(B1.5 round 2: 45 min, not 54)"
+   reads as "result, not alternative". By that pattern the rule gives B1.2 = 7, but it gives 58. `6cb96a3` is off
+   `refs/pull/5/head`'s first-parent chain, so B1.2 is 3487 s = 58 min, and 58 is what makes the median 35. The lead
+   approves this deviation from that sentence, so it must read "58 min, not 7". With B1.2 at 7 the median would be
+   34 and the target ≤ 23.8.
+
+### Notes (not blocking, carried from round 1 where still open)
+
+- The fetch target is still unnamed ("on `refs/pull/N/head`, fetched"). `git fetch origin refs/pull/N/head`
+  (→ `FETCH_HEAD`) or a ref under a scratch namespace that the script deletes keeps "read-only" true for the `.git`
+  that every worktree shares.
+- Card-id matching: the subject regex is anchored by the following space (`<card> plan`) and the tick by `)`, so
+  B1.1 ≠ B1.10. The `.` must still be escaped (B1x1). No M-probe has B1.1 and B1.10 side by side.
+- `gh` returns at most 100 `files` per PR (PR #3 hits it). A card PR with more than 100 files would under-count
+  overlaps. None does today, and the rate is an upper bound anyway. Say so in the `docs/metrics.md` row.
+- This is round 2. If the lead wants the plan revised, round 3 goes to the human per the cap ("Waiting on human").
+  Both reasons are one-line plan edits.
+
+Verdict: changes requested

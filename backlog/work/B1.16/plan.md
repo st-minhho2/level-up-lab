@@ -9,8 +9,10 @@ median **35 min** over 14 cards (B1.1 n/a); change failure rate **1/15 = 6.7 %**
   latest commit whose subject matches `^docs\(backlog\): <card> plan (round [0-9]+ )?approved`, and the oldest
   commit adding a `Lead approves spec (… <card>)` line; the later of the two. Neither → `n/a`, out of the median.
 - **Merge:** `gh pr view N --json mergedAt --jq '.mergedAt | fromdateiso8601'` (epoch, no `date` flavour).
-  Minutes = ⌊(merge − approval) / 60⌋; hours = minutes / 60, one decimal.
-- **Repair PR:** from `gh pr list --state merged --limit 1000 --json number,title,mergedAt,files`, a PR titled
+  Minutes = ⌊(merge − approval) / 60⌋; hours = minutes / 60, one decimal; even-count median = ⌊mean of the two
+  middle minute values⌋.
+- **Repair PR:** from `gh pr list --state merged --limit 1000 --json number,title,mergedAt,files --jq '.[] |
+[.number, (.mergedAt | fromdateiso8601), .title, ([.files[].path] | join(" "))] | @tsv'`, a PR titled
   `^(fix|revert)(\(|:|!)` or `^Revert "`, other than card C's own feature PR (another card's feature PR may count),
   merged in (C's merge, C's merge + 14 days] [estimate], sharing a changed file with C's PR outside `*.md`,
   `backlog/`, `docs/`, `spec/`. Rate = distinct repair PRs ÷ cards (card's wording). Upper bound; a false positive
@@ -18,7 +20,7 @@ median **35 min** over 14 cards (B1.1 n/a); change failure rate **1/15 = 6.7 %**
 
 Deviations from the card's Acceptance (stated): approval by commit subject, not the `Plan approved by` line (B1.3's
 line was renamed later, B1.15's wraps); the latest plan-approved commit (B1.5 round 2: 45 min, not 54); spec ticks
-merged in from `main` ignored (B1.2's tick arrives in #4's squash: 7 min, not 58).
+merged in from `main` ignored (B1.2 stays 58 min; counting #4's squash `6cb96a3` would give 7 and a median of 34).
 
 ## Files
 
@@ -62,4 +64,5 @@ session edits `scripts/` under this approval; no `(red)` marker (verify-red judg
 Risk for the lead: −30 % of 35 min is ≤ 24.5 min. Today one card runs at a time and merges minutes after approval;
 batched review adds queue time per card, so this metric may rise while throughput rises. The target is the lead's call.
 
-Plan review: <round 2 pending> · Plan approved by: <empty until the lead approves> · Rounds: 1
+Plan review: changes requested, round 2 (cap); round-2 reasons 1–2 and the median rounding applied above, not
+re-reviewed · Plan approved by: <empty until the lead approves> · Rounds: 1
