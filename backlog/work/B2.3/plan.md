@@ -85,4 +85,4 @@ scripts/ci/check-ac-coverage.sh && scripts/ci/check-spec-sections.sh && scripts/
 
 Diff review may run after step 3 (phase A banked) and again after step 5. PR stays draft until phase B is green.
 
-Plan review: · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: · Rounds: 1
