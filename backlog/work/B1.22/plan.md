@@ -68,5 +68,5 @@ bash -n scripts/*.sh scripts/metrics/*.sh && scripts/ci/check-plan-scope.sh && s
 Steps: `test(scripts)` → `feat(scripts)` → `reviewer` diff → draft PR at the gate, ready at Loop 9 (B1.21),
 `config-change-approved` (D-19: `.claude/docs`).
 
-Plan review: changes requested, round 2 (cap); round-1 and round-2 reasons applied above, not re-reviewed · Plan approved by: <empty until the lead approves> ·
+Plan review: changes requested, round 2 (cap); round-1 and round-2 reasons applied above, not re-reviewed · Plan approved by: lead (session reply "approve X literal, Y (a), Z bypass counter, chấp nhận độ dài"), 2026-10-31 ·
 Rounds: 1
