@@ -74,4 +74,4 @@ Diff review may run once after step 3 (phase A banked) and again after step 5; p
 the step-4 red commit. PR stays draft until phase B is green; the card holds its WIP slot until then.
 
 Plan review: approved, round 2; phase-B amendment: changes requested (1 reason, numbers) applied, not re-reviewed · Plan approved by: lead (session reply "approve"),
-2026-10-31 (round 1); round 2: pending, approval commit `docs(backlog): B2.2 plan round 2 approved` · Rounds: 2
+2026-10-31 (round 1); round 2: lead (session reply "approve"), 2026-10-31 · Rounds: 2
