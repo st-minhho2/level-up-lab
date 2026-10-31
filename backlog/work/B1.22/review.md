@@ -187,3 +187,127 @@ stated bias covers this.
 This is round 2, the cap (`dev-lead.md` ≤ 2 rounds), so the plan now goes to the lead as **Waiting on human**, with
 these reasons attached. Choices for the lead: reason 1 (a or b), reason 2 (ii) (accept the min start as a D-18
 amendment or keep literal), reason 4 (accept as a bypass counter or redefine), and the 64-line length.
+
+## Diff review (pass 1)
+
+HEAD 67215eb (test 9a33e93, feat 67215eb). Scope: tooling (`scripts/`, `.claude/docs`, `docs/metrics.md`); no `src/`.
+
+### Commands (last line each, run by the reviewer)
+
+| Command                                                              | Result                                                                                                                                                                       |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                                          | `All matched files use Prettier code style!`                                                                                                                                 |
+| `pnpm typecheck`                                                     | `tsc --noEmit` exit 0                                                                                                                                                        |
+| `pnpm test`                                                          | `Tests 115 passed (115)`                                                                                                                                                     |
+| `pnpm test:e2e`                                                      | `13 passed (18.8s)`                                                                                                                                                          |
+| `pnpm test:mutation`                                                 | `Final mutation score of 89.02 is greater than or equal to break threshold 70`                                                                                               |
+| `scripts/metrics-smoke.sh` (bash 5 and `/bin/bash` 3.2.57)           | `[metrics-smoke] 18 ok, 0 FAIL` both                                                                                                                                         |
+| test commit's smoke on a copy of the 9a33e93 tree                    | `[metrics-smoke] 11 ok, 7 FAIL` (M14–M20, `not found`): red on behavior                                                                                                      |
+| `check-suppressions` / `check-feat-commits`                          | OK / OK (feat touches no test)                                                                                                                                               |
+| `check-config-change`                                                | local `::error::` on `.claude/docs/git-workflow.md`: the label is on PR #74 (`config-change-approved`, D-19); CI `guards` SUCCESS at 67215eb                                 |
+| `check-ac-coverage` / `check-spec-sections` / `check-features-map`   | OK / OK / OK                                                                                                                                                                 |
+| `check-plan-scope` / `check-backlog`                                 | OK (inside the approved plan) / OK                                                                                                                                           |
+| `scripts/verify-red.sh B1.22`                                        | exit 1, no `(red)` commit. Precedent: B1.16, B1.17, B1.18, B1.21 titled tooling red commits without `(red)` (verify-red runs vitest only); red proven by the smoke run above |
+| `git diff 9a33e93..HEAD -- scripts/metrics-smoke.sh '*.test.*' e2e/` | empty                                                                                                                                                                        |
+
+### Checklist
+
+- Criteria (card Acceptance): batch review doc, three scripts, three rows: present; each script has probes (M14–M20).
+- Tests not weakened: M1–M13 assertion lines unchanged in 9a33e93. Fixture changes: B9.2 now ends in a merge of main
+  and a `chore(ci)` commit, so M2/M11 also pass with a merged-in tick (stronger). B9.5 merges a day later, so M5 still
+  reads n/a and #204/#206 keep their offsets. B9.1's plan gains a Files table, and its approval subject is unchanged.
+  Not weakened.
+- Every changed file in `plan.md` Files: yes (9/9).
+- Interfaces: `wait-time.sh` adds a `upper_min` column, ", PR upper bound <c> min (<k>)" and a `gh pr view --json
+createdAt` call. It drops `--json headRefOid` (the head is `refs/pull/N/head`, the same commit). The approved
+  approach (Y (a), "printed with created → merge as the upper bound") needs these, so this is not blocking. Copy them
+  into the PR body's Plan section.
+- No `src/`, Prisma, SQL, migration, secret or suppression. Features map: no row (tooling).
+- Revert probes (copy under `$TMPDIR`, one mutant at a time, smoke re-run): paperwork set removed → M19 FAIL; no-approval
+  counted → M20 FAIL; `chore(ci)` skip removed → M17 FAIL; UTC+7 offset in the day name → M15. Survivors: [2], [3].
+- Day bucketing: integer `(t + 25200) / 86400` in awk (portable). `day_name` tries GNU `date -d @N`. On macOS that is
+  `illegal option -- d` (stderr hidden), then BSD `date -r N`. Both print the UTC date of the day start, which is the
+  UTC+7 calendar day. Verified on macOS. GNU is by reading.
+- `set -euo pipefail` paths: an empty selection prints `throughput n/a (0 cards, 0.0 h, 0 days)`, `median … n/a … (0)`
+  or `0/0`. A failing `gh` or `git fetch` aborts the run before the summary line, as `lead-time.sh` does. A missing
+  `refs/pull/N` is the same abort, and no Done card lacks one. Not blocking.
+
+### Findings
+
+```
+[1] KIND: plan-mismatch
+    WHERE: scripts/metrics/throughput.sh:26-27,35-36; docs/metrics.md (Throughput row, "How collected")
+    DEFECT: the span starts at the earliest round-1 approval among the cards that merged that day, if it falls on
+            that day. The approved plan says "the day's first plan-approval commit (any card)", and the row calls the
+            narrower rule "D-18 as written".
+    TRIGGER: card A plan approved day d 09:00 and merged d+1. Card B approved d 10:00 and merged d 11:00. (Also: card
+            C round 1 approved d−1, round 2 approved d 09:00, merged d 12:00.)
+    WRONG BEHAVIOUR: day d span = 1 h (plan: 2 h). For C the round-2 approval is ignored, so the day starts at the
+            first merge. Throughput is overstated exactly when batch review spreads approval and merge over two days.
+            On today's data the gap is 0: the plan's variant also prints 5.1 for B1.1–B1.15, counting approvals of
+            unselected cards too, and 5.6 for all cards.
+    CONFIDENCE: confirmed (traced the awk; ran the any-card variant from a copy on the real repo)
+
+[2] KIND: coverage
+    WHERE: scripts/metrics-smoke.sh M14/M15 (fixture: every approval at T0, same day as its merge)
+    DEFECT: nothing pins the lead's choice X or the approval-day rule. Three mutants keep the smoke at 18 ok, 0 FAIL:
+            (A) min-start, `s = (d in fa && fa[d] < fm[d]) ? fa[d] : fm[d]`; (B) dropping the same-day test on the
+            approval; (C) latest approval round instead of round 1.
+    TRIGGER: any of the three one-line edits in throughput.sh's span awk
+    WRONG BEHAVIOUR: the baseline the D-18 target is built on can move from 5.11 to 4.85 (min-start, the plan's own
+            numbers) and the smoke stays green.
+    CONFIDENCE: confirmed (each mutant run on a copy)
+
+[3] KIND: coverage
+    WHERE: scripts/metrics-smoke.sh:112-113 (M17); scripts/metrics/wait-time.sh:44
+    DEFECT: M17 says "a later merge of main … does not reset" the anchor. B9.2's last own commit (the tick) has no
+            run, so the walk never has to pass the merge. Mutant (E) stops at the merge (drops `"$parents" -gt 2 ||`)
+            and the smoke stays 18 ok.
+    TRIGGER: own commit green at t, merge of main green at t + 30 min, merge at t + 40 min
+    WRONG BEHAVIOUR (under the mutant, undetected): the PR wait is 10 min instead of 40 min.
+    CONFIDENCE: confirmed (mutant run on a copy)
+
+[4] KIND: spec-mismatch (card Acceptance; the plan's "no approval → n/a" carries it)
+    WHERE: scripts/metrics/plan-deviations.sh:25; docs/metrics.md (Plan deviations row: "`check-plan-scope.sh`'s rule")
+    DEFECT: a merged card PR with no approval commit is n/a and leaves the denominator. `check-plan-scope.sh` fails
+            the same PR: with rc ≠ 0 every non-paperwork file is outside.
+    TRIGGER: a card PR merged with the `hotfix` label (guards skipped) that has no `plan approved` commit and changes
+            `src/x.ts`, the M20 fixture B9.5 with `src/e.ts`
+    WRONG BEHAVIOUR: the metric prints `n/a` and `0/n`, so the bypass counter the lead chose (Z) misses the most
+            obvious bypass. The row says it applies check-plan-scope's rule, and it does not. B1.1 (approved in the
+            session, before commits) is the only historical n/a, so one possible fix is to count n/a from B1.17 on.
+            The lead rules, since the plan stated n/a.
+    CONFIDENCE: confirmed (M20 asserts n/a for B9.5 with src/e.ts; check-plan-scope.sh:22-27 traced)
+
+[5] KIND: plan-mismatch
+    WHERE: .claude/docs/git-workflow.md, Batch review, first bullet
+    DEFECT: "new picks are refused until the batch is approved" is wrong. An approved card stays Doing (draft PR)
+            through build until `gh pr ready`. The plan says "until the batch drains".
+    TRIGGER: three cards with draft PRs at the plan gate. The lead approves all three, and `scripts/next-task.sh` runs.
+    WRONG BEHAVIOUR: `state_of` returns Doing for a draft and `n_doing` = 3 ≥ WIP_LIMIT, so it exits 1 ("finish or hand
+            one to Review first"). Approving does not free a slot. Only the first `gh pr ready` does.
+    CONFIDENCE: confirmed (next-task.sh:6-9, state_of, pick branch traced)
+```
+
+Not findings. The batch costs are accurate: Review frees a slot, the ruleset is strict, `--undo` puts the card above
+WIP, and k − 1 serial cycles at ≈ 4 min each match seven sampled green runs (115–247 s). The PR-wait zeros (8 of 20) are
+real: on #5, #13, #15, #33, #57, #63 and #67 the merge comes 5–46 s after the green run completes, never before it.
+
+Verdict: back to test-writer. The lead first rules on [1] (implement "any card" plus all rounds, or re-approve the
+narrower rule and fix the row's "as written") and on [4] (count no-approval PRs from B1.17 on, or keep n/a and fix the
+row's wording). Then test-writer adds probes for [1]/[2]/[3] (a review-pass commit, which must fail on today's code
+where [1] changes). Then code-writer fixes [1], [4] as ruled and [5].
+
+Riskiest unfalsified: `plan-deviations.sh` reads the file list from `gh pr view --json files`. I believe it is
+capped near 100 files and not paginated, but I have not checked that [unverified]. If so, a larger card PR would
+under-count without any error. The largest card PR so far is far below 100, so I could not trigger it.
+
+### Dispositions (dev-lead)
+
+| #   | Disposition                                                                                                                                                     | Evidence                                                                                                       |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| 1   | fix now: the approved plan governs ("the day's first plan-approval commit (any card)"); all rounds count, an approval after the day's last merge starts nothing | probe M21 (21c9dc7) red at 67215eb (13.3 vs 6.7), green at 680d8c0; real repo 5.1 / 5.6 unchanged              |
+| 2   | fix now: M21's day 2 merges at 06:00 before its first approval (07:00), day 3's only approval follows its last merge                                            | mutant (A) min-start → M21 5.7; no `<= last` guard → M21 8.0; (B)/(C) have no analogue once every round counts |
+| 3   | fix now: probe M22, B9.4's own commit green at T0+400 under its merge of main                                                                                   | M22 33 min; M18 median 31                                                                                      |
+| 4   | waiting on the lead's ruling                                                                                                                                    | —                                                                                                              |
+| 5   | fix now: "refused until the batch drains: an approved card stays Doing, a draft PR, until its PR is ready"                                                      | `.claude/docs/git-workflow.md` at 680d8c0                                                                      |
