@@ -90,4 +90,4 @@ scripts/ci/check-ac-coverage.sh && scripts/ci/check-spec-sections.sh && scripts/
 Diff review may run after step 3 (phase A banked) and again after step 5. PR stays draft until phase B is green.
 
 Plan review: approved, round 2; phase-B amendment: approved (a0a72fb), REQ-14.4 e2e added after it · Plan approved by: lead (session reply "approve"), 2026-10-31
-(round 1); round 2: · Rounds: 2
+(round 1); round 2: lead (session reply "approve"), 2026-10-31 · Rounds: 2
