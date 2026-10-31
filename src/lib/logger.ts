@@ -3,7 +3,11 @@
 import { getEnv } from '@/lib/env';
 
 export type MutationActionName =
-  'createTodoAction' | 'toggleTodoAction' | 'updateTodoTitleAction' | 'clearCompletedTodosAction';
+  | 'createTodoAction'
+  | 'toggleTodoAction'
+  | 'updateTodoTitleAction'
+  | 'clearCompletedTodosAction'
+  | 'completeAllTodosAction';
 
 const LOG_MESSAGE_MAX_LENGTH = 500;
 const LOG_STACK_MAX_LENGTH = 2000;
