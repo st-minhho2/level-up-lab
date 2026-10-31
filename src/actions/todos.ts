@@ -1,13 +1,16 @@
 'use server';
 
-// §5, §6, §9: Server Actions for the todo list; §10: a failed create, toggle, edit or clear resolves to a `form` error;
-// §11: that swallowed failure is logged once, with the action's name and the thrown value only.
+// §5, §6, §9, §15: Server Actions for the todo list; §10: a failed create, toggle, edit, clear or due-date change
+// resolves to a `form` error; §11: that swallowed failure is logged once, with the action's name and the thrown
+// value only.
 import { revalidatePath } from 'next/cache';
 import { failure, fieldErrorsOf, MUTATION_FAILED_MESSAGE, type ActionResult } from '@/lib/action-result';
+import { setTodoDueDateSchema } from '@/lib/todo-due-date';
 import { createTodoSchema, toggleTodoSchema, updateTodoTitleSchema } from '@/lib/todo-schema';
 import {
   clearCompletedTodos,
   createTodo,
+  setTodoDueDate,
   TodoNotFoundError,
   toggleTodo,
   updateTodoTitle,
@@ -84,6 +87,26 @@ export async function clearCompletedTodosAction(): Promise<ActionResult<{ delete
     return { ok: true, data: { deleted } };
   } catch (error) {
     logMutationFailure('clearCompletedTodosAction', error);
+    return failure('form', MUTATION_FAILED_MESSAGE);
+  }
+}
+
+// §15 due date: set or clear ('' parses to undefined) one todo's due date.
+export async function setTodoDueDateAction(id: string, dueDate: string): Promise<ActionResult<Todo>> {
+  const parsed = setTodoDueDateSchema.safeParse({ id, dueDate });
+  if (!parsed.success) {
+    return { ok: false, fieldErrors: fieldErrorsOf(parsed.error) };
+  }
+  try {
+    const todo = await setTodoDueDate(parsed.data.id, parsed.data.dueDate);
+    revalidatePath('/');
+    return { ok: true, data: todo };
+  } catch (error) {
+    if (error instanceof TodoNotFoundError) {
+      return failure('id', 'Todo not found');
+    }
+    // §10 (REQ-15.10), §11: same as toggle.
+    logMutationFailure('setTodoDueDateAction', error);
     return failure('form', MUTATION_FAILED_MESSAGE);
   }
 }

@@ -1,9 +1,11 @@
 # §1 Scope
 
 A single-person todo list: the person adds items, sees every item newest first, marks items done or not done, and
-(§6) corrects an item's text. Items survive a browser reload because they are stored in PostgreSQL.
+(§6) corrects an item's text, and (§15) gives an item an optional due date. Items survive a browser reload because they
+are stored in PostgreSQL.
 
-Not in scope, by decision: accounts, sharing, due dates, ordering other than creation time, offline mode.
+Not in scope, by decision: accounts, sharing, ordering other than creation time (a due date never orders the list),
+offline mode.
 
 Runtime: Next.js App Router with React Server Components for reads, Server Actions for every mutation, Prisma on
 PostgreSQL. One process, one database, one schema per worktree in development (§4).
