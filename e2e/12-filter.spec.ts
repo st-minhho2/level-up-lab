@@ -47,6 +47,17 @@ async function expectFilterLinksVisible(page: Page): Promise<void> {
   await expect(filterLink(page, 'Completed')).toBeVisible();
 }
 
+// REQ-12.7: exactly the selected link carries aria-current="page"; the other two carry none.
+async function expectOnlySelected(page: Page, selected: 'All' | 'Active' | 'Completed'): Promise<void> {
+  for (const name of ['All', 'Active', 'Completed'] as const) {
+    if (name === selected) {
+      await expect(filterLink(page, name)).toHaveAttribute('aria-current', 'page');
+    } else {
+      await expect(filterLink(page, name)).not.toHaveAttribute('aria-current');
+    }
+  }
+}
+
 // §12 filter the list (B2.1).
 test.describe('§12 filter the list', () => {
   test('AC-12.5: All, Active and Completed show [D, C, B, A], [D, B], [C, A] through the address, survive a reload, and an unknown filter shows All', async ({
@@ -65,21 +76,25 @@ test.describe('§12 filter the list', () => {
 
     await expect(page).toHaveURL(addressIs('/?filter=active'));
     await expect(page.getByRole('listitem')).toHaveText(['D', 'B']);
+    await expectOnlySelected(page, 'Active');
 
     await page.reload();
 
     await expect(page).toHaveURL(addressIs('/?filter=active'));
     await expect(page.getByRole('listitem')).toHaveText(['D', 'B']);
+    await expectOnlySelected(page, 'Active');
 
     await filterLink(page, 'Completed').click();
 
     await expect(page).toHaveURL(addressIs('/?filter=completed'));
     await expect(page.getByRole('listitem')).toHaveText(['C', 'A']);
+    await expectOnlySelected(page, 'Completed');
 
     await filterLink(page, 'All').click();
 
     await expect(page).toHaveURL(addressIs('/'));
     await expect(page.getByRole('listitem')).toHaveText(['D', 'C', 'B', 'A']);
+    await expectOnlySelected(page, 'All');
 
     await page.goto('/?filter=bogus');
 
