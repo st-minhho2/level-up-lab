@@ -11,7 +11,9 @@ _F10 · section 12_
 `export async function listTodos(): Promise<Todo[]>` takes no filter; `spec/contracts/03-todos.md` "Out of scope" lists
 filtering, lifted by D-20
 
-- **Acceptance:** section 12 criteria, set by `spec-analyst` (contract `spec/contracts/10-filter.md`)
+- **Spec:** §12 — unchanged
+- **Test:** `src/lib/todo-filter.test.ts::AC-12.1: keeps the todos that match the filter, in input order, and never mutates the input` — red because: `src/lib/todo-filter.ts` and `filterTodos` do not exist yet
+- **Acceptance:** AC-12.1 to AC-12.7 (contract `spec/contracts/10-filter.md`)
 - **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B2.1/`
 
