@@ -113,3 +113,73 @@ Costs the lead accepts by approving (carried from round 1 unless marked new; non
 - **Length:** `plan.md` is 73 lines against `planning.md`'s ≈ 40 (65 at round 1); the growth is round-1 fixes, not scope.
 
 Riskiest unfalsified: the phase-B argument of `countRemaining(` on the merged `page.tsx`; nothing executable checks it.
+
+## Diff review (pass 1)
+
+Scope: phase A only (plan steps 1–3: `7d1b580` chore, `09e53b9` red, `2c03bf5` feat). `src/app/page.tsx` and
+`e2e/13-remaining-count.spec.ts` are phase B and absent on purpose (`git diff --stat main...HEAD -- src/app e2e
+prisma src/actions` → empty). Merge base `fa98ab2` = `main` = `origin/main`. Run here on 2026-10-31 at `2c03bf5`.
+
+### Command results (last line of each)
+
+| Command                             | Result                                                                                                                                                   |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!` (exit 0)                                                                                                    |
+| `pnpm typecheck`                    | `tsc --noEmit`, no output (exit 0)                                                                                                                       |
+| `pnpm test`                         | `Tests  126 passed (126)` (14 files; 115 + 8 + 3, as the plan states)                                                                                    |
+| `pnpm test:e2e`                     | `13 passed (12.3s)` (unchanged count, phase A)                                                                                                           |
+| `pnpm test:mutation`                | `Final mutation score of 89.53 is greater than or equal to break threshold 70`; lib 87.67, actions 100.00; `todo-count.ts` 100.00 (8 killed, 0 survived) |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                                                                                |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                                                                        |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                                                                       |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test` (§13: ✗, no tests expected yet (7 criteria))                                                       |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11 13`                                                                                                         |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                                                                                     |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B2.2-remaining-count stays inside the approved plan of B2.2`                                                                                   |
+| `scripts/verify-red.sh B2.2`        | `RESULT: red for the right reason` (todo-count 8 new failed / 0 passed; remaining-count 3 / 0)                                                           |
+| `git diff --stat main...HEAD`       | `13 files changed, 635 insertions(+), 1 deletion(-)`; code: the 4 files of the plan's phase-A rows                                                       |
+
+### Checklist
+
+| Check                                                                            | Result                                                                                                                                                                                                                                                                                                                                                                                                 |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every AC-§.n has a test whose assertion matches its Then                         | pass for phase A: AC-13.1 (a)–(d) → `toBe(0/3/3/0)` + `toEqual(before)` on frozen inputs (an in-place change throws); AC-13.2 0/1/2/11 → exact strings. AC-13.3 … 13.7 belong to `e2e/13` (phase B); the guard still reads §13 ✗, so no false "shipped".                                                                                                                                               |
+| no test weakened after the red commit                                            | pass: `git log --first-parent --no-merges 09e53b9..HEAD -- '*.test.*' e2e/` empty; `--merges --remerge-diff` empty (no merge commits).                                                                                                                                                                                                                                                                 |
+| every changed file is in `plan.md`                                               | pass: 4 code files = phase-A Files rows; `spec/features-map.md`, `docs/metrics.md`, `backlog/` are paperwork (`check-plan-scope.sh` OK).                                                                                                                                                                                                                                                               |
+| interfaces match the section's contracts                                         | pass: the three signatures match §13 Function contracts character for character. Probe: a phase-B-shaped `<RemainingCount count={countRemaining(await listTodos())} />` in a scratch `src/app` file typechecks (`tsc` exit 0), so `Todo` (`readonly completed: boolean`) fits the parameter.                                                                                                           |
+| Zod at every action boundary · Prisma only in `src/lib` · no raw SQL · migration | n/a: no action, no Prisma, no SQL, no migration in the diff. `todo-count.ts` imports nothing; no `server-only` in either module (as §13 requires).                                                                                                                                                                                                                                                     |
+| no secret, no suppression                                                        | pass (`check-suppressions.sh`; no key-shaped string in the 4 files).                                                                                                                                                                                                                                                                                                                                   |
+| features map row moved                                                           | pass for phase A: F11 (✗) added in the skeleton, test files added in the feat; status, page and e2e wait for step 6.                                                                                                                                                                                                                                                                                   |
+| would a test fail if one changed line were reverted?                             | probe on a scratch copy, card tests only: `<p>`→`<span>` 3 failed; `<p>{count} items left</p>` 1 failed; `count <= 1` 2 failed; Stryker kills all 8 mutants of `todo-count.ts`. Survivors, none a spec violation: wrapping the `<p>` in a `<div>`, a trailing space in the `<p>`, `aria-live="polite"` on the `<p>`, `Math.abs(count) === 1` (unreachable: `countRemaining` never returns a negative). |
+
+### Answers to dev-lead's three questions
+
+1. **Server Component in `src/components/`.** Not a finding. §13 Function contracts name the path and say "a Server
+   Component"; the spec wins over `src/components/CLAUDE.md` and the root map row ("client components"). Nothing it
+   imports is `server-only`, so a client parent may also render it. The doc drift is the cost the plan review already
+   carried to the phase-B amendment (B2.1's plan holds `src/components/CLAUDE.md`); it must land there.
+2. **`docs/metrics.md` row with Green "phase A".** Acceptable mid-card: no script parses the per-card Green column
+   (`grep` over `scripts/`: only the paperwork path lists), and dev-lead step 8 writes the row at the map step. It is
+   provisional: at step 6/8 it must read the phase-B feat sha in Green, both red shas, and `7 (100 %)` in Covered (the
+   other rows' format), or the table carries a non-sha forever.
+3. **Component tests titled AC-13.2.** Not an overstatement: AC-13.2 is covered by the 4 unit tests alone (they assert
+   all four Then strings, including 11), so deleting the component tests leaves the coverage claim true. The
+   component tests assert AC-13.2's Then strings through `RemainingCount` plus the contract's "one `<p>`"; the plan's
+   Files row approved that mapping. No AC names the component, so the alternative is an un-prefixed title, which
+   `testing.md` reserves for infrastructure tests.
+
+### Findings
+
+None blocking. Non-blocking notes for dev-lead's map/closing step (backlog and docs are dev-lead's write paths):
+
+- `backlog/plan/E2-todos-plus.md:25` (added on this branch) names the test
+  `src/lib/todo-count.test.ts::AC-13.1: counts the todos whose completed is false and leaves the input unmodified`;
+  `git grep` finds no such title (the four AC-13.1 tests read "returns N for … and leaves the input unchanged").
+  Point the line at an existing title.
+- The metrics row (question 2) and the package-doc drift (question 1) must be closed in phase B.
+
+Verdict: ready for PR (phase A banked; per the plan the PR stays draft until phase B is green and diff-reviewed again)
+
+Riskiest unfalsified: phase A — no test pins the `<p>`'s attributes, so an out-of-scope live region
+(`aria-live="polite"`) would pass every test; phase B — the argument of `countRemaining(` on the merged `page.tsx`
+(B2.1's filtered array would pass all 7 criteria and break REQ-13.5).
