@@ -90,6 +90,7 @@ export async function clearCompletedTodosAction(): Promise<ActionResult<{ delete
 }
 
 // §15 due date: set or clear one todo's due date.
-export function setTodoDueDateAction(id: string, dueDate: string): Promise<ActionResult<Todo>> {
-  return Promise.reject(new NotImplementedError(`setTodoDueDateAction(${id}, ${dueDate})`));
+// A 'use server' export must be an async function (next dev rejects a plain function returning a Promise).
+export async function setTodoDueDateAction(id: string, dueDate: string): Promise<ActionResult<Todo>> {
+  return await Promise.reject(new NotImplementedError(`setTodoDueDateAction(${id}, ${dueDate})`));
 }
