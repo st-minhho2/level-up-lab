@@ -1,6 +1,7 @@
-// §7 home page; §12 the list filtered by the `filter` query parameter; §13 the remaining count.
+// §7 home page; §12 the list filtered by the `filter` query parameter; §13 the remaining count; §14 mark all complete.
 import type { ReactNode } from 'react';
 import { ClearCompletedButton } from '@/components/clear-completed-button';
+import { CompleteAllButton } from '@/components/complete-all-button';
 import { RemainingCount } from '@/components/remaining-count';
 import { TodoFilterNav } from '@/components/todo-filter-nav';
 import { TodoForm } from '@/components/todo-form';
@@ -28,6 +29,8 @@ export default async function HomePage({
       {/* §9: outside the list and in both states, so it is never a listitem and never hidden (REQ-9.5). */}
       {/* §12 REQ-12.10: enabled from the stored todos, not the filtered ones. */}
       <ClearCompletedButton disabled={!todos.some((todo) => todo.completed)} />
+      {/* §14 REQ-14.4: enabled from the stored todos, not the filtered ones; outside the list in both states. */}
+      <CompleteAllButton disabled={!todos.some((todo) => !todo.completed)} />
       <TodoFilterNav selected={filter} />
       {/* §13 REQ-13.5: counted from the stored todos, not the filtered ones; outside the list in both states. */}
       <RemainingCount count={countRemaining(todos)} />

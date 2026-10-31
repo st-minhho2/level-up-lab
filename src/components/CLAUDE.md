@@ -5,3 +5,4 @@ names are the contract the tests assert: "New todo" text box, "Add" button, a ch
 `role="alert"` for inline errors. A row (`<li>`) adds no visible text beyond its title (AC-5.1 compares whole-row text).
 `todo-filter-nav.tsx` (§12) is link-only (`next/link`, no state or events), so it has no `'use client'` and no `<ul>`.
 `remaining-count.tsx` (§13) is a Server Component (no state, no events), so it has no `'use client'`.
+`complete-all-button.tsx` (§14) is `'use client'` (state, events) like `clear-completed-button.tsx`.
