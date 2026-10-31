@@ -50,3 +50,14 @@ Git hooks (Lefthook, `< 30 s`): prettier and eslint on staged files, `tsc --noEm
 Conventional Commits (merge and revert subjects allowed). CI re-runs everything plus Semgrep and the guards in
 `scripts/ci/`. Model policy (D-3): orchestrator, reviewer and writers inherit the session model; `spec-analyst` and
 `advisor` run on `sonnet`.
+
+Where the hooks come from (B1.19): every worktree shares `.git/hooks`, and `lefthook install` embeds the absolute path
+of the binary that ran it. `prepare` is `scripts/install-hooks.sh`, which runs the **main checkout's** binary with the
+current checkout's `lefthook.yml`, so the path survives every prune; with no runnable binary there it falls back to
+the current checkout's and warns. `assert_lefthook_installed: true` makes a commit that cannot reach Lefthook stop
+("Can't find lefthook in PATH", exit 1) instead of passing unchecked; `no_auto_install: true` keeps a commit from
+re-installing the hooks with whatever `lefthook` is first on `PATH`. The first job, `node-modules`, refuses a checkout
+without `node_modules` with "run pnpm install --frozen-lockfile". Gaps: an open branch whose `lefthook.yml` predates
+these keys re-installs without them on its own `pnpm install`, and only another `pnpm install` repairs that (commits do
+not); a hook type added later installs on the next `pnpm install`; every checkout runs the main checkout's binary (or a
+`lefthook` found first on `PATH`, which the template tries before it) with its own config. They close as branches merge `origin/main` and the main checkout runs `pnpm install` after a merge.

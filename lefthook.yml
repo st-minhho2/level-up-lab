@@ -1,26 +1,38 @@
 # Pre-commit gate. Budget: < 30 s on a warm machine (measured in .claude/docs/hooks.md). Lint and format run on
 # staged files only; tsc is whole-project because types cross files. Emergency bypass: LEFTHOOK=0 git commit,
 # with the reason in the commit body; CI still runs the full gate.
+# Installed by scripts/install-hooks.sh (B1.19) with the main checkout's binary. No reachable lefthook stops the commit
+# (assert); a commit never re-installs the hooks itself (no_auto_install): only `pnpm install` (prepare) does.
+assert_lefthook_installed: true
+no_auto_install: true
+
 pre-commit:
-  parallel: true
+  piped: true # node-modules first: without it every other job fails with "Command not found"
   jobs:
-    - name: repo-hooks
-      run: scripts/require-hooks.sh
-    - name: prettier
-      glob: '*.{ts,tsx,mts,mjs,js,json,md,yml,yaml,css}'
-      run: pnpm exec prettier --check {staged_files}
-    - name: eslint
-      glob: '*.{ts,tsx,mts,mjs}'
-      run: pnpm exec eslint --no-warn-ignored {staged_files}
-    - name: tsc
-      run: pnpm exec tsc --noEmit
-    - name: gitleaks
-      run: |
-        if command -v gitleaks >/dev/null 2>&1; then
-          gitleaks git --pre-commit --staged --redact --no-banner
-        else
-          echo "gitleaks not installed (brew install gitleaks); skipping local secret scan, CI runs it" >&2
-        fi
+    - name: node-modules
+      run: test -d node_modules
+      fail_text: 'this checkout has no node_modules: run pnpm install --frozen-lockfile in it'
+    - name: gate
+      group:
+        parallel: true
+        jobs:
+          - name: repo-hooks
+            run: scripts/require-hooks.sh
+          - name: prettier
+            glob: '*.{ts,tsx,mts,mjs,js,json,md,yml,yaml,css}'
+            run: pnpm exec prettier --check {staged_files}
+          - name: eslint
+            glob: '*.{ts,tsx,mts,mjs}'
+            run: pnpm exec eslint --no-warn-ignored {staged_files}
+          - name: tsc
+            run: pnpm exec tsc --noEmit
+          - name: gitleaks
+            run: |
+              if command -v gitleaks >/dev/null 2>&1; then
+                gitleaks git --pre-commit --staged --redact --no-banner
+              else
+                echo "gitleaks not installed (brew install gitleaks); skipping local secret scan, CI runs it" >&2
+              fi
 
 commit-msg:
   jobs:
