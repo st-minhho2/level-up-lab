@@ -8,13 +8,16 @@ the stored list (REQ-13.5); derived from the `listTodos()` array, no second quer
 
 ## Files
 
-| File                                      | Change                                                     | Why (AC-§.n)       |
-| ----------------------------------------- | ---------------------------------------------------------- | ------------------ |
-| `src/lib/todo-count.ts`                   | Add: `countRemaining`, `remainingLabel` (pure, no Prisma)  | AC-13.1, AC-13.2   |
-| `src/lib/todo-count.test.ts`              | Add: unit, node; frozen inputs, boundaries 0/1/2/11        | AC-13.1, AC-13.2   |
-| `src/components/remaining-count.tsx`      | Add: `RemainingCount` Server Component, one `<p>`          | AC-13.3 to AC-13.7 |
-| `src/components/remaining-count.test.tsx` | Add: component, jsdom; the `<p>` text for 0, 1, 2          | AC-13.2            |
-| `e2e/13-remaining-count.spec.ts`          | Add in phase B only (needs the mount); seeds like `e2e/09` | AC-13.3 to AC-13.7 |
+| File                                      | Change                                                                                                                        | Why (AC-§.n)                 |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| `src/lib/todo-count.ts`                   | Add: `countRemaining`, `remainingLabel` (pure, no Prisma)                                                                     | AC-13.1, AC-13.2             |
+| `src/lib/todo-count.test.ts`              | Add: unit, node; frozen inputs, boundaries 0/1/2/11                                                                           | AC-13.1, AC-13.2             |
+| `src/components/remaining-count.tsx`      | Add: `RemainingCount` Server Component, one `<p>`                                                                             | AC-13.3 to AC-13.7           |
+| `src/components/remaining-count.test.tsx` | Add: component, jsdom; the `<p>` text for 0, 1, 2                                                                             | AC-13.2                      |
+| `e2e/13-remaining-count.spec.ts`          | Add in phase B only (needs the mount); seeds like `e2e/09`                                                                    | AC-13.3 to AC-13.7           |
+| `src/app/page.tsx`                        | Phase B: `<RemainingCount count={countRemaining(todos)} />` after `<TodoFilterNav>`, before the list or empty text; 2 imports | AC-13.3 to AC-13.7, REQ-13.5 |
+| `src/components/CLAUDE.md`                | Phase B: one line, `remaining-count.tsx` (§13) is a Server Component (no state, no events)                                    | doc drift (review)           |
+| `src/lib/CLAUDE.md`                       | Phase B: module row `todo-count.ts` §13, pure, no Prisma, no `server-only`                                                    | doc drift (review)           |
 
 Paperwork: `spec/features-map.md` F11 row (status ✗) lands in the skeleton commit with the two modules, so
 `check-features-map.sh` stays green on every phase-A push; test files join the row in step 6. Not touched:
@@ -24,12 +27,11 @@ Component (no `'use client'`), each throwing `NotImplementedError`; no page, act
 
 ## Sequence (phase B)
 
-Waits until B2.1's PR is MERGED (B2.1 in Review still holds the page). Then: `git merge origin/main`; amend this plan
-with one row for the home page under `src/app/` (one JSX line plus two imports, placed outside the list per §13 and
-after B2.1's filter nav), lead re-approves as `docs(backlog): B2.2 plan round 2 approved`, re-run
-`scripts/next-task.sh --check B2.2` (today: no overlap with B2.1's plan, which holds the page). Expect a
-`spec/technical-requirements.md` index conflict at that merge (both add a row). Coupling check for the diff review:
-`git grep -n "countRemaining(" src/app/` passes the same unfiltered variable as the clear button (REQ-13.5).
+Round 2 (lead): B2.1 #78 merged (830901d); `origin/main` merged into this branch (b2db063: paperwork conflicts in
+`docs/metrics.md`, `spec/features-map.md`, `spec/technical-requirements.md`, both rows kept). `countRemaining` takes
+`todos` (the stored list from `listTodos()`), never `shown` (B2.1's filtered list): REQ-13.5, same source as the clear
+button (REQ-12.10). Diff-review check: `git grep -n "countRemaining(" src/app/page.tsx` → `countRemaining(todos)`.
+B2.3 waits for this card to merge before it takes the page.
 
 ## Interfaces touched
 
@@ -70,4 +72,5 @@ scripts/ci/check-ac-coverage.sh && scripts/ci/check-spec-sections.sh && scripts/
 Diff review may run once after step 3 (phase A banked) and again after step 5; phase B's green-gate range starts at
 the step-4 red commit. PR stays draft until phase B is green; the card holds its WIP slot until then.
 
-Plan review: approved, round 2 · Plan approved by: lead (session reply "approve"), 2026-10-31 · Rounds: 1
+Plan review: approved, round 2; phase-B amendment: pending · Plan approved by: lead (session reply "approve"),
+2026-10-31 (round 1); round 2: pending · Rounds: 2
