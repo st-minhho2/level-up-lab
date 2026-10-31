@@ -7,8 +7,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic      | File                                 | Done   | Partial | Open  | Total  |
 | --------- | ------------------------------------ | ------ | ------- | ----- | ------ |
-| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 18     | 0       | 1     | 19     |
-| **Total** |                                      | **18** | **0**   | **1** | **19** |
+| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 18     | 0       | 2     | 20     |
+| **Total** |                                      | **18** | **0**   | **2** | **20** |
 
 ## Execution order
 
@@ -43,6 +43,7 @@ flowchart TD
   S17["17 · plan-scope hook<br/>~~B1.17~~"]
   S18["18 · WIP limit<br/>~~B1.18~~"]
   S19["19 · git hooks in every worktree<br/>B1.19"]
+  S20["20 · plan-scope literal match<br/>B1.20"]
   S17 --> S18
   S16 --> S17
 ```
@@ -52,9 +53,10 @@ flowchart TD
 Board state (To do · Doing · Review · Closing) is derived, not typed: `scripts/next-task.sh --list` (BOARD column),
 at most 3 cards Doing (B1.18).
 
-| Step | ID    | Title                                                | Spec § | Status | Blocked by | Owner | Size         |
-| ---- | ----- | ---------------------------------------------------- | ------ | ------ | ---------- | ----- | ------------ |
-| 19   | B1.19 | Git hooks run in every worktree, or the commit stops | —      | Open   | ~~B1.18~~  | Lead  | S [estimate] |
+| Step | ID    | Title                                                                      | Spec § | Status | Blocked by | Owner | Size         |
+| ---- | ----- | -------------------------------------------------------------------------- | ------ | ------ | ---------- | ----- | ------------ |
+| 19   | B1.19 | Git hooks run in every worktree, or the commit stops                       | —      | Open   | ~~B1.18~~  | Lead  | S [estimate] |
+| 20   | B1.20 | Plan rows with `[ ]` match their own path in the plan-scope hook and guard | —      | Open   | ~~B1.17~~  | Lead  | S [estimate] |
 
 ## Waiting on human
 

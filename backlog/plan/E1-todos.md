@@ -273,3 +273,20 @@ twice that way with no prettier, tsc, gitleaks, repo-hooks or commit-msg check
   lead's OK
 - **Tier:** quick · **Depends on:** ~~B1.18~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.19/`
+
+### B1.20 · Plan rows with `[ ]` match their own path in the plan-scope hook and guard
+
+_tooling · no §_
+**Status: Open** — `.claude/hooks/plan-scope.sh:36` (`[[ -n "$p" && "$REL" == $p ]]`) and
+`scripts/ci/check-plan-scope.sh:25` (`[[ -n "$p" && "$f" == $p ]]`) compare a plan's Files token only as a glob; a
+row `src/app/[id]/page.tsx` is the bracket expression `[id]`, so the file it names never matches and its write is
+refused (B1.18 diff review pass 2, confirmed in bash; `next-task.sh --check` was fixed the same way in #63)
+
+- **Spec:** none — tooling (`.claude/docs/hooks.md` plan-scope row); no `src/` change, no section
+- **Test:** new probes in `scripts/hook-smoke.sh` — red because: with a plan listing `src/app/[id]/page.tsx`, a
+  write to that file is refused (exit 2) and `check-plan-scope.sh` lists it as outside the plan (exit 1); expected:
+  allowed (exit 0) by both
+- **Acceptance:** both compare a token literally before as a glob, in every worktree layout; every existing probe
+  still passes; `.claude/` and `scripts/ci/` are protected → the PR needs the human-only `config-change-approved` label
+- **Tier:** quick · **Depends on:** ~~B1.17~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.20/`
