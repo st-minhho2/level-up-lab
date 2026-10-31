@@ -49,7 +49,7 @@ time. A session stops at its fixed lines ("Plan for <card> is ready…", "PR for
 and the desktop app notifies. What a batch costs, by the rules above:
 
 - A card waiting at the plan gate is Doing (`scripts/next-task.sh`): three waiting plans fill WIP 3, and new picks are
-  refused until the batch is approved.
+  refused until the batch drains: an approved card stays Doing, a draft PR, until its PR is ready.
 - A ready PR is Review and frees its slot. Merging k ready PRs costs k − 1 serial CI cycles (≈ 4 min each): the
   ruleset requires an up-to-date branch, so after each merge every other ready PR is BEHIND. Its session, stopped and
   waiting, is woken by the orchestrating session or the lead; it runs `gh pr ready --undo` (Doing again, above the WIP
