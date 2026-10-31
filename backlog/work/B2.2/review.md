@@ -252,3 +252,82 @@ Costs the lead accepts by approving the amendment (none blocking):
 
 Riskiest unfalsified: the argument of `countRemaining(` in the phase-B `page.tsx`; no criterion renders a filtered view,
 so `shown` in place of `todos` passes every planned test and breaks REQ-13.5.
+
+## Diff review (pass 2)
+
+Scope: the whole card against `origin/main` (`830901d`, B2.1 #78; local `main` is stale), at `bea7aa3`. Phase B
+commits since pass 1: `b2db063` merge, `76e750e`…`55a9f37` plan amendment and approval, `f41aa2a` test(ui) red,
+`e557c3b` feat(ui), `bea7aa3` metrics sha. Run here on 2026-10-31; probes on a scratch copy of the worktree (never on
+this tree).
+
+### Command results (last line of each)
+
+| Command                              | Result                                                                                                                                       |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                          | `All matched files use Prettier code style!` (exit 0)                                                                                        |
+| `pnpm typecheck`                     | `tsc --noEmit`, no output (exit 0)                                                                                                           |
+| `pnpm test`                          | `Tests  130 passed (130)` (16 files; the plan's phase-B number)                                                                              |
+| `pnpm test:e2e`                      | `21 passed (18.7s)` (7 files; the plan's phase-B green number)                                                                               |
+| `pnpm test:mutation`                 | `Final mutation score of 90.37 is greater than or equal to break threshold 70`; actions 100.00, lib 88.82, `todo-count.ts` 100.00 (8 killed) |
+| `scripts/ci/check-suppressions.sh`   | `OK: no new suppressions` (range `830901da04..HEAD`)                                                                                         |
+| `scripts/ci/check-config-change.sh`  | `OK: no protected config changed`                                                                                                            |
+| `scripts/ci/check-feat-commits.sh`   | `OK: no feat commit touches tests`                                                                                                           |
+| `scripts/ci/check-ac-coverage.sh`    | `OK: every criterion of a shipped section has a test` (§13 still ✗; see checklist)                                                           |
+| `scripts/ci/check-spec-sections.sh`  | `OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11 12 13`                                                                                          |
+| `scripts/ci/check-features-map.sh`   | `OK`                                                                                                                                         |
+| `scripts/ci/check-plan-scope.sh`     | `OK: feat/B2.2-remaining-count stays inside the approved plan of B2.2`                                                                       |
+| `scripts/verify-red.sh B2.2`         | `RESULT: red for the right reason` (unit 8/0 and 3/0; `e2e/13` "skipped, needs a server", proven by probe R below)                           |
+| `scripts/next-task.sh --check B2.2`  | `[next-task] B2.2: no overlap with any Doing or Review card`                                                                                 |
+| `git diff --stat origin/main...HEAD` | `17 files changed, 936 insertions(+), 2 deletions(-)`; code: exactly the 8 Files rows of `plan.md`                                           |
+
+### Checklist
+
+| Check                                                    | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-§.n has a test whose assertion matches its Then | pass: 13.1/13.2 as pass 1. 13.3: `toHaveCount(1)` on "0 items left" and "No todos yet", 0 `listitem`. 13.4: one "2 items left", 3 listitems `[C, B, A]`, 0 listitems with "items left". 13.5/13.6: each step `toHaveCount(1)` + the previous label `toHaveCount(0)`, navigation counter `0`, URL unchanged. 13.7: "2 items left" before, after the click, after the reload; list `[C, A]`. Probe: §13 flipped to ✅ in the copy → `check-ac-coverage.sh` `§13 criteria=7 covered=7`, OK. |
+| no test weakened after the red commit                    | pass: `git log --first-parent --no-merges f41aa2a..HEAD -- '*.test.*' e2e/` empty; `--merges --remerge-diff` empty. From `09e53b9`: only `f41aa2a` itself (a red commit, additions only); the `b2db063` remerge-diff touches no test.                                                                                                                                                                                                                                                    |
+| every changed file is in `plan.md`                       | pass: 8 code/doc paths = the 8 Files rows; the rest is paperwork (`check-plan-scope.sh` OK against the round-2 approval `55a9f37`).                                                                                                                                                                                                                                                                                                                                                      |
+| interfaces match the section's contracts                 | pass: `<RemainingCount count={countRemaining(todos)} />` (`src/app/page.tsx:33`), `todos` = the one `listTodos()` result, outside the `<ul>`, both states; `git grep -n "countRemaining(" src/app/page.tsx` → `countRemaining(todos)` (the plan's check).                                                                                                                                                                                                                                |
+| placement vs §9 / §12                                    | pass: order is form → clear button → filter nav → count → list or empty text. §9 "between `<TodoForm />` and the list or the "No todos yet" text" and §12 "between `<ClearCompletedButton />` and the list or the empty text" both still hold; `e2e/09` and `e2e/12` green in the 21.                                                                                                                                                                                                    |
+| Zod · Prisma only in `src/lib` · raw SQL · migration     | n/a: no action, schema, Prisma, SQL or migration in the diff; `page.tsx` reads only through `listTodos()`.                                                                                                                                                                                                                                                                                                                                                                               |
+| no secret, no suppression                                | pass (`check-suppressions.sh`; nothing key-shaped in the 8 files).                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| features map row moved                                   | pass for this stage: F11 gains `src/app/page.tsx` and `e2e/13` (in `e557c3b`, not a separate `docs(map)` commit as step 6 names; content is right). Status stays ✗ until the closing commit flips F11 and §13 (`backlog/CLAUDE.md` "Closing a card").                                                                                                                                                                                                                                    |
+| would a test fail if one changed line were reverted?     | probes below: removing the mount fails 5 of 5; hiding it on the empty list fails AC-13.3 and AC-13.5; `shown` in place of `todos` fails nothing.                                                                                                                                                                                                                                                                                                                                         |
+
+### Probes (scratch copy, dev server started by Playwright from the copy)
+
+- **R (red reproduction).** `src/app/page.tsx` from `f41aa2a` → `e2e/13`: 5 failed, each `expect(locator).toHaveCount(expected) failed`. Matches the `f41aa2a` body; also proves the probe server served the copy's code.
+- **B (REQ-13.5).** `countRemaining(shown)` → full e2e `23 passed` (21 + 2 probe tests). The lead-accepted cost stands: only the `git grep` guards REQ-13.5 against a regression.
+- **F (REQ-13.5 on the real code).** Seeded C (open), B (done), A (open): `?filter=all` rows `[C,B,A]`, `active` `[C,A]`, `completed` `[B]`, `bogus` `[C,B,A]`; "2 items left" exactly once on each, 5 repeats. The shipped page counts the stored list.
+- **G (REQ-13.2).** Mount wrapped in `todos.length > 0 &&` → AC-13.3 and AC-13.5 fail.
+- **C (navigation detector).** A `page.reload()` after adding A (AC-13.5) and a same-URL `page.goto('/')` after checking C (AC-13.6): both fail on `Expected: 0 Received: 1`; every count assertion still passed, so the counter alone catches a full reload, including one to the same URL that the URL check misses.
+- **D / E (dev-lead's `networkidle` question).** D: no `networkidle`, fill and click right after `goto` → 0 extra navigations in 5 of 5 (warm dev server). E: JavaScript disabled → the add is a native POST, exactly 1 navigation, URL stays `/`, the page then reads "1 item left" (5 of 5).
+
+**Answer on `networkidle`.** It cannot hide a defect in the hydrated path: a pre-hydration click shows up as a counted
+navigation, so a wait that returns too early produces a false red, never a false green (probe C). What the wait does
+exclude, on purpose, is the pre-hydration native POST that `todo-form.tsx` keeps (its comment: "no client wrapper
+around the action: it would drop the server-rendered native POST"). That path is a full document POST by construction
+(probe E: 1 navigation) and still shows the right count after it. §13 is silent on it: REQ-13.3's "without a full
+reload" cannot hold without JavaScript, and "Out of scope" does not name it. That is a spec gap for `/spec-trace` (an
+out-of-scope line such as "a submission before the page is interactive"), not a code defect; no code change could
+satisfy it.
+
+**Metrics row.** `Mutation %` 90.37 reproduced here at `bea7aa3` (same tree as `e557c3b`); acceptable: it is the
+score at the Green sha, as B2.1's row is, and the 89.53 → 90.37 rise is B2.1's `todo-filter.ts` arriving with the
+merge (phase B adds no mutated file; `stryker.config.mjs` mutates only `src/lib`, `src/actions`). Keep it.
+
+### Findings
+
+None blocking. Notes for dev-lead's map/closing step (paperwork, dev-lead's write paths):
+
+- `docs/metrics.md` B2.2 `Red` cell reads `09e53b9` only; the card has two red commits (`09e53b9` unit, `f41aa2a`
+  e2e) and B1.1/B1.2 list both. Pass 1 asked for both. Write `09e53b9, f41aa2a`.
+- Plan step 6 (`docs(map): F11 remaining count [B2.2]`) has no commit; its content landed in `e557c3b`. Say so in
+  the PR body, or the reader looks for the commit.
+- §13 pre-hydration path: file it via `/spec-trace` or a card (see the `networkidle` answer); not this card's code.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: AC-13.5/13.6 under CI's `pnpm build && pnpm start` (I ran dev mode only): if `networkidle`
+returns before hydration there, a click becomes a native POST and the counter reads 1, a flaky false red; and REQ-13.5
+under a filter stays guarded by `git grep` alone (probe B: `shown` passes all 21).
