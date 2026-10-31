@@ -97,6 +97,19 @@ describe('searchTodos (§16)', () => {
     expect(unaccented).toEqual([]);
     expect(upperAccented).toEqual([cafe]);
   });
+
+  it("AC-16.3: a query longer than 200 code units matches no todo, even a title of 200 'İ' that lowercases longer", () => {
+    // Escapes, not literals, so the file's normalization cannot change the code units: U+0130, and U+0069 U+0307.
+    const dotted = todo('İ'.repeat(200));
+    const query = 'i̇'.repeat(101);
+
+    const result = searchTodos([dotted], query);
+
+    expect(dotted.title).toHaveLength(200);
+    expect(query).toHaveLength(202);
+    expect(dotted.title.toLowerCase().includes(query)).toBe(true);
+    expect(result).toEqual([]);
+  });
 });
 
 describe('searchEmptyMessage (§16)', () => {
