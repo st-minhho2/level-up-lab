@@ -69,3 +69,47 @@ Costs the lead accepts by approving (none blocking; for the round-2 amendment an
 - `plan.md` is 65 lines against `planning.md`'s ≈ 40; the overrun is the phase-B prose and wide tables, not scope.
 
 Riskiest unfalsified: the phase-B argument of `countRemaining(` on the merged `page.tsx`; nothing executable checks it.
+
+## Plan review (round 2)
+
+Reviewed: `backlog/work/B2.2/plan.md` at `0476e21` (`Plan approved by:` empty), the diff `8ef4071..0476e21` (plan,
+`advice.md`), against §13, D-7, D-20 and the rules. Run here on 2026-10-31: `pnpm test` → `Tests 115 passed (115)`;
+on HEAD `check-spec-sections.sh` → `[check-spec-sections] OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11 13` (exit 0),
+`check-features-map.sh` → `[check-features-map] OK`, `check-ac-coverage.sh` → `§13: ✗, no tests expected yet (7
+criteria)` (exit 0), `check-feat-commits.sh` → `OK: no feat commit touches tests`; `plan-files.sh --any B2.2` → the
+same 5 paths. Probe (scratch copy of `0476e21` + the two phase-A stubs + an F11 row with status ✗):
+`check-features-map.sh` → `[check-features-map] OK`, exit 0; `check-spec-sections.sh` exit 0.
+
+| Check                                                                             | pass / fail: reason                                                                                                                                                                                                                                                                                                                                                                                                                |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: unchanged 5 rows, all named by §13's Function contracts; F11 row (✗) now lands in the skeleton commit (round-1 reason 1 closed, probe above).                                                                                                                                                                                                                                                                                |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass: the three signatures match §13 verbatim; `ReactNode` return is the house form (`todo-item.tsx:8`, `clear-completed-button.tsx:7`; React 19.1, `@types/react` ^19); no action, schema or Prisma.                                                                                                                                                                                                                              |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: Approach A unchanged; `advice.md` now writes "section 12" at the three lines (round-1 reason 2 closed, guard exit 0). The advice's phase-B evidence "recorded in the commit body" is not restated; the command and its expected 5 failures now are, which is the measurable part.                                                                                                                                            |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: AC-13.1 … AC-13.7, 7 criteria, unchanged since round 1.                                                                                                                                                                                                                                                                                                                                                                      |
+| verification lists exact commands with expected numbers                           | pass: 115 (confirmed) + 8 (AC-13.1 ×4, AC-13.2 ×4) + 3 (component 0/1/2) = 126; `verify-red.sh` 11 new failed, 0 new passed (its PASS rule, `verify-red.sh:14`; `NotImplementedError` reads "<name> is not implemented", which matches none of `IMPORT_ERROR`); phase-B red `pnpm test:e2e e2e/13-…` → 5 failed (each test's first count assertion fails, traced per AC); `check-features-map.sh` added (round-1 reason 3 closed). |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: the map row is split (✗ row in step 1, tests + page + status in step 6), so the phase-A diff review after step 3 runs on a green map guard; all 7 subjects match the `lefthook.yml:43` regex and the two red subjects match `verify-red.sh`'s `^test\([^)]*\): B2\.2 .*\(red\)$`; phase-B green-gate range now starts at the step-4 red.                                                                                     |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7)          | pass: `- [ ] Lead approves spec (lead, <date>)` present, unticked. The plan still does not say whether the plan-gate `approve` ticks it; D-7 permits either, see costs.                                                                                                                                                                                                                                                            |
+| no settled D-n contradicted                                                       | pass: D-20's "section n" rule now held in `advice.md`; D-20 (a) kept (`page.tsx` deferred); D-7 untouched.                                                                                                                                                                                                                                                                                                                         |
+| `scripts/next-task.sh --check B2.2` says no overlap                               | pass: `[next-task] B2.2: no overlap with any Doing or Review card` (exit 0, run at `0476e21`); the plan's "today: no overlap with B2.1's plan, which holds the page" replaces the stale "vacuous" line.                                                                                                                                                                                                                            |
+
+Verdict: approved (ready for the lead's gate; not approved for build until `Plan approved by:` is written by the lead)
+
+Costs the lead accepts by approving (carried from round 1 unless marked new; none blocking):
+
+- **REQ-13.5 has no test under a filter.** A phase-B `page.tsx` passing B2.1's filtered array to `countRemaining`
+  passes all 7 criteria (`/?filter=completed` with 2 open todos would read "0 items left"). Only the plan's `git grep`
+  line and the diff reviewer guard it; a test needs a §13 change (7 of 7 criteria used).
+- **Spec box timing (new wording).** Phase-A tests land on §13 while its `Lead approves spec` box is unticked. If the
+  lead's `approve` reply is not meant to tick it (D-7 allows the gate to), tick it separately before step 2.
+- **Phase-B amendment review is round 3 (new).** `planning.md` puts a reviewer plan review before every approval; the
+  amendment's review, numbered on, is "Plan review (round 3)", which this role's rules turn into "Waiting on human".
+  The plan's "plan round 2 approved" subject refers to a second _approval_, not review round 2. Name the amendment's
+  review distinctly or expect the human hold.
+- **Paperwork conflicts at the phase-B merge:** `spec/technical-requirements.md` (stated in the plan) and
+  `spec/features-map.md` (F10 and F11 both appended; not stated).
+- **Package docs drift:** `src/lib/CLAUDE.md` module table and `src/components/CLAUDE.md` ("client components" vs a
+  Server Component) are left for the phase-B amendment, since B2.1's plan holds both files.
+- **Wall clock:** B2.2 holds its WIP slot and a draft PR with two unused exports until B2.1 is MERGED.
+- **Length:** `plan.md` is 73 lines against `planning.md`'s ≈ 40 (65 at round 1); the growth is round-1 fixes, not scope.
+
+Riskiest unfalsified: the phase-B argument of `countRemaining(` on the merged `page.tsx`; nothing executable checks it.
