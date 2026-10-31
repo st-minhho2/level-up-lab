@@ -51,5 +51,6 @@ means the situation to measure has not happened yet.
 | B1.19 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | smoke 36c0641: 1 ok, 5 FAIL           | 29ee42c |
 | B1.21 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | smoke f05525b: 2 ok, 2 FAIL           | b256d60 |
 | B1.22 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | smoke 9a33e93: 11 ok, 7 FAIL          | 11f50ff |
+| B2.1  | §12         | 7               | 7 (100 %) | 89.94 (todo-filter.ts 100)        | 0              | e0b4e64                               | 8902054 |
 
 A value below target for two consecutive measurements opens a row in `docs/mistake-log.md` and a fix in `.claude/`.
