@@ -34,3 +34,14 @@ completed; no action completes every todo
 - **Acceptance:** section 14 criteria, set by `spec-analyst` (contract `spec/contracts/12-complete-all.md`)
 - **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B2.3/`
+
+### B2.4 · An optional due date per todo
+
+_F13 · section 15_
+**Status: Open** — `prisma/schema.prisma` `model Todo` has `id`, `title`, `completed`, `createdAt`, `updatedAt`, no due
+date; `spec/contracts/01-scope-and-gates.md` §1 lists due dates as not in scope, lifted by D-20
+
+- **Acceptance:** section 15 criteria, set by `spec-analyst` (contract `spec/contracts/13-due-date.md`; needs a migration,
+  `/add-migration`)
+- **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** M [estimate]
+- **Work:** `work/B2.4/`
