@@ -21,6 +21,7 @@
 #       own commit's green run; M23 (lead's ruling on finding 4) no approval before #60 → n/a, from #60 on → counted
 #   review pass 2: M21's day 2 starts at a round-2 approval (06:30), after the day's first merge; M23 PR #60 counts;
 #       M24 (lead's ruling (a) on pass-2 finding 1) a selection picks days, each counting every Done card merged on it
+#   review pass 3: M25 a picked day's first and last merge come from every Done card, not the picked one
 set -uo pipefail
 cd "$(git rev-parse --show-toplevel)"
 SRC="$PWD/scripts/metrics"
@@ -195,9 +196,10 @@ B=$((19700 * 86400 - 25200)); H=3600                                  # 00:00 UT
 gr() { git -C "$R2" -c user.name=s -c user.email=s@x -c commit.gpgsign=false "$@" >/dev/null 2>&1; }
 cr() { GIT_AUTHOR_DATE="@$1 +0000" GIT_COMMITTER_DATE="@$1 +0000" gr commit -q --allow-empty --no-verify -m "$2"; }
 { for i in 1 2 3 4 5; do printf '### B8.%s · c\n**Status: Done** — x (#30%s); fixture\n' "$i" "$i"; done
-  printf '### B8.6 · c\n**Status: Done** — x (#59); fixture\n### B8.7 · c\n**Status: Done** — x (#60); fixture\n'; } > "$R2/backlog/plan/E8-fixture.md"
+  printf '### B8.6 · c\n**Status: Done** — x (#59); fixture\n### B8.7 · c\n**Status: Done** — x (#60); fixture\n'
+  printf '### B8.8 · c\n**Status: Done** — x (#308); fixture\n### B8.9 · c\n**Status: Done** — x (#309); fixture\n'; } > "$R2/backlog/plan/E8-fixture.md"
 gr init -q -b main && gr add -A && cr $((B - 2 * 86400)) "chore: base"
-gr branch c1; gr branch c2; gr branch c3; gr branch c4; gr branch c5; gr branch c6; gr branch c7
+gr branch c1; gr branch c2; gr branch c3; gr branch c4; gr branch c5; gr branch c6; gr branch c7; gr branch c8; gr branch c9
 gr checkout -q c1; cr $((B - 4 * H)) "docs(backlog): B8.1 plan approved"; gr update-ref refs/pull/301/head HEAD
 gr checkout -q c2; cr $((B - 3 * H)) "docs(backlog): B8.2 plan approved"; cr $((B + 6 * H + 1800)) "docs(backlog): B8.2 plan round 2 approved"; gr update-ref refs/pull/302/head HEAD
 gr checkout -q c3; cr $((B + 10 * H)) "docs(backlog): B8.3 plan approved"; gr update-ref refs/pull/303/head HEAD
@@ -205,12 +207,15 @@ gr checkout -q c4; cr $((B + 1 * H)) "docs(backlog): B8.4 plan"; gr update-ref r
 gr checkout -q c5; cr $((B + 7 * H)) "docs(backlog): B8.5 plan approved"; cr $((B + 86400 + 11 * H)) "docs(backlog): B8.5 plan round 2 approved"; gr update-ref refs/pull/305/head HEAD
 gr checkout -q c6; cr $((B - 5 * H)) "docs(backlog): B8.6 plan"; gr update-ref refs/pull/59/head HEAD
 gr checkout -q c7; cr $((B - 5 * H)) "docs(backlog): B8.7 plan"; gr update-ref refs/pull/60/head HEAD
+gr checkout -q c8; cr $((B + 2 * 86400)) "docs(backlog): B8.8 plan"; gr update-ref refs/pull/308/head HEAD
+gr checkout -q c9; cr $((B + 2 * 86400)) "docs(backlog): B8.9 plan"; gr update-ref refs/pull/309/head HEAD
 gr checkout -q main; git clone -q --bare "$R2" "$O2"
-for n in 301 302 303 304 305 59 60; do git -C "$O2" update-ref "refs/pull/$n/head" "$(git -C "$R2" rev-parse "refs/pull/$n/head")"; gr update-ref -d "refs/pull/$n/head"; done
+for n in 301 302 303 304 305 59 60 308 309; do git -C "$O2" update-ref "refs/pull/$n/head" "$(git -C "$R2" rev-parse "refs/pull/$n/head")"; gr update-ref -d "refs/pull/$n/head"; done
 gr remote add origin "$O2"
 echo $((B + 12 * H)) > "$FIX/view.301"; echo $((B + 11 * H)) > "$FIX/view.302"; echo $((B + 13 * H)) > "$FIX/view.303"
 echo $((B + 6 * H)) > "$FIX/view.304"; echo $((B + 86400 + 10 * H)) > "$FIX/view.305"
 echo $((B - 2 * H)) > "$FIX/view.59"; echo $((B - H)) > "$FIX/view.60"             # day 1, which M21 does not pick
+echo $((B + 2 * 86400 + 9 * H)) > "$FIX/view.308"; echo $((B + 2 * 86400 + 11 * H)) > "$FIX/view.309"   # day 4, no approval
 if [[ -x "$SRC/throughput.sh" ]]; then (cd "$R2" && PATH="$TMP/bin:$PATH" "$SRC/throughput.sh" B8.1 B8.2 B8.3 B8.4 B8.5) > "$TMP/out" 2>&1; rc=$?; else rc=127; echo missing > "$TMP/out"; fi
 # day 2: first approval 06:30 (B8.2's round 2), not the 06:00 merge → last merge 13:00 = 6.5 h for 4 cards;
 # day 3: 1 card, its only approval (11:00) after the last merge (10:00) starts nothing, 0 h
@@ -220,6 +225,11 @@ if [[ -x "$SRC/throughput.sh" ]]; then (cd "$R2" && PATH="$TMP/bin:$PATH" "$SRC/
 # B8.3 picks day 2: B8.1–B8.4 merged on it, from B8.2's 06:30 approval to the 13:00 merge
 [[ $rc -eq 0 ]] && tail -1 "$TMP/out" | grep -qx 'throughput 4.9 cards per 8 h (4 cards, 6.5 h, 1 days)' && ok M24 \
   || fail "M24 rc=$rc $(tail -1 "$TMP/out")"
+# B8.1 (not day 2's last merge) reads day 2 as M24 does; B8.9 picks day 4: no approval, 09:00 → 11:00 over both cards
+m25a="$(cd "$R2" && PATH="$TMP/bin:$PATH" "$SRC/throughput.sh" B8.1 2>&1 | tail -1)"
+m25b="$(cd "$R2" && PATH="$TMP/bin:$PATH" "$SRC/throughput.sh" B8.9 2>&1 | tail -1)"
+[[ "$m25a" == 'throughput 4.9 cards per 8 h (4 cards, 6.5 h, 1 days)' && "$m25b" == 'throughput 8.0 cards per 8 h (2 cards, 2.0 h, 1 days)' ]] \
+  && ok M25 || fail "M25 $m25a | $m25b"
 printf 'src/z.ts\nbacklog/work/B8.4/plan.md\n' > "$FIX/files.304"; printf 'src/y.ts\n' > "$FIX/files.59"; printf 'src/x.ts\n' > "$FIX/files.60"
 if [[ -x "$SRC/plan-deviations.sh" ]]; then (cd "$R2" && PATH="$TMP/bin:$PATH" "$SRC/plan-deviations.sh" B8.4 B8.6 B8.7) > "$TMP/out" 2>&1; rc=$?; else rc=127; echo missing > "$TMP/out"; fi
 [[ $rc -eq 0 ]] && cut -f3 <<< "$(row B8.4)" | grep -qx 'src/z.ts' && cut -f3 <<< "$(row B8.6)" | grep -qx 'n/a' \
