@@ -21,7 +21,8 @@ dependency, migration, env key or CI-protected path (no `config-change-approved`
 | `spec/features-map.md`                    | F10 row ✗ in skeleton (guard needs every module named), ✅ in `docs(map)`                 | map           |
 | `docs/metrics.md`                         | per-card row B2.1                                                                         | metrics       |
 
-§12 index ✗ → ✅ in the closing commit. `scripts/next-task.sh --check B2.1`: result in `review.md` plan section.
+§12 index ✗ → ✅ in the closing commit. `scripts/next-task.sh --check B2.1` at 1112f25: no overlap (B2.2 had no plan yet;
+per D-20 this card holds `src/app/page.tsx`, so B2.2's own `--check` sees it).
 
 ## Interfaces touched
 
