@@ -70,4 +70,4 @@ scripts/ci/check-ac-coverage.sh && scripts/ci/check-spec-sections.sh && scripts/
 Diff review may run once after step 3 (phase A banked) and again after step 5; phase B's green-gate range starts at
 the step-4 red commit. PR stays draft until phase B is green; the card holds its WIP slot until then.
 
-Plan review: changes requested round 1 (3 reasons applied); round 2 pending · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: · Rounds: 1
