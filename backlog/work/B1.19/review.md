@@ -200,3 +200,114 @@ Riskiest unfalsified: the devcontainer shares the main checkout's `node_modules`
 On the host, `require.resolve('lefthook-darwin-arm64/…')` resolved in the main checkout throws. Unless
 `install-hooks.sh` treats that throw (not only a missing file) as "no main binary", `pnpm install` fails in every
 host worktree. Not probed.
+
+## Diff review (pass 1)
+
+SCOPE: all (no `src/`, `prisma/` or `e2e/` path; the lib/actions/ui checklist rows are n/a). HEAD `60969be`, range
+`cecf745..HEAD`, 3 code commits: `36c0641` test, `441b7f6` fix, `60969be` fix (docs). Probes ran on copies and
+throwaway repos in the session scratchpad. The real `.git/hooks` was not touched: no `pnpm install` and no
+`lefthook install` against this repo.
+
+### Commands (last line of each)
+
+| Command                                                         | Result                                                                                                                                             |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                                     | `All matched files use Prettier code style!`                                                                                                       |
+| `pnpm typecheck`                                                | `> tsc --noEmit` (exit 0)                                                                                                                          |
+| `pnpm test`                                                     | `Tests  115 passed (115)`                                                                                                                          |
+| `pnpm test:e2e`                                                 | `13 passed (21.5s)`                                                                                                                                |
+| `pnpm test:mutation`                                            | `Final mutation score of 89.02 is greater than or equal to break threshold 70`                                                                     |
+| `scripts/githooks-smoke.sh` (bash 5)                            | `[githooks-smoke] 6 ok, 0 FAIL`                                                                                                                    |
+| `/bin/bash` 3.2 `githooks-smoke.sh`                             | `[githooks-smoke] 6 ok, 0 FAIL`                                                                                                                    |
+| smoke at `36c0641` (red, on a copy)                             | `[githooks-smoke] 1 ok, 5 FAIL` (G5 ok), as the test commit's body says                                                                            |
+| smoke on linux (`node:24-bookworm`, bash 5.2, npm layout, copy) | `[githooks-smoke] 6 ok, 0 FAIL`                                                                                                                    |
+| `check-suppressions.sh`                                         | `OK: no new suppressions`                                                                                                                          |
+| `check-config-change.sh`                                        | exit 1: `.claude/docs/hooks.md`, `lefthook.yml` need `config-change-approved` (human label, in the plan)                                           |
+| `check-feat-commits.sh`                                         | `OK: no feat commit touches tests`                                                                                                                 |
+| `check-ac-coverage.sh`                                          | `OK: every criterion of a shipped section has a test`                                                                                              |
+| `check-spec-sections.sh`                                        | `OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11`                                                                                                      |
+| `check-features-map.sh`                                         | `OK`                                                                                                                                               |
+| `check-plan-scope.sh`                                           | `OK: … stays inside the approved plan of B1.19`                                                                                                    |
+| `verify-red.sh B1.19`                                           | exit 1: no `test(...) … (red)` subject. Same as B1.17 (`b7fc272`) and B1.18 (`1e16ba4`); it does not judge script smokes. Red shown above by hand. |
+| `git diff --stat main...HEAD`                                   | 8 files, +417 −19                                                                                                                                  |
+
+### Probes
+
+- **D1 gate parity.** Old (`cecf745`) and new `lefthook.yml`, with each `run:` replaced by a logger that keeps
+  `{staged_files}`, real lefthook 2.2.2. Staged `a.md`: both ran prettier `a.md`, repo-hooks, tsc, gitleaks (skip
+  message). eslint was skipped. Staged `b.ts c.md`: both ran eslint `b.ts` and prettier `b.ts c.md`. eslint
+  exits 3: both exit 1, and all other jobs still ran (prettier finished after its 1 s sleep, so the group is parallel).
+  commit-msg with a bad subject: both exit 1 with the Conventional Commits message. Without `node_modules`: new exits 1,
+  prints only `node-modules: this checkout has no node_modules: run pnpm install --frozen-lockfile in it`, and the
+  group does not run. Confirmed parity.
+- **D2 install-hooks edges.** No git: `fatal: not a git repository`, exit 128 (today's exit). Single checkout
+  (CI shape, main == root): installs; pre-commit and commit-msg each hold `Operation is aborted` once. Single
+  checkout whose platform package is absent (devcontainer shape, `getExePath()` throws): exit 1, `no runnable
+lefthook … run pnpm install`. Today's `.bin` shim fails there too. Worktree with main throwing, or with main's binary
+  present but not runnable: falls back to the worktree's binary with the warning, exit 0.
+- **D3 spaces.** Main checkout at `…/spaces run/main checkout`. Lefthook single-quotes the embedded path. A commit from
+  W (stub `node_modules`) after X's binary was removed ran the marker job. Confirmed.
+- **D4 SIGPIPE.** `set -o pipefail` + `git worktree list --porcelain | awk '… exit'`. Throwaway repos with
+  this repo's path depth: 20 worktrees (6.9 KB) gave 0/100 failures, 40 (13.6 KB) gave 0/100, 80 (26.9 KB) gave
+  100/100, and 120 gave 100/100. This repo now lists 4 (710 B). See [1].
+- **D5 reverts on copies (smoke as the oracle).** Caught: drop `assert_lefthook_installed` (G1, G3); MAIN → ROOT
+  (G1, G2, G4, G6); change the warning word (G6); drop `fail_text` (G4). Survived: drop `no_auto_install` ([2]);
+  drop the `"$bin" version` check ([2]); drop `cd "$ROOT"` (equivalent: `prepare` runs in the package root). The
+  fixture hard-codes `piped: true`, so reverting the layout to `parallel: true` is not seen by the smoke. D1 covers it.
+
+### Checklist
+
+| Check                                               | Result                                                                                                                                                                                                                                          |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every criterion has a test whose assertion matches  | pass: the card's Acceptance (shared path, loud failure, reason printed) maps to G1–G6. Red 1/5, green 6/6.                                                                                                                                      |
+| no test weakened after the red commit               | pass: `git diff 36c0641..HEAD -- scripts/githooks-smoke.sh` is empty. The fix commits do not touch it.                                                                                                                                          |
+| every changed file is in `plan.md`                  | pass: 8 of 8 files are listed. `check-plan-scope` OK.                                                                                                                                                                                           |
+| interfaces match the plan                           | pass, with notes: the success line is `installed with <bin>, config <root>/lefthook.yml` (plan: `from <dir>`). The smoke links git and node, not pnpm (plan: "git, node, pnpm links"). G4 does not need pnpm.                                   |
+| Zod / Prisma / raw SQL / migration                  | n/a: no `src/` or `prisma/` change                                                                                                                                                                                                              |
+| no secret, no suppression                           | pass                                                                                                                                                                                                                                            |
+| features map row moved                              | n/a: tooling card, no §                                                                                                                                                                                                                         |
+| gate keeps today's behavior                         | pass (D1): globs, `{staged_files}`, parallel run, exit 1 on failure, eslint skip, gitleaks message, commit-msg                                                                                                                                  |
+| docs accurate                                       | pass, with a note: hooks.md says "every checkout runs the main checkout's binary". The template tries `lefthook` on PATH first (`elif lefthook -h`), so a brew lefthook or a `pnpm exec`/`pnpm run` PATH wins. Not wrong for the default setup. |
+| would a test fail if one changed line were reverted | mostly: 4 of 7 reverts caught. See D5 and [2].                                                                                                                                                                                                  |
+
+### Findings
+
+```
+[1] KIND: correctness (non-blocking)
+    WHERE: scripts/install-hooks.sh:11
+    DEFECT: under `set -euo pipefail`, awk's early `exit` closes the pipe while `git worktree list` is still
+            writing, so git gets SIGPIPE, the pipeline returns 141, and the script dies with no message.
+    TRIGGER: a repository whose `git worktree list --porcelain` output exceeds the pipe buffer, about 16 KB:
+             ≥ ~48 registered worktrees (stale, unpruned entries count) at this repo's path depth.
+    WRONG BEHAVIOUR: `pnpm install` (and so `scripts/worktree.sh`, which passes --silent) fails with exit 141 and no
+             text, instead of installing the hooks. Today's `lefthook install` has no such limit.
+    CONFIDENCE: confirmed (D4: 100/100 failures at 80 worktrees, 0/100 at 40). Not reachable at today's 4 entries.
+             A one-token fix: drop `exit` from the awk program and keep the first match (`!m++`), or read with `sed -n`.
+
+[2] KIND: coverage (non-blocking)
+    WHERE: lefthook.yml:7 (`no_auto_install: true`), scripts/install-hooks.sh:15 (`"$bin" version` check)
+    DEFECT: the smoke passes 6/6 with either line removed.
+    TRIGGER: delete `no_auto_install: true` (or the version check) on a copy and run scripts/githooks-smoke.sh.
+    WRONG BEHAVIOUR: a later edit could drop the guard against a PATH lefthook re-embedding a worktree path (plan
+             review round 2, P3), or the devcontainer "binary present but does not run" fallback, and no probe would
+             fail. Neither is among the approved G1–G6, so this is not a plan mismatch.
+    CONFIDENCE: confirmed (D5)
+```
+
+Verdict: ready for PR. [1] needs about 12 times today's worktree count, and [2] is outside the approved probe set. The lead
+may take either as a follow-up card or a one-line fix before the PR. The PR needs the human `config-change-approved`
+label (`lefthook.yml`, `.claude/docs/hooks.md`). After merge, the lead runs `pnpm install` in the main checkout.
+
+Riskiest unfalsified: the devcontainer's `pnpm install` in `/workspace` writes `/workspace/node_modules/…` into the
+host-shared `.git/hooks`. A host commit from a checkout without its own darwin `node_modules` then aborts, and only a
+host `pnpm install` repairs it. That predates this change (round 1), but the new hook makes it a hard stop. Not
+probed in a real devcontainer.
+
+### Dispositions (pass 1, dev-lead)
+
+| #   | Finding                                                           | Disposition  | Evidence                                                                                              |
+| --- | ----------------------------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------- |
+| 1   | `awk … exit` can SIGPIPE git under pipefail (≥ ~80 entries)       | fix now      | `7ddc5bd`: no early exit; 4 entries today, no probe (needs 80 worktrees); smoke 6/6                   |
+| 2   | `no_auto_install` and the `version` check have no probe           | out of scope | not among the approved G1–G6; both behaviors were probed by hand in plan review round 2 and this pass |
+| N   | success line says "config", plan says "from"; smoke links no pnpm | no change    | wording only; the smoke needs no pnpm (no fallback calls it with the pinned PATH)                     |
+| N   | hooks.md: the template tries a `lefthook` on PATH first           | fix now      | `7ddc5bd`                                                                                             |
