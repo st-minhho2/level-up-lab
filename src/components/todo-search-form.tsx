@@ -10,7 +10,10 @@ export function TodoSearchForm({ filter, query }: { readonly filter: TodoFilter;
       <label htmlFor="search-todos" className="sr-only">
         Search todos
       </label>
+      {/* REQ-16.2: a new key on each query remounts the input, so a soft navigation shows the current query, not
+          text typed but not submitted. */}
       <input
+        key={query}
         id="search-todos"
         type="search"
         name="q"

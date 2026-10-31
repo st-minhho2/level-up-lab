@@ -14,6 +14,8 @@ Read `.claude/rules/invariants.md` before touching `todos.ts` or `prisma.ts`.
 | `todo-filter.ts`         | §12        | `TodoFilter`, `parseTodoFilter`, `filterTodos`, `emptyListMessage`; pure: no Prisma, no `server-only`                         |
 | `todo-count.ts`          | §13        | `countRemaining`, `remainingLabel`; pure: no Prisma, no `server-only`                                                         |
 | `todo-complete-all.ts`   | §14        | `completeAllTodos`: one `updateMany` over the open todos, returns the count                                                   |
+| `todo-due-date.ts`       | §15        | `DUE_DATE_INVALID_MESSAGE`, `setTodoDueDateSchema`, `dueDateToDate`, `dueDateOf`; pure: no Prisma, no `server-only`           |
+| `todo-search.ts`         | §16        | `SEARCH_QUERY_MAX_LENGTH`, `parseSearchQuery`, `searchTodos`, `searchEmptyMessage`; pure: no Prisma, no `server-only`         |
 
 Queries: query builder only; `$queryRaw` needs a comment, a reviewer and a card. `null` only at the database
 boundary. Mutation testing covers this folder: a branch without an assertion is a survivor.
