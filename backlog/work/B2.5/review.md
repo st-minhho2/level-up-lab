@@ -306,3 +306,12 @@ Riskiest unfalsified: where the guard measures. HEAD checks `trimmed.length` bef
 (traced), but no test tells it apart from a check on the lowercased needle (P5: `7 passed`). Under that refactor a
 query of 101 `İ` (length 101, lowercased 202) would match nothing, even though the title `'İ'` × 101 contains it
 and REQ-16.5 allows it. No AC's Then pins it, so nothing fails if someone moves the line.
+
+### Dispositions (pass 2, dev-lead)
+
+| Pass | #   | Finding                                                                    | Source   | Kind     | Disposition                       | Justification                                                                                                                                  |
+| ---- | --- | -------------------------------------------------------------------------- | -------- | -------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2    | N1  | D-21 Consequence says "REQ-16.5 unchanged"; af4f5dc adds the unit words    | reviewer | record   | no change needed                  | `00-decisions.md` is never rewritten; the words name the unit D-21 already rules (UTF-16 code units), no outcome changes; reported to the lead |
+| 2    | N2  | af4f5dc relabelled the ticked §16 approval box "; D-21"                    | reviewer | process  | no change needed                  | reported to the lead: read af4f5dc (12 lines) before the phase-B round-2 approval                                                              |
+| 2    | N3  | `src/lib/todo-search.test.ts:102` comment says escapes, lines use literals | reviewer | comment  | out of scope for phase A: phase B | comment only (`toHaveLength` asserts pin the code units); test-writer fixes it in a phase-B `test(todos)` commit                               |
+| 2    | R   | guard moved after `toLowerCase` passes all tests (riskiest unfalsified)    | reviewer | test gap | out of scope for phase A: phase B | phase-B amendment adds a hardening case: title and query `'İ'` × 101 (trimmed length 101, lowercased 202) must match                           |
