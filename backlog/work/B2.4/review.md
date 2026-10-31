@@ -262,3 +262,14 @@ Verdict: ready for PR
 Riskiest unfalsified: the due-date field in Firefox and WebKit. Playwright runs Chromium only, so
 whether a partial `<input type="date">` blocks the submit or sends `''` (which would clear the date, observation 7) is
 unverified outside Chromium.
+
+## Dispositions (pass 1, dev-lead)
+
+| Pass | #   | Finding (file:line)                                                                                              | Source   | Kind     | Disposition      | Justification                                                                                                                               |
+| ---- | --- | ---------------------------------------------------------------------------------------------------------------- | -------- | -------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | —   | reviewer: 0 findings                                                                                             | reviewer | —        | —                | ready for PR; 159 unit, 25 e2e, mutation 91.13                                                                                              |
+| 1    | 1   | `src/components/todo-due-date.tsx`: `disabled={pending}`, `preventDefault`, `aria-invalid`, alert order untested | dev-lead | coverage | no change needed | no AC-15.n asserts them; reversing the alert order cannot be reached (the UI never gets `id` and `dueDate` errors together, reviewer probe) |
+| 1    | 2   | `src/lib/todo-due-date.ts:7` regex `^`/`$` anchor survivors                                                      | dev-lead | mutation | no change needed | equivalent: the Date round trip rejects `' 2026-11-05'` and `'2026-11-055'`; reviewer compared 910 inputs, no difference                    |
+| 1    | 3   | `src/lib/todos.ts:67` `findUnique` `select` survivors                                                            | dev-lead | mutation | no change needed | equivalent (only `null` is checked); the same pair exists on `main` for `updateTodoTitle`                                                   |
+| 1    | 4   | `src/lib/todos.ts` `toTodo` keeps `dueDate: undefined` as a key                                                  | dev-lead | shape    | no change needed | no `exactOptionalPropertyTypes`, no `toStrictEqual`/`Object.keys` on a `Todo`; 159 tests compare with `toEqual`                             |
+| 1    | 5   | Firefox/WebKit half-typed date may send `''` (clears)                                                            | reviewer | risk     | out of scope     | Playwright runs Chromium only (Chromium blocks the submit, `badInput`); cross-browser e2e is not in any plan; stated for the lead           |
