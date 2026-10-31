@@ -10,10 +10,11 @@ export function TodoSearchForm({ filter, query }: { readonly filter: TodoFilter;
       <label htmlFor="search-todos" className="sr-only">
         Search todos
       </label>
-      {/* REQ-16.2: a new key on each query remounts the input, so a soft navigation shows the current query, not
-          text typed but not submitted. */}
+      {/* REQ-16.2, REQ-16.7: a new key on each filter or query remounts the input, so a soft navigation (a search
+          or a filter link) shows the current query, not text typed but not submitted. NUL cannot occur in a filter
+          name, so two different pairs never share a key. */}
       <input
-        key={query}
+        key={`${filter}\u0000${query}`}
         id="search-todos"
         type="search"
         name="q"
