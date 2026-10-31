@@ -5,11 +5,12 @@ Prisma, PostgreSQL. Conventions: model PascalCase singular, fields camelCase, ta
 
 ```prisma
 model Todo {
-  id        String   @id @default(cuid())
-  title     String   @db.VarChar(200)
-  completed Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String    @id @default(cuid())
+  title     String    @db.VarChar(200)
+  completed Boolean   @default(false)
+  dueDate   DateTime? @db.Date
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@index([createdAt])
   @@map("todos")
@@ -17,7 +18,9 @@ model Todo {
 ```
 
 Migrations are created only with `pnpm db:migrate --name <verb-noun>` against the local compose database and are
-immutable once on `main`. The seed (`prisma/seed.ts`) upserts three sample todos.
+immutable once on `main`. `dueDate` (§15) is a nullable calendar date with no time of day and no time zone; null
+means the todo has none, and it is not indexed because no list is ordered by it. The seed (`prisma/seed.ts`)
+upserts three sample todos.
 
 # §4 Environment and configuration
 
