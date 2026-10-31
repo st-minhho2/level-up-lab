@@ -337,3 +337,119 @@ to test it.
 | 4   | BEHIND after `gh pr ready` re-merges without CI               | fix now     | `146a0df`: `gh pr ready --undo`, merge, green, ready again                                                               |
 | 5   | empty base rc 255; warning text; fetch for an existing branch | fix now     | K6 red at 0c0b0f5 (b1d5c85), green in `146a0df`; warning names the fallback; existing branch skips the fetch             |
 | 6   | `else BASE=main` mutant survives                              | fix now     | K5 (b1d5c85); smoke 6 of 6 on bash 5 and 3.2                                                                             |
+
+## Diff review (pass 2)
+
+SCOPE: tooling (no `src/`, `prisma/`, `e2e/` change; no §). Delta since pass 1: 548b2a7 and d0ac6aa (plan amended,
+lead round 2 "approve"), b1d5c85 `test(scripts)` (K5, K6), 146a0df `fix(scripts)`, 9061fd2 (dispositions). Branch
+diff `21c36b9..9061fd2`: 11 files, all in the amended plan's Files.
+
+### Commands (run by the reviewer at 9061fd2, last line each)
+
+| Command                                                                   | Last line                                                                                           |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                                               | `All matched files use Prettier code style!`                                                        |
+| `pnpm typecheck`                                                          | rc 0                                                                                                |
+| `pnpm test`                                                               | `Tests  115 passed (115)`                                                                           |
+| `pnpm test:e2e`                                                           | `13 passed (13.9s)`                                                                                 |
+| `pnpm test:mutation`                                                      | `Final mutation score of 89.02 is greater than or equal to break threshold 70`                      |
+| `scripts/ci/check-suppressions.sh`                                        | `OK: no new suppressions`                                                                           |
+| `scripts/ci/check-config-change.sh`                                       | rc 1 unlabeled (lists `.claude/skills/work-next/SKILL.md`); rc 0 with `CONFIG_CHANGE_APPROVED=true` |
+| `scripts/ci/check-feat-commits.sh`                                        | `OK: no feat commit touches tests`                                                                  |
+| `scripts/ci/check-ac-coverage.sh`                                         | `OK: every criterion of a shipped section has a test`                                               |
+| `scripts/ci/check-spec-sections.sh`                                       | `OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11`                                                       |
+| `scripts/ci/check-features-map.sh`                                        | `OK`                                                                                                |
+| `check-backlog.sh` · `check-agent-frontmatter.sh` · `check-plan-scope.sh` | `OK: README matches the cards` · `OK: 13 files` · `OK: … inside the approved plan of B1.21`         |
+| `scripts/verify-red.sh B1.21`                                             | rc 1, no `(red)` commit (tooling precedent, unchanged from pass 1)                                  |
+| `scripts/worktree-smoke.sh` (bash 5, `/bin/bash` 3.2)                     | `6 ok, 0 FAIL` both                                                                                 |
+| `bash -n scripts/*.sh`                                                    | rc 0                                                                                                |
+| both test-check commands, `f05525b..HEAD`                                 | 0 lines, 0 lines                                                                                    |
+
+Probes on a copy under `$TMPDIR` (git 2.39.5):
+
+- K6 red: `worktree.sh` from 0c0b0f5 → `5 ok, 1 FAIL` (K6 rc 255). b1d5c85 is red on behavior; it only adds lines
+  to the smoke (`git diff f05525b..HEAD -- scripts/worktree-smoke.sh` has no removed line).
+- Mutants on `worktree.sh` at HEAD, one line each: drop `--no-track` → K2 FAIL; drop the fetch → K1 FAIL;
+  `else BASE=main` → `else BASE=origin/main` → K5 FAIL (pass-1 survivor now killed); drop `[[ -z "$BASE" ]] &&` →
+  K3 FAIL; drop the warning → K4 FAIL; `BASE=origin/main` → `BASE=main` → K1, K4, K6 FAIL. Survivors:
+  `${2:-}` → `${2-}` (equivalent under `-z`); drop the existing-branch skip → 6 ok; `fetched=1` → `fetched=0` (a
+  warning on every successful fetch) → 6 ok (finding 1).
+- Pass-1 conflict probe against the two new commands, scratch repo: red adds `src/card.test.ts` with `expect(1)`;
+  `main` adds the same file with `expect(2)`, plus `src/sib.test.ts`, `e2e/01.spec.ts`; the merge conflicts and the
+  resolution writes `expect(anything)`. Command 1 (`--no-merges`) → empty. Command 2 (`--merges --remerge-diff`) →
+  the merge commit, `remerge CONFLICT (add/add)` and `-expect(1)` / `-expect(2)` / `+expect(anything)`: the
+  weakening is visible. Then a clean merge that brings only `src/sib2.test.ts` → command 2 prints that merge's
+  6-line header and no diff (finding 2).
+
+### Checklist
+
+| Check                                                            | Result                                                                                                  |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| every card criterion has a test whose assertion matches its Then | pass: K1–K4 as in pass 1; K5, K6 cover the round-2 plan lines (fallback to `main`, empty base)          |
+| no test weakened after the red commit                            | pass: the only later smoke change is b1d5c85, a `test(...)` commit, additions only; both checks 0 lines |
+| every changed file is in `plan.md`                               | pass: 11 of 11 in the amended Files (re-approved d0ac6aa); `check-plan-scope.sh` OK                     |
+| interfaces match the plan                                        | pass: `worktree.sh <branch> [base]`; the two commands verbatim in dev-lead.md, tdd-loop, reviewer.md    |
+| Zod, Prisma, raw SQL, migration                                  | n/a                                                                                                     |
+| no secret, no suppression                                        | pass                                                                                                    |
+| features map row moved                                           | n/a: tooling                                                                                            |
+| pass-1 finding 1 (merge resolution unread)                       | fixed: command 2 shows the resolution (probe above); reviewer.md makes reading it a checklist item      |
+| pass-1 finding 2 (tdd-loop, reviewer.md)                         | fixed: both carry the two commands                                                                      |
+| pass-1 finding 3 (Lifecycle step 5)                              | fixed: draft at the gate, ready at Loop 9, no second `gh pr create`                                     |
+| pass-1 finding 4 (BEHIND after ready)                            | fixed: `gh pr ready --undo` → merge → green → ready → PR line; `gh` 2.103.2 has `--undo`, not denied    |
+| pass-1 findings 5, 6 (empty base, warning, fetch, fallback)      | fixed: K6, K5 kill them; warning names `$BASE`; existing branch skips the fetch                         |
+| would a test fail if one changed line were reverted              | pass for 7 of 9 mutants; the 2 survivors are finding 1 (1 equivalent mutant not counted)                |
+
+### Findings
+
+```
+[1] KIND: coverage
+    WHERE: scripts/worktree.sh:26 (existing-branch skip), :27 (`fetched=1`)
+    DEFECT: two of the pass-1 fixes have no probe: an existing branch skipping the fetch, and no warning after a
+            successful fetch.
+    TRIGGER: delete `&& ! git show-ref --verify --quiet "refs/heads/$TASK"`, or change `fetched=1` to `fetched=0`.
+    WRONG BEHAVIOUR: worktree-smoke.sh still prints 6 ok, 0 FAIL; the second mutant prints the "fetch failed"
+            warning on every run. Not blocking (no plan line names them as probes).
+    CONFIDENCE: confirmed (mutant runs on the copy)
+
+[2] KIND: correctness
+    WHERE: .claude/agents/dev-lead.md:71-72, .claude/skills/tdd-loop/SKILL.md:24 ("… empty or …")
+    DEFECT: command 2 is not empty after a clean merge that brings any sibling test: it prints the merge's header
+            with no diff, which is neither "empty" nor "a conflict resolution".
+    TRIGGER: on a card branch past its red, `git merge origin/main` cleanly brings `src/sib2.test.ts`; then a later
+             conflict sends the card back to the step-6 green gate.
+    WRONG BEHAVIOUR: the gate output has 6 lines for a merge with nothing to read; a literal gate stalls or hands the
+            reviewer a non-finding. `--format=` (diff only) prints 0 lines for the clean merge and still the full
+            remerge diff for the conflict. Not blocking: a reader sees there is no diff.
+    CONFIDENCE: confirmed (scratch-repo probe)
+
+[3] KIND: plan-mismatch
+    WHERE: scripts/CLAUDE.md:6 (`worktree-smoke.sh` row)
+    DEFECT: the row says "probes K1–K4"; the smoke now has K1–K6.
+    TRIGGER: read the row next to `scripts/worktree-smoke.sh:7-12`.
+    WRONG BEHAVIOUR: the scripts index under-states the smoke (the plan's "smoke row" in Files). Not blocking.
+    CONFIDENCE: confirmed (read)
+
+[4] KIND: correctness
+    WHERE: scripts/worktree.sh:117 (summary)
+    DEFECT: for an existing branch with no `[base]`, `BASE` stays empty and the summary prints `(base )`.
+    TRIGGER: `scripts/worktree.sh feat/B1.21-status-ping-current` when the branch exists locally.
+    WRONG BEHAVIOUR: a blank base in the summary (pass 1 printed `(base main)`, which was wrong in another way).
+            Cosmetic, not blocking.
+    CONFIDENCE: confirmed (traced: line 25 sets "", line 26 skips, line 52 takes the existing-branch path)
+```
+
+Verdict: ready for PR. No blocking finding; pass-1 findings 1–6 are fixed and probed. 1–4 above are for the
+dev-lead to dispose (fix in this pass or drop with a reason).
+
+Riskiest unfalsified: Loop 9's "wait until a `ci` run exists for the head SHA" still has no command; `gh pr checks <n>
+--watch` run straight after the push may exit on the previous head's checks or on "no checks reported". It needs a
+push to GitHub, which I could not do.
+
+### Dispositions (pass 2, dev-lead)
+
+| #   | Finding                                                   | Disposition  | Evidence                                                                                          |
+| --- | --------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------- |
+| 1   | fetch-skip and warning-flag mutants survive the smoke     | out of scope | both change only whether a fetch or a warning happens, not the base; noted for a later smoke card |
+| 2   | clean merge prints a 6-line header under `--remerge-diff` | fix now      | `--format=` added in dev-lead, tdd-loop, reviewer                                                 |
+| 3   | `scripts/CLAUDE.md` says K1–K4                            | fix now      | K1–K6                                                                                             |
+| 4   | summary prints `(base )` for an existing branch           | fix now      | `(base existing branch)`                                                                          |
