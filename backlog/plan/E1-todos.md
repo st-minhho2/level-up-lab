@@ -307,10 +307,7 @@ _tooling · no §_
 ### B1.22 · Batch review and the parallel-lane metrics: throughput, lead wait time, uncaught plan deviations
 
 _tooling · no §_
-**Status: Open** — `grep -ni batch .claude/docs/git-workflow.md` → no match; `grep -ni "wait time\|deviation\|throughput"
-docs/metrics.md` → no match; `ls scripts/metrics` → only `lead-time.sh`, `change-failure-rate.sh`. D-18 makes throughput
-the parallel lane's speed target and names this card for `scripts/metrics/throughput.sh`; B1.21 (lead's choice (b))
-moved the lead-wait measurement here, read from git and gh instead of a hook
+**Status: Done** — 11f50ff (#74); scripts/metrics-smoke.sh 23 of 23 on bash 5 and 3.2 (9a33e93: 11 ok, 7 FAIL); throughput 5.04 for the days of B1.1–B1.15 (D-18 target ≥ 6.56), 6.3 for the B1.16–B1.21 days; wait time gate 1 / PR 1 / upper bound 22 min; uncaught plan deviations 0/19; no src/ change, mutation 89.02 % unchanged; red 9a33e93, green 67215eb, review passes 21c9dc7 + 680d8c0, 2112c9a + c7e5b62, 48c0529, a6ab22c + 8ecfece, 289310f
 
 - **Spec:** none — tooling (`.claude/docs/git-workflow.md`, `docs/metrics.md`, `scripts/CLAUDE.md`); no `src/` change, no
   section
@@ -324,4 +321,4 @@ throughput.sh`, `wait-time.sh` and `plan-deviations.sh` do not exist, so no card
   the approved plan); each gets a `docs/metrics.md` top-table row with value, date and how to re-measure; bash 3.2,
   `git` + `gh` only
 - **Tier:** quick · **Depends on:** ~~B1.21~~ · **Owner:** Lead · **Size:** M [estimate]
-- **Work:** `work/B1.22/`
+- **Work:** `work/B1.22/` — plan (rounds 2/2, cap; lead chose X literal, Y (a), Z bypass counter, length accepted), review (diff passes 3/3, 10 findings fixed; lead rulings (a) on pass-1 [4], no approval counts from #60, and on pass-2 [1], a selection picks whole days); squash `11f50ff` (#74)
