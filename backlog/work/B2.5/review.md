@@ -315,3 +315,98 @@ and REQ-16.5 allows it. No AC's Then pins it, so nothing fails if someone moves 
 | 2    | N2  | af4f5dc relabelled the ticked §16 approval box "; D-21"                    | reviewer | process  | no change needed                  | reported to the lead: read af4f5dc (12 lines) before the phase-B round-2 approval                                                              |
 | 2    | N3  | `src/lib/todo-search.test.ts:102` comment says escapes, lines use literals | reviewer | comment  | out of scope for phase A: phase B | comment only (`toHaveLength` asserts pin the code units); test-writer fixes it in a phase-B `test(todos)` commit                               |
 | 2    | R   | guard moved after `toLowerCase` passes all tests (riskiest unfalsified)    | reviewer | test gap | out of scope for phase A: phase B | phase-B amendment adds a hardening case: title and query `'İ'` × 101 (trimmed length 101, lowercased 202) must match                           |
+
+## Plan review (phase B amendment)
+
+Reviewed: the amendment `020642d` (`plan.md`: 4 phase-B Files rows, phase-B Sequence, phase-B verification lines,
+steps 5–8, round-2 status line) and the merge `c8a95ae` (parents `b948977`, `32b474c` = `origin/main`), against §16
+(D-21), §9, §10, §12–§15, D-7, D-20, D-21 and the rules. Phase A stays approved (`0e841e9`) and reviewed (diff passes 1
+and 2); only the amendment is judged here. Run here on 2026-10-31 at `020642d`: `pnpm test` → `Tests  168 passed (168)`
+(24 files); `pnpm exec playwright test --list` → `Total: 25 tests in 9 files`; `check-spec-sections.sh` → `OK: sections
+cited: 1 … 16`; `check-features-map.sh` → `OK`; `check-ac-coverage.sh` → `§16: ✗, no tests expected yet (7 criteria)`,
+`OK`; `check-plan-scope.sh` → `OK: feat/B2.5-search stays inside the approved plan of B2.5`; `plan-files.sh B2.5`
+(approved, `0e841e9`) → the 4 phase-A paths; `plan-files.sh --any B2.5 HEAD` → those 4 + `src/app/page.tsx`,
+`e2e/16-search.spec.ts`, `src/lib/CLAUDE.md`, `src/components/CLAUDE.md`. Branch equals `origin/feat/B2.5-search` (the
+claim on the page is pushed).
+
+**Probe** (APFS clone of `020642d` in the scratchpad, never the tree): `page.tsx` edited exactly as the Files row says
+(header names §16; `q` in `searchParams`; `query = parseSearchQuery(params.q)`; `shown = searchTodos(filterTodos(todos,
+filter), query)`; `<TodoSearchForm filter={filter} query={query} />` right after `<TodoForm />`; empty text
+`searchEmptyMessage(filter, todos.length, query)`; `emptyListMessage` import dropped; count and both buttons untouched)
+plus one `'İ'` × 101 title/query case in `todo-search.test.ts`:
+
+- `tsc --noEmit` exit 0; `vitest run` → `Tests  169 passed (169)` (the plan's 169 holds). `eslint` could not load its
+  config in the clone (`Cannot redefine plugin "@typescript-eslint"`, a copy artefact) [unverified on the probe].
+- `playwright test` (the 25 existing tests against the mounted page) → `25 passed (30.8s)`: no locator collides with
+  the new form. Checked by hand too: the only `form` locator (`e2e/10:41`) is filtered to the form holding "New todo";
+  button names `Add`, `Edit title`, `Save`, `Clear completed`, `Mark all complete`, `Edit due date`, `Update due date`
+  never contain "Search" nor are contained in it; `textbox` locators do not match role `searchbox`; `getByText` calls
+  ("No todos yet", "No active todos", "No completed todos", "… left") are not substrings of "No todos match your search".
+- A probe e2e walking AC-16.6's When column (search `milk`, "Active", `MILK`, reload, `zzz`, `/?q=%20%20`) on the
+  probe mount → `1 passed`: after "Active" (a soft `next/link` navigation) the box reads `''` and the address is
+  `/?filter=active`; the plan's mount satisfies AC-16.6 as written.
+- Guard variants with the `'İ'` × 101 case added: guard moved after `toLowerCase` → `1 failed | 7 passed` (diff pass 2's
+  R is closed by step 5b); threshold `> SEARCH_QUERY_MAX_LENGTH + 1` → `8 passed` (still survives, cost 3 below).
+
+**Merge.** `git show --remerge-diff c8a95ae`: two conflicts, `spec/features-map.md` (F14 row vs B2.4's table; resolved
+to main's table plus F14, F13 kept) and `spec/technical-requirements.md` (§16 row kept after main's §15 ✅); both
+paperwork. `git diff origin/main HEAD -- src/app e2e src/actions prisma src/lib/todos.ts src/lib/todo-schema.ts
+src/lib/todo-filter.ts src/lib/CLAUDE.md src/components/CLAUDE.md` → empty: the merged page and both guides are main's
+verbatim. `git log --first-parent --no-merges b70450c..HEAD -- '*.test.*' e2e/` → `9467b13`, `3a3348a` (pass-1
+`test(todos)` commits, read in pass 2); `--merges --remerge-diff` → 0 lines.
+
+**Merged `page.tsx`.** `todos` = `listTodos()`, `shown = filterTodos(todos, filter)`, count and both buttons from
+`todos`. The amendment changes only `shown`, the empty text and adds the form, as §16's last contract lines say; REQ-16.9
+keeps the three `todos` reads. Placement after `<TodoForm />`: §16 leaves it to the mounting card; §9's "between
+`<TodoForm />` and the list" (`07-clear-completed.md:44`) holds under the loose "between" reading B2.2/B2.3 already
+applied (third time now); §10 REQ-10.4 (alert directly after the clear button) is inside that button's wrapper, untouched;
+the New-todo alert stays inside `TodoForm`'s own form.
+
+| Check                                                                             | pass / fail: reason                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: `src/app/page.tsx` is named by §16's Function contracts (last four lines); `e2e/16-search.spec.ts` is §16's e2e (AC-16.6, AC-16.7). The two guides carry §16's two modules plus section 15's `todo-due-date.ts` / `todo-due-date.tsx`, which B2.4's plan (`backlog/work/B2.4/plan.md:29`) left out on purpose "so B2.5 can" add them: outside F14 but handed over in writing, docs only. Neither guide is CI-protected            |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass: no new signature; `HomePage`'s `searchParams` type gains `q?: string \| string[]` exactly as §16's contract line; no action, schema, Prisma or env change; page stays a Server Component. Probe typechecks                                                                                                                                                                                                                        |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: Approach A, phase B after B2.4 MERGED (315b97e/32b474c), merged not rebased (branch rules); the e2e in phase B is the advice's choice and the plan states it departs from analysis Q8                                                                                                                                                                                                                                             |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: §16 unchanged by the amendment, 7 criteria (`check-ac-coverage.sh` "7 criteria"); AC-16.6/16.7 Thens are rows, addresses, counts and texts                                                                                                                                                                                                                                                                                        |
+| verification lists exact commands with expected numbers                           | pass: unit 168 measured → 169 (probe 169); e2e 25 measured (9 files) → 29 (25 + 4 in `e2e/16`: AC-16.6, AC-16.7, REQ-16.8, REQ-16.6); red `pnpm test:e2e e2e/16-search.spec.ts` → 4 failed recorded in the commit body; mutation ≥ 70 with `todo-search.ts` no survivors; `check-plan-scope`. Note: 4 failed assumes the REQ-16.8 test asserts the form is present (the Files row says so); without it that test passes on today's page |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass with notes: 5 red `test(ui) … (red)`, 5b `test(todos) … review pass …`, 6 `feat(ui)`, 7 `docs(map)`, 8 review; `<pkg>` values listed in `backlog/CLAUDE.md`. Notes 4 and 5 below (5b's position and its pass number)                                                                                                                                                                                                               |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7)          | pass: `spec/contracts/14-search.md:5` "[x] Lead approves spec (lead, 2026-10-31, plan gate of B2.5; D-21)"; not touched by this review. The "; D-21" suffix is agent-written (`af4f5dc`, pass-2 N2): cost 6                                                                                                                                                                                                                             |
+| no settled D-n contradicted                                                       | pass: D-20 (a) shared mount points held by one Doing card at a time: B2.4 merged, the board shows only B1.20 (To do) and B2.5 (Doing); D-21 untouched (5b only adds a case consistent with it: a 101-unit query is not over 200); D-7 as above                                                                                                                                                                                          |
+| `scripts/next-task.sh --check B2.5` says no overlap                               | pass: `[next-task] B2.5: no overlap with any Doing or Review card` (exit 0, at `020642d`)                                                                                                                                                                                                                                                                                                                                               |
+
+Verdict: approved
+
+This means ready for the lead's gate, not approved for build. Costs the lead accepts by approving the amendment (none
+blocking):
+
+1. **Phase B gets exactly one diff review.** `review-loop` caps a card at 3 passes and B2.2/B2.3 numbered passes per
+   card, not per phase; passes 1 and 2 went to phase A, so step 8 is pass 3 of 3. Any blocking finding there means
+   "blocked at pass 3/3": `mark-reviewed.sh` is not run and the card waits on the lead, with the fix unreviewed. The
+   plan's step 8 says "pass 3 (last of 3)" but not this consequence. Costs 2 and 3 are the two spots most likely to
+   become that finding; deciding them now keeps them out of pass 3.
+2. **Typed but unsubmitted search text survives a filter link.** Confirmed on the probe: on `/?q=milk`, type `bread`
+   (no submit), click "Active" → address `/?filter=active`, 2 rows (no search), box reads `"bread"`. The input is
+   uncontrolled (`defaultValue`) and `next/link` reconciles it in place, so a dirtied value stays. No AC's Then covers
+   it (AC-16.6 clicks "Active" with an untouched box, which empties as required); REQ-16.2 "show the current query in
+   the search box" and REQ-16.7 "without a search" are silent on unsubmitted text. A `key` on the input fixes link
+   changes of filter or query but not a click on the already-selected link. Either accept it as out of scope (say so
+   at approval, so pass 3 does not raise it) or file a §16 question; not a guess in code.
+3. **One guard variant still survives.** Threshold `> SEARCH_QUERY_MAX_LENGTH + 1` passes every planned test (probe:
+   `8 passed`). Trigger: stored title `'İ'` × 200, `GET /?q=` + `'i̇'` × 100 + `'i'` (201 code units; the lowercased
+   title, 400 units, contains it, checked with node) → the todo is listed; REQ-16.5 says a query over 200 units matches
+   nothing. One more case in step 5b (that title and query → `[]`) closes it for free; the 200-unit boundary test
+   (`9467b13`) already pins the other side.
+4. **Step 5b sits between the phase-B red and green.** `dev-lead.md` step 6's green gate wants `git log
+--first-parent --no-merges <red>..HEAD -- '*.test.*' e2e/` empty; with 5b after step 5 it lists 5b. No script fails,
+   but the gate needs an explanation. Moving 5b before step 5 keeps the range empty and changes nothing else:
+   `verify-red.sh` copies the test files of the last `(red)` commit onto the skeleton, where the new `'İ'` case fails on
+   `NotImplementedError`, as pass 2's P4 showed for the other review-pass tests.
+5. **5b's subject says "review pass 3".** Its source is pass 2's R (and N3); `review-loop` step 3 names the pass whose
+   finding is fixed. `review pass 2 -- guard before lowercasing` reads true; no script reads the number.
+6. **Read `af4f5dc` (12 lines) before approving.** Pass-2 N2: the ticked §16 box was relabelled "; D-21" by an agent;
+   approving round 2 is the moment that makes the label the lead's.
+7. **Length:** `plan.md` is 87 lines against `planning.md`'s ≈ 40 (B2.3's amendment was 90).
+
+Riskiest unfalsified: the search box after a soft navigation once the person has typed in it (cost 2); confirmed for
+filter links, unprobed for the Server Action refresh after a toggle or edit on `/?q=…` (REQ-16.10), where the same
+uncontrolled input keeps whatever was typed.
