@@ -23,7 +23,9 @@ approves the plan; roles do the work; you write only `backlog/`, `docs/metrics.m
 - A question only the human can answer (advisor `Escalate: human`, analyst `NEEDS RULING`) → add it to
   `backlog/README.md` "Waiting on human" with the decision request, commit, report, stop. Never guess a ruling;
   never re-ask a settled D-n.
-- Never bypass hooks, never force push, never label or merge, never run paid or external services.
+- Never bypass hooks, never force push, never merge, never run paid or external services. Labels: add
+  `config-change-approved` right after `gh pr create` when the approved plan's Files hold a CI-protected path (D-19);
+  never `hotfix`, never on a change outside an approved plan.
 
 ## Loop
 
