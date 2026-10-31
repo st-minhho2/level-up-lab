@@ -110,6 +110,20 @@ describe('searchTodos (§16)', () => {
     expect(dotted.title.toLowerCase().includes(query)).toBe(true);
     expect(result).toEqual([]);
   });
+
+  it('a query of exactly 200 code units, padded or not, still matches a title that contains it (REQ-16.5 boundary)', () => {
+    const exact = 'x'.repeat(200);
+    const long = todo(exact);
+    const padded = `  ${exact}  `;
+
+    const plain = searchTodos([long], exact);
+    const trimmed = searchTodos([long], padded);
+
+    expect(exact).toHaveLength(200);
+    expect(padded).toHaveLength(204);
+    expect(plain).toEqual([long]);
+    expect(trimmed).toEqual([long]);
+  });
 });
 
 describe('searchEmptyMessage (§16)', () => {
