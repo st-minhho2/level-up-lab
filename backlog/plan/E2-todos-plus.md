@@ -45,3 +45,12 @@ date; `spec/contracts/01-scope-and-gates.md` §1 lists due dates as not in scope
   `/add-migration`)
 - **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** M [estimate]
 - **Work:** `work/B2.4/`
+
+### B2.5 · Search todos by title
+
+_F14 · section 16_
+**Status: Open** — `git grep -n -i "search" src/app src/components` → no match; `listTodos()` takes no query
+
+- **Acceptance:** section 16 criteria, set by `spec-analyst` (contract `spec/contracts/14-search.md`)
+- **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B2.5/`

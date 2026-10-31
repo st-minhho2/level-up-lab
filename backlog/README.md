@@ -8,8 +8,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | Epic          | File                                           | Done   | Partial | Open  | Total  |
 | ------------- | ---------------------------------------------- | ------ | ------- | ----- | ------ |
 | E1 Todos      | [plan/E1-todos.md](plan/E1-todos.md)           | 21     | 0       | 1     | 22     |
-| E2 Todos plus | [plan/E2-todos-plus.md](plan/E2-todos-plus.md) | 0      | 0       | 4     | 4      |
-| **Total**     |                                                | **21** | **0**   | **5** | **26** |
+| E2 Todos plus | [plan/E2-todos-plus.md](plan/E2-todos-plus.md) | 0      | 0       | 5     | 5      |
+| **Total**     |                                                | **21** | **0**   | **6** | **27** |
 
 ## Execution order
 
@@ -55,6 +55,7 @@ flowchart TD
   S24["24 · remaining count<br/>B2.2"]
   S25["25 · mark all complete<br/>B2.3"]
   S26["26 · due date (migration)<br/>B2.4"]
+  S27["27 · search by title<br/>B2.5"]
 ```
 
 ## Remaining
@@ -69,6 +70,7 @@ at most 3 cards Doing (B1.18).
 | 24   | B2.2  | Show how many todos remain                                                 | new, section 13 (D-20) | Open   | —          | Lead  | S [estimate] |
 | 25   | B2.3  | Mark all todos complete                                                    | new, section 14 (D-20) | Open   | —          | Lead  | S [estimate] |
 | 26   | B2.4  | An optional due date per todo                                              | new, section 15 (D-20) | Open   | —          | Lead  | M [estimate] |
+| 27   | B2.5  | Search todos by title                                                      | new, section 16 (D-20) | Open   | —          | Lead  | S [estimate] |
 
 ## Waiting on human
 
