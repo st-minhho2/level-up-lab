@@ -24,9 +24,11 @@ key, no CI-protected path (no `config-change-approved`).
 | `src/components/todo-due-date.test.tsx` | Add (red): AC-15.5 (a), (b); AC-15.6                                                               | 15.5, 15.6     |
 | `src/components/todo-item.tsx`          | One import + `<TodoDueDate todoId={todo.id} dueDate={todo.dueDate} />` inside the `<li>` (green)   | 15.5, 15.7     |
 | `e2e/15-due-date.spec.ts`               | Add (red): AC-15.7 set → reload → clear → reload; order C, B, A and B's completion kept            | 15.7           |
-| `src/lib/CLAUDE.md`                     | Module row `todo-due-date.ts` §15; `todos.ts` and `logger.ts` rows name §15                        | docs           |
 | `src/actions/CLAUDE.md`                 | The actions sentence names `setTodoDueDateAction`                                                  | docs           |
-| `src/components/CLAUDE.md`              | One line: `todo-due-date.tsx` (§15) is `'use client'` (state, events)                              | docs           |
+
+Guides: `src/lib/CLAUDE.md` and `src/components/CLAUDE.md` are left out (plan review round 1, reason 1) so B2.5 can
+list them and `page.tsx` in its first plan with a clean `--check`; the two §15 module lines join those guides in
+whichever card edits them after B2.4 merges (a cost stated at the gate).
 
 Paperwork (exempt): `spec/features-map.md` F13 row ✗ in the skeleton, ✅ in `docs(map)`; §15 index row stays ✗ until
 the closing PR; `docs/metrics.md` per-card row. Risk carried from advice: `dueDateOf` written null-safe
@@ -65,9 +67,13 @@ export function TodoDueDate({
 
 ## Verification
 
-`scripts/verify-red.sh B2.4` exit 0 (red on assertion / `NotImplementedError`) · `pnpm lint && pnpm typecheck` clean ·
-`pnpm test` → 138 + new AC-15.1–15.6 tests green · `pnpm test:e2e` → 24 + `e2e/15-due-date.spec.ts` green ·
-`pnpm test:mutation` ≥ 70 (target ≥ 85; hot spots in `advice.md`) · `pnpm build` ok · `check-plan-scope.sh` OK.
+Red (`test(todos): B2.4 … (red)`): `scripts/verify-red.sh B2.4` exit 0 with 21 new unit tests failing on an assertion
+or `NotImplementedError` (never an import): `src/lib/todo-due-date.test.ts` 7, `src/lib/todo-due-date-store.test.ts` 3,
+`src/actions/todos.test.ts` +6 (AC-15.3 ×4, AC-15.4, `revalidatePath` throws), `src/components/todo-due-date.test.tsx`
+5 (AC-15.5 ×2, AC-15.6 ×3); `pnpm test:e2e e2e/15-due-date.spec.ts` → 1 failed, recorded in the red commit body
+(`verify-red.sh` skips e2e). Green: `pnpm lint && pnpm typecheck` clean · `pnpm test` 138 → 159 passed ·
+`pnpm test:e2e` 24 → 25 passed · `pnpm test:mutation` ≥ 70 (target ≥ 85; hot spots in `advice.md`) · `pnpm build` ok ·
+`scripts/ci/check-plan-scope.sh` OK. Counts are the test-writer's target; a different count is stated in the red commit.
 
 ## Work breakdown
 
