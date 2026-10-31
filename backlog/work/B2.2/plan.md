@@ -50,8 +50,9 @@ scripts/verify-red.sh B2.2   # phase A: 11 new tests fail on NotImplementedError
 pnpm lint && pnpm typecheck && pnpm test   # 115 + 8 (todo-count.test.ts: AC-13.1 ×4 lists, AC-13.2 ×4 counts)
                              #     + 3 (remaining-count.test.tsx: AC-13.2 render 0, 1, 2) = 126 green
 pnpm test:e2e                # phase A: unchanged, all green
-pnpm test:e2e e2e/13-remaining-count.spec.ts   # phase B red: 5 failed (AC-13.3…13.7, "items left" not found)
-pnpm test:e2e                # phase B green: + 5, all green
+pnpm test                    # phase B (after the b2db063 merge, B2.1 added 4): 130 passed, no new unit test
+pnpm test:e2e                # phase B red: e2e/13 5 failed (AC-13.3…13.7), 16 passed; run by hand, verify-red skips e2e
+pnpm test:e2e                # phase B green: 21 passed in 7 files
 pnpm test:mutation           # ≥ 70; todo-count.ts mutants (`!completed`, `=== 1`, strings) Killed
 scripts/ci/check-ac-coverage.sh && scripts/ci/check-spec-sections.sh && scripts/ci/check-feat-commits.sh \
   && scripts/ci/check-features-map.sh
@@ -65,12 +66,12 @@ scripts/ci/check-ac-coverage.sh && scripts/ci/check-spec-sections.sh && scripts/
 | 2 red      | `test-writer` → red gate (dev-lead)   | unit + component tests    | `test(todos): B2.2 remaining count (red)`     |
 | 3 green    | `code-writer` → green gate (dev-lead) | both modules              | `feat(todos): B2.2 count the remaining todos` |
 | 4 B red    | `test-writer` (after round-2 approve) | `e2e/13`, red on the page | `test(ui): B2.2 remaining count on / (red)`   |
-| 5 B green  | `code-writer` → green gate            | the page mount            | `feat(ui): B2.2 show the remaining count`     |
+| 5 B green  | `code-writer` → green gate            | page mount + 2 CLAUDE.md  | `feat(ui): B2.2 show the remaining count`     |
 | 6 map      | dev-lead                              | F11 row: tests, page      | `docs(map): F11 remaining count [B2.2]`       |
 | 7 review   | `reviewer` (diff), `/review-loop`     | `review.md` diff section  | `docs(backlog): B2.2 diff review …`           |
 
 Diff review may run once after step 3 (phase A banked) and again after step 5; phase B's green-gate range starts at
 the step-4 red commit. PR stays draft until phase B is green; the card holds its WIP slot until then.
 
-Plan review: approved, round 2; phase-B amendment: pending · Plan approved by: lead (session reply "approve"),
-2026-10-31 (round 1); round 2: pending · Rounds: 2
+Plan review: approved, round 2; phase-B amendment: changes requested (1 reason, numbers) applied, not re-reviewed · Plan approved by: lead (session reply "approve"),
+2026-10-31 (round 1); round 2: pending, approval commit `docs(backlog): B2.2 plan round 2 approved` · Rounds: 2
