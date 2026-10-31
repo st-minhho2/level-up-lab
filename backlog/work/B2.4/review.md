@@ -162,3 +162,103 @@ Costs the lead accepts with an `approve` (not reasons; stated so they are not fo
    to follow whichever stub reason 1 picks. The advice hot spots (`safeParse({ id: 'todo-1' })` missing `dueDate`; the
    component's `id`-arm alert and the empty draft) are still read from `advice.md`, not the Files rows. The plan is 88
    lines against `planning.md`'s ≈ 40. Round 1 did not raise this and its content has not grown, so it is noted, not a reason.
+
+## Diff review (pass 1)
+
+SCOPE: all (lib, actions, ui, prisma). Range `main...HEAD` at `e11c44b`: skeleton `a608aa7`, skeleton fix `c083c63`,
+red `2822ab9`, green `bbf823e`, map `f10d869`, metrics `e11c44b`.
+
+### Commands (run by the reviewer, last line of each)
+
+| Command                             | Last line                                                                                                      |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!`                                                                   |
+| `pnpm typecheck`                    | `> tsc --noEmit` (exit 0, no output)                                                                           |
+| `pnpm test`                         | `Tests  159 passed (159)` (22 files)                                                                           |
+| `pnpm test:e2e`                     | `25 passed (51.4s)` (`e2e/15-due-date.spec.ts` AC-15.7 included)                                               |
+| `pnpm test:mutation`                | `Final mutation score of 91.13 is greater than or equal to break threshold 70`                                 |
+|                                     | actions 100.00 (`todos.ts` 34 killed, 0 survived); lib 89.62; `todo-due-date.ts` 95.00 (38 killed, 2 survived) |
+| `scripts/ci/check-suppressions.sh`  | `[check-suppressions] OK: no new suppressions`                                                                 |
+| `scripts/ci/check-config-change.sh` | `[check-config-change] OK: no protected config changed`                                                        |
+| `scripts/ci/check-feat-commits.sh`  | `[check-feat-commits] OK: no feat commit touches tests`                                                        |
+| `scripts/ci/check-ac-coverage.sh`   | `§15: ✗, no tests expected yet (7 criteria)` then `OK: every criterion of a shipped section has a test`        |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15`                                                      |
+| `scripts/ci/check-features-map.sh`  | `[check-features-map] OK`                                                                                      |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B2.4-due-date stays inside the approved plan of B2.4`                                                |
+| `scripts/verify-red.sh B2.4`        | `RESULT: red for the right reason` (actions 6/6, store 3/3, schema 7/7, component 5/5 new failed, 0 passed)    |
+| `scripts/next-task.sh --check B2.4` | `[next-task] B2.4: no overlap with any Doing or Review card`                                                   |
+| `git diff --stat main...HEAD`       | `27 files changed, 1570 insertions(+), 64 deletions(-)`                                                        |
+
+### Checklist
+
+| Check                                                                 | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-§.n has a test whose assertion matches its Then              | pass. Because §15 is still ✗, `check-ac-coverage` does not check it, so the reviewer read each test. AC-15.1: three exact `toEqual` results, eight values each exactly `{ dueDate: [msg] }`, empty id → `{ id: ['Todo id is required'] }`. AC-15.2: list mapping, `select` includes `dueDate`, `update` `where` and `data` exact (`toEqual` on `data`), returned todos, missing id → `TodoNotFoundError` with `update` called 2 times. AC-15.3: 4 tests, exact results and call args, `revalidatePath` `[['/'], ['/']]`. AC-15.4: `resolves.toEqual`, 0 revalidations, 1 lib call, log args by reference. AC-15.5 (a)/(b) and AC-15.6, all three clauses. AC-15.7: e2e checks before and after each reload, `toHaveText(['C', /B Due 2026-11-05/, 'A'])`, B checked |
+| no test weakened after the red commit                                 | pass: `git log --first-parent --no-merges 2822ab9..HEAD -- '*.test.*' e2e/` returns nothing. `--merges --remerge-diff` returns 0 lines (no merge in range)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| every changed file is in `plan.md`                                    | pass: the 14 Files rows. `spec/features-map.md` and `docs/metrics.md` are declared paperwork. `docs/mistake-log.md` (`051680c`, one row) is not in the plan. It is an exempt path (`check-plan-scope` OK) and is noted, not a finding                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| interfaces match the section's contracts                              | pass: the exports match §15's Function contracts, with `async` added as in the plan. `MutationActionName` gains exactly `'setTodoDueDateAction'`. Extra export: `SetTodoDueDateInput` (`src/lib/todo-due-date.ts:38`, 0 importers). Neither §15 nor the plan names it. It follows `todo-schema.ts`'s `*Input` aliases (observation 6)                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Zod at every action boundary                                          | pass: `setTodoDueDateSchema.safeParse` runs outside the `try`, and the lib gets `parsed.data`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Prisma only in `src/lib`, no raw SQL                                  | pass: `findUnique` and `update` in `src/lib/todos.ts` only, both through the query builder                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| migration reversible and indexed                                      | pass: one `ADD COLUMN "dueDate" DATE`, nullable, no backfill; dropping the column reverses it. No index, as §3 and §15 state (nothing orders or filters by it)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| no secret, no suppression                                             | pass                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| features map row moved                                                | pass: F13 ✅ in `f10d869`, every path resolves                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| would a test fail if one changed line were reverted (probe on a copy) | pass for every line an AC governs. Probed on an rsync copy. Component: success leaves the error → 1 failed; draft not seeded from `dueDate` → 1 failed; `<TodoDueDate>` removed from `TodoItem` → unit 159 passed, but the e2e needs the row's "Edit due date" button. Action: log deferred with `setTimeout` → 2 failed; `revalidatePath` moved before the lib call → 3 failed. Survivors, none governed by an AC (observation 4): `disabled={pending}` on either button, `event.preventDefault()` (e2e 1 passed), `aria-invalid`, alert precedence reversed (unit 5 passed each). Two equivalent survivors: lib called with raw `(id, dueDate \|\| undefined)`, and the log moved to a microtask                                                                  |
+
+### Findings
+
+None blocking.
+
+### Observations (the five questions dev-lead raised, plus the probes)
+
+1. **`toTodo` keeps `dueDate: undefined` as a key** (`src/lib/todos.ts:33`). This has no observable effect.
+   `tsconfig.json` does not set `exactOptionalPropertyTypes`, and `tsc` passes. Every assertion on a `Todo` uses
+   `toEqual`, which ignores undefined keys, and `src/` has no `toStrictEqual` and no `Object.keys` on a `Todo`. RSC and
+   action payloads encode `undefined`. AC-15.7 passes before and after each reload. §15 says "absent", and
+   `'dueDate' in todo` is `true`. That difference is only reachable by reflection.
+2. **Alert precedence and the stale error.** A stale error on re-entering edit mode cannot happen: edit mode is left
+   only on success (`todo-due-date.tsx:33-36`), and success clears the error first. With `dueDate → id → form`
+   reversed, all 5 component tests still pass. The order only matters when a result has two keys. That needs an empty
+   `id` plus a bad date, and `TodoItem` always passes `todo.id`. The lib throws only one error at a time. The UI
+   therefore cannot reach the order, and no AC states it.
+3. **Mutants.** The two `DUE_DATE_PATTERN` anchor survivors (`todo-due-date.ts:7:26`) are equivalent. After the regex,
+   the round trip `dueDateOf(date) === value` already forces `value` to be exactly `YYYY-MM-DD`. Fuzz (a reviewer scratch script, not committed) ran 910 inputs (13 prefixes × 7 days × 10 suffixes) against the original, `^`-less,
+   `$`-less and no-regex variants and found 0 differences. The survivors at `todos.ts:67:73` and `67:79`
+   (`findUnique` `select` emptied or `id: false`) are the same pair as `57:73/79` in `updateTodoTitle` on `main`. They
+   are equivalent because only `=== null` is read.
+4. **"rejects a missing dueDate"** (`todo-due-date.test.ts:59`). §15's contract annotation says "`''` → undefined,
+   else a real calendar date …, else DUE_DATE_INVALID_MESSAGE". REQ-15.7 covers "neither empty nor a real calendar
+   date". An absent value is neither, so the test reads the spec and makes no guess. The AC-15.1 prefix on an input
+   outside AC-15.1's When matches the plan-approved boundary rows (`0001-01-01`, `1900-02-29`, trailing text).
+5. **Map re-padding and the B2.5 conflict.** Prettier re-pads both docs tables. `git diff -w` shows 3 changed lines
+   in `spec/features-map.md` and 3 in `docs/mistake-log.md`. A trial merge
+   (`git merge-tree --write-tree HEAD origin/feat/B2.5-search`) conflicts in `spec/features-map.md` and
+   `spec/technical-requirements.md`. The cause is that both cards append a row to the same two tables; the padding
+   only makes the hunk wider. A merge with `origin/main` is clean. The card that merges second resolves the conflict:
+   take both rows, then run `prettier --write`.
+6. **Probe survivors from the contract** (checklist row "revert"). §15's contract text asks for the Update button
+   disabled while pending and for the alert order, but no AC does. They are untested, yet harmless when reverted: a
+   double submit sets the same value twice, and the order is unreachable (item 2). Without `preventDefault` the
+   e2e still passes. `SetTodoDueDateInput` is an unused alias outside the plan's Interfaces. The lead may want it
+   dropped when the guides catch up; it has no behavior.
+7. **Correction to plan-review cost 1** ("a half-edited date clears the stored date"). That cost is false in
+   Chromium. The probe stored `2026-11-05` on todo `B`, opened edit mode and pressed one Backspace. Result:
+   `inputValue()` `""`, `validity.badInput` `true`. After "Update due date": the row still in edit mode, 0 alerts,
+   stored value still `2026-11-05T00:00:00.000Z`. Native constraint validation blocks the submit, so the action is
+   never called. The cost that remains is narrower: the person sees the browser's validation bubble, not REQ-15.7's
+   message. Firefox and WebKit were not probed.
+8. **Storage round trip.** An e2e probe on the copy saved `0001-01-01`, `9999-12-31`, `1582-10-10` and `2024-02-29`
+   through the UI. Each showed as `Due <day>` after a reload and was stored at UTC midnight. The run used the
+   machine's +07:00 zone. Re-runs with the dev server at `TZ=America/Los_Angeles` and `TZ=Pacific/Kiritimati` gave
+   `"dueDate"::text` equal to the submitted day for `0001-01-01`, `2026-11-05` and `9999-12-31`. A row whose todo was
+   deleted after edit mode opened shows the alert `Todo not found` (REQ-15.8). The probe found that a reload right
+   after the click aborts the in-flight action, so nothing is stored. AC-15.7's e2e asserts before reloading, so it
+   is not exposed.
+9. **`c083c63`**, a `chore` commit after the red commit, touches only `src/actions/todos.ts`, not a test (async stub).
+   Its body records the e2e red at that commit. `verify-red.sh` judges unit tests against `a608aa7`. Accepted as
+   explained.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the due-date field in Firefox and WebKit. Playwright runs Chromium only, so
+whether a partial `<input type="date">` blocks the submit or sends `''` (which would clear the date, observation 7) is
+unverified outside Chromium.
