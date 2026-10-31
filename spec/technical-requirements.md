@@ -19,6 +19,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §12 | [contracts/10-filter.md](contracts/10-filter.md)                       | Todos: filter the list (All / Active / Completed)                      | ✅     |
 | §13 | [contracts/11-remaining-count.md](contracts/11-remaining-count.md)     | Todos: remaining count                                                 | ✅     |
 | §14 | [contracts/12-complete-all.md](contracts/12-complete-all.md)           | Todos: mark all complete                                               | ✅     |
+| §16 | [contracts/14-search.md](contracts/14-search.md)                       | Todos: search by title                                                 | ✗      |
 
 Reading order: §1 → §2 → the section your backlog card names → [features-map.md](features-map.md).
 
