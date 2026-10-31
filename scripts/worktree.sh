@@ -21,11 +21,12 @@ usage() { sed -n '2,14p' "$0"; exit 1; }
 TASK="$1"
 # Default base: origin/main freshly fetched (B1.21); the local main of the main checkout is often stale. Offline →
 # the last fetched origin/main, else main; a fetch never prompts and never aborts the task.
-if [[ $# -ge 2 ]]; then
-  BASE="$2"
-else
-  GIT_TERMINAL_PROMPT=0 git fetch -q origin </dev/null 2>/dev/null || echo "[worktree] warning: git fetch origin failed; using the last fetched origin/main" >&2
+# An empty [base] means the default; an existing branch needs no base, so no fetch.
+BASE="${2:-}"
+if [[ -z "$BASE" ]] && ! git show-ref --verify --quiet "refs/heads/$TASK"; then
+  fetched=1; GIT_TERMINAL_PROMPT=0 git fetch -q origin </dev/null 2>/dev/null || fetched=0
   if git rev-parse -q --verify "origin/main^{commit}" >/dev/null; then BASE=origin/main; else BASE=main; fi
+  [[ $fetched -eq 1 ]] || echo "[worktree] warning: git fetch origin failed; base is the last known $BASE" >&2
 fi
 ROOT="$(git rev-parse --show-toplevel)"
 SLUG="$(printf '%s' "$TASK" | tr 'A-Z' 'a-z' | tr -c 'a-z0-9\n' '-' | sed -E 's/-+/-/g; s/^-//; s/-$//')"

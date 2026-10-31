@@ -20,7 +20,8 @@ Preconditions: `plan.md` approved, skeleton committed (`chore(<pkg>): <card> ske
 3. `Agent(subagent_type: "code-writer")` with the brief (`Mode: green`), the failing titles, and "Do not paraphrase
    the tests; a test you think is wrong is reported, not special-cased."
 4. **Green gate, run by you**: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`;
-   `git diff --stat <red>..HEAD -- '*.test.*' e2e/` empty; `pnpm test:mutation` ≥ 70 on `src/lib` + `src/actions`;
+   `git log --first-parent --no-merges --stat <red>..HEAD -- '*.test.*' e2e/` empty and
+   `git log --first-parent --merges --remerge-diff <red>..HEAD -- '*.test.*' e2e/` empty or read by the reviewer; `pnpm test:mutation` ≥ 70 on `src/lib` + `src/actions`;
    `spec/features-map.md` row moved. A `DISPUTED` line → `/advise`, then decide: a wrong test goes back to
    test-writer as a new `test(...)` commit, never into the feat commit.
 5. `/review-loop`.

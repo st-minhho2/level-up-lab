@@ -8,8 +8,8 @@
 3. `/tdd-loop`: `chore(<pkg>): B1.2 skeleton` → `test(<pkg>): B1.2 … (red)` → `feat(<pkg>): B1.2 …` →
    `docs(map): F6 … [B1.2]`.
 4. `/review-loop` until clean; `.claude/hooks/mark-reviewed.sh`.
-5. Commit, `git push -u origin feat/B1.2-edit-title`, `gh pr create` with every template section (Item / Plan /
-   Map delta / Review). Never merge; a human does, after CI and review.
+5. The draft PR opened at the plan gate (dev-lead Loop 5) gets every template section (Item / Plan / Map delta /
+   Review); after merging `origin/main` and green CI it becomes ready (Loop 9). Never merge; the lead does.
 6. After the merge: `scripts/card-status.sh B1.2 Done "<sha>, <tests>"` on `main` (one `docs(backlog)` commit) and
    `scripts/worktree-prune.sh`.
 

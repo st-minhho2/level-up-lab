@@ -67,7 +67,9 @@ Commit `docs(backlog): <card> plan`.
    yourself (`scripts/verify-red.sh <card>` exit 0; `git diff --stat <chore>..HEAD` touches only tests and the
    card); dispatch `code-writer`, then the **green gate**
    (`pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`;
-   `git log --first-parent --no-merges --stat <red>..HEAD -- '*.test.*' e2e/` empty: a merged sibling's tests are not the card's). A `DISPUTED` line → `/advise`.
+   `git log --first-parent --no-merges --stat <red>..HEAD -- '*.test.*' e2e/` empty, and
+   `git log --first-parent --merges --remerge-diff <red>..HEAD -- '*.test.*' e2e/` empty or a conflict resolution the
+   reviewer read: a merged sibling's tests are not the card's, a resolution that touches the card's tests is). A `DISPUTED` line → `/advise`.
 7. **Review the diff.** `/review-loop` (reviewer diff mode, dispositions, ≤ 3 passes, `mark-reviewed.sh`).
 8. **Map, card, metrics.** `docs(map): F<n> … [<card>]`; card status `Partial — merged pending` is set by the
    closing commit after merge; `docs/metrics.md` per-card row now.
@@ -76,7 +78,8 @@ Commit `docs(backlog): <card> plan`.
    Push; fill Map delta and Review (= review.md diff section) in the draft's body; wait until a `ci` run exists for
    the head SHA and is green (the app's PR monitor, or `gh pr checks <n> --watch` with a 600 s timeout). Red → back
    through the loop, the PR stays draft. Green → `gh pr ready <n>`, then print exactly "PR for <card> is ready for the
-   lead: <url>" and stop. A sibling's merge makes it BEHIND → merge `origin/main` again before the next report.
+   lead: <url>" and stop. A sibling's merge makes it BEHIND after `gh pr ready` → `gh pr ready --undo`, merge `origin/main`, green
+   again, `gh pr ready`, then the PR line.
 
 ## Role brief template
 

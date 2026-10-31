@@ -55,7 +55,9 @@ scripts/verify-red.sh <card> && git diff --stat main...HEAD
 ```
 
 **Checklist.** every AC-§.n has a test whose assertion matches its Then · no test weakened after the red commit
-(`git diff <red>..HEAD -- '*.test.*' e2e/` empty or explained in a `test(...)` commit) · every changed file is
+(`git log --first-parent --no-merges <red>..HEAD -- '*.test.*' e2e/` empty or explained in a `test(...)` commit;
+`git log --first-parent --merges --remerge-diff <red>..HEAD -- '*.test.*' e2e/`: read every conflict resolution that
+touches a test, a weakened assertion there is a finding) · every changed file is
 in `plan.md` (or the plan was re-approved) · interfaces match the section's contracts · Zod at every action
 boundary · Prisma only in `src/lib` · no raw SQL · migration reversible and indexed · no secret, no suppression ·
 features map row moved · would any test fail if one changed line were reverted? (probe on the copy).
