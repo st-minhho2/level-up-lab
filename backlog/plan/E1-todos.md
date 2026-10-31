@@ -255,12 +255,7 @@ _tooling · no §_
 ### B1.19 · Git hooks run in every worktree, or the commit stops
 
 _tooling · no §_
-**Status: Open** — the shared `.git/hooks/pre-commit` (and `commit-msg`) that `lefthook install` writes on every
-`pnpm install` (`package.json:27` `"prepare": "lefthook install"`, so every `scripts/worktree.sh`) hard-codes the
-`node_modules` path of the last worktree that installed; on 2026-10-31 it pointed at the pruned
-`.worktrees/feat-b1-18-wip-limit/…/lefthook`. A checkout without that path and without its own `node_modules`
-falls through to `echo "Can't find lefthook in PATH"`, which exits 0: the 2026-10-30 live-check session committed
-twice that way with no prettier, tsc, gitleaks, repo-hooks or commit-msg check
+**Status: Done** — 29ee42c (#67); scripts/githooks-smoke.sh 6 of 6 on bash 5, 3.2 and linux (36c0641: 1 ok, 5 FAIL); shared hooks installed with the main checkout binary and assert; no src/ change, mutation 89.02 % unchanged; red 36c0641, green 441b7f6 + 60969be, hardening 7ddc5bd
 
 - **Spec:** none — tooling (`.claude/docs/hooks.md` "Git hooks", `scripts/CLAUDE.md`); no `src/` change, no section
 - **Test:** shell probe on a throwaway repo with two worktrees, one installed and then removed — red because: a
@@ -272,7 +267,7 @@ twice that way with no prettier, tsc, gitleaks, repo-hooks or commit-msg check
   are protected config → the PR needs the human-only `config-change-approved` label and any dependency change the
   lead's OK
 - **Tier:** quick · **Depends on:** ~~B1.18~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.19/`
+- **Work:** `work/B1.19/` — plan (rounds 1/1; lead chose layout (b), length accepted), review (plan rounds 2, cap reached, round-2 fixes accepted by the lead; diff pass 1/3, ready, 1 finding fixed by `7ddc5bd`); squash `29ee42c` (#67)
 
 ### B1.20 · Plan rows with `[ ]` match their own path in the plan-scope hook and guard
 
