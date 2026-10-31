@@ -53,6 +53,8 @@ date; `spec/contracts/01-scope-and-gates.md` §1 lists due dates as not in scope
 _F14 · section 16_
 **Status: Open** — `git grep -n -i "search" src/app src/components` → no match; `listTodos()` takes no query
 
-- **Acceptance:** section 16 criteria, set by `spec-analyst` (contract `spec/contracts/14-search.md`)
+- **Spec:** §16 — unchanged (section written from `work/B2.5/analysis.md`; contract `spec/contracts/14-search.md`)
+- **Test:** `src/lib/todo-search.test.ts::AC-16.2: keeps the todos whose title contains the trimmed query, ignoring case, in input order, and never mutates the input` — red because: `src/lib/todo-search.ts` does not exist, `searchTodos` is not exported
+- **Acceptance:** AC-16.1–AC-16.7
 - **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B2.5/`
