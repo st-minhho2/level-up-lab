@@ -412,3 +412,11 @@ code. Then code-writer fixes [1] and updates the row, the header and the plan wo
 Riskiest unfalsified: `plan-deviations.sh` reads `gh pr view --json files`, which I believe returns at most 100 files
 without paginating [unverified, carried from pass 1]. A card PR above 100 files would under-count silently. No card
 PR comes near that size, so I could not trigger it.
+
+### Dispositions, pass 2 (dev-lead)
+
+| #   | Disposition                                                                                                                                                                                                                                          | Evidence                                                                                                              |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| 1   | fix now, lead's ruling (a): the cards given pick days; a picked day counts every Done card merged on it, span from any Done card's approval. Baseline follows: the days of B1.1–B1.15 read 5.04 (17 cards, 27.0 h), D-18 target ≥ 6.56 (row updated) | probe M24 (a6ab22c) red at 48c0529 (2.7), green at 8ecfece (4.9); `throughput.sh B1.16 B1.17 B1.18 B1.19 B1.21` → 6.3 |
+| 2   | fix now: M21's day 2 opens at B8.2's round-2 approval (06:30), after the first merge (06:00)                                                                                                                                                         | 48c0529: round-1-only mutant → M21 6.7, min-start → 7.0 h                                                             |
+| 3   | fix now: M23 adds B8.7 = PR #60, no approval, `src/x.ts` counted (2/2)                                                                                                                                                                               | 48c0529: `GUARDED_FROM=61` and `-le` → M23 FAIL                                                                       |
