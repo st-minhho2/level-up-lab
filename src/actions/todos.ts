@@ -1,6 +1,6 @@
 'use server';
 
-// §5, §6, §9: Server Actions for the todo list; §10: a failed create, toggle, edit or clear resolves to a `form` error;
+// §5, §6, §9, §15: Server Actions for the todo list; §10: a failed create, toggle, edit or clear resolves to a `form` error;
 // §11: that swallowed failure is logged once, with the action's name and the thrown value only.
 import { revalidatePath } from 'next/cache';
 import { failure, fieldErrorsOf, MUTATION_FAILED_MESSAGE, type ActionResult } from '@/lib/action-result';
@@ -13,6 +13,7 @@ import {
   updateTodoTitle,
   type Todo,
 } from '@/lib/todos';
+import { NotImplementedError } from '@/lib/errors';
 import { logMutationFailure } from '@/lib/logger';
 
 // Signature fits React's useActionState: (previousState, formData) => newState.
@@ -86,4 +87,9 @@ export async function clearCompletedTodosAction(): Promise<ActionResult<{ delete
     logMutationFailure('clearCompletedTodosAction', error);
     return failure('form', MUTATION_FAILED_MESSAGE);
   }
+}
+
+// §15 due date: set or clear one todo's due date.
+export function setTodoDueDateAction(id: string, dueDate: string): Promise<ActionResult<Todo>> {
+  return Promise.reject(new NotImplementedError(`setTodoDueDateAction(${id}, ${dueDate})`));
 }
