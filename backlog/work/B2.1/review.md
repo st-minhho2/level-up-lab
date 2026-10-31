@@ -87,3 +87,77 @@ REQ-12.10/12.11 held only by e2e AC-12.6, outside Stryker; the `revalidatePath('
 stops for re-approval if it materialises).
 
 Verdict: approved (ready for the lead's gate, not approved for build)
+
+## Diff review (pass 1)
+
+Range `origin/main...1c20326` (skeleton `0336a6c`, red `e0b4e64`, feat `8902054`, map `1c20326`). Scope: all (lib,
+ui; no `src/actions` change). Every gate below re-run by the reviewer at `1c20326`.
+
+### Commands (last line of each)
+
+| Command                              | Last line                                                                                                                                         |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                          | `All matched files use Prettier code style!` (exit 0)                                                                                             |
+| `pnpm typecheck`                     | `tsc --noEmit` (exit 0, no output)                                                                                                                |
+| `pnpm test`                          | `Tests  119 passed (119)` (115 + 4 new)                                                                                                           |
+| `pnpm test:e2e`                      | `16 passed (23.9s)` (13 + 3 new)                                                                                                                  |
+| `pnpm test:mutation`                 | `Final mutation score of 89.94 is greater than or equal to break threshold 70`; `todo-filter.ts` 15 killed, 0 survived, 0 no-cov, 18 CompileError |
+| `pnpm build` (CI runs it before e2e) | route table printed, `ƒ /` dynamic (run on a copy)                                                                                                |
+| `scripts/ci/check-suppressions.sh`   | `OK: no new suppressions`                                                                                                                         |
+| `scripts/ci/check-config-change.sh`  | `OK: no protected config changed`                                                                                                                 |
+| `scripts/ci/check-feat-commits.sh`   | `OK: no feat commit touches tests`                                                                                                                |
+| `scripts/ci/check-ac-coverage.sh`    | `OK: every criterion of a shipped section has a test` (§12 still ✗; on a copy with §12 ✅: `§12 criteria=7 covered=7`)                            |
+| `scripts/ci/check-spec-sections.sh`  | `OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11 12`                                                                                                  |
+| `scripts/ci/check-features-map.sh`   | `OK`                                                                                                                                              |
+| `scripts/ci/check-plan-scope.sh`     | `OK: feat/B2.1-filter stays inside the approved plan of B2.1`                                                                                     |
+| `scripts/ci/check-backlog.sh`        | `OK: README matches the cards`                                                                                                                    |
+| `scripts/verify-red.sh B2.1`         | `RESULT: red for the right reason` (unit 3/3 and component 1/1 new failed; e2e skipped, needs a server)                                           |
+
+### Checklist
+
+| Check                                      | Result                                                                                                                                                                                                                             |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-12.n has a test matching its Then | pass: 12.1–12.3 `src/lib/todo-filter.test.ts`, 12.4 `src/components/todo-filter-nav.test.tsx`, 12.5–12.7 `e2e/12-filter.spec.ts`; each assertion list matches its Then cell value for value                                        |
+| no test weakened after red                 | pass: `git log --first-parent --no-merges e0b4e64..HEAD -- '*.test.*' e2e/` empty; `--merges --remerge-diff` empty                                                                                                                 |
+| every changed file in `plan.md`            | pass: the 10 Files rows; `check-plan-scope.sh` OK                                                                                                                                                                                  |
+| interfaces match §12 Function contracts    | pass: the four `todo-filter.ts` exports, `TodoFilterNav`, `HomePage({ searchParams })` are byte-for-byte the contract; nav sits between `<ClearCompletedButton>` and the list in both states                                       |
+| Zod at every action boundary               | n/a: `src/actions/todos.ts` unchanged; `searchParams` is a read, parsed by `parseTodoFilter` (closed union)                                                                                                                        |
+| Prisma only in `src/lib`; no raw SQL       | pass: `todo-filter.ts` is pure; `e2e/12-filter.spec.ts` seeds with `PrismaClient` as `09-clear-completed` does                                                                                                                     |
+| migration reversible and indexed           | n/a: no `prisma/` change                                                                                                                                                                                                           |
+| no secret, no suppression                  | pass                                                                                                                                                                                                                               |
+| features map row moved                     | pass: F10 ✅ in `1c20326`; §12 index stays ✗ until the closing commit                                                                                                                                                              |
+| one changed line reverted → a test fails   | 3 of 4 `page.tsx` probes killed, 1 survives (finding 1). Killed: `disabled={!shown.some…}` → AC-12.6 `toBeEnabled` fails; `emptyListMessage(filter, shown.length)` → AC-12.7 fails; `filterTodos(todos, 'all')` → AC-12.5/6/7 fail |
+
+Answers to the dev-lead's three questions:
+
+- AC-12.6 does prove the filter survives `revalidatePath('/')`. `TodoItem` has no optimistic state (`checked={todo.completed}`),
+  so rows read `['B']` only after the server re-render applies `?filter=active`; a lost filter would read `[D, C, B]`
+  and the auto-retrying `toHaveText(['B'])` would time out. The post-clear half is weaker: rows were already `['B']`, the
+  URL never changes client-side, and `toBeDisabled()` can pass while `ClearCompletedButton` is `pending`
+  (`disabled={disabled || pending}`) before the re-render lands. No plausible bug passes because of it (with only B
+  stored every derivation gives disabled; AC-9.2 holds the derivation on load).
+- The no-`default` `switch` in `filterTodos` is fine: the `TodoFilter` return type makes it exhaustive, Stryker's
+  case/block mutants on it are `CompileError` (not survivors), and `todo-filter.ts` scores 100 %.
+- 05, 06, 09, 10 assert what they did: none of those files changed in this range; the nav adds no `<li>` (every
+  `getByRole('listitem')` count is unchanged) and its text "AllActiveCompleted" contains none of the `getByText`
+  strings ("No todos yet"). All 13 pre-existing e2e tests pass.
+
+### Findings
+
+```
+[1] KIND: coverage
+    WHERE: src/app/page.tsx:29 (`<TodoFilterNav selected={filter} />`), e2e/12-filter.spec.ts:65-83
+    DEFECT: the page's wiring of the selected filter into the nav (REQ-12.7 on `/`) is asserted nowhere; a constant `selected` ships green.
+    TRIGGER: on a copy, page.tsx line 29 changed to `<TodoFilterNav selected="all" />`; `playwright test e2e/12-filter.spec.ts` → 3 passed; no other test references aria-current outside todo-filter-nav.test.tsx (which renders the component directly, not the page).
+    WRONG BEHAVIOUR: on `/?filter=active` and `/?filter=completed` "All" carries aria-current="page" and the selected link none; REQ-12.7 (covered by AC-12.5) requires the selected link marked. page.tsx is outside Stryker's mutate globs, so nothing else catches it.
+    CONFIDENCE: confirmed (I ran it)
+```
+
+Fix (test-writer, `test(todos): B2.1 review pass 1 -- aria-current follows the address`): in AC-12.5, after the
+"Active" click and after the reload assert "Active" has `aria-current="page"` and the other two none, and the same
+for "Completed" after its click. No `src/` change expected; the current code should pass it.
+
+Verdict: back to test-writer
+
+Riskiest unfalsified: the post-clear half of AC-12.6 can pass on the `pending`-disabled button before the
+re-render lands, so the filter surviving the clear's `revalidatePath('/')` is proven only by the toggle step.
