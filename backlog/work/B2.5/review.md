@@ -219,3 +219,11 @@ Riskiest unfalsified: the hidden `filter` input under Completed. `value="active"
 (P2), and phase B's AC-16.6 submits the search only under Active, so no planned test proves that a search from
 `/?filter=completed` keeps `filter=completed` (REQ-16.6). The code (`value={filter}`) is correct as I read it. Nothing
 falsifies a regression there.
+
+### Dispositions (pass 1, dev-lead)
+
+| Pass | #   | Finding (file:line)                                        | Source   | Kind          | Disposition                                       | Justification                                                                                                                                                                                                      |
+| ---- | --- | ---------------------------------------------------------- | -------- | ------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1    | 1   | `src/lib/todo-search.ts:16-17` (REQ-16.5 vs contract line) | reviewer | spec-mismatch | out of scope for phase A: waits on the lead's D-n | `/advise` verdict: spec ≠ spec inside section 16, escalate human (`decision-request.md`, README "Waiting on human"); code matches the contract line; ruling before phase B round 2, option A adds red test + guard |
+| 1    | 2   | hidden `filter` under Completed untested (riskiest)        | reviewer | test gap      | out of scope for phase A: phase B e2e             | phase B amendment adds a search from `/?filter=completed` keeping `filter=completed` (REQ-16.6) to `e2e/16-search.spec.ts`                                                                                         |
+| 1    | 3   | dev-lead own pass: invariants 1–8, plan Files, map row     | dev-lead | —             | no change needed                                  | no Zod/action/Prisma (pure lib + Server Component); diff = plan Files + paperwork; F14 row ✗ as planned; reverting any line of `searchTodos` fails AC-16.2/16.3 (mutation 16/16 killed)                            |
