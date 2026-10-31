@@ -84,4 +84,4 @@ PR stays draft until phase B is green.
 
 Plan review: round 1 changes requested (2 reasons), round 2 changes requested (1 reason: the guard test, fixed by dropping it, option (c)); cap of 2 rounds reached, round-2 fix unreviewed, accepted by the lead · Plan approved by: lead (session reply "approve"), 2026-10-31 · Rounds: 1
 
-Round 2 (phase B amendment): amendment review approved (29485f2), 0 findings; costs 2–5 applied after it (key={query} + REQ-16.2 e2e, 201-unit case, 4b before the red, subject), as B2.3 added its REQ-14.4 e2e; cost 1: phase B diff review is pass 3 of 3 · Plan approved by: · Rounds: 2
+Round 2 (phase B amendment): amendment review approved (29485f2), 0 findings; costs 2–5 applied after it (key={query} + REQ-16.2 e2e, 201-unit case, 4b before the red, subject), as B2.3 added its REQ-14.4 e2e; cost 1: phase B diff review is pass 3 of 3 · Plan approved by: lead (session reply "Approve"), 2026-10-31 · Rounds: 2
