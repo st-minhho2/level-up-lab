@@ -63,7 +63,7 @@ export type ActionResult<T> = { ok: true; data: T } | { ok: false; fieldErrors: 
 
 ## Out of scope
 
-Editing (§6) and deleting a todo; accounts; due dates; filtering; optimistic UI.
+Editing (§6) and deleting a todo; accounts; due dates; filtering (§12); optimistic UI.
 
 ## Unchanged behavior
 

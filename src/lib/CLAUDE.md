@@ -11,6 +11,7 @@ Read `.claude/rules/invariants.md` before touching `todos.ts` or `prisma.ts`.
 | `action-result.ts`       | §7, §10    | `ActionResult<T>`, `failure`, `fieldErrorsOf`, `MUTATION_FAILED_MESSAGE` (§10)                                                |
 | `errors.ts`, `health.ts` | §7         | skeleton error, health report                                                                                                 |
 | `logger.ts`              | §11        | `logMutationFailure`: one JSON line on stderr, `DATABASE_URL` redacted; no `server-only`, configuration only via `getEnv()`   |
+| `todo-filter.ts`         | §12        | `TodoFilter`, `parseTodoFilter`, `filterTodos`, `emptyListMessage`; pure: no Prisma, no `server-only`                         |
 
 Queries: query builder only; `$queryRaw` needs a comment, a reviewer and a card. `null` only at the database
 boundary. Mutation testing covers this folder: a branch without an assertion is a survivor.
