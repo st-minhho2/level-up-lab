@@ -22,7 +22,7 @@ _F11 · section 13_
 and the list, no count
 
 - **Spec:** §13 — unchanged (section written from `work/B2.2/analysis.md`)
-- **Test:** `src/lib/todo-count.test.ts::AC-13.1: counts the todos whose completed is false and leaves the input unmodified` — red because: `src/lib/todo-count.ts` does not exist, `countRemaining` is not exported
+- **Test:** `src/lib/todo-count.test.ts::AC-13.1: returns 3 for open, done, open, done, open and leaves the input unchanged` — red because: `src/lib/todo-count.ts` does not exist, `countRemaining` is not exported
 - **Acceptance:** AC-13.1 … AC-13.7 (contract `spec/contracts/11-remaining-count.md`)
 - **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B2.2/`
