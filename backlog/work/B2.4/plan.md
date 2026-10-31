@@ -30,6 +30,11 @@ Guides: `src/lib/CLAUDE.md` and `src/components/CLAUDE.md` are left out (plan re
 list them and `page.tsx` in its first plan with a clean `--check`; the two §15 module lines join those guides in
 whichever card edits them after B2.4 merges (a cost stated at the gate).
 
+Skeleton stubs (plan review round 2): `setTodoDueDateSchema` rejects every value
+(`dueDate: z.string().refine(() => false, 'not implemented (B2.4)')`), `dueDateToDate`, `dueDateOf`, `setTodoDueDate`,
+`setTodoDueDateAction` throw `NotImplementedError`, `TodoDueDate` returns `null`, `todos.ts` mapping unchanged. A case
+the stubs already satisfy (renders nothing, no `dueDate` in the list) shares an `it` with an assertion they fail.
+
 Paperwork (exempt): `spec/features-map.md` F13 row ✗ in the skeleton, ✅ in `docs(map)`; §15 index row stays ✗ until
 the closing PR; `docs/metrics.md` per-card row. Risk carried from advice: `dueDateOf` written null-safe
 (`stored?.toISOString().slice(0, 10)`) so existing lib rows without `dueDate` keep passing (feat touches no test).
@@ -77,12 +82,12 @@ or `NotImplementedError` (never an import): `src/lib/todo-due-date.test.ts` 7, `
 
 ## Work breakdown
 
-| Step | Role / skill                          | Produces                                        | Commit                         |
-| ---- | ------------------------------------- | ----------------------------------------------- | ------------------------------ |
-| 1    | `add-migration` + `new-feature-slice` | schema, migration, stubs, logger member, F13 ✗  | `chore(todos): B2.4 skeleton`  |
-| 2    | test-writer                           | 4 unit/component files + `e2e/15`, all red      | `test(todos): B2.4 … (red)`    |
-| 3    | code-writer                           | lib, action, component, `TodoItem` line, guides | `feat(todos): B2.4 …`          |
-| 4    | dev-lead                              | F13 ✅                                          | `docs(map): F13 … [B2.4]`      |
-| 5    | reviewer (diff)                       | `review.md` diff section                        | `docs(backlog): B2.4 review …` |
+| Step | Role / skill                          | Produces                                               | Commit                         |
+| ---- | ------------------------------------- | ------------------------------------------------------ | ------------------------------ |
+| 1    | `add-migration` + `new-feature-slice` | schema, migration, stubs, logger member, F13 ✗         | `chore(todos): B2.4 skeleton`  |
+| 2    | test-writer                           | 4 unit/component files + `e2e/15`, all red             | `test(todos): B2.4 … (red)`    |
+| 3    | code-writer                           | lib, action, component, `TodoItem` line, actions guide | `feat(todos): B2.4 …`          |
+| 4    | dev-lead                              | F13 ✅                                                 | `docs(map): F13 … [B2.4]`      |
+| 5    | reviewer (diff)                       | `review.md` diff section                               | `docs(backlog): B2.4 review …` |
 
 Plan review: pending · Plan approved by: · Rounds: 1
