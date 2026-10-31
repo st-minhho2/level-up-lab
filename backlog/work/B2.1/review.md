@@ -161,3 +161,67 @@ Verdict: back to test-writer
 
 Riskiest unfalsified: the post-clear half of AC-12.6 can pass on the `pending`-disabled button before the
 re-render lands, so the filter surviving the clear's `revalidatePath('/')` is proven only by the toggle step.
+
+## Diff review (pass 2)
+
+Range `origin/main...bb91542` (`origin/main` = merge base `fa98ab2`). New since pass 1: `bb91542`
+`test(todos): B2.1 review pass 1 -- aria-current follows the address on the page` (`e2e/12-filter.spec.ts` +15 −0),
+no `src/` change. Scope: all (lib, ui; `src/actions` unchanged). Every gate below re-run by the reviewer at `bb91542`.
+
+### Commands (last line of each)
+
+| Command                             | Last line                                                                                                              |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!` (exit 0)                                                                  |
+| `pnpm typecheck`                    | `tsc --noEmit` (exit 0, no output)                                                                                     |
+| `pnpm test`                         | `Tests  119 passed (119)`                                                                                              |
+| `pnpm test:e2e`                     | `16 passed (19.5s)`                                                                                                    |
+| `pnpm test:mutation`                | `Final mutation score of 89.94 is greater than or equal to break threshold 70`; `todo-filter.ts` 15 killed, 0 survived |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                                              |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                                      |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                                     |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test`                                                                  |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11 12`                                                                       |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                                                   |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B2.1-filter stays inside the approved plan of B2.1`                                                          |
+| `scripts/ci/check-backlog.sh`       | `OK: README matches the cards`                                                                                         |
+| `scripts/verify-red.sh B2.1`        | `RESULT: red for the right reason` (unit 3/3, component 1/1 new failed; e2e skipped, needs a server)                   |
+| `git diff --stat main...HEAD`       | `18 files changed, 959 insertions(+), 8 deletions(-)`                                                                  |
+
+### Finding [1] of pass 1
+
+Closed (confirmed). On a copy of `bb91542` with `src/app/page.tsx:29` → `<TodoFilterNav selected="all" />`,
+`playwright test e2e/12-filter.spec.ts` → 1 failed, 2 passed: AC-12.5 fails at `e2e/12-filter.spec.ts:79` (after
+"Active") in `expectOnlySelected` (`expect(locator).not.toHaveAttribute() failed` on "All"). A narrower mutant,
+`selected={filter === 'completed' ? 'all' : filter}`, also fails AC-12.5 in `expectOnlySelected`, so the new
+"Completed" step is load-bearing, not only the "Active" one.
+
+### Checklist
+
+| Check                                      | Result                                                                                                                                                                                                                             |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-12.n has a test matching its Then | pass: unchanged from pass 1; AC-12.5 now also asserts REQ-12.7 on the page after each of the four navigations                                                                                                                      |
+| no test weakened after red                 | pass: `git log --first-parent --no-merges e0b4e64..HEAD -- '*.test.*' e2e/` lists only `bb91542`, a `test(...)` commit that adds 15 lines and removes 0 (one helper, four calls; title unchanged); `--merges --remerge-diff` empty |
+| every changed file in `plan.md`            | pass: `bb91542` touches `e2e/12-filter.spec.ts`, a Files row; `check-plan-scope.sh` OK                                                                                                                                             |
+| interfaces match §12 Function contracts    | pass: re-read against `spec/contracts/10-filter.md`; no change since pass 1                                                                                                                                                        |
+| Zod at every action boundary               | n/a: no `src/actions` change                                                                                                                                                                                                       |
+| Prisma only in `src/lib`; no raw SQL       | pass                                                                                                                                                                                                                               |
+| migration reversible and indexed           | n/a: no `prisma/` change                                                                                                                                                                                                           |
+| no secret, no suppression                  | pass                                                                                                                                                                                                                               |
+| features map row moved                     | pass: F10 ✅; §12 index ✗ until the closing commit, as the plan states                                                                                                                                                             |
+| one changed line reverted → a test fails   | pass: all four pass-1 `page.tsx` probes now killed; added probe `{shown.length > 0 && <TodoFilterNav … />}` (nav hidden in an empty view) → AC-12.7 fails in `expectFilterLinksVisible`                                            |
+
+Whole-diff re-read for anything pass 1 missed: the spec edit to `03-todos.md` sits in `d6cbb31 docs(spec): §12`
+under D-20; the card's `Spec:`/`Test:` lines and the metrics row (red `e0b4e64`, feat `8902054`, 89.94) match the
+commits; a repeated `filter` parameter arrives as an array and falls to All; `emptyListMessage` takes the unfiltered
+count, so clearing under Completed with open todos left reads "No completed todos" (REQ-12.8). No new finding.
+
+### Findings
+
+None blocking.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the post-clear half of AC-12.6 (carried from pass 1): `toBeDisabled()` can pass on the
+`pending`-disabled button before the re-render lands, so the filter surviving the clear's `revalidatePath('/')` is
+proven only by the toggle step; no mutant within this card's files makes it ship wrong.
