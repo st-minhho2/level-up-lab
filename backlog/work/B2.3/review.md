@@ -353,3 +353,14 @@ Riskiest unfalsified: AC-14.6 (b) asserts the end state with retrying `expect` (
 enabled button between the action resolving (`pending` false) and the refreshed `disabled` prop arriving; a second click
 there would run a second `updateMany` that changes 0 rows (REQ-14.7), so the worst case found is a redundant request.
 Carried from pass 1: REQ-14.8 "for any reason" is exercised only with `Error` values (disposition N1).
+
+### Dispositions (dev-lead, pass 2)
+
+| Pass | #   | Finding (file:line)                                                  | Source   | Kind     | Disposition      | Justification                                                                                                                               |
+| ---- | --- | -------------------------------------------------------------------- | -------- | -------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2    | N1  | brief enabled window between action resolve and refreshed `disabled` | reviewer | coverage | no change needed | a second click in the gap runs `updateMany` on 0 open rows and resolves `{ updated: 0 }` (REQ-14.7, lib test "resolves 0 …"); same as Clear |
+| 2    | N2  | REQ-14.8 only with `Error` values (carried from pass 1 N1)           | reviewer | coverage | no change needed | pass 1 N1                                                                                                                                   |
+| 2    | N3  | F12 ✅ before closing while §14 index stays ✗; B2.1 and B2.2 differ  | reviewer | docs     | no change needed | follows B2.1 (F10 ✅ in `docs(map)`); the closing commit flips §14 (coverage 6/6 on a copy); precedent choice is the lead's                 |
+| 2    | N4  | metrics Green cell lists only `86bd0e1`                              | reviewer | docs     | no change needed | B2.2's row lists only its last feat sha (`e557c3b`); `5a3ebfe` stays in git and in this file                                                |
+| 2    | N5  | `src/app/page.tsx:13` comment names only `src/actions/todos.ts`      | reviewer | docs     | out of scope     | the line predates this card (B2.1's page); a one-word fix for the next card that holds the page                                             |
+| 2    | N6  | branch behind `origin/main` (d809eae)                                | reviewer | process  | fix now          | Loop 9: merge `origin/main`, gates again                                                                                                    |
