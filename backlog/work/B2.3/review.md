@@ -260,3 +260,96 @@ blocking):
 
 Riskiest unfalsified: the argument of `!…some(` in the phase-B `CompleteAllButton` line; no criterion renders a filtered
 view, so `shown` in place of `todos` passes every planned test and breaks REQ-14.4 on `/?filter=completed`.
+
+## Diff review (pass 2)
+
+SCOPE: all (ui for phase B; lib, actions, ui re-read for the whole card). Reviewed at `72d581a`. Phase B: red `05f5fe6`
+(`e2e/14-complete-all.spec.ts`), green `86bd0e1` (`src/app/page.tsx`, `src/lib/CLAUDE.md`, `src/components/CLAUDE.md`),
+map `72d581a` (F12 row, metrics row). Whole card: `git diff --stat origin/main...HEAD` → 21 files, 1142 insertions, 5
+deletions (local `main` is stale at `fa98ab2`, so `main...HEAD` also counts B2.1 and B2.2: 43 files). Merges `577a463`,
+`2f9a1c1` were judged in the phase-B amendment review and are not re-judged here beyond the test check below.
+
+### Commands (run by the reviewer, last line of each)
+
+| Command                             | Last line                                                                                               |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!` (exit 0)                                                   |
+| `pnpm typecheck`                    | `> tsc --noEmit` (exit 0, no output)                                                                    |
+| `pnpm test`                         | `Tests  138 passed (138)` (19 files)                                                                    |
+| `pnpm test:e2e`                     | `24 passed (20.9s)` (`e2e/14`: 3 of 3 passed)                                                           |
+| `pnpm test:mutation`                | `Final mutation score of 90.67 is greater than or equal to break threshold 70`                          |
+|                                     | `complete-all.ts` 100.00 (2 killed, 7 compile errors); `todo-complete-all.ts` 100.00 (4 killed, 2 CE)   |
+| `scripts/ci/check-suppressions.sh`  | `[check-suppressions] OK: no new suppressions`                                                          |
+| `scripts/ci/check-config-change.sh` | `[check-config-change] OK: no protected config changed`                                                 |
+| `scripts/ci/check-feat-commits.sh`  | `[check-feat-commits] OK: no feat commit touches tests`                                                 |
+| `scripts/ci/check-ac-coverage.sh`   | `§14: ✗, no tests expected yet (6 criteria)` then `OK: every criterion of a shipped section has a test` |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11 12 13 14`                                                  |
+| `scripts/ci/check-features-map.sh`  | `[check-features-map] OK`                                                                               |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B2.3-complete-all stays inside the approved plan of B2.3`                                     |
+| `scripts/verify-red.sh B2.3`        | `RESULT: red for the right reason` (actions 3/3, lib 2/2, component 3/3; `e2e/14` skipped)              |
+| `scripts/next-task.sh --check B2.3` | `[next-task] B2.3: no overlap with any Doing or Review card`                                            |
+
+### Checklist
+
+| Check                                                                 | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-§.n has a test whose assertion matches its Then              | pass: AC-14.1–14.5 as in pass 1. AC-14.6 (a): 0 listitems, exactly 1 button "Mark all complete", disabled. (b): enabled before the click; before and after the reload 3 listitems reading `['C', 'B', 'A']`, 3 checkboxes, C/B/A each checked, 1 button, disabled. Simulating §14 ✅ in the index on a copy: `check-ac-coverage.sh` → `§14  criteria=6 covered=6`, `OK`                                                                                              |
+| no test weakened after the red commit                                 | pass: `git log --first-parent --no-merges a18a9a9..HEAD -- '*.test.*' e2e/` → only `05f5fe6`, the phase-B `test(ui) … (red)` commit, which adds one new file; from `05f5fe6..HEAD` → empty. `--merges --remerge-diff --format=` over both ranges → 0 lines                                                                                                                                                                                                           |
+| every changed file is in `plan.md`                                    | pass: phase B touches `src/app/page.tsx`, `src/lib/CLAUDE.md`, `src/components/CLAUDE.md`, `e2e/14-complete-all.spec.ts` (all Files rows of round 2), plus the declared paperwork (`spec/features-map.md`, `docs/metrics.md`). `check-plan-scope.sh` OK                                                                                                                                                                                                              |
+| interfaces match the section's contracts                              | pass: `src/app/page.tsx:33` is §14's page line byte for byte (`<CompleteAllButton disabled={!todos.some((todo) => !todo.completed)} />`), outside the `<ul>`, rendered in both branches. No signature changed in phase B                                                                                                                                                                                                                                             |
+| Zod at every action boundary                                          | pass by §14 ("no Zod step"); unchanged since pass 1                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Prisma only in `src/lib`, no raw SQL                                  | pass: the page reads through `listTodos()` only; the e2e seeds with `PrismaClient` as `e2e/09`–`13` do                                                                                                                                                                                                                                                                                                                                                               |
+| migration reversible and indexed                                      | n/a: no `prisma/` change                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| no secret, no suppression                                             | pass (`check-suppressions.sh` OK; no env read or key added)                                                                                                                                                                                                                                                                                                                                                                                                          |
+| features map row moved                                                | pass: F12 gains `src/app/page.tsx` and `e2e/14-complete-all.spec.ts`, status ✅; every path resolves (see note 3 on ✅ vs the index ✗)                                                                                                                                                                                                                                                                                                                               |
+| would a test fail if one changed line were reverted (probe on a copy) | pass. Probed `e2e/14` on an rsync copy of `72d581a`: mount removed → 3 failed; `todos` → `shown` → 1 failed (the REQ-14.4 test, `toBeEnabled` received disabled); `disabled={false}` → 2 failed (AC-14.6 (a) and (b)); mount wrapped in `todos.length > 0 &&` → 1 failed (AC-14.6 (a), count 0); `revalidatePath('/')` deleted from the action → 1 failed (AC-14.6 (b), C unchecked before the reload). The two guide lines and the header comment are documentation |
+
+### Findings
+
+None blocking.
+
+### Notes (non-blocking; 1–3 answer dev-lead's questions)
+
+1. **The e2e red is on behavior only.** Reproduced on the copy with the page line removed (the red commit's page,
+   minus an unused import): 3 failed, each `expect(locator).toHaveCount(expected)`, `Expected: 1`, `Received: 0`, at
+   `e2e/14-complete-all.spec.ts:55`, `:65` and `:85`, the first button assertion of each test. In the two seeded
+   tests the list assertion before it (`:64` reads `['C', 'B', 'A']`, `:84` reads `['A']`) passed, so seeding, the
+   route and the filter work and nothing fails on an import or a setup step. This matches the red commit body
+   ("3 failed"). The proof stays manual (`verify-red.sh` prints `e2e (skipped, needs a server)`); it is now recorded
+   by two independent runs, the commit body and this review. Probes P2–P5 above show each assertion also kills a
+   wrong green, so none of the three tests passes on a trivial implementation.
+2. **Placement form → clear → mark all → filter → count → list breaks no section.** §9's page line ("between
+   `<TodoForm />` and the list or the "No todos yet" text") holds; §12's ("`<TodoFilterNav>` between
+   `<ClearCompletedButton />` and the list or the empty text") holds under the "somewhere between" reading the
+   amendment review stated as a lead-visible cost (the nav is no longer adjacent to the clear button); §13 asks only
+   "outside the `<ul>`"; §14 leaves the place to the mounting card. REQ-10.4 and REQ-14.9 stay intact because each
+   alert lives inside its own button's wrapper. Failure path on the mounted page, probed on the copy with
+   `completeAllTodos` throwing: exactly 1 alert with text `Could not save, try again`, `button.nextElementSibling`
+   has `role="alert"`, the button enabled, the list `['B', 'A']` with states unchanged, one stderr log line with
+   `"action":"completeAllTodosAction"`, and after a reload the state is unchanged and the message gone. Aside: the page
+   also carries Next's empty `#__next-route-announcer__` with `role="alert"`, so a page-level alert count must be scoped
+   (as `e2e/10` scopes to `form`); a bare `getByRole('alert')` counts 2.
+3. **F12 ✅ before the closing commit is acceptable; the precedents disagree.** B2.1 put F10 ✅ in its squash
+   (`830901d`) and flipped the §12 index row in its closing commit (`4ca984e`); B2.2 kept F11 ✗ until its closing
+   commit (`d809eae`), which flips both. `backlog/CLAUDE.md` "Closing a card" step 3 names both flips, so with F12
+   already ✅ that step is half a no-op, as it was for B2.1. The map row is true of the squash (every named path exists,
+   every test passes); the cost is that `check-ac-coverage.sh` keys on the index, so between merge and closing nothing
+   guards the §14 titles (simulated flip: 6/6 covered today). Which precedent is the rule is the lead's to settle, not
+   this card's.
+4. **Metrics Green cell.** `docs/metrics.md:56` now reads `86bd0e1` only; pass-1 disposition N3 said the cell gets
+   `5a3ebfe` plus the phase-B sha. B2.2's two-phase row also carries one green sha (`e557c3b`), so this follows that
+   row, not N3's wording. Numbers verified: 90.67, both new modules 100.00.
+5. **Stale page comment.** `src/app/page.tsx:13` reads "mutations go through src/actions/todos.ts"; since this card
+   the page also mounts a client that calls `src/actions/complete-all.ts`. The line predates the card and the diff
+   does not touch it; one-line comment fix if the code-writer is back in the file.
+6. **Not yet mergeable as is.** `origin/main` has `d809eae` (B2.2 done) that the branch lacks; `git merge-tree
+--write-tree HEAD origin/main` reports conflicts in `docs/metrics.md`, `spec/features-map.md`,
+   `spec/technical-requirements.md` (adjacent rows again). Dev-lead step 9 (merge `origin/main`, re-run the gate)
+   covers it. The branch is also 3 commits ahead of `origin/feat/B2.3-complete-all` (`c731e6e` is the last pushed).
+
+Verdict: ready for PR
+
+Riskiest unfalsified: AC-14.6 (b) asserts the end state with retrying `expect` (5 s), so it cannot see a transient
+enabled button between the action resolving (`pending` false) and the refreshed `disabled` prop arriving; a second click
+there would run a second `updateMany` that changes 0 rows (REQ-14.7), so the worst case found is a redundant request.
+Carried from pass 1: REQ-14.8 "for any reason" is exercised only with `Error` values (disposition N1).
