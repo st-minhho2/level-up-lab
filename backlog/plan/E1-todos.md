@@ -221,10 +221,7 @@ _tooling · no §_
 ### B1.17 · Plan-scope hook: a card worktree writes only the files of its approved plan
 
 _tooling · no §_
-**Status: Open** — `ls .claude/hooks` → no plan-scope script; `.claude/settings.json:41` wires only
-`format-after-edit.sh` (PostToolUse) on `Edit|Write|MultiEdit`, no PreToolUse write guard; today a file outside
-`work/<card>/plan.md` "Files" is caught only by the `reviewer` at diff time (`.claude/rules/planning.md` "Approval
-and changes")
+**Status: Done** — 25fee24 (#60); scripts/hook-smoke.sh 284 probes OK (b7fc272: 221 ok, 59 FAIL, scripts missing); plan-scope.sh in settings.json, check-plan-scope.sh in CI guards; no src/ change, mutation 89.02 % unchanged; red b7fc272, green 393aa38, hardening 9e4b64a + 487fe2a + f155633; live check 5 of 5 in a session started at 25fee24: main-thread and code-writer writes outside the plan refused, main-thread test refused, test-writer test allowed (agent_type reaches the hook)
 
 - **Spec:** none — tooling (`.claude/docs/hooks.md` hook table, `scripts/CLAUDE.md`); no `src/` change, no section
 - **Test:** new probes in `scripts/hook-smoke.sh` for each worktree layout (`.worktrees/<slug>`,
@@ -237,4 +234,59 @@ and changes")
   unaffected; probes pass for every layout; `.claude/` change → the PR needs the human-only `config-change-approved`
   label
 - **Tier:** quick · **Depends on:** ~~B1.16~~ · **Owner:** Lead · **Size:** M [estimate]
-- **Work:** `work/B1.17/`
+- **Work:** `work/B1.17/` — plan (rounds 1/1; lead chose (a) paperwork allow-list, (A) no skeleton test stubs), review (plan rounds 2, cap reached, round-2 fixes accepted by the lead; diff pass 3/3, 4 findings fixed by `9e4b64a` + `487fe2a` + `f155633`); squash `25fee24` (#60)
+
+### B1.18 · WIP limit: at most three cards in Doing, none sharing a planned file
+
+_tooling · no §_
+**Status: Done** — ce47a10 (#63); scripts/next-task-smoke.sh 21 ok on bash 5 and 3.2 (1e16ba4: 1 ok, 15 FAIL); board derived (To do, Doing, Review, Closing), WIP 3 on pick and --claim, --check plan overlap; no src/ change, mutation 89.02 % unchanged; red 1e16ba4, green 06212fd, hardening bbc2d44 + 9db597a + bb7133d
+
+- **Spec:** none — tooling (`backlog/CLAUDE.md`, `scripts/CLAUDE.md`); no `src/` change, no section
+- **Test:** shell smoke on a throwaway repo with three cards in Doing — red because: `scripts/next-task.sh` prints a
+  fourth card (exit 0) and accepts a card whose plan Files overlap a Doing card's plan Files; expected: both refused
+  (exit 1) with the reason
+- **Acceptance:** the board shows each remaining card as To do, Doing or Review (`backlog/README.md`, checked by
+  `scripts/ci/check-backlog.sh`); `scripts/next-task.sh` refuses a fourth Doing card and refuses a card whose plan
+  Files overlap a Doing card's plan Files; `scripts/next-task.sh --list` shows the column; bash 3.2;
+  `scripts/next-task.sh` and `scripts/ci/` are protected → the PR needs the human-only `config-change-approved` label
+- **Tier:** quick · **Depends on:** ~~B1.17~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.18/` — plan (rounds 1/1; lead chose (b) derived board, not split), review (plan rounds 2, cap reached, round-2 fixes accepted by the lead; diff pass 2/3, 3 findings fixed by `bbc2d44` + `9db597a` + `bb7133d`); squash `ce47a10` (#63)
+
+### B1.19 · Git hooks run in every worktree, or the commit stops
+
+_tooling · no §_
+**Status: Open** — the shared `.git/hooks/pre-commit` (and `commit-msg`) that `lefthook install` writes on every
+`pnpm install` (`package.json:27` `"prepare": "lefthook install"`, so every `scripts/worktree.sh`) hard-codes the
+`node_modules` path of the last worktree that installed; on 2026-10-31 it pointed at the pruned
+`.worktrees/feat-b1-18-wip-limit/…/lefthook`. A checkout without that path and without its own `node_modules`
+falls through to `echo "Can't find lefthook in PATH"`, which exits 0: the 2026-10-30 live-check session committed
+twice that way with no prettier, tsc, gitleaks, repo-hooks or commit-msg check
+
+- **Spec:** none — tooling (`.claude/docs/hooks.md` "Git hooks", `scripts/CLAUDE.md`); no `src/` change, no section
+- **Test:** shell probe on a throwaway repo with two worktrees, one installed and then removed — red because: a
+  commit from the other worktree (no `node_modules`) succeeds and prints "Can't find lefthook in PATH"; expected: the
+  hooks run from any worktree whose own or the main checkout's `node_modules` holds lefthook, and otherwise the
+  commit is refused with the reason
+- **Acceptance:** after any worktree is pruned, a commit from every remaining worktree layout runs the Lefthook hooks
+  or fails loudly; `scripts/require-hooks.sh` cannot pass silently through a skipped hook; `lefthook.yml` / `package.json`
+  are protected config → the PR needs the human-only `config-change-approved` label and any dependency change the
+  lead's OK
+- **Tier:** quick · **Depends on:** ~~B1.18~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.19/`
+
+### B1.20 · Plan rows with `[ ]` match their own path in the plan-scope hook and guard
+
+_tooling · no §_
+**Status: Open** — `.claude/hooks/plan-scope.sh:36` (`[[ -n "$p" && "$REL" == $p ]]`) and
+`scripts/ci/check-plan-scope.sh:25` (`[[ -n "$p" && "$f" == $p ]]`) compare a plan's Files token only as a glob; a
+row `src/app/[id]/page.tsx` is the bracket expression `[id]`, so the file it names never matches and its write is
+refused (B1.18 diff review pass 2, confirmed in bash; `next-task.sh --check` was fixed the same way in #63)
+
+- **Spec:** none — tooling (`.claude/docs/hooks.md` plan-scope row); no `src/` change, no section
+- **Test:** new probes in `scripts/hook-smoke.sh` — red because: with a plan listing `src/app/[id]/page.tsx`, a
+  write to that file is refused (exit 2) and `check-plan-scope.sh` lists it as outside the plan (exit 1); expected:
+  allowed (exit 0) by both
+- **Acceptance:** both compare a token literally before as a glob, in every worktree layout; every existing probe
+  still passes; `.claude/` and `scripts/ci/` are protected → the PR needs the human-only `config-change-approved` label
+- **Tier:** quick · **Depends on:** ~~B1.17~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.20/`

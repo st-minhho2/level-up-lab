@@ -11,12 +11,13 @@ rules and its brief template. This file only fixes entry and exit.
 ## Entry
 
 ```bash
-scripts/next-task.sh            # or the card id the human gave; exit 1 = nothing eligible: print the board and stop
-scripts/worktree.sh feat/<card>-<slug>
+scripts/next-task.sh            # exit 1 = WIP limit or nothing eligible: print the board and stop
+scripts/next-task.sh --claim B1.2   # instead, for the card id the human gave; exit 1 = WIP limit or held elsewhere
+scripts/worktree.sh feat/<card>-<slug>   # at once: the branch is the claim
 ```
 
-Resuming a card that already has artifacts in `backlog/work/<card>/`: continue at the first Loop step whose artifact
-is missing.
+Resuming a card that already has artifacts in `backlog/work/<card>/`: skip pick and claim, work in its existing
+worktree, and continue at the first Loop step whose artifact is missing.
 
 ## The gate (never skipped)
 
