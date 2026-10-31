@@ -7,9 +7,7 @@ own modules; `src/app/page.tsx`, `src/lib/todos.ts` and `src/actions/todos.ts` a
 ### B2.1 · Filter the list: All / Active / Completed
 
 _F10 · section 12_
-**Status: Open** — `git grep -n "searchParams" src/app src/lib` → no match; `src/lib/todos.ts:20`
-`export async function listTodos(): Promise<Todo[]>` takes no filter; `spec/contracts/03-todos.md` "Out of scope" lists
-filtering, lifted by D-20
+**Status: Done** — 830901d, 7 AC-12.n tests green (unit 119, e2e 16), mutation 89.94
 
 - **Spec:** §12 — unchanged
 - **Test:** `src/lib/todo-filter.test.ts::AC-12.1: keeps the todos that match the filter, in input order, and never mutates the input` — red because: `src/lib/todo-filter.ts` and `filterTodos` do not exist yet
@@ -23,7 +21,9 @@ _F11 · section 13_
 **Status: Open** — `git grep -n -i "remaining" src/` → no match; `src/app/page.tsx` renders the form, the clear button
 and the list, no count
 
-- **Acceptance:** section 13 criteria, set by `spec-analyst` (contract `spec/contracts/11-remaining-count.md`)
+- **Spec:** §13 — unchanged (section written from `work/B2.2/analysis.md`)
+- **Test:** `src/lib/todo-count.test.ts::AC-13.1: returns 3 for open, done, open, done, open and leaves the input unchanged` — red because: `src/lib/todo-count.ts` does not exist, `countRemaining` is not exported
+- **Acceptance:** AC-13.1 … AC-13.7 (contract `spec/contracts/11-remaining-count.md`)
 - **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B2.2/`
 
