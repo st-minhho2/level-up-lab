@@ -251,3 +251,25 @@ _tooling · no §_
   `scripts/next-task.sh` and `scripts/ci/` are protected → the PR needs the human-only `config-change-approved` label
 - **Tier:** quick · **Depends on:** ~~B1.17~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.18/` — plan (rounds 1/1; lead chose (b) derived board, not split), review (plan rounds 2, cap reached, round-2 fixes accepted by the lead; diff pass 2/3, 3 findings fixed by `bbc2d44` + `9db597a` + `bb7133d`); squash `ce47a10` (#63)
+
+### B1.19 · Git hooks run in every worktree, or the commit stops
+
+_tooling · no §_
+**Status: Open** — the shared `.git/hooks/pre-commit` (and `commit-msg`) that `lefthook install` writes on every
+`pnpm install` (`package.json:27` `"prepare": "lefthook install"`, so every `scripts/worktree.sh`) hard-codes the
+`node_modules` path of the last worktree that installed; on 2026-10-31 it pointed at the pruned
+`.worktrees/feat-b1-18-wip-limit/…/lefthook`. A checkout without that path and without its own `node_modules`
+falls through to `echo "Can't find lefthook in PATH"`, which exits 0: the 2026-10-30 live-check session committed
+twice that way with no prettier, tsc, gitleaks, repo-hooks or commit-msg check
+
+- **Spec:** none — tooling (`.claude/docs/hooks.md` "Git hooks", `scripts/CLAUDE.md`); no `src/` change, no section
+- **Test:** shell probe on a throwaway repo with two worktrees, one installed and then removed — red because: a
+  commit from the other worktree (no `node_modules`) succeeds and prints "Can't find lefthook in PATH"; expected: the
+  hooks run from any worktree whose own or the main checkout's `node_modules` holds lefthook, and otherwise the
+  commit is refused with the reason
+- **Acceptance:** after any worktree is pruned, a commit from every remaining worktree layout runs the Lefthook hooks
+  or fails loudly; `scripts/require-hooks.sh` cannot pass silently through a skipped hook; `lefthook.yml` / `package.json`
+  are protected config → the PR needs the human-only `config-change-approved` label and any dependency change the
+  lead's OK
+- **Tier:** quick · **Depends on:** ~~B1.18~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.19/`
