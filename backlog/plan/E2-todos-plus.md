@@ -24,3 +24,13 @@ and the list, no count
 - **Acceptance:** section 13 criteria, set by `spec-analyst` (contract `spec/contracts/11-remaining-count.md`)
 - **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B2.2/`
+
+### B2.3 · Mark all todos complete
+
+_F12 · section 14_
+**Status: Open** — `git grep -n "export async function" src/actions/todos.ts` → create, toggle, update title, clear
+completed; no action completes every todo
+
+- **Acceptance:** section 14 criteria, set by `spec-analyst` (contract `spec/contracts/12-complete-all.md`)
+- **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B2.3/`
