@@ -8,8 +8,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | Epic          | File                                           | Done   | Partial | Open  | Total  |
 | ------------- | ---------------------------------------------- | ------ | ------- | ----- | ------ |
 | E1 Todos      | [plan/E1-todos.md](plan/E1-todos.md)           | 21     | 0       | 1     | 22     |
-| E2 Todos plus | [plan/E2-todos-plus.md](plan/E2-todos-plus.md) | 1      | 0       | 4     | 5      |
-| **Total**     |                                                | **22** | **0**   | **5** | **27** |
+| E2 Todos plus | [plan/E2-todos-plus.md](plan/E2-todos-plus.md) | 2      | 0       | 3     | 5      |
+| **Total**     |                                                | **23** | **0**   | **4** | **27** |
 
 ## Execution order
 
@@ -52,7 +52,7 @@ flowchart TD
   S17 --> S18
   S16 --> S17
   S23["23 · filter All / Active / Completed<br/>~~B2.1~~"]
-  S24["24 · remaining count<br/>B2.2"]
+  S24["24 · remaining count<br/>~~B2.2~~"]
   S25["25 · mark all complete<br/>B2.3"]
   S26["26 · due date (migration)<br/>B2.4"]
   S27["27 · search by title<br/>B2.5"]
@@ -66,7 +66,6 @@ at most 3 cards Doing (B1.18).
 | Step | ID    | Title                                                                      | Spec §                 | Status | Blocked by | Owner | Size         |
 | ---- | ----- | -------------------------------------------------------------------------- | ---------------------- | ------ | ---------- | ----- | ------------ |
 | 20   | B1.20 | Plan rows with `[ ]` match their own path in the plan-scope hook and guard | —                      | Open   | ~~B1.17~~  | Lead  | S [estimate] |
-| 24   | B2.2  | Show how many todos remain                                                 | new, section 13 (D-20) | Open   | —          | Lead  | S [estimate] |
 | 25   | B2.3  | Mark all todos complete                                                    | new, section 14 (D-20) | Open   | —          | Lead  | S [estimate] |
 | 26   | B2.4  | An optional due date per todo                                              | new, section 15 (D-20) | Open   | —          | Lead  | M [estimate] |
 | 27   | B2.5  | Search todos by title                                                      | new, section 16 (D-20) | Open   | —          | Lead  | S [estimate] |
