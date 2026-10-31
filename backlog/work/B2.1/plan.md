@@ -21,8 +21,8 @@ dependency, migration, env key or CI-protected path (no `config-change-approved`
 | `spec/features-map.md`                    | F10 row ✗ in skeleton (guard needs every module named), ✅ in `docs(map)`                 | map           |
 | `docs/metrics.md`                         | per-card row B2.1                                                                         | metrics       |
 
-§12 index ✗ → ✅ in the closing commit. `scripts/next-task.sh --check B2.1` at 1112f25: no overlap (B2.2 had no plan yet;
-per D-20 this card holds `src/app/page.tsx`, so B2.2's own `--check` sees it).
+§12 index ✗ → ✅ in the closing commit. `scripts/next-task.sh --check B2.1` at 3257152: no overlap. B2.2's plan
+(b69db78) lists no `src/app/page.tsx`; its phase B adds the page row after this card merges (D-20).
 
 ## Interfaces touched
 
@@ -46,8 +46,8 @@ export default async function HomePage({
 
 ```bash
 scripts/verify-red.sh B2.1   # every new unit/component test fails on NotImplementedError or an assertion, 0 new pass
-pnpm lint && pnpm typecheck && pnpm test   # 115 → ≈ 121 green (AC-12.1–12.4)
-pnpm test:e2e                # e2e/12-filter.spec.ts 3 new green (AC-12.5–12.7); 05, 09, 10 unchanged
+pnpm lint && pnpm typecheck && pnpm test   # 115 unchanged + ≥ 4 new (≥ 1 per AC-12.1–12.4) green
+pnpm test:e2e                # 13 + 3 = 16 passed (e2e/12-filter.spec.ts AC-12.5–12.7; 05, 06, 09, 10, smoke unchanged)
 pnpm test:mutation           # ≥ 70 (base 89.02 %); todo-filter.ts mutants all Killed or listed
 scripts/ci/check-ac-coverage.sh && scripts/ci/check-features-map.sh && scripts/ci/check-feat-commits.sh && scripts/ci/check-spec-sections.sh
 ```
@@ -65,4 +65,4 @@ Risk: if AC-12.6 shows the filter lost after `revalidatePath('/')`, the fix touc
 | 5 Map         | dev-lead                              | F10 ✅, metrics row                       | `docs(map): F10 filter the list [B2.1]`   |
 | 6 Review      | `reviewer` (diff), `/review-loop`     | `review.md` diff section, gate cleared    | `docs(backlog): B2.1 diff review`         |
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: round 1 changes requested (3), revised · Plan approved by: · Rounds: 1
