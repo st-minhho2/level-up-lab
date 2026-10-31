@@ -81,3 +81,108 @@ prisma`. After the merge its base moves to the new `origin/main`, and when a sib
    only just started (it skips drafts), and the next sibling merge makes the PR BEHIND again. (f) Parallel appends to
    `<git common dir>/claude-wait.log` are safe only if each record is one `printf … >>` of a single line (O_APPEND,
    < PIPE_BUF). State that, and keep `resume`'s read-then-append keyed by session.
+
+## Plan review (round 2)
+
+Plan at 6cef50c. I ran the probes in scratch repos with a bare `origin`, using the unchanged `scripts/worktree.sh`,
+`mark-reviewed.sh` and `require-review.sh`:
+
+- P1. `git worktree add --no-track -b X dir origin/main` gives the branch no upstream (`fatal: no upstream configured`).
+  The same command without `--no-track` sets the upstream to `origin/main`.
+- P2. Under `set -euo pipefail`, `git fetch … || warn` against an unreachable origin prints the warning and the script
+  goes on (rc 0).
+- P3. The card branch and a sibling on `origin/main` each change a different hunk of the same `src/a.ts`. After the
+  merge, `require-review.sh` blocks the stop. After `mark-reviewed.sh` runs again (with a `pnpm` shim), it is silent.
+  So a re-mark after the merge is enough for the stop.
+- P4. The card's red commit adds a test, and a sibling on `main` adds `src/b.test.ts`. After the merge, Loop 6's
+  `git diff --stat <red>..HEAD -- '*.test.*' e2e/` lists `src/b.test.ts`.
+- P5. With only a `pnpm` shim on `PATH` and a one-line `.env.example`, today's `worktree.sh` runs to the end (rc 0).
+  Without `.env.example` it exits 1 at `cp`, after the branch was already created.
+- P6. Wait-time read. `refs/pull/{60,63,67}/head` hold the plan commits. Plan gate (`plan approved` − last
+  `plan review`): B1.17 1 min 25 s, B1.18 5 min 46 s, B1.19 1 min 47 s. For B1.19 and B1.17, a plan revision landed
+  19 s and 12 s after the last "plan review" commit. `gh pr view --json` has no ready-for-review field (field list
+  checked). Before B1.21 no PR was a draft, so `createdAt` stands in: PR 63 is 15 h 39 min to merge.
+- P7. CI job durations on PRs 57/60/63/67: the longest is `mutation` at 212–255 s. `claude-review` takes 4–6 s.
+
+Round-1 reasons under (b):
+
+| R   | Status                                                                                                                                                           |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | The double ping is moot. The block after the merge is resolved by the re-mark (P3). The conflict path is named but opens a new gap (reason 3 below).             |
+| 2   | Resolved. Loop 5 posts the template with Map delta and Review "pending", and Loop 9 fills them before `gh pr ready`.                                             |
+| 3   | Mostly resolved. The 600 s bound covers the 255 s longest job (P7), red goes back through the loop, and BEHIND is bounded. Ready before green is reason 2 below. |
+| 4   | Moot under (b).                                                                                                                                                  |
+| 5   | The hook parts are moot. The worktree fixture and the red claims are reason 4 below.                                                                             |
+| 6   | No abort and `--no-track` are resolved (P1, P2). The fallback is reason 1 below.                                                                                 |
+| 7   | The plan is still 62 lines with no stated deviation (reason 5 below). "Step 1d" is now defined by D-18, which arrived with the main merge.                       |
+| 8   | (a) (b) (c) are stated. (d) is not stated (reason 6). (e) is handled, because the wait after `ready` includes `claude-review`. (f) is moot.                      |
+
+| Check                                                                             | Result                                                                                                                       |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: tooling with no §. The Files match the card's Spec line plus the smoke script and the review artifacts                 |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass (n/a): no `src/` or `prisma/` change                                                                                    |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: advisor was skipped (quick tier, no section). The plan states that (b) departs from the card                           |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: 5 acceptance clauses, probes K1–K4                                                                                     |
+| verification lists exact commands with expected numbers                           | fail: the red claims are wrong for K2 and K4 (reason 4)                                                                      |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: follows the tooling precedent (`test(scripts)` → `fix(scripts)` → reviewer → PR)                                       |
+| the section has a `Lead approves spec` box, ticked only by a human                | pass (n/a): no section, nothing ticked                                                                                       |
+| no settled D-n contradicted                                                       | pass: D-19 applies at the draft's `gh pr create`. D-18's step-1d card is scoped to `throughput.sh`, and reason 6 covers that |
+
+Verdict: changes requested
+
+1. **When the fetch fails, the plan falls back to the stale ref.** The plan says "failure → warning, local `main`
+   used", and K4 asserts it. But local `main` in the main checkout is never pulled (`worktree-prune.sh:10`), so it is
+   the stale commit this card exists to avoid: 25fee24 in the card's own evidence. Loop 1 runs `next-task.sh`, which
+   fetches, right before `worktree.sh`. So when `worktree.sh`'s own fetch fails (offline, or a ref-lock race with a
+   sibling fetching), a fresh `origin/main` is usually already there. P2 shows the branch taking `origin/main`
+   ("second") where local `main` is "init". Fix: on failure, warn and use `origin/main` when
+   `git rev-parse -q --verify refs/remotes/origin/main` succeeds, else `main`. That is the rule in `next-task.sh:29`
+   and `worktree-prune.sh:130`. Use their `GIT_TERMINAL_PROMPT=0 … </dev/null` too, so that an https remote cannot
+   prompt. K4 then asserts the last fetched `origin/main`.
+2. **`gh pr ready` before CI is green frees a WIP slot for a card that may still be red.** Under `next-task.sh:64`, an
+   open, non-draft PR counts as Review, not Doing. With the plan's order (ready, then wait, then red goes back through
+   the loop), a red check leaves the card in Review while its session reworks it. Another session can then start a
+   4th card past `WIP_LIMIT=3`, and a red PR shows as ready to the lead. Fix: push, fill the body, wait for `ci` green
+   (`ci.yml` runs on draft pushes), then `gh pr ready`. Or run `gh pr ready --undo` on red. Also guard against
+   `gh pr checks --watch` running right after a push, before the new head has any checks attached [plausible:
+   "no checks reported"]. Check that `headRefOid` has checks first.
+3. **The conflict path clears the review gate on lines nobody reviewed, and the green gate fails after any merge.**
+   Loop 9 says: conflict → code-writer / test-writer → green gate → `mark-reviewed.sh`. A conflict resolution is new
+   code in `src/`, `e2e/` or tests. Clearing the gate without `/review-loop` is what invariant 8 and the work-next
+   guardrail ("never clear the review gate with findings open") forbid. A clean merge brings only code `main` already
+   reviewed, so re-marking it is fine. Also, Loop 6's "`git diff --stat <red>..HEAD -- '*.test.*' e2e/` empty" fails
+   after every merge that brings a sibling's tests (P4). Fix: a conflict under `src/`, `prisma/`, `e2e/` or tests goes
+   back to Loop 6 → Loop 7 (`/review-loop`), and only a clean merge is re-marked directly. After a merge, the test
+   check uses `git log --first-parent --no-merges <red>..HEAD -- '*.test.*' e2e/` (empty in P4) plus the reviewer
+   reading the merge's resolution.
+4. **The red claims are wrong, and the test-only env var is not needed.** Today's `worktree.sh` never fetches, and it
+   cuts from a local ref, which gives no upstream. So at red, K2 passes (no upstream, P5) and K4 does not "abort
+   offline". K4 reaches rc 0 with a fixture, and without one it exits 1 at `cp .env.example` (P5). Both are setup
+   failures, not behavior. Also, `WORKTREE_ONLY` does not exist at the red commit, so the red smoke runs the whole
+   script anyway. A `pnpm` shim on `PATH` plus a one-line `.env.example` lets the unchanged script run to rc 0 (P5).
+   That matches `next-task-smoke.sh` and `metrics-smoke.sh` (`gh` shims), adds no test branch to shipped code, and
+   exercises the real exit code and summary. Fix: drop `WORKTREE_ONLY` in favour of the shim fixture. Restate the red:
+   K1 FAIL (branch at local `main`), and K4 FAIL only under reason 1's fallback. K2 and K3 pass at red as regression
+   guards. Then state green as 4 of 4.
+5. **The plan does not fit on one screen (round 1, reason 7, still open).** It is 62 lines against ≈ 40. B1.19 stated
+   its deviation ("Plan is 60+ lines: the lead accepts or asks to trim"). Add that line, or trim.
+6. **The costs of (a) and (b) are not stated evenly.** (a) is charged with "double ping when `require-review.sh`
+   blocks" and "matches on a quoted gate line". The first is removed by this plan's own Loop 9 re-mark (P3), and
+   round 1 gave a fix for the second (match the last whole line). They are not intrinsic to (a). Costs of (b) that the
+   lead should see:
+   - Its ping is the desktop app's turn-end notification [unverified]. A CLI session gets none.
+   - The PR wait needs a ready-for-review time, which `gh pr view --json` does not expose (P6). It needs `gh api`
+     (the timeline or GraphQL), which `git-workflow.md` lists under "Needs a human", or a proxy. For example,
+     `claude-review` `startedAt` in `statusCheckRollup` works because `review.yml` runs on `ready_for_review`.
+   - The plan-gate formula misses revisions made after the last review commit (19 s for B1.19). It also drops the
+     first wait when the lead asks for changes (`Rounds` > 1).
+   - D-18 scopes the step-1d card to `throughput.sh`, so adding wait time to it changes that card. Say so when it is
+     filed.
+   - The card's Acceptance ("a Notification/Stop hook pings") and its Test red line stay unmet. Under (b), the card's
+     text in `backlog/plan/E1-todos.md` must be amended, or the card closes Partial. Neither is in the Files.
+   - Round 1, reason 8(d): from Loop 5 to Loop 9 the draft shows only the plan commits. The Loop 5 `gh pr create`
+     plus the D-19 label also start 2 full `ci` runs on paperwork-only commits (the first is cancelled, and the
+     longest job is 212–255 s, P7).
+
+Riskiest unfalsified: whether the desktop app notifies on every dev-lead turn end, including a session the lead
+is not viewing. (b)'s whole case rests on it, and I could not run it here.

@@ -1,62 +1,64 @@
 # B1.21 plan — Parallel sessions report status: draft PR, a ping when waiting, branches kept current (tooling)
 
-Approach (round 1, 8 reasons, most about a ping hook): drop the hook; keep the branch current and the PR visible.
-spec-analyst/advisor skipped (no section).
+Approach: keep every card branch current and its PR visible; the ping is the lead's choice. spec-analyst/advisor
+skipped (no section). Rounds 1 (8 reasons) and 2 (6 reasons, cap) applied below.
 
-**Decision for the lead ((b) recommended):** (a) the `lead-ping.sh` Stop/Notification hook of round 1, with its stated
-costs (double ping when `require-review.sh` blocks, matches on a quoted gate line, never fires for a dev-lead run as a
-subagent, waits left open when a session closes, up to 3 notifications per gate). (b) no hook: the desktop app already
-notifies when a session ends a turn and dev-lead ends a card turn only at its fixed lines; the wait-time metric is read
-later from git and gh (plan gate = `<card> plan approved` commit − last `<card> plan review` commit; PR = merge time −
-`ready_for_review` time) by the card that adds the metrics rows (step 1d, not filed yet). (b) departs from the card's
-"a Notification/Stop hook pings".
+**Decision for the lead ((b) recommended).**
+(a) `lead-ping.sh` (Stop on dev-lead's two fixed lines, Notification `idle_prompt`, a wait log): never fires for a
+dev-lead run as a subagent; waits stay open when a session is closed; up to 3 notifications per gate; one more script
+and its probes. (b) no hook: the desktop app notifies when a session ends a turn (not a CLI session), and dev-lead ends
+a card turn only at its fixed lines; the step-1d card measures waits from git/gh — plan gate = `<card> plan approved`
+commit − the commit before it (misses the first wait when the lead asks for changes), PR = merge time − completion of
+the last green `ci` run on the head (proxy: `gh` gives no ready-for-review time without `gh api`). Under (b) this PR
+rewrites the card's Acceptance/Test lines to match.
 
-- **Current base** (`scripts/worktree.sh`): `git fetch origin` (failure → warning, local `main` used, never aborts);
-  default base `origin/main`, created with `--no-track`; an explicit `[base]` wins.
-- **Draft PR** (dev-lead Loop 5, after `approve`): push; `gh pr create --draft` with the template filled (Item, Plan =
-  plan.md, Map delta and Review "pending"); label per D-19.
-- **Ready** (Loop 9, replaces "PR."): `git fetch && git merge origin/main` (no rebase, no force push; a conflict in
-  `src/`, `prisma/`, `e2e/` or tests goes to code-writer / test-writer, then the green gate again); anything merged →
-  `.claude/hooks/mark-reviewed.sh` again (it re-runs lint, typecheck, tests); push; fill Map delta and Review in the
-  body; `gh pr ready`; wait for the checks (desktop: the PR monitor; CLI: `gh pr checks <n> --watch` with a 600 s
-  timeout); red → back through the loop; green → print "PR for <card> is ready for the lead: <url>". Later BEHIND →
-  merge again only when the lead asks or before the next report.
-- `git-workflow.md` "Bringing `main` in" says the same, replacing "`git merge main`".
+- **Current base** (`scripts/worktree.sh`): `GIT_TERMINAL_PROMPT=0 git fetch origin </dev/null`; failure → warning,
+  the last fetched `origin/main` (else `main`), never aborts; default base `origin/main`, `--no-track`; `[base]` wins.
+- **Draft PR** (Loop 5, after `approve`): push; `gh pr create --draft` (template: Item, Plan = plan.md, Map delta and
+  Review "pending"); label per D-19. Costs: the draft shows only plan commits until Loop 9; opening it and labeling
+  start CI on paperwork (one run survives `cancel-in-progress`, ≈ 4 min).
+- **Ready** (Loop 9, replaces "PR."): `git fetch && git merge origin/main` (no rebase, no force push). Clean merge →
+  `mark-reviewed.sh` again; a conflict → back to Loop 6 (code-writer / test-writer) and Loop 7 (`/review-loop`). Loop
+  6's test check becomes `git log --first-parent --no-merges <red>..HEAD -- '*.test.*' e2e/` (a merged sibling's tests
+  are not the card's). Push; fill Map delta and Review; wait until a `ci` run exists for the head SHA and is green
+  (desktop: PR monitor; CLI: `gh pr checks <n> --watch`, 600 s); red → back through the loop, the PR stays draft;
+  green → `gh pr ready` → "PR for <card> is ready for the lead: <url>". Later BEHIND → merge again before the next report.
+- `git-workflow.md` "Bringing `main` in" is replaced by the same rule. Plan > 40 lines: the lead accepts or trims.
 
 ## Files
 
-| File                                | Change                                                      |
-| ----------------------------------- | ----------------------------------------------------------- |
-| `scripts/worktree.sh`               | fetch, default base `origin/main`, `--no-track`             |
-| `scripts/worktree-smoke.sh`         | new: K1–K4                                                  |
-| `.claude/agents/dev-lead.md`        | Loop 5 draft PR; Loop 9 merge, re-mark, ready, checks, line |
-| `.claude/skills/work-next/SKILL.md` | gate and exit lines match                                   |
-| `.claude/docs/git-workflow.md`      | "Bringing `main` in" replaced                               |
-| `scripts/CLAUDE.md`                 | `worktree.sh` base; smoke row                               |
-| `backlog/work/B1.21/plan.md`        | plan                                                        |
-| `backlog/work/B1.21/review.md`      | reviews                                                     |
+| File                                | Change                                                     |
+| ----------------------------------- | ---------------------------------------------------------- |
+| `scripts/worktree.sh`               | fetch, fallback, default base `origin/main`, `--no-track`  |
+| `scripts/worktree-smoke.sh`         | new: K1–K4 (bare origin, `pnpm` shim, `.env.example`)      |
+| `.claude/agents/dev-lead.md`        | Loop 5 draft; Loop 6 test check; Loop 9 merge, ready, line |
+| `.claude/skills/work-next/SKILL.md` | gate and exit lines match                                  |
+| `.claude/docs/git-workflow.md`      | "Bringing `main` in" replaced                              |
+| `scripts/CLAUDE.md`                 | `worktree.sh` base; smoke row                              |
+| `backlog/plan/E1-todos.md`          | (b) only: B1.21 Acceptance/Test lines                      |
+| `backlog/work/B1.21/plan.md`        | plan                                                       |
+| `backlog/work/B1.21/review.md`      | reviews                                                    |
 
 ## Interfaces touched
 
 ```bash
-scripts/worktree.sh <branch> [base]   # base defaults to origin/main after `git fetch origin` (warning + local main offline)
-scripts/worktree-smoke.sh             # K1–K4 on a throwaway repo with a bare origin; stops after `git worktree add` (WORKTREE_ONLY=1)
+scripts/worktree.sh <branch> [base]   # base: origin/main after fetch; offline → warning, last fetched origin/main, else main
+scripts/worktree-smoke.sh             # K1–K4; worktree.sh runs to exit 0 with a pnpm shim on PATH and a one-line .env.example
 PR line (dev-lead, verbatim): "PR for <card> is ready for the lead: <url>"
 ```
 
-Probes: K1 local `main` behind `origin/main` → the new branch starts at `origin/main`; K2 it has no upstream; K3
-explicit `[base]` wins; K4 origin unreachable → warning, branch from local `main`, exit 0 up to the worktree.
-`WORKTREE_ONLY=1` (new, test-only) makes `worktree.sh` stop after `git worktree add`, so the smoke needs no pnpm.
+Probes: K1 local `main` behind `origin/main` → new branch at `origin/main`; K2 no upstream; K3 explicit `[base]` wins;
+K4 origin unreachable after one fetch → warning, branch at the last fetched `origin/main`, exit 0.
 
 ## Verification (in the card worktree)
 
 ```bash
-scripts/worktree-smoke.sh   # test commit: K1 K2 K4 FAIL (base main, tracking, abort offline), K3 ok; green 4 of 4
+scripts/worktree-smoke.sh   # test commit: K1 K4 FAIL (base = local main), K2 K3 ok; green 4 of 4
 scripts/hook-smoke.sh && scripts/ci/check-agent-frontmatter.sh && scripts/ci/check-plan-scope.sh && bash -n scripts/*.sh
 ```
 
-Steps: `test(scripts)` → `fix(scripts)` → `reviewer` diff → PR labeled `config-change-approved` (D-19). This card is
-the first to follow the new Loop 9 itself.
+Steps: `test(scripts)` → `fix(scripts)` → `reviewer` diff → PR labeled `config-change-approved` (D-19). This card
+follows the new Loop 5/9 itself from the gate on.
 
-Plan review: changes requested, round 1 (8 reasons; the hook ones go away with (b)) · Plan approved by: <empty until
-the lead approves> · Rounds: 1
+Plan review: changes requested, round 2 (cap); round-1 and round-2 reasons applied above, not re-reviewed · Plan
+approved by: <empty until the lead approves> · Rounds: 1
