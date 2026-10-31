@@ -68,7 +68,7 @@ Commit `docs(backlog): <card> plan`.
    card); dispatch `code-writer`, then the **green gate**
    (`pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`;
    `git log --first-parent --no-merges --stat <red>..HEAD -- '*.test.*' e2e/` empty, and
-   `git log --first-parent --merges --remerge-diff <red>..HEAD -- '*.test.*' e2e/` empty or a conflict resolution the
+   `git log --first-parent --merges --remerge-diff --format= <red>..HEAD -- '*.test.*' e2e/` empty or a conflict resolution the
    reviewer read: a merged sibling's tests are not the card's, a resolution that touches the card's tests is). A `DISPUTED` line → `/advise`.
 7. **Review the diff.** `/review-loop` (reviewer diff mode, dispositions, ≤ 3 passes, `mark-reviewed.sh`).
 8. **Map, card, metrics.** `docs(map): F<n> … [<card>]`; card status `Partial — merged pending` is set by the

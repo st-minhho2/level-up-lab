@@ -114,7 +114,7 @@ cat <<SUMMARY
 
 [worktree] ready in $(( $(date +%s) - START ))s
   dir      $DIR
-  branch   $TASK (base $BASE)
+  branch   $TASK (base ${BASE:-existing branch})
   port     $PORT
   schema   $SCHEMA
   env      $copied gitignored .env file(s) copied, keys rewritten
