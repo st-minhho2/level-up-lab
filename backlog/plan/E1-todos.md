@@ -289,12 +289,7 @@ refused (B1.18 diff review pass 2, confirmed in bash; `next-task.sh --check` was
 ### B1.21 · Parallel sessions report status: draft PR, a ping when waiting, branches kept current
 
 _tooling · no §_
-**Status: Open** — `grep -ni draft .claude/agents/dev-lead.md .claude/skills/work-next/SKILL.md` → no match (the PR is
-opened only at Loop step 9, after review); `.claude/settings.json` has no `Notification` hook and `Stop` runs only
-`require-review.sh`; no rule makes a session merge `origin/main` before it reports a PR ready (#63, #67, #68, #69 were
-each blocked as BEHIND after a sibling merged); `scripts/worktree.sh:22` `BASE="${2:-main}"` cuts new card branches from
-the local `main`, which in the main checkout was 25fee24 while `origin/main` had moved on (B1.19's branch missed
-B1.18 until merged by hand)
+**Status: Done** — b256d60 (#71); scripts/worktree-smoke.sh 6 of 6 on bash 5 and 3.2 (f05525b: 2 ok, 2 FAIL); draft PR at the gate and ready only on green CI (first run on #71); lead chose (b), no ping hook; no src/ change, mutation 89.02 % unchanged; red f05525b, green 0c0b0f5, hardening b1d5c85 + 146a0df + 1c26654
 
 - **Spec:** none — tooling (`.claude/agents/dev-lead.md`, `.claude/skills/work-next/SKILL.md`, `.claude/docs/git-workflow.md`,
   `scripts/CLAUDE.md`); no `src/` change, no section
@@ -307,4 +302,4 @@ B1.18 until merged by hand)
   metrics card; `scripts/worktree.sh` cuts new branches from a freshly fetched `origin/main` by default; protected
   paths → the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** ~~B1.19~~ · **Owner:** Lead · **Size:** M [estimate]
-- **Work:** `work/B1.21/`
+- **Work:** `work/B1.21/` — plan (rounds 2/2; lead chose (b) no ping hook, length accepted; round 2 added tdd-loop and reviewer to Files), review (plan rounds 2, cap reached; diff pass 2/3, 10 findings, 9 fixed by `b1d5c85` + `146a0df` + `1c26654`, 1 out of scope); squash `b256d60` (#71)
