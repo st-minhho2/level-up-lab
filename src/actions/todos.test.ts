@@ -1,13 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MutationActionName } from '@/lib/logger';
 import { TodoNotFoundError } from '@/lib/todos';
-import { clearCompletedTodosAction, createTodoAction, toggleTodoAction, updateTodoTitleAction } from './todos';
+import {
+  clearCompletedTodosAction,
+  createTodoAction,
+  setTodoDueDateAction,
+  toggleTodoAction,
+  updateTodoTitleAction,
+} from './todos';
 
 const lib = vi.hoisted(() => ({
   createTodo: vi.fn(),
   toggleTodo: vi.fn(),
   updateTodoTitle: vi.fn(),
   clearCompletedTodos: vi.fn(),
+  setTodoDueDate: vi.fn(),
 }));
 const cache = vi.hoisted(() => ({ revalidatePath: vi.fn() }));
 const logger = vi.hoisted(() => ({
@@ -20,6 +27,7 @@ vi.mock('@/lib/todos', async (importOriginal) => ({
   toggleTodo: lib.toggleTodo,
   updateTodoTitle: lib.updateTodoTitle,
   clearCompletedTodos: lib.clearCompletedTodos,
+  setTodoDueDate: lib.setTodoDueDate,
 }));
 vi.mock('next/cache', () => ({ revalidatePath: cache.revalidatePath }));
 // §11: observed at the module boundary; also keeps the swallowed-failure tests from writing to stderr.
@@ -394,5 +402,83 @@ describe('logging swallowed mutation failures (§11)', () => {
 
     expect(failed).toEqual(formFailure());
     expectLoggedOnce('toggleTodoAction', error);
+  });
+});
+
+describe('setTodoDueDateAction (§15)', () => {
+  it('AC-15.3: sets 2026-11-05 for todo-1, resolves { ok: true, data: <the todo> } and revalidates / once', async () => {
+    const due = { ...todo(), dueDate: '2026-11-05' };
+    lib.setTodoDueDate.mockResolvedValue(due);
+
+    const result = await setTodoDueDateAction('todo-1', '2026-11-05');
+
+    expect(result).toEqual({ ok: true, data: due });
+    expect(lib.setTodoDueDate).toHaveBeenCalledTimes(1);
+    expect(lib.setTodoDueDate.mock.calls[0]).toEqual(['todo-1', '2026-11-05']);
+    expect(cache.revalidatePath.mock.calls).toEqual([['/']]);
+    expect(logger.logMutationFailure).toHaveBeenCalledTimes(0);
+  });
+
+  it('AC-15.3: clears with an empty value by calling setTodoDueDate with (todo-1, undefined); a set then a clear revalidate / 2 times', async () => {
+    lib.setTodoDueDate.mockResolvedValueOnce({ ...todo(), dueDate: '2026-11-05' }).mockResolvedValueOnce(todo());
+
+    const set = await setTodoDueDateAction('todo-1', '2026-11-05');
+    const cleared = await setTodoDueDateAction('todo-1', '');
+
+    expect(set.ok).toBe(true);
+    expect(cleared).toEqual({ ok: true, data: todo() });
+    expect(lib.setTodoDueDate.mock.calls).toEqual([
+      ['todo-1', '2026-11-05'],
+      ['todo-1', undefined],
+    ]);
+    expect(lib.setTodoDueDate.mock.calls[1]).toHaveLength(2);
+    expect(cache.revalidatePath).toHaveBeenCalledTimes(2);
+    expect(cache.revalidatePath.mock.calls).toEqual([['/'], ['/']]);
+  });
+
+  it('AC-15.3: resolves exactly { ok: false, fieldErrors: { dueDate: ["Due date must be a valid date"] } } for 2026-02-30 and does not call setTodoDueDate', async () => {
+    const result = await setTodoDueDateAction('todo-1', '2026-02-30');
+
+    expect(result).toEqual({ ok: false, fieldErrors: { dueDate: ['Due date must be a valid date'] } });
+    expect(lib.setTodoDueDate).toHaveBeenCalledTimes(0);
+    expect(cache.revalidatePath).toHaveBeenCalledTimes(0);
+    expect(logger.logMutationFailure).toHaveBeenCalledTimes(0);
+  });
+
+  it('AC-15.3: resolves exactly { ok: false, fieldErrors: { id: ["Todo not found"] } } when setTodoDueDate rejects TodoNotFoundError, without revalidating', async () => {
+    lib.setTodoDueDate.mockRejectedValue(new TodoNotFoundError('todo-1'));
+
+    const result = await setTodoDueDateAction('todo-1', '2026-11-05');
+
+    expect(result).toEqual({ ok: false, fieldErrors: { id: ['Todo not found'] } });
+    expect(lib.setTodoDueDate).toHaveBeenCalledTimes(1);
+    expect(cache.revalidatePath).toHaveBeenCalledTimes(0);
+    expect(logger.logMutationFailure).toHaveBeenCalledTimes(0);
+  });
+
+  it('AC-15.4: resolves exactly { ok: false, fieldErrors: { form: ["Could not save, try again"] } } when setTodoDueDate rejects, revalidates 0 times and logs ("setTodoDueDateAction", the error) once', async () => {
+    const error = new Error('db down');
+    lib.setTodoDueDate.mockRejectedValue(error);
+
+    const outcome = setTodoDueDateAction('todo-1', '2026-11-05');
+
+    await expect(outcome).resolves.toEqual({ ok: false, fieldErrors: { form: ['Could not save, try again'] } });
+    expect(cache.revalidatePath).toHaveBeenCalledTimes(0);
+    expect(lib.setTodoDueDate).toHaveBeenCalledTimes(1);
+    expectLoggedOnce('setTodoDueDateAction', error);
+  });
+
+  it('setTodoDueDateAction resolves the form failure and logs ("setTodoDueDateAction", the error) once when revalidatePath throws after setTodoDueDate resolves', async () => {
+    const error = new Error('cache down');
+    lib.setTodoDueDate.mockResolvedValue({ ...todo(), dueDate: '2026-11-05' });
+    cache.revalidatePath.mockImplementation(() => {
+      throw error;
+    });
+
+    const outcome = setTodoDueDateAction('todo-1', '2026-11-05');
+
+    await expect(outcome).resolves.toEqual(formFailure());
+    expect(lib.setTodoDueDate).toHaveBeenCalledTimes(1);
+    expectLoggedOnce('setTodoDueDateAction', error);
   });
 });
