@@ -99,3 +99,104 @@ Riskiest unfalsified: auto-sync can re-embed a non-main binary. If `git commit` 
 `node_modules/.bin` on PATH (inside a `pnpm run` script), the template finds `lefthook` on PATH before the embedded
 path. A checksum mismatch then re-embeds that worktree's `.pnpm` path, and the path dies with the worktree. I did not
 probe this.
+
+## Plan review (round 2)
+
+SCOPE: all (no `src/`, `prisma/` or `e2e/` path; checklist adapted as in round 1). Plan at `65391b1`. Probes ran in a
+throwaway repo (`scratchpad/b119r2b`: main checkout M, worktrees X, W, Q; copies of `lefthook-darwin-arm64@2.2.2`
+in `M/bin` and `X/bin`; PATH pinned to `/usr/bin:/bin`, plus nvm's `bin` (no lefthook there) where pnpm was needed).
+
+- **P1. Install from X with M's binary.** `M/bin/lefthook install` run from X's cwd, with X's config
+  (`assert_lefthook_installed` + `no_auto_install`), exit 0. The hook names M's path twice and X's path zero times.
+  `Operation is aborted` appears once. `git status` in X is empty. `no_auto_install` does not block an explicit
+  `install`. Confirmed.
+- **P2. The re-sync trigger.** A commit from W (old config, auto-install on) did **not** re-sync at first. Lefthook
+  re-syncs only when the committing checkout's `lefthook.yml` mtime is later than the timestamp in
+  `.git/info/lefthook.checksum` **and** the checksum differs. After `touch W/lefthook.yml`, a commit from W rewrote
+  the hook: `exit 1` was gone and M's path was kept, because the binary that ran was M's.
+- **P3. `no_auto_install` blocks the round-1 riskiest case.** I put `X/bin` first on PATH (as inside `pnpm run`),
+  made X's config newer, and committed from X: 0 sync lines, M's path 2, X's 0. Control: the same in W with a config
+  without `no_auto_install` re-synced and embedded W's path (M 0, W 2). Confirmed.
+- **P4. `no_auto_install` also blocks repair.** After P2 removed `exit 1`, a commit from X (new config, newer mtime)
+  did not re-sync, so `Operation is aborted` stayed at 0. Only another `install` restores it. Confirmed.
+- **P5. `node-modules` under `parallel: true`.** Q has no `node_modules`. With the planned order (node-modules first)
+  and today's `parallel: true`, all jobs ran. The output was `run pnpm install --frozen-lockfile in this checkout`
+  (exit 1), then `Command "tsc" not found` (exit 254) and `Command "prettier" not found` (exit 254). The commit was
+  refused (exit 1). Under `parallel`, job order has no effect. The alternative, `piped: true` with a first
+  `node-modules` job (`fail_text:`) followed by `group: {parallel: true, jobs: [...]}`, passes `lefthook validate`
+  ("All good") on 2.2.2. With it, the summary shows only `node-modules: run pnpm install --frozen-lockfile in this
+checkout`, the group is skipped, and the commit is refused. With `node_modules` present, the group runs in parallel.
+- **P6. G3 shape.** With M's binary removed: `Can't find lefthook in PATH` / `ERROR: Operation is aborted due to
+lefthook settings.`, exit 1, nothing committed. Matches G3.
+- **P7. CI.** `.github/` never runs `lefthook run` and never commits (only `CODEOWNERS` names lefthook). In CI,
+  `prepare` runs once via `.github/actions/setup` (`pnpm install --frozen-lockfile`, safe.directory set first).
+  `no_auto_install` only affects `lefthook run`, so it has **no CI effect**. `lefthook` is not in
+  `onlyBuiltDependencies`, so its `postinstall.js` does not run and cannot overwrite `prepare`'s install.
+- `/usr/bin/node` and `/bin/node` do not exist on this machine. The plan is 58 lines.
+
+### Round-1 reasons
+
+| #   | Status                                                                                                                                                         |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | resolved: main's binary runs with this checkout as cwd (P1). Verification greps `Operation is aborted` → 1.                                                    |
+| 2   | partly: `no_auto_install` and the gap are stated, but the gap text is inaccurate (reason 2 below).                                                             |
+| 3   | resolved in intent: the `node-modules` job, with G4. The plan's claim that the reason replaces "Command not found" is wrong under `parallel: true` (reason 1). |
+| 4   | resolved: `getExePath()`, PATH pinned, red state via G-probes. The pin breaks the installer (reason 3).                                                        |
+| 5   | resolved: no-git exit, `--silent`, `hooks.md` label. Not resolved: length, 58 lines and not stated (reason 4).                                                 |
+
+### Checklist
+
+| Check                                                                | Result                                                                                                               |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| every file belongs to the section's features (map)                   | pass: no section. Every file traces to the card's Acceptance or its docs.                                            |
+| interfaces follow `ts-style.md`; mutations in actions; Prisma in lib | pass: n/a (bash, YAML, `package.json`). Exits, the warning and the no-git case are stated.                           |
+| follows `advice.md` or states the deviation                          | pass: the advisor was skipped (Tier quick), and the plan says so.                                                    |
+| ≤ 7 criteria, every Then measurable                                  | pass: G1–G6 are measurable. G3 matches P6.                                                                           |
+| verification lists exact commands with expected numbers              | fail: as written, the smoke's PATH pin leaves out `node` (reason 3).                                                 |
+| work breakdown skeleton → red → green → map → review                 | pass: skeleton and map are n/a for a script card. Red on the missing script follows the B1.15(b)/B1.16 precedent.    |
+| `Lead approves spec` box                                             | pass: n/a, no section.                                                                                               |
+| no settled D-n contradicted                                          | pass                                                                                                                 |
+| the approach holds in every real layout                              | pass with costs: main binary + cwd (P1), PATH re-embed closed (P3), no CI effect (P7). The costs are in reasons 1–2. |
+
+### Reasons (changes requested)
+
+1. **The `node-modules` job does not replace "Command not found" under `parallel: true`.** Confirmed (P5). The plan
+   says the job is "first" and reads as though today's `Command "tsc" not found` goes away. Under `parallel: true`,
+   tsc and prettier still run and print it (exit 254) next to the reason. The commit is still refused, so the card's
+   "refused with the reason" is met either way. The lead should pick one, and the plan should state it:
+   - (a) keep `parallel: true` and say that the reason is printed together with two "Command not found" blocks; or
+   - (b) use `piped: true` with `node-modules` first (`fail_text:`), then a `group: {parallel: true}` holding the
+     current jobs. This validates on 2.2.2 and prints only the reason. It restructures the whole `pre-commit` block,
+     not "two keys and the job", so the Files row must say so.
+2. **The gap statement is incomplete, and `no_auto_install` costs are not stated.** Confirmed (P2, P4).
+   - (i) An old branch's commit re-syncs only when its `lefthook.yml` is newer than the last install. Its
+     `pnpm install` (old `prepare`), however, always re-installs and embeds **that branch's own** binary path. That
+     is the card's original bug in full: the hook passes silently once that worktree is pruned.
+   - (ii) Because of `no_auto_install`, a commit from an up-to-date checkout **never repairs** this. Only a
+     `pnpm install` in an up-to-date checkout does. Every `scripts/worktree.sh` run is one, as is the lead's
+     post-merge step.
+   - (iii) A hook type added to `lefthook.yml` later (for example `pre-push`) is not installed until someone runs
+     `pnpm install`.
+   - (iv) After this change, every checkout's hooks run **main's** binary against **its own** config. A branch that
+     bumps lefthook runs the old binary until main is updated.
+
+   State (i)–(iv) in the gap paragraph and in `hooks.md`. "It closes as branches merge `origin/main`" holds only
+   after that branch, or any up-to-date checkout, runs `pnpm install`.
+
+3. **The smoke's PATH pin leaves out `node`, which `install-hooks.sh` needs.** Plausible: traced, not run, because
+   the script does not exist yet. `getExePath()` runs under `node`, and neither `/usr/bin` nor `/bin` holds `node`
+   here. G1 and G6 would then fail on `node: command not found`, not on behavior. Adding node's own directory brings
+   back the round-1 [4] risk: `/opt/homebrew/bin` holds both `node` and brew's `lefthook`. State the pin as
+   git + `/usr/bin:/bin` + a temp directory with only a `node` (and, for G4, a `pnpm`) symlink.
+4. **The plan is still 58 lines against ≈ 40** (round-1 [5]). The length is neither reduced nor stated as accepted.
+   The lines also run to about 120 characters. Either trim it (the Probes paragraph can go to the smoke's header)
+   or state that the lead accepts the length.
+
+Verdict: changes requested (round 2, the cap). These are wording and fixture fixes. No approach change is required.
+Under the B1.13/B1.15–B1.18 precedent the lead may accept round-2 fixes without a round 3. Otherwise:
+Waiting on human.
+
+Riskiest unfalsified: the devcontainer shares the main checkout's `node_modules`, which then holds linux binaries.
+On the host, `require.resolve('lefthook-darwin-arm64/…')` resolved in the main checkout throws. Unless
+`install-hooks.sh` treats that throw (not only a missing file) as "no main binary", `pnpm install` fails in every
+host worktree. Not probed.
