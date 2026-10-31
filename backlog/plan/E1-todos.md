@@ -303,3 +303,25 @@ _tooling · no §_
   paths → the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** ~~B1.19~~ · **Owner:** Lead · **Size:** M [estimate]
 - **Work:** `work/B1.21/` — plan (rounds 2/2; lead chose (b) no ping hook, length accepted; round 2 added tdd-loop and reviewer to Files), review (plan rounds 2, cap reached; diff pass 2/3, 10 findings, 9 fixed by `b1d5c85` + `146a0df` + `1c26654`, 1 out of scope); squash `b256d60` (#71)
+
+### B1.22 · Batch review and the parallel-lane metrics: throughput, lead wait time, uncaught plan deviations
+
+_tooling · no §_
+**Status: Open** — `grep -ni batch .claude/docs/git-workflow.md` → no match; `grep -ni "wait time\|deviation\|throughput"
+docs/metrics.md` → no match; `ls scripts/metrics` → only `lead-time.sh`, `change-failure-rate.sh`. D-18 makes throughput
+the parallel lane's speed target and names this card for `scripts/metrics/throughput.sh`; B1.21 (lead's choice (b))
+moved the lead-wait measurement here, read from git and gh instead of a hook
+
+- **Spec:** none — tooling (`.claude/docs/git-workflow.md`, `docs/metrics.md`, `scripts/CLAUDE.md`); no `src/` change, no
+  section
+- **Test:** new probes in `scripts/metrics-smoke.sh` on its throwaway repo and `gh` shim — red because: `scripts/metrics/
+throughput.sh`, `wait-time.sh` and `plan-deviations.sh` do not exist, so no cards-per-8-hour value, no plan-gate or PR
+  wait, and no count of merged files outside an approved plan is printed
+- **Acceptance:** `git-workflow.md` documents batch review (the lead reviews plans and PRs in batches, e.g. twice a
+  day); throughput per D-18 (cards merged ÷ Σ daily active spans × 8, UTC+7) with its B1.1–B1.21 baseline; session
+  wait time for the lead (plan gate = `<card> plan approved` commit − the commit before it; PR = merge − completion of
+  the last green `ci` run on the head); plan deviations no hook caught (merged card PRs with a non-paperwork file outside
+  the approved plan); each gets a `docs/metrics.md` top-table row with value, date and how to re-measure; bash 3.2,
+  `git` + `gh` only
+- **Tier:** quick · **Depends on:** ~~B1.21~~ · **Owner:** Lead · **Size:** M [estimate]
+- **Work:** `work/B1.22/`

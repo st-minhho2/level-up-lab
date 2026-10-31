@@ -7,8 +7,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic      | File                                 | Done   | Partial | Open  | Total  |
 | --------- | ------------------------------------ | ------ | ------- | ----- | ------ |
-| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 20     | 0       | 1     | 21     |
-| **Total** |                                      | **20** | **0**   | **1** | **21** |
+| E1 Todos  | [plan/E1-todos.md](plan/E1-todos.md) | 20     | 0       | 2     | 22     |
+| **Total** |                                      | **20** | **0**   | **2** | **22** |
 
 ## Execution order
 
@@ -45,6 +45,8 @@ flowchart TD
   S19["19 · git hooks in every worktree<br/>~~B1.19~~"]
   S20["20 · plan-scope literal match<br/>B1.20"]
   S21["21 · draft PR, ping, current branches<br/>~~B1.21~~"]
+  S22["22 · batch review and lane metrics<br/>B1.22"]
+  S21 --> S22
   S19 --> S21
   S17 --> S18
   S16 --> S17
@@ -55,9 +57,10 @@ flowchart TD
 Board state (To do · Doing · Review · Closing) is derived, not typed: `scripts/next-task.sh --list` (BOARD column),
 at most 3 cards Doing (B1.18).
 
-| Step | ID    | Title                                                                      | Spec § | Status | Blocked by | Owner | Size         |
-| ---- | ----- | -------------------------------------------------------------------------- | ------ | ------ | ---------- | ----- | ------------ |
-| 20   | B1.20 | Plan rows with `[ ]` match their own path in the plan-scope hook and guard | —      | Open   | ~~B1.17~~  | Lead  | S [estimate] |
+| Step | ID    | Title                                                                                            | Spec § | Status | Blocked by | Owner | Size         |
+| ---- | ----- | ------------------------------------------------------------------------------------------------ | ------ | ------ | ---------- | ----- | ------------ |
+| 20   | B1.20 | Plan rows with `[ ]` match their own path in the plan-scope hook and guard                       | —      | Open   | ~~B1.17~~  | Lead  | S [estimate] |
+| 22   | B1.22 | Batch review and the parallel-lane metrics: throughput, lead wait time, uncaught plan deviations | —      | Open   | ~~B1.21~~  | Lead  | M [estimate] |
 
 ## Waiting on human
 
