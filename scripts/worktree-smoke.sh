@@ -8,6 +8,8 @@
 #   K2 the new branch has no upstream
 #   K3 an explicit [base] still wins
 #   K4 origin unreachable after one fetch → a warning, the branch starts at the last fetched origin/main, exit 0
+#   K5 no origin/main ref at all → the branch starts at main (review pass 1)
+#   K6 an empty [base] means the default (review pass 1)
 set -uo pipefail
 cd "$(git rev-parse --show-toplevel)"
 SCRIPT="$PWD/scripts/worktree.sh"
@@ -48,6 +50,12 @@ g "$M" remote set-url origin "$TMP/gone.git"
 wt feat/B9.3-a
 [[ $rc -eq 0 && "$(start_of feat/B9.3-a)" == "$FETCHED" ]] && grep -qi 'warning' "$TMP/out" && ok K4 \
   || fail "K4 rc=$rc start=$(start_of feat/B9.3-a) want=$FETCHED $(grep -i warn "$TMP/out" | head -1)"
+
+wt feat/B9.6-a ""
+[[ $rc -eq 0 && "$(start_of feat/B9.6-a)" == "$FETCHED" ]] && ok K6 || fail "K6 rc=$rc start=$(start_of feat/B9.6-a) want=$FETCHED"
+g "$M" remote remove origin
+wt feat/B9.5-a
+[[ $rc -eq 0 && "$(start_of feat/B9.5-a)" == "$OLD" ]] && ok K5 || fail "K5 rc=$rc start=$(start_of feat/B9.5-a) want=$OLD (main)"
 
 echo "[worktree-smoke] $oks ok, $fails FAIL"
 [[ $fails -eq 0 ]]
