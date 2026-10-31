@@ -420,3 +420,109 @@ PR comes near that size, so I could not trigger it.
 | 1   | fix now, lead's ruling (a): the cards given pick days; a picked day counts every Done card merged on it, span from any Done card's approval. Baseline follows: the days of B1.1–B1.15 read 5.04 (17 cards, 27.0 h), D-18 target ≥ 6.56 (row updated) | probe M24 (a6ab22c) red at 48c0529 (2.7), green at 8ecfece (4.9); `throughput.sh B1.16 B1.17 B1.18 B1.19 B1.21` → 6.3 |
 | 2   | fix now: M21's day 2 opens at B8.2's round-2 approval (06:30), after the first merge (06:00)                                                                                                                                                         | 48c0529: round-1-only mutant → M21 6.7, min-start → 7.0 h                                                             |
 | 3   | fix now: M23 adds B8.7 = PR #60, no approval, `src/x.ts` counted (2/2)                                                                                                                                                                               | 48c0529: `GUARDED_FROM=61` and `-le` → M23 FAIL                                                                       |
+
+## Diff review (pass 3)
+
+HEAD b251ac1, the last pass allowed. Delta since pass 2 (e2facfa): 48c0529 `test` (M21 round-2 span start, M23 PR
+#60), 4aa8f03 (pass-2 text), a6ab22c `test` (M24), 8ecfece `fix` (throughput.sh, the docs/metrics.md row), b251ac1
+(pass-2 dispositions). Branch diff `origin/main...HEAD`: 9 files, all in `plan.md` Files.
+
+### Commands (last line each, run by the reviewer at b251ac1)
+
+| Command                                                           | Result                                                                                                                                     |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm lint` / `pnpm typecheck` / `pnpm test`                      | `All matched files use Prettier code style!` (rc 0) / `tsc --noEmit` rc 0 / `Tests 115 passed (115)`                                       |
+| `pnpm test:e2e` / `pnpm test:mutation`                            | `13 passed (13.5s)` / `Final mutation score of 89.02 is greater than or equal to break threshold 70`                                       |
+| `scripts/metrics-smoke.sh`, `/bin/bash` 3.2.57 (BSD awk, date)    | `[metrics-smoke] 22 ok, 0 FAIL`                                                                                                            |
+| same, bash 5.2.15 in `node:24-bookworm` (mawk, GNU `date -d`)     | `[metrics-smoke] 22 ok, 0 FAIL`                                                                                                            |
+| smoke on the a6ab22c tree (48c0529 code + M24)                    | `21 ok, 1 FAIL`: `M24 rc=0 throughput 2.7 cards per 8 h (1 cards, 3.0 h, 1 days)`: red on behavior                                         |
+| smoke on the 8ecfece tree                                         | `22 ok, 0 FAIL`                                                                                                                            |
+| files of 8ecfece                                                  | `docs/metrics.md`, `scripts/metrics/throughput.sh`: no smoke or test file                                                                  |
+| `check-suppressions` / `check-feat-commits` / `check-ac-coverage` | OK / OK / OK                                                                                                                               |
+| `check-spec-sections` / `check-features-map` / `check-backlog`    | OK / OK / OK                                                                                                                               |
+| `check-plan-scope`                                                | `OK: feat/B1.22-lane-metrics stays inside the approved plan of B1.22`                                                                      |
+| `check-config-change`                                             | local `::error::` on `.claude/docs/git-workflow.md`. PR #74 carries `config-change-approved`. CI at b251ac1: all 7 checks SUCCESS          |
+| `scripts/verify-red.sh B1.22`                                     | exit 1, no `(red)` commit (tooling precedent, pass 1). Red proven by the a6ab22c run above                                                 |
+| `bash -n scripts/metrics/*.sh scripts/metrics-smoke.sh`           | rc 0                                                                                                                                       |
+| `throughput.sh B1.1 … B1.15`                                      | 10-28 2 / 0.97 h, 10-29 8 / 15.11 h, 10-30 7 / 10.89 h; `throughput 5.0 … (17 cards, 27.0 h, 3 days)`. 17 ÷ 26.97 × 8 = 5.04, × 1.3 = 6.56 |
+| `throughput.sh` / `throughput.sh B1.16 B1.17 B1.18 B1.19 B1.21`   | `5.6 … (20 cards, 28.8 h, 4 days)` / `6.3 … (10 cards, 12.7 h, 2 days)`. Both match the row                                                |
+| `wait-time.sh` / `wait-time.sh B1.18`                             | `median plan-gate wait 1 min (19), median PR wait 1 min (20), PR upper bound 22 min (20)` / `B1.18 63 5 0 939`. Both match the row         |
+| `plan-deviations.sh`                                              | `uncaught plan deviations 0/19`: matches the row                                                                                           |
+
+### Checklist
+
+- Pass-2 [1], ruling (a): closed in code. Every Done card is read, and its approvals open spans whether or not it is
+  picked. Merges carry `picked`, and only days holding a picked merge print. M24 (`throughput.sh B8.3` → day 2 whole,
+  4 cards over 6.5 h) is red at 48c0529 and green at 8ecfece.
+- Pass-2 [2]: closed. Round-1-only and min-start fail M21 (48c0529 body; not re-run).
+- Pass-2 [3]: closed. M23's B8.7 = #60 is counted (2/2).
+- a6ab22c adds merge times for #59 and #60 on day 1. Every Done card is now queried, so the shim needs them. M21's
+  expected line is unchanged and day 1 is not picked. Not a weakening.
+- Pick mutants on scratch copies, one at a time, smoke re-run. Killed:
+  - every day picked: M21, M24 (`7 cards, 9.5 h, 3 days`)
+  - count only picked cards: M24 (`1 cards, 6.5 h`)
+  - approvals of picked cards only: M24 (`4 cards, 3.0 h`)
+  - pick by approval day instead of merge day: M14, M15, M21
+  - pick by approval day or merge day: M21
+
+  Survivors: the day's last merge, or its first merge, taken from picked cards only. See finding 1.
+
+- Every changed file in `plan.md` Files: yes (9/9). `git diff 9a33e93..HEAD -- '*.test.*' e2e/`: empty. The smoke
+  changes only in `test(...)` commits (21c9dc7, 2112c9a, 48c0529, a6ab22c).
+- Honesty of the baseline change. The row states the target (≥ 6.56, 1.3 × 5.04), its basis (the 3 days B1.1–B1.15
+  merged on, 17 cards, 27.0 h) and the ruling. Disposition 1 and the 8ecfece body state the move from 6.64. Two gaps
+  remain, see finding 2.
+- Nit, not blocking: `scripts/CLAUDE.md` still reads "probes M1–M23", and the smoke now has M24.
+
+### Findings
+
+```
+[1] KIND: coverage
+    WHERE: scripts/metrics/throughput.sh:38 (`last[d]`, `fm[d]` over every merge); scripts/metrics-smoke.sh M24
+    DEFECT: the ruling's "up to the day's last merge, else from its first merge" is pinned only for a selection
+            whose picked card is itself the day's last merge (M24 picks B8.3, merged 13:00, the last on day 2).
+            Two mutants keep the smoke at 22 ok, 0 FAIL:
+            (L) `if ($3 && (!(d in last) || $2 > last[d])) last[d] = $2`
+            (F) the same `$3 &&` guard on `fm[d]`.
+    TRIGGER: (L) M24's fixture with `throughput.sh B8.1` (merged 12:00) or `throughput.sh B8.4` (06:00).
+            (F) a picked day with no approval at or before its last merge, two merges X 09:00 and Y 11:00, and
+            `throughput.sh Y`.
+    WRONG BEHAVIOUR (under the mutant, undetected): (L) B8.1 → `5.8 (4 cards, 5.5 h)` and B8.4 → `n/a (4 cards,
+            0.0 h)`. The shipped code gives `4.9 (4 cards, 6.5 h)` for both. (F) span 0 h instead of 2 h.
+            The shipped code is correct on both triggers. This is a test gap only.
+    CONFIDENCE: confirmed for (L): extra probe lines run on a scratch copy of 8ecfece and on the mutant. For (F) the
+            smoke survival is confirmed and the trigger is traced in the awk (the fixture has no day without an
+            approval that a selection can split).
+
+[2] KIND: plan-mismatch (paperwork: plan.md and the PR body; docs/metrics.md row)
+    WHERE: backlog/work/B1.22/plan.md:9,62. PR #74 body, Plan section (lines 21, 74). docs/metrics.md Throughput
+           row, "Current".
+    DEFECT: the approved plan and the PR body still state baseline 5.11 → target ≥ 6.64. Their verification line
+            still expects `throughput.sh B1.1 … B1.15` → 5.11, and the PR body does not name ruling (a). The row
+            does not say that the 17 baseline cards include B1.16 (#57) and B1.17 (#60), merged on 10-30. It also
+            does not say that its context figure "B1.16–B1.21 days 6.3" shares the whole of 10-30 with the
+            baseline.
+    TRIGGER: the lead reads PR #74 and runs the plan's verification command. Or the lead compares "B1.16–B1.21
+            days 6.3" with the 6.56 target.
+    WRONG BEHAVIOUR: the command prints 5.0 (17 cards), and the PR body promises 5.11 (15 cards) and 6.64.
+            Of the 6.3 figure's 10 cards and 12.72 h, 7 cards and 10.89 h are 10-30, a baseline day (B1.11–B1.17).
+            10-31 alone reads 3 cards ÷ 1.83 h × 8 = 13.1. So 6.3 < 6.56 reads as "the lane missed the target",
+            although it mostly measures the baseline. Under ruling (a) this overlap is intended for a batch that
+            starts on a day an earlier card merged. It should be stated, not hidden.
+    CONFIDENCE: confirmed (ran the commands; merge times from `gh pr view`, day split traced; plan.md last
+            changed at 878e130; PR body grepped)
+```
+
+Verdict: ready for PR. Neither finding blocks.
+
+- [2] is paperwork for dev-lead before `gh pr ready`. The PR body's Plan section gets a "Deviations (lead rulings)"
+  note covering: X → ruling (a) on pass-2 [1], baseline 5.04 / target 6.56, verification 5.0 (17 cards); Z →
+  ruling (a) on pass-1 [4]; the `wait-time.sh` interface additions from pass 1. The row gains "(B1.1–B1.17; 10-30
+  is in both)". `plan.md` stays as approved, because the rulings are recorded in this file.
+- [1] can be carried in either of two ways. File a card, or add a green hardening commit
+  `test(scripts): B1.22 review pass 3 -- …` with `throughput.sh B8.1` → `4.9 cards per 8 h (4 cards, 6.5 h, 1 days)`
+  plus a no-approval day for (F). Show that (L) and (F) fail it. No code change is needed.
+
+Riskiest unfalsified: `plan-deviations.sh` reads `gh pr view --json files`, which I believe returns at most 100 files
+without paginating [unverified, carried from passes 1 and 2]. A card PR above 100 files would under-count silently.
+No card PR comes near that size, so I could not trigger it.
