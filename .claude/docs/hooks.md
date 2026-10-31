@@ -59,5 +59,5 @@ the current checkout's and warns. `assert_lefthook_installed: true` makes a comm
 re-installing the hooks with whatever `lefthook` is first on `PATH`. The first job, `node-modules`, refuses a checkout
 without `node_modules` with "run pnpm install --frozen-lockfile". Gaps: an open branch whose `lefthook.yml` predates
 these keys re-installs without them on its own `pnpm install`, and only another `pnpm install` repairs that (commits do
-not); a hook type added later installs on the next `pnpm install`; every checkout runs the main checkout's binary with
-its own config. They close as branches merge `origin/main` and the main checkout runs `pnpm install` after a merge.
+not); a hook type added later installs on the next `pnpm install`; every checkout runs the main checkout's binary (or a
+`lefthook` found first on `PATH`, which the template tries before it) with its own config. They close as branches merge `origin/main` and the main checkout runs `pnpm install` after a merge.

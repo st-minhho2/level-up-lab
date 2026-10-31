@@ -8,7 +8,8 @@
 # that does not run counts as missing. bash 3.2-safe.
 set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
-MAIN="$(git worktree list --porcelain | awk '/^worktree / { print substr($0, 10); exit }')"
+# no `exit` in awk: closing the pipe early would SIGPIPE git under pipefail once the list passes ~16 KB
+MAIN="$(git worktree list --porcelain | awk '/^worktree / && !seen { print substr($0, 10); seen = 1 }')"
 exe_in() { # exe_in <checkout>: its lefthook binary if one resolves and runs here
   local bin
   bin="$(cd "$1" && node -e 'process.stdout.write(require(require("path").resolve("node_modules/lefthook/get-exe")).getExePath())' 2>/dev/null)" || return 0
