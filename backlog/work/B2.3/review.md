@@ -52,3 +52,41 @@ Costs the lead accepts with an `approve` (not reasons to change the plan; stated
   until that commit exists.
 - **Length.** `plan.md` is 86 lines against `planning.md`'s ≈ 40 (the longest plan under `backlog/work/`; earlier
   approved plans are 68–78). The two phases already split the work; noted, not blocking.
+
+## Plan review (round 2)
+
+Reviewed at `d415655` (`plan.md` 88 lines; diff from `5a467e8`: `plan.md` Sequence paragraph, one line each in
+`analysis.md`, `advice.md` and round 1 above; nothing under `spec/`, `src/`, `e2e/`, `prisma/`). Run here:
+`scripts/ci/check-spec-sections.sh` → `[check-spec-sections] OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11 14`;
+`scripts/next-task.sh --check B2.3` → `[next-task] B2.3: no overlap with any Doing or Review card`;
+`scripts/ci/check-features-map.sh` → `[check-features-map] OK`; `scripts/ci/check-ac-coverage.sh` →
+`§14: ✗, no tests expected yet (6 criteria)` then `OK`; `pnpm test` → `Tests  115 passed (115)`.
+
+| Check                                                                                  | Result                                                                                                                                                                                                                                                                                                    |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                         | pass: Files table unchanged since round 1                                                                                                                                                                                                                                                                 |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | pass: Interfaces block unchanged since round 1                                                                                                                                                                                                                                                            |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass: Approach A, wiring A; the advice change is citation text only                                                                                                                                                                                                                                       |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass: §14 unchanged, 6 criteria                                                                                                                                                                                                                                                                           |
+| verification lists exact commands with expected numbers                                | pass: unchanged; baseline `115 passed` re-confirmed, so 123 after phase A holds                                                                                                                                                                                                                           |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | pass: unchanged                                                                                                                                                                                                                                                                                           |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by you | pass: `spec/contracts/12-complete-all.md:5` still `- [ ] Lead approves spec (lead, <date>)`                                                                                                                                                                                                               |
+| no settled D-n contradicted                                                            | pass (round 1 reason 1 resolved): the two sibling sections are now written "section 12" / "section 13" (`analysis.md:36`, `advice.md:237`), as D-20 requires; the guard cites only sections with a heading                                                                                                |
+| `scripts/next-task.sh --check B2.3` on the committed plan says no overlap              | pass: `[next-task] B2.3: no overlap with any Doing or Review card`. Round 1 reason 2 resolved: `plan.md:37–40` now states the rule the guard enforces (first amended plan committed with `--check` clean takes the page, lead as fallback), consistent with B2.2's approved plan, which re-runs `--check` |
+
+Verdict: approved
+
+Costs added in round 2 (round 1's five still stand: WIP 3 of 3, §11 text drift, no JavaScript, two approvals, length
+now 88 lines):
+
+- **The tie-break can stall both cards until the lead picks.** `--check` is symmetric and reads each card's plan at
+  its branch head, approved or not (`plan-files.sh --any`). The losing card only sees the overlap after committing its
+  own amended plan; from then on the winner's `--check` reports the same overlap, and `dev-lead.md` step 4 forbids
+  asking for a re-approval over one. Trigger: B2.1 merges; B2.3 commits its amended plan (clean); B2.2 commits its
+  amendment before B2.3's `round 2 approved` commit → both `--check` runs exit 1. Nothing in the guard records who was
+  first, so the plan's "(or the lead picks the order)" is the path that resolves it. Avoidable if the second card reads
+  the other plan first (`scripts/ci/plan-files.sh --any B2.2 feat/B2.2-remaining-count | grep src/app/page.tsx`)
+  before committing; not required by the plan.
+- **Round 1 text was edited by dev-lead.** `d415655` rewrote the quote in round 1 reason 1 (the sign spelled out, with an
+  inline note) because that quote itself failed `check-spec-sections.sh`. The edit keeps the meaning and is disclosed;
+  recorded so the history of this file is not read as the reviewer's alone.
