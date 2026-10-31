@@ -8,8 +8,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | Epic          | File                                           | Done   | Partial | Open  | Total  |
 | ------------- | ---------------------------------------------- | ------ | ------- | ----- | ------ |
 | E1 Todos      | [plan/E1-todos.md](plan/E1-todos.md)           | 21     | 0       | 1     | 22     |
-| E2 Todos plus | [plan/E2-todos-plus.md](plan/E2-todos-plus.md) | 0      | 0       | 1     | 1      |
-| **Total**     |                                                | **21** | **0**   | **2** | **23** |
+| E2 Todos plus | [plan/E2-todos-plus.md](plan/E2-todos-plus.md) | 0      | 0       | 2     | 2      |
+| **Total**     |                                                | **21** | **0**   | **3** | **24** |
 
 ## Execution order
 
@@ -52,6 +52,7 @@ flowchart TD
   S17 --> S18
   S16 --> S17
   S23["23 · filter All / Active / Completed<br/>B2.1"]
+  S24["24 · remaining count<br/>B2.2"]
 ```
 
 ## Remaining
@@ -63,6 +64,7 @@ at most 3 cards Doing (B1.18).
 | ---- | ----- | -------------------------------------------------------------------------- | ---------------------- | ------ | ---------- | ----- | ------------ |
 | 20   | B1.20 | Plan rows with `[ ]` match their own path in the plan-scope hook and guard | —                      | Open   | ~~B1.17~~  | Lead  | S [estimate] |
 | 23   | B2.1  | Filter the list: All / Active / Completed                                  | new, section 12 (D-20) | Open   | —          | Lead  | S [estimate] |
+| 24   | B2.2  | Show how many todos remain                                                 | new, section 13 (D-20) | Open   | —          | Lead  | S [estimate] |
 
 ## Waiting on human
 

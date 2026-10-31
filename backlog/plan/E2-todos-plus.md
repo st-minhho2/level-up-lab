@@ -14,3 +14,13 @@ filtering, lifted by D-20
 - **Acceptance:** section 12 criteria, set by `spec-analyst` (contract `spec/contracts/10-filter.md`)
 - **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B2.1/`
+
+### B2.2 · Show how many todos remain
+
+_F11 · section 13_
+**Status: Open** — `git grep -n -i "remaining" src/` → no match; `src/app/page.tsx` renders the form, the clear button
+and the list, no count
+
+- **Acceptance:** section 13 criteria, set by `spec-analyst` (contract `spec/contracts/11-remaining-count.md`)
+- **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B2.2/`
