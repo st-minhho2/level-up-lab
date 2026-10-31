@@ -4,7 +4,8 @@
 | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
 | `worktree.sh <branch> [base]`                                      | isolated worktree: port, schema, caches, storage, `.env`, deps                                                              | compose PostgreSQL (optional)            |
 | `worktree-prune.sh [--dry-run] [--base main] [--all] [--no-fetch]` | removes merged worktrees of every layout (vs fetched `origin/main`), branches, schemas; lists orphans; `--schemas [--drop]` | docker; `gh` optional (PR check)         |
-| `next-task.sh [--list]`                                            | the next eligible card (or the board) from `backlog/`                                                                       | —                                        |
+| `next-task.sh [--list \| --claim <card> \| --check <card>]`        | next To do card, WIP ≤ 3 Doing; board state from origin/main, branches, PRs; plan overlap                                   | `gh` optional (PR states)                |
+| `next-task-smoke.sh`                                               | probes W1–W16 of `next-task.sh` on a throwaway repo with a `gh` shim                                                        | —                                        |
 | `card-status.sh <id> <Open\|Partial\|Done> "<evidence>"`           | rewrites a card's status line                                                                                               | —                                        |
 | `verify-red.sh <card> [--auto]`                                    | the card's `test(...)` commit fails on behavior at its parent                                                               | node_modules; `--auto` PR only in CI     |
 | `hook-smoke.sh`                                                    | every hook probe (guards; per worktree layout each role's path-guard and plan-scope S1–S15; check-plan-scope C1–C5; gate)   | —                                        |
@@ -23,7 +24,7 @@
 | `ci/check-features-map.sh`                                         | every path and section in the map resolves                                                                                  | —                                        |
 | `ci/check-backlog.sh`                                              | README totals equal card status lines; remaining rows are Open/Partial cards                                                | —                                        |
 | `ci/check-agent-frontmatter.sh`                                    | agent/skill frontmatter is YAML with `name`, `description` (`--commands`)                                                   | node_modules (js-yaml)                   |
-| `ci/plan-files.sh <card> [<rev>]`                                  | the Files of a card's plan as of its approval commit (exit 3 unapproved, 4 no plan)                                         | git; run in the card's worktree          |
+| `ci/plan-files.sh [--any] <card> [<rev>]`                          | the Files of a card's plan as of its approval commit (exit 3 unapproved, 4 no plan); `--any`: at `<rev>`, approved or not   | git; run in the card's worktree          |
 | `ci/check-plan-scope.sh`                                           | a card branch's diff (from merge-base with `origin/<base>`) stays inside its approved plan; paperwork passes                | git range; `GITHUB_HEAD_REF` in CI       |
 
 All scripts are bash 3.2-safe (macOS) and run unchanged in the dev container and CI. No script is paid or

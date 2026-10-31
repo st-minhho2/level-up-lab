@@ -48,6 +48,9 @@ flowchart TD
 
 ## Remaining
 
+Board state (To do · Doing · Review · Closing) is derived, not typed: `scripts/next-task.sh --list` (BOARD column),
+at most 3 cards Doing (B1.18).
+
 | Step | ID    | Title                                                                | Spec § | Status | Blocked by | Owner | Size         |
 | ---- | ----- | -------------------------------------------------------------------- | ------ | ------ | ---------- | ----- | ------------ |
 | 18   | B1.18 | WIP limit: at most three cards in Doing, none sharing a planned file | —      | Open   | ~~B1.17~~  | Lead  | S [estimate] |

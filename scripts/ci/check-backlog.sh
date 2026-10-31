@@ -19,5 +19,8 @@ while IFS='|' read -r _ _ id _; do
   status="$(awk -v id="$id" '$0 ~ "^### " id " · " {f=1; next} f && /^### / {exit} f && /^\*\*Status: /' backlog/plan/*.md | head -1 | sed -E 's/^\*\*Status: ([A-Za-z]+)\*\*.*/\1/')"
   [[ "$status" =~ ^(Open|Partial)$ ]] || { echo "::error::Remaining row $id has card status '${status:-none}'"; fail=1; }
 done < <(awk '/^## Remaining/{f=1;next} /^## /{f=0} f && /^\| *[0-9]+ *\|/' backlog/README.md)
+# B1.18: the board state is derived; README "Remaining" must say where it lives.
+awk '/^## Remaining/{f=1;next} /^## /{f=0} f' backlog/README.md | grep -q 'scripts/next-task.sh --list' \
+  || { echo "::error::README \"Remaining\" must name scripts/next-task.sh --list as the board (B1.18)"; fail=1; }
 [[ $fail -eq 0 ]] && echo "[check-backlog] OK: README matches the cards"
 exit $fail
