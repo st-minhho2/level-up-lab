@@ -19,7 +19,8 @@
 #   review pass 1: M21 a day's span starts at its first approval commit of any card and any round, never at an earlier
 #       merge (a second repo, cards B8.1–B8.5 over two days); M22 the PR-wait walk passes a merge of main to the last
 #       own commit's green run; M23 (lead's ruling on finding 4) no approval before #60 → n/a, from #60 on → counted
-#   review pass 2: M21's day 2 starts at a round-2 approval (06:30), after the day's first merge; M23 PR #60 counts
+#   review pass 2: M21's day 2 starts at a round-2 approval (06:30), after the day's first merge; M23 PR #60 counts;
+#       M24 (lead's ruling (a) on pass-2 finding 1) a selection picks days, each counting every Done card merged on it
 set -uo pipefail
 cd "$(git rev-parse --show-toplevel)"
 SRC="$PWD/scripts/metrics"
@@ -209,11 +210,16 @@ for n in 301 302 303 304 305 59 60; do git -C "$O2" update-ref "refs/pull/$n/hea
 gr remote add origin "$O2"
 echo $((B + 12 * H)) > "$FIX/view.301"; echo $((B + 11 * H)) > "$FIX/view.302"; echo $((B + 13 * H)) > "$FIX/view.303"
 echo $((B + 6 * H)) > "$FIX/view.304"; echo $((B + 86400 + 10 * H)) > "$FIX/view.305"
+echo $((B - 2 * H)) > "$FIX/view.59"; echo $((B - H)) > "$FIX/view.60"             # day 1, which M21 does not pick
 if [[ -x "$SRC/throughput.sh" ]]; then (cd "$R2" && PATH="$TMP/bin:$PATH" "$SRC/throughput.sh" B8.1 B8.2 B8.3 B8.4 B8.5) > "$TMP/out" 2>&1; rc=$?; else rc=127; echo missing > "$TMP/out"; fi
 # day 2: first approval 06:30 (B8.2's round 2), not the 06:00 merge → last merge 13:00 = 6.5 h for 4 cards;
 # day 3: 1 card, its only approval (11:00) after the last merge (10:00) starts nothing, 0 h
 [[ $rc -eq 0 ]] && tail -1 "$TMP/out" | grep -qx 'throughput 6.2 cards per 8 h (5 cards, 6.5 h, 2 days)' && ok M21 \
   || fail "M21 rc=$rc $(tail -1 "$TMP/out")"
+if [[ -x "$SRC/throughput.sh" ]]; then (cd "$R2" && PATH="$TMP/bin:$PATH" "$SRC/throughput.sh" B8.3) > "$TMP/out" 2>&1; rc=$?; else rc=127; echo missing > "$TMP/out"; fi
+# B8.3 picks day 2: B8.1–B8.4 merged on it, from B8.2's 06:30 approval to the 13:00 merge
+[[ $rc -eq 0 ]] && tail -1 "$TMP/out" | grep -qx 'throughput 4.9 cards per 8 h (4 cards, 6.5 h, 1 days)' && ok M24 \
+  || fail "M24 rc=$rc $(tail -1 "$TMP/out")"
 printf 'src/z.ts\nbacklog/work/B8.4/plan.md\n' > "$FIX/files.304"; printf 'src/y.ts\n' > "$FIX/files.59"; printf 'src/x.ts\n' > "$FIX/files.60"
 if [[ -x "$SRC/plan-deviations.sh" ]]; then (cd "$R2" && PATH="$TMP/bin:$PATH" "$SRC/plan-deviations.sh" B8.4 B8.6 B8.7) > "$TMP/out" 2>&1; rc=$?; else rc=127; echo missing > "$TMP/out"; fi
 [[ $rc -eq 0 ]] && cut -f3 <<< "$(row B8.4)" | grep -qx 'src/z.ts' && cut -f3 <<< "$(row B8.6)" | grep -qx 'n/a' \
