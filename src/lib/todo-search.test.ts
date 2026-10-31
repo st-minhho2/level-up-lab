@@ -99,7 +99,8 @@ describe('searchTodos (§16)', () => {
   });
 
   it("AC-16.3: a query longer than 200 code units matches no todo, even a title of 200 'İ' that lowercases longer", () => {
-    // Escapes, not literals, so the file's normalization cannot change the code units: U+0130, and U+0069 U+0307.
+    // Literals, not escapes: U+0130, and U+0069 U+0307. The toHaveLength asserts pin the code units, so a
+    // normalization of the file (NFD turns U+0130 into U+0049 U+0307) fails them instead of passing silently.
     const dotted = todo('İ'.repeat(200));
     const query = 'i̇'.repeat(101);
 
@@ -109,6 +110,24 @@ describe('searchTodos (§16)', () => {
     expect(query).toHaveLength(202);
     expect(dotted.title.toLowerCase().includes(query)).toBe(true);
     expect(result).toEqual([]);
+  });
+
+  it("the length guard runs on the trimmed query before lowercasing: 101 'İ' (202 once lowercased) match, 201 code units do not (REQ-16.5, D-21)", () => {
+    // Escapes, so the file's normalization cannot change the code units: U+0130, and U+0069 U+0307.
+    const short = todo('\u0130'.repeat(101));
+    const shortQuery = '\u0130'.repeat(101);
+    const dotted = todo('\u0130'.repeat(200));
+    const longQuery = `${'i\u0307'.repeat(100)}i`;
+
+    const kept = searchTodos([short], shortQuery);
+    const dropped = searchTodos([dotted], longQuery);
+
+    expect(shortQuery).toHaveLength(101);
+    expect(shortQuery.toLowerCase()).toHaveLength(202);
+    expect(kept).toEqual([short]);
+    expect(longQuery).toHaveLength(201);
+    expect(dotted.title.toLowerCase().includes(longQuery)).toBe(true);
+    expect(dropped).toEqual([]);
   });
 
   it('a query of exactly 200 code units, padded or not, still matches a title that contains it (REQ-16.5 boundary)', () => {
