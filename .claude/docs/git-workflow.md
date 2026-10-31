@@ -8,8 +8,8 @@
 3. `/tdd-loop`: `chore(<pkg>): B1.2 skeleton` → `test(<pkg>): B1.2 … (red)` → `feat(<pkg>): B1.2 …` →
    `docs(map): F6 … [B1.2]`.
 4. `/review-loop` until clean; `.claude/hooks/mark-reviewed.sh`.
-5. Commit, `git push -u origin feat/B1.2-edit-title`, `gh pr create` with every template section (Item / Plan /
-   Map delta / Review). Never merge; a human does, after CI and review.
+5. The draft PR opened at the plan gate (dev-lead Loop 5) gets every template section (Item / Plan / Map delta /
+   Review); after merging `origin/main` and green CI it becomes ready (Loop 9). Never merge; the lead does.
 6. After the merge: `scripts/card-status.sh B1.2 Done "<sha>, <tests>"` on `main` (one `docs(backlog)` commit) and
    `scripts/worktree-prune.sh`.
 
@@ -35,7 +35,12 @@ still runs the diff and tree checks there (suppressions, AC coverage, spec secti
 
 ## Bringing `main` in
 
-`git merge main` inside the worktree (the commit-msg hook accepts `Merge …`). Never rebase a pushed branch.
+`git fetch origin && git merge origin/main` inside the worktree (the commit-msg hook accepts `Merge …`); never rebase
+or force push a pushed branch. A card does it before it reports a PR ready (dev-lead Loop 9) and again when a
+sibling's merge leaves it BEHIND: the ruleset blocks a branch that is not up to date. A clean merge re-runs
+`mark-reviewed.sh`; a conflict goes back through the build and review steps. `scripts/worktree.sh` cuts new branches
+from a freshly fetched `origin/main` (B1.21). The PR is a draft from the plan gate until CI is green on the merged
+head; only then `gh pr ready` and the report to the lead.
 
 ## Hotfix lane
 

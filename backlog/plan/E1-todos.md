@@ -298,13 +298,13 @@ B1.18 until merged by hand)
 
 - **Spec:** none — tooling (`.claude/agents/dev-lead.md`, `.claude/skills/work-next/SKILL.md`, `.claude/docs/git-workflow.md`,
   `scripts/CLAUDE.md`); no `src/` change, no section
-- **Test:** shell probes (worktree base, notification hook) — red because: `scripts/worktree.sh feat/B9.1-x` in a repo
-  whose local `main` is behind `origin/main` cuts the branch from the stale commit, and no hook prints a "waiting on
-  the lead" ping when a session stops at the plan gate or with a ready PR
-- **Acceptance:** dev-lead opens a DRAFT PR right after the plan gate (the card's status board) and marks it ready only
-  after its own last check; a Notification/Stop hook pings when a session waits on the lead; every session merges
-  `origin/main` into its branch (no force push) and waits for green CI before telling the lead a PR is ready;
-  `scripts/worktree.sh` cuts new branches from a freshly fetched `origin/main` by default; protected paths → the PR
-  carries `config-change-approved` (D-19)
+- **Test:** `scripts/worktree-smoke.sh` on a throwaway repo — red because: `scripts/worktree.sh feat/B9.1-x` in a
+  repo whose local `main` is behind `origin/main` cuts the branch from the stale commit (also when origin is
+  unreachable after a fetch)
+- **Acceptance:** dev-lead opens a DRAFT PR right after the plan gate (the card's status board) and marks it ready
+  only on green CI after merging `origin/main` (no force push); the lead learns a session waits from the desktop
+  app's end-of-turn notification (lead's choice (b), no hook), and the wait time is read from git/gh by the
+  metrics card; `scripts/worktree.sh` cuts new branches from a freshly fetched `origin/main` by default; protected
+  paths → the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** ~~B1.19~~ · **Owner:** Lead · **Size:** M [estimate]
 - **Work:** `work/B1.21/`

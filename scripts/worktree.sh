@@ -3,7 +3,7 @@
 # own Postgres schema on the shared compose server, own build/cache/upload dirs, own cache-key prefix, copied
 # gitignored .env files, dependencies from the shared pnpm store.
 #
-#   scripts/worktree.sh <task-name> [base-ref]      base defaults to main
+#   scripts/worktree.sh <task-name> [base-ref]      base defaults to a freshly fetched origin/main (B1.21)
 #   scripts/worktree.sh feat/B1.3-clear-completed
 #
 #   dir      <repo>/.worktrees/<slug>          slug = task name lowercased, [^a-z0-9] -> '-'
@@ -19,7 +19,15 @@ usage() { sed -n '2,14p' "$0"; exit 1; }
 "$(dirname "$0")/require-hooks.sh" # a Claude Code session without the repo's hooks starts no task
 
 TASK="$1"
-BASE="${2:-main}"
+# Default base: origin/main freshly fetched (B1.21); the local main of the main checkout is often stale. Offline →
+# the last fetched origin/main, else main; a fetch never prompts and never aborts the task.
+# An empty [base] means the default; an existing branch needs no base, so no fetch.
+BASE="${2:-}"
+if [[ -z "$BASE" ]] && ! git show-ref --verify --quiet "refs/heads/$TASK"; then
+  fetched=1; GIT_TERMINAL_PROMPT=0 git fetch -q origin </dev/null 2>/dev/null || fetched=0
+  if git rev-parse -q --verify "origin/main^{commit}" >/dev/null; then BASE=origin/main; else BASE=main; fi
+  [[ $fetched -eq 1 ]] || echo "[worktree] warning: git fetch origin failed; base is the last known $BASE" >&2
+fi
 ROOT="$(git rev-parse --show-toplevel)"
 SLUG="$(printf '%s' "$TASK" | tr 'A-Z' 'a-z' | tr -c 'a-z0-9\n' '-' | sed -E 's/-+/-/g; s/^-//; s/-$//')"
 [[ -n "$SLUG" ]] || { echo "[worktree] task name produced an empty slug" >&2; exit 1; }
@@ -44,7 +52,7 @@ mkdir -p "$ROOT/.worktrees"
 if git show-ref --verify --quiet "refs/heads/$TASK"; then
   git worktree add --quiet "$DIR" "$TASK"
 else
-  git worktree add --quiet -b "$TASK" "$DIR" "$BASE"
+  git worktree add --quiet --no-track -b "$TASK" "$DIR" "$BASE"
 fi
 
 # 2. copy every gitignored .env* file from the root (never printing contents), fall back to the example
@@ -106,7 +114,7 @@ cat <<SUMMARY
 
 [worktree] ready in $(( $(date +%s) - START ))s
   dir      $DIR
-  branch   $TASK (base $BASE)
+  branch   $TASK (base ${BASE:-existing branch})
   port     $PORT
   schema   $SCHEMA
   env      $copied gitignored .env file(s) copied, keys rewritten

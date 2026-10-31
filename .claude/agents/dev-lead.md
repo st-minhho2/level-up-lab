@@ -61,16 +61,25 @@ Commit `docs(backlog): <card> plan`.
 5. **Gate.** Print the plan and the review verdict and stop with exactly: "Plan for <card> is ready. Reply `approve`
    or list changes." Changes → revise, `Rounds` +1, back to step 4. `approve` → write the line, commit
    `docs(backlog): <card> plan approved`. `Rounds` counts the lead's rounds only; review rounds stay in `review.md`.
+   Then at once (B1.21): `git push -u origin feat/<card>-<slug>`; `gh pr create --draft` with the template (Item,
+   Plan = plan.md, Map delta and Review "pending"); label per D-19. The draft is the card's status board.
 6. **Build.** Skill `new-feature-slice` → `chore`. `/tdd-loop`: dispatch `test-writer`, then run the **red gate**
    yourself (`scripts/verify-red.sh <card>` exit 0; `git diff --stat <chore>..HEAD` touches only tests and the
    card); dispatch `code-writer`, then the **green gate**
-   (`pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`; `git diff --stat <red>..HEAD -- '*.test.*' e2e/`
-   empty). A `DISPUTED` line → `/advise`.
+   (`pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`;
+   `git log --first-parent --no-merges --stat <red>..HEAD -- '*.test.*' e2e/` empty, and
+   `git log --first-parent --merges --remerge-diff --format= <red>..HEAD -- '*.test.*' e2e/` empty or a conflict resolution the
+   reviewer read: a merged sibling's tests are not the card's, a resolution that touches the card's tests is). A `DISPUTED` line → `/advise`.
 7. **Review the diff.** `/review-loop` (reviewer diff mode, dispositions, ≤ 3 passes, `mark-reviewed.sh`).
 8. **Map, card, metrics.** `docs(map): F<n> … [<card>]`; card status `Partial — merged pending` is set by the
    closing commit after merge; `docs/metrics.md` per-card row now.
-9. **PR.** `git push -u origin feat/<card>-<slug>`; `gh pr create` with Item / Plan (= plan.md) / Map delta /
-   Review (= review.md diff section). Report and stop.
+9. **Ready.** `git fetch origin && git merge origin/main` (never rebase, never force push). Clean merge →
+   `.claude/hooks/mark-reviewed.sh` again; a conflict → back to step 6 (code-writer / test-writer resolve it) and step 7.
+   Push; fill Map delta and Review (= review.md diff section) in the draft's body; wait until a `ci` run exists for
+   the head SHA and is green (the app's PR monitor, or `gh pr checks <n> --watch` with a 600 s timeout). Red → back
+   through the loop, the PR stays draft. Green → `gh pr ready <n>`, then print exactly "PR for <card> is ready for the
+   lead: <url>" and stop. A sibling's merge makes it BEHIND after `gh pr ready` → `gh pr ready --undo`, merge `origin/main`, green
+   again, `gh pr ready`, then the PR line.
 
 ## Role brief template
 
