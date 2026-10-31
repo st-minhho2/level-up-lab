@@ -24,7 +24,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "prepare": "lefthook install"
+    "prepare": "scripts/install-hooks.sh"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
