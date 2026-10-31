@@ -123,3 +123,99 @@ Costs the lead accepts with this approach (not reasons; restated from round 1 wi
   total are restated in the round-2 amendment.
 - Paperwork conflicts with B2.4 (F13/F14 map rows, section 15/16 index rows, `docs/metrics.md`, two package guides)
   fall to the second PR to merge, rows kept in numeric order.
+
+## Diff review (pass 1)
+
+Phase A, reviewed at `29a9d4e` (skeleton `edf5727` → red `b70450c` → green `29a9d4e`). Scope: lib, ui (component
+only; no `src/app` or `e2e` change in phase A).
+
+Run here (last line of each):
+
+| Command                             | Result                                                                                                                                     |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm lint`                         | `All matched files use Prettier code style!` (exit 0)                                                                                      |
+| `pnpm typecheck`                    | `tsc --noEmit` (exit 0)                                                                                                                    |
+| `pnpm test`                         | `Tests  145 passed (145)`                                                                                                                  |
+| `pnpm test:e2e`                     | `24 passed (23.6s)`                                                                                                                        |
+| `pnpm test:mutation`                | `Final mutation score of 91.39 is greater than or equal to break threshold 70`; `todo-search.ts` 100.00, 16 killed, 0 survived             |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                                                                  |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                                                          |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                                                         |
+| `scripts/ci/check-ac-coverage.sh`   | `§16: ✗, no tests expected yet (7 criteria)` then `OK`                                                                                     |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 14 16`                                                                                                            |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                                                                       |
+| `scripts/verify-red.sh B2.5`        | lib `5 ran (5 new), 5 new failed, 0 new passed`; component `2 ran (2 new), 2 new failed, 0 new passed`; `RESULT: red for the right reason` |
+| `git diff --stat main...HEAD`       | 12 files, 921 insertions, 1 deletion; `src/`: the 4 planned files only                                                                     |
+
+Probes (scratch copy under `$TMPDIR`, never the tree):
+
+- P1, `searchTodos` on a 202-character query: title `'İ'.repeat(200)` passes `createTodoSchema` (`success true`);
+  `parseSearchQuery('i̇'.repeat(101))` has length 202; `searchTodos([{ title }], query)` returns 1 todo
+  (finding 1).
+- P2, component line mutations against `todo-search-form.test.tsx`: removing `role="search"`, `method="get"` or
+  `htmlFor`, `defaultValue=""`, and `{true && <hidden>}` each fail 1–2 tests; `maxLength={200}` and `value="active"`
+  each leave `Tests  2 passed (2)`.
+- P3, phase B's mount applied to the copy's `page.tsx` (contract wiring), real Chromium: `/` → type `milk` → Search →
+  `/?q=milk`, box `milk` → click "Active" (`next/link`) → `/?filter=active`, box `''`; after reload `''`. In jsdom,
+  `rerender` with a new `query` keeps the old value (`milk`), so only the e2e can settle this.
+
+### Checklist
+
+| Check                                                                | Result                                                                                                                                                                                                                                                                                                                                                                                                       |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every AC-§.n has a test whose assertion matches its Then             | pass for phase A: AC-16.1 (9 cases, never throws, length 201), AC-16.2 (8 queries, input unchanged, `''` gives a new array), AC-16.3 ×2 (5 punctuation queries; composed U+00E9/U+00C9 checked in bytes), AC-16.4 (10 cases), AC-16.5 ×2 (landmark, GET `/`, searchbox `q`/200/value, submit button, 0 listitems, hidden filter). AC-16.6, AC-16.7 are phase B (§16 ✗, `check-ac-coverage` expects none yet) |
+| no test weakened after the red commit                                | pass: `git log --first-parent --no-merges b70450c..HEAD -- '*.test.*' e2e/` empty; `--merges --remerge-diff` empty (no merge)                                                                                                                                                                                                                                                                                |
+| every changed file is in `plan.md`                                   | pass: the 4 `src/` files are the plan's Files rows; `spec/features-map.md` F14 ✗, `backlog/plan/E2-todos-plus.md`, `backlog/work/B2.5/*`, the §16 contract and index row are paperwork                                                                                                                                                                                                                       |
+| interfaces match the section's contracts                             | pass: the four lib exports and `TodoSearchForm` are §16's Function contracts verbatim; no `'use client'`; hidden `filter` only when not All; the form imports `SEARCH_QUERY_MAX_LENGTH` (`git grep -n maxLength` → line 17), as round 1 reason 2 required                                                                                                                                                    |
+| Zod at every action boundary · Prisma only in `src/lib` · no raw SQL | pass, vacuous: no action, no Prisma, no SQL; both modules are pure and server-only-free                                                                                                                                                                                                                                                                                                                      |
+| migration reversible and indexed                                     | n/a: no `prisma/` change                                                                                                                                                                                                                                                                                                                                                                                     |
+| no secret, no suppression                                            | pass: `check-suppressions` OK, no `eslint-disable`, `@ts-`, `skip`/`only`/`todo` in the diff                                                                                                                                                                                                                                                                                                                 |
+| features map row moved                                               | pass for phase A: F14 lands ✗ in the skeleton; it moves at step 7 after phase B                                                                                                                                                                                                                                                                                                                              |
+| would a test fail if one changed line were reverted                  | pass: every changed line reverted to the skeleton body throws `NotImplementedError` (verify-red at `edf5727`); P2 shows two non-revert mutations that survive (see questions 3 and Riskiest)                                                                                                                                                                                                                 |
+
+### Questions from the dev-lead
+
+1. **The literal `'No todos match your search'` in `searchEmptyMessage`.** Not a finding. `src/CLAUDE.md:16` asks for
+   named module-level spec constants; the text is verbatim REQ-16.8 and AC-16.4 pins it exactly (a drift fails a
+   test). Precedent is mixed: `todo-filter.ts:6` names its texts in a record, `todo-count.ts:8` and
+   `todo-schema.ts:8` inline theirs. A named constant would match `todo-filter.ts`; nothing requires it before PR.
+2. **`defaultValue={query}` after a soft navigation.** Not a finding, and it belongs to phase B's e2e. P3, with phase
+   B's wiring on a copy in real Chromium, gives an empty box after the "Active" link from `/?q=milk`, which is the
+   path AC-16.6 pins ("after Active … the box is empty"). jsdom keeps the stale value on `rerender`, so a component
+   test cannot prove it either way. If phase B's AC-16.6 goes red on that step, the fix touches
+   `todo-search-form.tsx` (for example a `key` on the input), so the round-2 amendment must list that file. Not
+   covered by §16: text typed but not submitted, then a filter link. The spec is silent; that goes to
+   `analysis.md`, not a finding.
+3. **AC-16.5 and `maxLength` from the constant.** Confirmed as the plan accepted: P2's `maxLength={200}` leaves both
+   tests green. The value 200 is pinned by the test, the single definition only by this review: line 17 reads
+   `maxLength={SEARCH_QUERY_MAX_LENGTH}`.
+
+### Findings
+
+```
+[1] KIND: spec-mismatch
+    WHERE: src/lib/todo-search.ts:16-17 (and spec/contracts/14-search.md, REQ-16.5 vs the searchTodos contract line)
+    DEFECT: a query longer than 200 characters can match a todo, because `toLowerCase()` turns U+0130 into two code
+            units, so a lowercased 200-character title can contain a lowercased query of more than 200.
+    TRIGGER: a stored todo titled 'İ'.repeat(200) (accepted by §5's createTodoSchema, length 200) and the
+             address /?q= followed by 'i̇' 101 times, percent-encoded (parseSearchQuery → length 202; the form's
+             maxLength stops it being typed, the address does not)
+    WRONG BEHAVIOUR: searchTodos returns that todo (P1: 1 result); REQ-16.5 says "a query longer than 200
+             characters matches no todo"
+    CONFIDENCE: confirmed (P1)
+```
+
+The code is §16's `searchTodos` contract line as written (`title.toLowerCase().includes(query.toLowerCase())`), so
+this is a conflict between two parts of §16 (spec ≠ spec), not a code-writer error. Per `spec-fidelity.md` it goes to
+`/advise` and the lead, not to a role: either REQ-16.5 governs (a `docs(spec): §16 …` commit under a D-n, a red
+test with the trigger above, then a length guard in `searchTodos`), or the contract governs (REQ-16.5's sentence is
+narrowed to say what "characters" counts). Real-world reach: only titles holding U+0130 (Turkish dotted capital I)
+and only via a hand-built address. It changes no stored todo and no count. Phase A's code needs no change unless the
+ruling picks REQ-16.5, so this does not block the draft PR. It must be ruled before phase B's round-2 approval.
+
+Verdict: ready for PR (draft, phase A; finding 1 waits on a lead ruling via `/advise`, not on a role)
+
+Riskiest unfalsified: the hidden `filter` input under Completed. `value="active"` survives both AC-16.5 renders
+(P2), and phase B's AC-16.6 submits the search only under Active, so no planned test proves that a search from
+`/?filter=completed` keeps `filter=completed` (REQ-16.6). The code (`value={filter}`) is correct as I read it. Nothing
+falsifies a regression there.
