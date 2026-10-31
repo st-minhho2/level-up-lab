@@ -2,7 +2,8 @@
 
 | Script                                                             | Does                                                                                                                        | Needs                                    |
 | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `worktree.sh <branch> [base]`                                      | isolated worktree: port, schema, caches, storage, `.env`, deps                                                              | compose PostgreSQL (optional)            |
+| `worktree.sh <branch> [base]`                                      | isolated worktree from a fetched `origin/main` (default base): port, schema, caches, storage, `.env`, deps                  | compose PostgreSQL (optional)            |
+| `worktree-smoke.sh`                                                | probes K1–K4 of `worktree.sh`'s default base on a throwaway repo (bare origin, `pnpm` shim)                                 | —                                        |
 | `worktree-prune.sh [--dry-run] [--base main] [--all] [--no-fetch]` | removes merged worktrees of every layout (vs fetched `origin/main`), branches, schemas; lists orphans; `--schemas [--drop]` | docker; `gh` optional (PR check)         |
 | `next-task.sh [--list \| --claim <card> \| --check <card>]`        | next To do card, WIP ≤ 3 Doing; board state from origin/main, branches, PRs; plan overlap                                   | `gh` optional (PR states)                |
 | `next-task-smoke.sh`                                               | probes W1–W16 of `next-task.sh` on a throwaway repo with a `gh` shim                                                        | —                                        |

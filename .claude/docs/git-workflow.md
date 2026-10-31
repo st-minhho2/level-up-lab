@@ -35,7 +35,12 @@ still runs the diff and tree checks there (suppressions, AC coverage, spec secti
 
 ## Bringing `main` in
 
-`git merge main` inside the worktree (the commit-msg hook accepts `Merge …`). Never rebase a pushed branch.
+`git fetch origin && git merge origin/main` inside the worktree (the commit-msg hook accepts `Merge …`); never rebase
+or force push a pushed branch. A card does it before it reports a PR ready (dev-lead Loop 9) and again when a
+sibling's merge leaves it BEHIND: the ruleset blocks a branch that is not up to date. A clean merge re-runs
+`mark-reviewed.sh`; a conflict goes back through the build and review steps. `scripts/worktree.sh` cuts new branches
+from a freshly fetched `origin/main` (B1.21). The PR is a draft from the plan gate until CI is green on the merged
+head; only then `gh pr ready` and the report to the lead.
 
 ## Hotfix lane
 

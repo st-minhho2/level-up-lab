@@ -23,12 +23,14 @@ worktree, and continue at the first Loop step whose artifact is missing.
 
 After `plan.md` exists and the reviewer's plan review is `Verdict: approved` (`review.md` "Plan review (round N)"):
 print the plan with that verdict and stop with exactly "Plan for <card> is ready. Reply `approve` or list changes."
-The lead never approves an unreviewed plan; a change the lead asks for goes back through the plan review.
+The lead never approves an unreviewed plan; a change the lead asks for goes back through the plan review. After
+`approve`: push and open the draft PR (dev-lead Loop 5).
 Nothing under `src/`, `prisma/`, `e2e/` changes before `plan.md` carries `Plan approved by: lead, <date>`.
 
 ## Exit
 
-Report: PR link, verification numbers (tests, e2e, mutation %), rounds (plan, review), one "Waiting on you" list.
+Report after dev-lead Loop 9 (merged `origin/main`, CI green, `gh pr ready`) with the line "PR for <card> is ready for
+the lead: <url>": PR link, verification numbers (tests, e2e, mutation %), rounds (plan, review), one "Waiting on you" list.
 Merging is the lead's; add `config-change-approved` at PR creation when the approved plan changes a protected path
 (D-19). After the merge: `scripts/card-status.sh <card> Done "<sha>, <tests>"` on
 `main` (`docs(backlog): <card> done`), `scripts/worktree-prune.sh`.
