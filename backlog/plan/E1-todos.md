@@ -285,3 +285,26 @@ refused (B1.18 diff review pass 2, confirmed in bash; `next-task.sh --check` was
   still passes; `.claude/` and `scripts/ci/` are protected → the PR needs the human-only `config-change-approved` label
 - **Tier:** quick · **Depends on:** ~~B1.17~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.20/`
+
+### B1.21 · Parallel sessions report status: draft PR, a ping when waiting, branches kept current
+
+_tooling · no §_
+**Status: Open** — `grep -ni draft .claude/agents/dev-lead.md .claude/skills/work-next/SKILL.md` → no match (the PR is
+opened only at Loop step 9, after review); `.claude/settings.json` has no `Notification` hook and `Stop` runs only
+`require-review.sh`; no rule makes a session merge `origin/main` before it reports a PR ready (#63, #67, #68, #69 were
+each blocked as BEHIND after a sibling merged); `scripts/worktree.sh:22` `BASE="${2:-main}"` cuts new card branches from
+the local `main`, which in the main checkout was 25fee24 while `origin/main` had moved on (B1.19's branch missed
+B1.18 until merged by hand)
+
+- **Spec:** none — tooling (`.claude/agents/dev-lead.md`, `.claude/skills/work-next/SKILL.md`, `.claude/docs/git-workflow.md`,
+  `scripts/CLAUDE.md`); no `src/` change, no section
+- **Test:** shell probes (worktree base, notification hook) — red because: `scripts/worktree.sh feat/B9.1-x` in a repo
+  whose local `main` is behind `origin/main` cuts the branch from the stale commit, and no hook prints a "waiting on
+  the lead" ping when a session stops at the plan gate or with a ready PR
+- **Acceptance:** dev-lead opens a DRAFT PR right after the plan gate (the card's status board) and marks it ready only
+  after its own last check; a Notification/Stop hook pings when a session waits on the lead; every session merges
+  `origin/main` into its branch (no force push) and waits for green CI before telling the lead a PR is ready;
+  `scripts/worktree.sh` cuts new branches from a freshly fetched `origin/main` by default; protected paths → the PR
+  carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** ~~B1.19~~ · **Owner:** Lead · **Size:** M [estimate]
+- **Work:** `work/B1.21/`
