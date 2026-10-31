@@ -199,4 +199,19 @@ test.describe('§16 search by title', () => {
     await expect(page).toHaveURL(addressIs('/?filter=active'));
     await expect(searchBox(page)).toHaveValue('');
   });
+
+  test('on /, text typed but not submitted is dropped when "Active" is followed: the address is /?filter=active, the list is [D, B] and the box is empty (REQ-16.2, REQ-16.7)', async ({
+    page,
+  }) => {
+    await seedFourTodos();
+    await openHydrated(page, '/');
+    await expect(searchBox(page)).toHaveValue('');
+
+    await searchBox(page).fill('bread');
+    await filterLink(page, 'Active').click();
+
+    await expect(page).toHaveURL(addressIs('/?filter=active'));
+    await expect(page.getByRole('listitem')).toHaveText(['Buy milk', 'Call mom']);
+    await expect(searchBox(page)).toHaveValue('');
+  });
 });
