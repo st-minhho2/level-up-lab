@@ -11,6 +11,11 @@
 #   M9  a card's own fix PR → not its own repair            M10 a fix merged before the card → not
 #   M11 a B9.20 tick on main → not B9.2's approval          M12 sharing only non-.md backlog/, docs/, spec/ files → not
 #   M13 one fix PR repairing two cards counts once in the rate (review pass 1)
+#   B1.22: M14 throughput line over two UTC+7 days       M15 a day whose cards have no approval that day adds no span
+#   M16 gate wait sums two approval rounds              M17 PR wait anchors on the last own commit's first green run,
+#       a later merge of main and a chore(ci) commit do not reset it
+#   M18 no green run → n/a, out of the median           M19 a file outside B9.1's plan counts; listed files and
+#       paperwork do not                                M20 no approval → n/a
 set -uo pipefail
 cd "$(git rev-parse --show-toplevel)"
 SRC="$PWD/scripts/metrics"
@@ -55,9 +60,15 @@ at $((T0 - 1000)) "chore: base" README.md base
 at $((T0 - 500)) "docs(spec): tick B9.20" spec/s.md "- [x] Lead approves spec (lead, d, B9.20)"
 for b in b1 b2 b3 b4 b5; do g branch -q "$b"; done
 g checkout -q main; at $((T0 + 1000)) "docs: tick B9.4 on main" spec/s.md "- [x] Lead approves spec (lead, d, B9.4)"
-g checkout -q b1; at "$T0" "docs(backlog): B9.1 plan approved" backlog/work/B9.1/plan.md "Plan approved by: lead"; pin 101
+g checkout -q b1; mkdir -p "$REPO/backlog/work/B9.1"
+printf '## Files\n\n| File | Change |\n| ---- | ------ |\n| `scripts/a.sh` | x |\n\n' > "$REPO/backlog/work/B9.1/plan.md"
+at "$T0" "docs(backlog): B9.1 plan approved" backlog/work/B9.1/plan.md "Plan approved by: lead"; pin 101
 g checkout -q b2; at "$T0" "docs(backlog): B9.2 plan approved" backlog/work/B9.2/plan.md "Plan approved by: lead"
-at $((T0 + 600)) "docs(spec): tick B9.2" spec/s.md "- [x] Lead approves spec (lead, d, B9.2)"; pin 102; TICK2="$(g rev-parse --short HEAD)"
+at $((T0 + 600)) "docs(spec): tick B9.2" spec/s.md "- [x] Lead approves spec (lead, d, B9.2)"; TICK2="$(g rev-parse --short HEAD)"
+GIT_AUTHOR_DATE="@$((T0 + 700)) +0000" GIT_COMMITTER_DATE="@$((T0 + 700)) +0000" \
+  g -c user.name=s -c user.email=s@x merge -q -s ours --no-edit --no-verify main
+GIT_AUTHOR_DATE="@$((T0 + 800)) +0000" GIT_COMMITTER_DATE="@$((T0 + 800)) +0000" \
+  g -c user.name=s -c user.email=s@x commit -q --allow-empty --no-verify -m "chore(ci): B9.2 rerun"; pin 102
 g checkout -q b3; at "$T0" "docs(backlog): B9.3 plan approved" backlog/work/B9.3/plan.md "Plan approved by: lead"
 at $((T0 + 300)) "docs(backlog): B9.3 plan round 2 approved" backlog/work/B9.3/plan.md "round 2"; pin 103
 g checkout -q b4; at "$T0" "docs(backlog): B9.4 plan approved" backlog/work/B9.4/plan.md "Plan approved by: lead"
@@ -71,7 +82,7 @@ for n in 101 102 103 104 105; do g update-ref -d "refs/pull/$n/head"; done
 g remote add origin "$ORIGIN"
 
 # merge times: B9.1 30 min 59 s · B9.2 20 min after the tick · B9.3 10 min after round 2 · B9.4 40 min · B9.5 any
-M1=$((T0 + 1859)); M2=$((T0 + 1800)); M3=$((T0 + 900)); M4=$((T0 + 2400)); M5=$((T0 + 3000))
+M1=$((T0 + 1859)); M2=$((T0 + 1800)); M3=$((T0 + 900)); M4=$((T0 + 2400)); M5=$((T0 + DAY + 600))
 echo "$M1" > "$FIX/view.101"; echo "$M2" > "$FIX/view.102"; echo "$M3" > "$FIX/view.103"
 echo "$M4" > "$FIX/view.104"; echo "$M5" > "$FIX/view.105"
 {
@@ -91,17 +102,36 @@ echo "$M4" > "$FIX/view.104"; echo "$M5" > "$FIX/view.105"
   printf '209\t%s\tfix: spec file of d\tspec/t.txt\n' "$((M4 + DAY))"
   printf '210\t%s\tfix: a and b at once\tscripts/a.sh src/b.ts\n' "$((M1 + DAY))"
 } > "$FIX/list.tsv"
+for n in 101 102 103 104 105; do echo "$((T0 - 100))" > "$FIX/created.$n"; done
+printf 'scripts/a.sh\nscripts/extra.sh\ndocs/metrics.md\nbacklog/work/B9.1/plan.md\n' > "$FIX/files.101"
+printf 'backlog/README.md\n' > "$FIX/files.102"; printf 'spec/x.md\n' > "$FIX/files.103"
+printf 'docs/mistake-log.md\n' > "$FIX/files.104"; printf 'src/e.ts\n' > "$FIX/files.105"
+H101="$(git -C "$ORIGIN" rev-parse refs/pull/101/head)"; H102="$(git -C "$ORIGIN" rev-parse refs/pull/102/head)"
+H104="$(git -C "$ORIGIN" rev-parse refs/pull/104/head)"; H105="$(git -C "$ORIGIN" rev-parse refs/pull/105/head)"
+echo "$((T0 + 100))" > "$FIX/runs.$H101"
+echo "$((T0 + 850))" > "$FIX/runs.$H102"                                     # the chore(ci) commit
+echo "$((T0 + 750))" > "$FIX/runs.$(git -C "$ORIGIN" rev-parse "$H102^")"     # the merge of main
+echo "$((T0 + 1200))" > "$FIX/runs.$H104"                                    # B9.4's head is its merge of main
+echo "$((T0 + 100))" > "$FIX/runs.$H105"
 
 # --- gh shim ------------------------------------------------------------------------------------------------------
 # The exact argument strings the scripts must use; "$*" of any other call is denied.
 printf '%s' '--json mergedAt --jq .mergedAt | fromdateiso8601' > "$FIX/view.args"
+printf '%s' '--json createdAt --jq .createdAt | fromdateiso8601' > "$FIX/created.args"
+printf '%s' '--json files --jq .files[].path' > "$FIX/files.args"
+printf '%s' '--workflow ci --json conclusion,updatedAt --jq [.[] | select(.conclusion == "success") | .updatedAt | fromdateiso8601] | min // empty' > "$FIX/runs.args"
 printf '%s' 'pr list --state merged --limit 1000 --json number,title,mergedAt,files --jq .[] | [.number, (.mergedAt | fromdateiso8601), .title, ([.files[].path] | join(" "))] | @tsv' > "$FIX/list.args"
 cat > "$TMP/bin/gh" <<SHIM
 #!/bin/bash
 fix='$FIX'
 deny() { echo "DENIED: \$*" >> "\$fix/denied.log"; echo "gh shim: denied" >&2; exit 99; }
-if [ "\$1 \$2" = "pr view" ] && [ -f "\$fix/view.\$3" ] && [ "\${*:4}" = "\$(cat "\$fix/view.args")" ]; then
-  cat "\$fix/view.\$3"; exit 0
+if [ "\$1 \$2" = "pr view" ]; then
+  for k in view created files; do
+    if [ -f "\$fix/\$k.\$3" ] && [ "\${*:4}" = "\$(cat "\$fix/\$k.args")" ]; then cat "\$fix/\$k.\$3"; exit 0; fi
+  done
+fi
+if [ "\$1 \$2 \$3" = "run list --commit" ] && [ "\${*:5}" = "\$(cat "\$fix/runs.args")" ]; then
+  [ -f "\$fix/runs.\$4" ] && cat "\$fix/runs.\$4"; exit 0
 fi
 [ "\$*" = "\$(cat "\$fix/list.args")" ] && { cat "\$fix/list.tsv"; exit 0; }
 deny "\$@"
@@ -132,6 +162,26 @@ cut -f3 <<< "$(row B9.2)" | grep -qx '#210' && ok "M7 M10" || fail "M7 M10 $(row
 cut -f3 <<< "$(row B9.3)" | grep -qx -- '-' && ok M9 || fail "M9 $(row B9.3)"
 [[ $rc -eq 0 ]] && tail -1 "$TMP/out" | grep -qx 'change failure rate 3/5 = 60.0 %' && ok "M13 rate" \
   || fail "M13 rate rc=$rc $(tail -1 "$TMP/out")"
+
+# --- B1.22: throughput, wait time, plan deviations ---------------------------------------------------------------
+script() { # script <name>: runs it into $TMP/out, or records "not found"
+  if [[ -x "$SRC/$1" ]]; then run "$1" > "$TMP/out"; rc=$?; else echo "$1: not found" > "$TMP/out"; rc=127; fi
+}
+script throughput.sh
+[[ $rc -eq 0 ]] && tail -1 "$TMP/out" | grep -qx 'throughput 60.0 cards per 8 h (5 cards, 0.7 h, 2 days)' && ok M14 \
+  || fail "M14 rc=$rc $(tail -1 "$TMP/out")"
+grep -qx $'2023-11-16\t1\t0.00' "$TMP/out" && ok M15 || fail "M15 $(sed -n 3p "$TMP/out")"
+script wait-time.sh
+cut -f3 <<< "$(row B9.3)" | grep -qx 13 && ok M16 || fail "M16 $(row B9.3)"
+cut -f4 <<< "$(row B9.2)" | grep -qx 17 && ok M17 || fail "M17 $(row B9.2)"
+[[ $rc -eq 0 ]] && cut -f4 <<< "$(row B9.3)" | grep -qx 'n/a' \
+  && tail -1 "$TMP/out" | grep -qx 'median plan-gate wait 8 min (4), median PR wait 24 min (4), PR upper bound 32 min (5)' && ok M18 \
+  || fail "M18 rc=$rc $(row B9.3) | $(tail -1 "$TMP/out")"
+script plan-deviations.sh
+cut -f3 <<< "$(row B9.1)" | grep -qx 'scripts/extra.sh' && cut -f3 <<< "$(row B9.2)" | grep -qx -- '-' && ok M19 \
+  || fail "M19 $(row B9.1) | $(row B9.2)"
+[[ $rc -eq 0 ]] && cut -f3 <<< "$(row B9.5)" | grep -qx 'n/a' && tail -1 "$TMP/out" | grep -qx 'uncaught plan deviations 1/4' && ok M20 \
+  || fail "M20 rc=$rc $(row B9.5) | $(tail -1 "$TMP/out")"
 
 [[ -s "$FIX/denied.log" ]] && { fail "gh shim denied:"; sed 's/^/  /' "$FIX/denied.log"; }
 echo "[metrics-smoke] $oks ok, $fails FAIL"
