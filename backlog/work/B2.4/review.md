@@ -153,7 +153,7 @@ Costs the lead accepts with an `approve` (not reasons; stated so they are not fo
 5. **Guides one card behind the code** (new, chosen by round-1 reason 1 (b)). After B2.4 merges, `src/lib/CLAUDE.md`'s
    module table has no `todo-due-date.ts` row, and its `todos.ts` row lists neither `setTodoDueDate` nor §15.
    `src/components/CLAUDE.md` does not say `todo-due-date.tsx` is `'use client'`. Agents read these guides first. The
-   plan names no owner ("whichever card edits them after B2.4 merges"). B2.5's phase B lists both guides for §16 rows
+   plan names no owner ("whichever card edits them after B2.4 merges"). B2.5's phase B lists both guides for section 16 rows
    only, so §15's lines land only if dev-lead adds them to that amendment or to B2.4's closing PR.
    Separately, `src/actions/CLAUDE.md:3` says actions parse with a schema from `src/lib/todo-schema.ts`.
    `setTodoDueDateAction`'s schema lives in `todo-due-date.ts`, so the planned edit, which only names the action,
