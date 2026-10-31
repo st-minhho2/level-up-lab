@@ -71,6 +71,5 @@ at most 3 cards Doing (B1.18).
 
 ## Waiting on human
 
-| ID         | What                                                                                                                                                                                 | Blocks                        |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------- |
-| D-? (B2.5) | Section 16 REQ-16.5 vs the `searchTodos` contract line on a U+0130 query over 200 code units: A guard + AC-16.8 (recommended) or B narrow REQ-16.5 — `work/B2.5/decision-request.md` | B2.5 phase B round-2 approval |
+| ID  | What | Blocks |
+| --- | ---- | ------ |
