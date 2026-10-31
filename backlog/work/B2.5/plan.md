@@ -10,24 +10,29 @@ ticks §16's `Lead approves spec` box (D-7). No dependency, migration, env key o
 
 ## Files
 
-| File                                       | Change                                                                                                                                                                      | Why (AC-16.n)       |
-| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
-| `src/lib/todo-search.ts`                   | Add: `SEARCH_QUERY_MAX_LENGTH`, `parseSearchQuery`, `searchTodos`, `searchEmptyMessage` (pure)                                                                              | 16.1–16.4           |
-| `src/lib/todo-search.test.ts`              | Add (red): AC-16.1, AC-16.2, AC-16.3 (punctuation; Café), AC-16.4 (no guard test: AC-16.5's `maxlength` 200 pins the constant through the form, review round 2)             | 16.1–16.4, REQ-16.5 |
-| `src/components/todo-search-form.tsx`      | Add: `TodoSearchForm` (no `'use client'`), `maxLength={SEARCH_QUERY_MAX_LENGTH}` imported (never a literal 200), label id `search-todos`, hidden `filter` only when not All | 16.5                |
-| `src/components/todo-search-form.test.tsx` | Add (red): AC-16.5, two renders (`all`/`''`, `active`/`'milk'`)                                                                                                             | 16.5                |
+| File                                       | Change                                                                                                                                                                                                                                                                                                                                        | Why (AC-16.n)                            |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `src/lib/todo-search.ts`                   | Add: `SEARCH_QUERY_MAX_LENGTH`, `parseSearchQuery`, `searchTodos`, `searchEmptyMessage` (pure); D-21 length guard (b43ef24)                                                                                                                                                                                                                   | 16.1–16.4                                |
+| `src/lib/todo-search.test.ts`              | Add (red): AC-16.1, AC-16.2, AC-16.3 (punctuation; Café), AC-16.4 (no guard test: AC-16.5's `maxlength` 200 pins the constant through the form, review round 2); D-21 review-pass tests; phase B: `'İ'` × 101 title and query match (guard before lowercasing, diff pass 2 R), comment at line 102 (N3)                                       | 16.1–16.4, REQ-16.5                      |
+| `src/components/todo-search-form.tsx`      | Add: `TodoSearchForm` (no `'use client'`), `maxLength={SEARCH_QUERY_MAX_LENGTH}` imported (never a literal 200), label id `search-todos`, hidden `filter` only when not All                                                                                                                                                                   | 16.5                                     |
+| `src/components/todo-search-form.test.tsx` | Add (red): AC-16.5, two renders (`all`/`''`, `active`/`'milk'`)                                                                                                                                                                                                                                                                               | 16.5                                     |
+| `src/app/page.tsx`                         | Phase B: `searchParams` gains `q`; `query = parseSearchQuery(params.q)`; `shown = searchTodos(filterTodos(todos, filter), query)`; `<TodoSearchForm filter={filter} query={query} />` after `<TodoForm />`; empty `<p>` = `searchEmptyMessage(filter, todos.length, query)`; count and both bulk buttons still from `todos`; header names §16 | 16.6, 16.7, REQ-16.1, REQ-16.8, REQ-16.9 |
+| `e2e/16-search.spec.ts`                    | Phase B add (red): AC-16.6, AC-16.7; unprefixed REQ-16.8 (`/?q=milk`, empty store → "No todos yet", form present); unprefixed REQ-16.6 (search from `/?filter=completed` keeps `filter=completed`, diff pass 1 #2); seed via `PrismaClient` as `e2e/14`, no due date                                                                          | 16.6, 16.7, REQ-16.6, REQ-16.8           |
+| `src/lib/CLAUDE.md`                        | Phase B: module rows `todo-search.ts` (§16, pure) and `todo-due-date.ts` (section 15, left to this card by B2.4's plan)                                                                                                                                                                                                                       | docs                                     |
+| `src/components/CLAUDE.md`                 | Phase B: lines `todo-search-form.tsx` (§16, no `'use client'`: native GET form) and `todo-due-date.tsx` (section 15, `'use client'`, left by B2.4)                                                                                                                                                                                            | docs                                     |
 
-Phase B (after B2.4 merges; added by the round-2 amendment, not approved now): `src/app/page.tsx` mount,
-`e2e/16-search.spec.ts` (AC-16.6, AC-16.7, one unprefixed REQ-16.8 empty-store test), `src/lib/CLAUDE.md`,
-`src/components/CLAUDE.md` rows. Paperwork (exempt): `spec/features-map.md` F14 row ✗ in the skeleton; §16 index row
+Phase B rows: round-2 amendment after B2.4 merged (315b97e, closing 32b474c). Paperwork (exempt): `spec/features-map.md` F14 row ✗ in the skeleton; §16 index row
 stays ✗ until closing (`check-ac-coverage.sh` would demand AC-16.6/16.7 before phase B); `docs/metrics.md` row.
 
-## Sequence (phase B)
+## Sequence (phase B, round 2)
+
+B2.4 merged; `origin/main` merged here (c8a95ae: conflicts only in the F13/F14 map rows and §15/§16 index rows, both
+kept; 168 unit, 25 e2e green after `pnpm db:generate` + `db:deploy`). As planned:
 
 When B2.4 is merged: `git merge origin/main` (never rebase), amend this plan with the page row, e2e and two guides,
 `scripts/next-task.sh --check B2.5`, amendment review, stop for the lead's round-2 approval
 (`docs(backlog): B2.5 plan round 2 approved`). Then red e2e (no script proof: commit body records
-`pnpm test:e2e e2e/16-search.spec.ts` → 3 failed), green mount: `shown = searchTodos(filterTodos(todos, filter), query)`,
+`pnpm test:e2e e2e/16-search.spec.ts` → 4 failed), green mount: `shown = searchTodos(filterTodos(todos, filter), query)`,
 empty text `searchEmptyMessage(filter, todos.length, query)`, count and both bulk buttons still from `todos`
 (REQ-16.9). Earlier only if B2.4's written plan lists neither `page.tsx` nor `todo-schema.ts` and `--check` is clean. B2.4's plan (dd1d6cf) lists
 neither, but lists `src/lib/CLAUDE.md` and `src/components/CLAUDE.md`: an early phase B drops those two rows (closing
@@ -56,22 +61,27 @@ pnpm test:e2e                # phase A: unchanged, 24 passed
 pnpm test:mutation           # ≥ 70; todo-search.ts no survivors (trim, toLowerCase both sides, includes, guard order)
 scripts/ci/check-ac-coverage.sh && scripts/ci/check-spec-sections.sh && scripts/ci/check-feat-commits.sh \
   && scripts/ci/check-features-map.sh
-# phase B: e2e/16 red 3 failed → green; pnpm test:e2e 24 + 3 = 27 passed
+# phase A after D-21: 147 unit. After merging B2.4: 168 unit, 25 e2e
+# phase B: e2e/16 red 4 failed (no search landmark) → green; pnpm test 168 + 1 (İ × 101 hardening) = 169;
+#          pnpm test:e2e 25 + 4 = 29 passed; mutation ≥ 70, todo-search.ts no survivors; check-plan-scope OK
 ```
 
 ## Work breakdown
 
-| Step       | Role / skill                          | Produces                          | Commit                                    |
-| ---------- | ------------------------------------- | --------------------------------- | ----------------------------------------- |
-| 1 skeleton | `new-feature-slice`                   | 2 stubs, F14 row (✗)              | `chore(todos): B2.5 skeleton`             |
-| 2 red      | `test-writer` → red gate (dev-lead)   | lib + component tests             | `test(todos): B2.5 search by title (red)` |
-| 3 green    | `code-writer` → green gate (dev-lead) | two modules                       | `feat(todos): B2.5 search by title`       |
-| 4 review   | `reviewer` (diff), `/review-loop`     | `review.md` diff section          | `docs(backlog): B2.5 diff review …`       |
-| 5 B red    | `test-writer` (after round-2 approve) | `e2e/16`, red on the page         | `test(ui): B2.5 search on / (red)`        |
-| 6 B green  | `code-writer` → green gate            | page mount + 2 CLAUDE.md          | `feat(ui): B2.5 mount search`             |
-| 7 map      | dev-lead                              | F14 row: tests, page; metrics row | `docs(map): F14 search by title [B2.5]`   |
-| 8 review   | `reviewer` (diff), `/review-loop`     | pass 2, gate clear                | `docs(backlog): B2.5 diff review …`       |
+| Step       | Role / skill                          | Produces                          | Commit                                                        |
+| ---------- | ------------------------------------- | --------------------------------- | ------------------------------------------------------------- |
+| 1 skeleton | `new-feature-slice`                   | 2 stubs, F14 row (✗)              | `chore(todos): B2.5 skeleton`                                 |
+| 2 red      | `test-writer` → red gate (dev-lead)   | lib + component tests             | `test(todos): B2.5 search by title (red)`                     |
+| 3 green    | `code-writer` → green gate (dev-lead) | two modules                       | `feat(todos): B2.5 search by title`                           |
+| 4 review   | `reviewer` (diff), `/review-loop`     | `review.md` diff section          | `docs(backlog): B2.5 diff review …`                           |
+| 5 B red    | `test-writer` (after round-2 approve) | `e2e/16`, red on the page         | `test(ui): B2.5 search on / (red)`                            |
+| 5b harden  | `test-writer`                         | `İ` × 101 case, line-102 comment  | `test(todos): B2.5 review pass 3 -- guard before lowercasing` |
+| 6 B green  | `code-writer` → green gate            | page mount + 2 CLAUDE.md          | `feat(ui): B2.5 mount search`                                 |
+| 7 map      | dev-lead                              | F14 row: tests, page; metrics row | `docs(map): F14 search by title [B2.5]`                       |
+| 8 review   | `reviewer` (diff), `/review-loop`     | pass 3 (last of 3), gate clear    | `docs(backlog): B2.5 diff review …`                           |
 
 PR stays draft until phase B is green.
 
 Plan review: round 1 changes requested (2 reasons), round 2 changes requested (1 reason: the guard test, fixed by dropping it, option (c)); cap of 2 rounds reached, round-2 fix unreviewed, accepted by the lead · Plan approved by: lead (session reply "approve"), 2026-10-31 · Rounds: 1
+
+Round 2 (phase B amendment): amendment review pending · Plan approved by: · Rounds: 2
