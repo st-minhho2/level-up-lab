@@ -18,8 +18,7 @@ _F10 · section 12_
 ### B2.2 · Show how many todos remain
 
 _F11 · section 13_
-**Status: Open** — `git grep -n -i "remaining" src/` → no match; `src/app/page.tsx` renders the form, the clear button
-and the list, no count
+**Status: Done** — 0af252c, 7 AC-13.n tests green (unit 130, e2e 21), mutation 90.37
 
 - **Spec:** §13 — unchanged (section written from `work/B2.2/analysis.md`)
 - **Test:** `src/lib/todo-count.test.ts::AC-13.1: returns 3 for open, done, open, done, open and leaves the input unchanged` — red because: `src/lib/todo-count.ts` does not exist, `countRemaining` is not exported
