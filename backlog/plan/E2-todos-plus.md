@@ -7,7 +7,7 @@ own modules; `src/app/page.tsx`, `src/lib/todos.ts` and `src/actions/todos.ts` a
 ### B2.1 · Filter the list: All / Active / Completed
 
 _F10 · section 12_
-**Status: Done** — 830901d, 7 AC-12.n tests green (unit 119, e2e 16), mutation 89.94
+**Status: Done** — 830901d (#78), 7 AC-12.n tests green (unit 119, e2e 16), mutation 89.94
 
 - **Spec:** §12 — unchanged
 - **Test:** `src/lib/todo-filter.test.ts::AC-12.1: keeps the todos that match the filter, in input order, and never mutates the input` — red because: `src/lib/todo-filter.ts` and `filterTodos` do not exist yet
@@ -18,7 +18,7 @@ _F10 · section 12_
 ### B2.2 · Show how many todos remain
 
 _F11 · section 13_
-**Status: Done** — 0af252c, 7 AC-13.n tests green (unit 130, e2e 21), mutation 90.37
+**Status: Done** — 0af252c (#79), 7 AC-13.n tests green (unit 130, e2e 21), mutation 90.37
 
 - **Spec:** §13 — unchanged (section written from `work/B2.2/analysis.md`)
 - **Test:** `src/lib/todo-count.test.ts::AC-13.1: returns 3 for open, done, open, done, open and leaves the input unchanged` — red because: `src/lib/todo-count.ts` does not exist, `countRemaining` is not exported
@@ -29,7 +29,7 @@ _F11 · section 13_
 ### B2.3 · Mark all todos complete
 
 _F12 · section 14_
-**Status: Done** — b3339e0, 6 AC-14.n tests green (unit 138, e2e 24), mutation 90.67
+**Status: Done** — b3339e0 (#80), 6 AC-14.n tests green (unit 138, e2e 24), mutation 90.67
 
 - **Spec:** §14 — unchanged (section written from `work/B2.3/analysis.md`; contract `spec/contracts/12-complete-all.md`)
 - **Test:** `src/lib/todo-complete-all.test.ts::AC-14.1: updates exactly the not-completed rows to completed and returns the count` — red because: `completeAllTodos` is not exported from `src/lib/todo-complete-all.ts`

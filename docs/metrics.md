@@ -26,6 +26,19 @@ means the situation to measure has not happened yet.
 | Parallel delivery | Speed   | Session wait time for the lead (plan gate; PR)                                                      | not set (watch under batch review) | gate median 1 min (19 cards, B1.1 n/a); PR median 1 min (20), upper bound 22 min; B1.18 reads 0, upper bound 939                                                              | 2026-10-31 | `scripts/metrics/wait-time.sh [<card>…]`: gate = Σ over approval rounds of (approval commit − its parent); PR = merge − first green `ci` run on the last own commit or later (a run red for a missing label anchors on the next green one, B1.18); upper bound = PR created → merge                                                                                                                               |
 | Parallel delivery | Quality | Plan deviations no hook caught: merged card PRs with a non-paperwork file outside the approved plan | 0                                  | 0/19 (B1.2–B1.21; B1.1 n/a)                                                                                                                                                   | 2026-10-31 | `scripts/metrics/plan-deviations.sh [<card>…]`: `check-plan-scope.sh`'s rule on each merged PR (no approved plan: n/a before #60, every non-paperwork file outside from #60 on); since #60 the required `guards` job applies it, so from B1.18 on a count > 0 means a bypass (`hotfix` label or ruleset bypass)                                                                                                   |
 
+## Parallel delivery batches
+
+Each batch re-measured with `scripts/metrics/*.sh <its cards>` once its last card closes (D-18 targets).
+
+| Batch | Cards               | Sessions | Throughput (≥ 6.56)                                                       | Median lead time (≤ 70 min) | CFR (≤ 6.7 %) | Plan-gate wait      | PR wait (upper bound)                         | Uncaught deviations (0) | Measured   |
+| ----- | ------------------- | -------- | ------------------------------------------------------------------------- | --------------------------- | ------------- | ------------------- | --------------------------------------------- | ----------------------- | ---------- |
+| 1     | B2.1–B2.3 (#78–#80) | 3        | 6.5 (2026-10-31: 7 cards, 8.6 h; the day also holds B1.21, B1.22) — below | 40 (34, 40, 127)            | 0/3           | median 4 (3, 31, 4) | median 17 (1, 17, 100); upper 111 — up from 1 | 0/3                     | 2026-10-31 |
+
+Batch 1 notes: B2.2 and B2.3 each waited for `src/app/page.tsx` (D-20 (a)): phase B after the previous holder merged,
+a second lead approval each; B2.3's 127-min lead time and 100-min PR wait are that queue. `gh pr ready` was refused by
+the sessions' auto mode, so the lead readied PRs by hand. Status lines lacked `(#PR)` and were fixed here, else every
+metric reads 0 cards.
+
 ## Per card
 
 | Card  | §           | Criteria        | Covered   | Mutation %                        | QA round trips | Red                                   | Green   |
