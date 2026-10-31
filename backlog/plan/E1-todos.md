@@ -239,9 +239,7 @@ _tooling · no §_
 ### B1.18 · WIP limit: at most three cards in Doing, none sharing a planned file
 
 _tooling · no §_
-**Status: Open** — `grep -n "Doing\|WIP" backlog/README.md scripts/next-task.sh scripts/ci/check-backlog.sh` → no
-match; `backlog/README.md` "Remaining" has only the card `Status` (Open/Partial), and `scripts/next-task.sh` picks the
-lowest eligible step with no count of cards already in progress and no look at their plans
+**Status: Done** — ce47a10 (#63); scripts/next-task-smoke.sh 21 ok on bash 5 and 3.2 (1e16ba4: 1 ok, 15 FAIL); board derived (To do, Doing, Review, Closing), WIP 3 on pick and --claim, --check plan overlap; no src/ change, mutation 89.02 % unchanged; red 1e16ba4, green 06212fd, hardening bbc2d44 + 9db597a + bb7133d
 
 - **Spec:** none — tooling (`backlog/CLAUDE.md`, `scripts/CLAUDE.md`); no `src/` change, no section
 - **Test:** shell smoke on a throwaway repo with three cards in Doing — red because: `scripts/next-task.sh` prints a
@@ -252,4 +250,4 @@ lowest eligible step with no count of cards already in progress and no look at t
   Files overlap a Doing card's plan Files; `scripts/next-task.sh --list` shows the column; bash 3.2;
   `scripts/next-task.sh` and `scripts/ci/` are protected → the PR needs the human-only `config-change-approved` label
 - **Tier:** quick · **Depends on:** ~~B1.17~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.18/`
+- **Work:** `work/B1.18/` — plan (rounds 1/1; lead chose (b) derived board, not split), review (plan rounds 2, cap reached, round-2 fixes accepted by the lead; diff pass 2/3, 3 findings fixed by `bbc2d44` + `9db597a` + `bb7133d`); squash `ce47a10` (#63)
