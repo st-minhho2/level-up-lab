@@ -65,4 +65,4 @@ Risk: if AC-12.6 shows the filter lost after `revalidatePath('/')`, the fix touc
 | 5 Map         | dev-lead                              | F10 ✅, metrics row                       | `docs(map): F10 filter the list [B2.1]`   |
 | 6 Review      | `reviewer` (diff), `/review-loop`     | `review.md` diff section, gate cleared    | `docs(backlog): B2.1 diff review`         |
 
-Plan review: approved, round 2 · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: lead (session reply "approve"), 2026-10-31 · Rounds: 1
