@@ -186,3 +186,143 @@ Verdict: changes requested
 
 Riskiest unfalsified: whether the desktop app notifies on every dev-lead turn end, including a session the lead
 is not viewing. (b)'s whole case rests on it, and I could not run it here.
+
+## Diff review (pass 1)
+
+SCOPE: tooling (no `src/`, `prisma/`, `e2e/` change; no §). Diff `21c36b9..0c0b0f5`: f05525b `test(scripts)`,
+0c0b0f5 `fix(scripts)`.
+
+### Commands (run by the reviewer at 0c0b0f5, last line each)
+
+| Command                                                                   | Last line                                                                                                 |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                                               | `All matched files use Prettier code style!`                                                              |
+| `pnpm typecheck`                                                          | rc 0                                                                                                      |
+| `pnpm test`                                                               | `Tests  115 passed (115)`                                                                                 |
+| `pnpm test:e2e`                                                           | `13 passed (24.3s)`                                                                                       |
+| `pnpm test:mutation`                                                      | `Final mutation score of 89.02 is greater than or equal to break threshold 70`                            |
+| `scripts/ci/check-suppressions.sh`                                        | `OK: no new suppressions`                                                                                 |
+| `scripts/ci/check-config-change.sh`                                       | rc 1 unlabeled; rc 0 with `CONFIG_CHANGE_APPROVED=true` (PR #71 carries the label)                        |
+| `scripts/ci/check-feat-commits.sh`                                        | `OK: no feat commit touches tests`                                                                        |
+| `scripts/ci/check-ac-coverage.sh`                                         | `OK: every criterion of a shipped section has a test`                                                     |
+| `scripts/ci/check-spec-sections.sh`                                       | `OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11`                                                             |
+| `scripts/ci/check-features-map.sh`                                        | `OK`                                                                                                      |
+| `check-backlog.sh` · `check-agent-frontmatter.sh` · `check-plan-scope.sh` | `OK` · `OK: 13 files` · `OK: … stays inside the approved plan of B1.21`                                   |
+| `scripts/verify-red.sh B1.21`                                             | rc 1, no `(red)` commit. Same as the tooling precedent (B1.18, B1.19); `--auto` (CI): "nothing to verify" |
+| `scripts/worktree-smoke.sh` (bash 5, `/bin/bash` 3.2)                     | `4 ok, 0 FAIL` both                                                                                       |
+| `git diff --stat main...HEAD`                                             | 9 files, +344 −19, all in the plan's Files                                                                |
+| `gh pr checks 71` (head 0c0b0f5, draft)                                   | 7 `ci` jobs pass; `claude-review` skipping (draft)                                                        |
+
+Probes on copies under `$TMPDIR` (the smoke, `require-hooks.sh` and one `worktree.sh` variant per run):
+
+- Red: `worktree.sh` from 21c36b9 → `2 ok, 2 FAIL` (K1 and K4 at local `main`). The red commit is red on behavior.
+- Revert one line each: drop `--no-track` → K2 FAIL; drop the fetch → K1, K4 FAIL; drop `|| echo warning` → K4 FAIL
+  (rc 128, `set -e`); `[[ $# -ge 2 ]]` never true → K3 FAIL; `else BASE=main` → `else BASE=origin/main` → **4 ok**
+  (that fallback is unprobed, finding 6).
+- Edge runs of `worktree.sh` at HEAD: E1 no `origin` remote → rc 0, base `main`, but the warning says "using the last
+  fetched origin/main"; E2 explicit empty base `""` → rc 255 `fatal: not a valid object name: ''` (21c36b9: rc 0, base
+  `main`); E3 explicit `main` → no fetch, base local `main` (as documented, `[base]` wins); E4 existing branch, no base
+  → fetch runs, warning printed, summary says `(base main)` though no base was used.
+- Test check in a scratch repo: red adds `src/card.test.ts`; `main` changes `src/sib.test.ts`, adds `e2e/01.spec.ts`
+  and an add/add `src/card.test.ts`. The merge's conflict resolution writes `expect(anything)` over the red
+  `expect(1)`. `git log --first-parent --no-merges --stat <red>..HEAD -- '*.test.*' e2e/` → **empty**; the old
+  `git diff --stat <red>..HEAD` → 3 files (sibling tests included); `git diff <red> HEAD -- src/card.test.ts` →
+  `-expect(1)` / `+expect(anything)`. A later `feat(x)` commit touching the test is listed by the new check.
+  `git log --first-parent --merges --remerge-diff <red>..HEAD -- '*.test.*' e2e/` shows exactly the resolution.
+
+### Checklist
+
+| Check                                                            | Result                                                                                        |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| every card criterion has a test whose assertion matches its Then | pass: the rewritten Test line (K1, K4 red) matches the smoke; Acceptance doc clauses are docs |
+| no test weakened after the red commit                            | pass: `git diff f05525b..HEAD -- scripts/worktree-smoke.sh '*.test.*' e2e/` empty             |
+| every changed file is in `plan.md`                               | pass for the diff; fail for what the diff needs (finding 2: two files outside the plan)       |
+| interfaces match the plan                                        | pass: `worktree.sh <branch> [base]`, the PR line verbatim in dev-lead.md and work-next        |
+| Zod, Prisma, raw SQL, migration                                  | n/a: no `src/`, `prisma/` change                                                              |
+| no secret, no suppression                                        | pass                                                                                          |
+| features map row moved                                           | n/a: tooling, no feature                                                                      |
+| D-19                                                             | pass: Loop 5 labels at the draft's `gh pr create`; PR #71 is draft and labeled                |
+| next-task.sh Review state vs draft-until-green                   | pass: `next-task.sh:64` counts a draft as Doing, so the card holds its WIP slot until `ready` |
+| `ci.yml` runs on drafts; `gh pr ready` re-runs nothing in `ci`   | pass: `types` has no `ready_for_review`; `review.yml` runs on it and skips drafts             |
+| review gate after a clean merge                                  | pass: re-mark is enough (plan review P3)                                                      |
+| would a test fail if one changed line were reverted              | pass for 5 of 6 lines of `worktree.sh`; fail for the `else BASE=main` fallback (finding 6)    |
+
+### Findings
+
+```
+[1] KIND: invariant
+    WHERE: .claude/agents/dev-lead.md:70 (with :74-75, the conflict route)
+    DEFECT: the new green-gate test check skips merge commits, so a card test rewritten while resolving a Loop 9
+            conflict passes every gate, and the compensating control (the reviewer reads the merge's resolution,
+            plan review round 2 reason 3) is written nowhere.
+    TRIGGER: red adds src/card.test.ts with expect(1); a sibling on main touches the same file; Loop 9's merge
+             conflicts; the resolution commits expect(anything) inside the merge commit.
+    WRONG BEHAVIOUR: `git log --first-parent --no-merges <red>..HEAD -- '*.test.*' e2e/` prints nothing and
+            check-feat-commits.sh (`rev-list --no-merges`) passes, so a weakened card test reaches `gh pr ready`
+            (invariant 2), where the old `git diff <red>..HEAD` showed it. Suggested: add
+            `git log --first-parent --merges --remerge-diff <red>..HEAD -- '*.test.*' e2e/` (git >= 2.36; shows only
+            the resolution, probe above), or require a card-test change from a conflict to land as its own
+            `test(...)` commit after the merge.
+    CONFIDENCE: confirmed (scratch-repo probe)
+
+[2] KIND: plan-mismatch
+    WHERE: .claude/skills/tdd-loop/SKILL.md:23, .claude/agents/reviewer.md:58 (neither in plan.md Files)
+    DEFECT: the two other places that state the test-unchanged check still use `git diff <red>..HEAD`, which lists
+            every test file merged in from main.
+    TRIGGER: Loop 9 conflict after a merge that brought any sibling test (src/sib.test.ts, e2e/01.spec.ts in the
+             probe) → dev-lead step 6 runs /tdd-loop, whose green gate says `git diff --stat <red>..HEAD … empty`.
+    WRONG BEHAVIOUR: the /tdd-loop green gate fails on main's tests, and the reviewer's checklist (step 7) reads the
+            same tests as weakened on the card, so the conflict path Loop 9 depends on stalls or sends the card
+            back to test-writer for code it does not own. dev-lead.md:70 and tdd-loop step 4 now contradict each
+            other. Fixing it needs both files added to the plan and the plan re-approved (planning.md).
+    CONFIDENCE: confirmed (same probe: the old check lists 3 files)
+
+[3] KIND: plan-mismatch
+    WHERE: .claude/docs/git-workflow.md:11-12 ("Lifecycle of a card", step 5)
+    DEFECT: the lifecycle still opens the PR at the end with `gh pr create` after /review-loop; the same file's
+            "Bringing main in" (lines 38-43) and dev-lead Loop 5 open a draft at the plan gate.
+    TRIGGER: a session that follows git-workflow.md's lifecycle (the CLAUDE.md "How a task is run end to end" row
+             points there) after dev-lead Loop 5 already opened the draft.
+    WRONG BEHAVIOUR: step 5 tells it to `gh pr create` a second PR for the same branch (gh refuses: one exists), and
+            never to merge origin/main, wait for green CI or `gh pr ready`. The file is in the plan's Files.
+    CONFIDENCE: confirmed (read)
+
+[4] KIND: correctness
+    WHERE: .claude/agents/dev-lead.md:79 ("A sibling's merge makes it BEHIND → merge origin/main again")
+    DEFECT: the BEHIND re-merge happens after `gh pr ready`, and nothing says to wait for CI or `gh pr ready --undo`
+            on red.
+    TRIGGER: PR ready and green; a sibling merges a change to a function the card calls; the re-merge is clean,
+             is pushed, and `ci` goes red.
+    WRONG BEHAVIOUR: a red PR shows as ready to the lead and next-task.sh counts it as Review, freeing a WIP slot.
+            That is the state plan review round 2 reason 2 removed from the first ready.
+    CONFIDENCE: plausible (doc trace; not run against GitHub)
+
+[5] KIND: correctness
+    WHERE: scripts/worktree.sh:24-29
+    DEFECT: the explicit-base test is `$# -ge 2`, not "non-empty", and the warning text is fixed.
+    TRIGGER: (a) `scripts/worktree.sh feat/X ""`; (b) a repo with no `origin/main` and a failed fetch;
+             (c) an existing branch with no base.
+    WRONG BEHAVIOUR: (a) rc 255 `fatal: not a valid object name: ''` (21c36b9: rc 0 from main); (b) the warning says
+            "using the last fetched origin/main" while it uses `main`; (c) a fetch and a warning for a base that
+            is never used. No caller passes "" today. Not blocking.
+    CONFIDENCE: confirmed (E1, E2, E4)
+
+[6] KIND: coverage
+    WHERE: scripts/worktree.sh:28 (`else BASE=main`)
+    DEFECT: no K probe has a repo without `origin/main`, so the fallback is untested.
+    TRIGGER: change `else BASE=main` to `else BASE=origin/main`.
+    WRONG BEHAVIOUR: worktree-smoke.sh still prints 4 ok, 0 FAIL. Not blocking (the plan's K1-K4 do not name it).
+    CONFIDENCE: confirmed (revert probe)
+```
+
+Notes, not findings: `backlog/CLAUDE.md` "Commit order" ends "→ /review-loop → PR" (still true, it does not say
+when the PR opens). The card title and README row still say "a ping when waiting" under (b). The plan review's
+riskiest unfalsified (the desktop notification) is still unverified; the lead accepted (b) knowing it.
+
+Verdict: back to code-writer. Blocking: 1, 2, 3. 2 (and 1 if fixed in reviewer.md) need `tdd-loop/SKILL.md` and
+`reviewer.md` added to plan.md's Files and the plan re-approved by the lead first. 4-6 are for the lead to take or
+drop.
+
+Riskiest unfalsified: Loop 9's "wait until a `ci` run exists for the head SHA" has no command. `gh pr checks <n>
+--watch` run straight after the push may exit on the old head's checks or on "no checks reported". I could not push
+to test it.

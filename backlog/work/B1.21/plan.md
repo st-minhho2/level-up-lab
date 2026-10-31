@@ -25,14 +25,25 @@ rewrites the card's Acceptance/Test lines to match.
   green → `gh pr ready` → "PR for <card> is ready for the lead: <url>". Later BEHIND → merge again before the next report.
 - `git-workflow.md` "Bringing `main` in" is replaced by the same rule. Plan > 40 lines: the lead accepts or trims.
 
+**Round 2 of the lead (diff review pass 1 found 3 blocking gaps; the fix needs 2 more files):**
+the test check becomes two commands everywhere it appears (dev-lead Loop 6, `/tdd-loop` green gate, reviewer's diff
+table): `git log --first-parent --no-merges --stat <red>..HEAD -- '*.test.*' e2e/` (the card's own commits) **and**
+`git log --first-parent --merges --remerge-diff <red>..HEAD -- '*.test.*' e2e/` (only what a merge's conflict
+resolution changed; the reviewer reads it); both empty or explained. `git-workflow.md` "Lifecycle" step 5 says draft
+at the gate, ready at Loop 9. BEHIND after `gh pr ready` → `gh pr ready --undo`, merge, green, ready again.
+`worktree.sh`: an empty `[base]` means the default; the warning names the base it falls back to; an existing branch
+skips the fetch. Probe K5: no `origin/main` ref → base `main`.
+
 ## Files
 
 | File                                | Change                                                     |
 | ----------------------------------- | ---------------------------------------------------------- |
 | `scripts/worktree.sh`               | fetch, fallback, default base `origin/main`, `--no-track`  |
-| `scripts/worktree-smoke.sh`         | new: K1–K4 (bare origin, `pnpm` shim, `.env.example`)      |
+| `scripts/worktree-smoke.sh`         | new: K1–K5 (bare origin, `pnpm` shim, `.env.example`)      |
 | `.claude/agents/dev-lead.md`        | Loop 5 draft; Loop 6 test check; Loop 9 merge, ready, line |
 | `.claude/skills/work-next/SKILL.md` | gate and exit lines match                                  |
+| `.claude/skills/tdd-loop/SKILL.md`  | green-gate test check: own commits + merge resolutions     |
+| `.claude/agents/reviewer.md`        | diff table: the same two commands                          |
 | `.claude/docs/git-workflow.md`      | "Bringing `main` in" replaced                              |
 | `scripts/CLAUDE.md`                 | `worktree.sh` base; smoke row                              |
 | `backlog/plan/E1-todos.md`          | (b) only: B1.21 Acceptance/Test lines                      |
@@ -60,4 +71,4 @@ scripts/hook-smoke.sh && scripts/ci/check-agent-frontmatter.sh && scripts/ci/che
 Steps: `test(scripts)` → `fix(scripts)` → `reviewer` diff → PR labeled `config-change-approved` (D-19). This card
 follows the new Loop 5/9 itself from the gate on.
 
-Plan review: changes requested, round 2 (cap); round-1 and round-2 reasons applied above, not re-reviewed · Plan approved by: lead (session reply "approve (b), chấp nhận độ dài"), 2026-10-31 · Rounds: 1
+Plan review: changes requested, round 2 (cap); round-1 and round-2 reasons applied above, not re-reviewed · Plan approved by: lead (session reply "approve (b), chấp nhận độ dài"), 2026-10-31 · Rounds: 2 (lead round 2 pending)
