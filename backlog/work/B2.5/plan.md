@@ -74,4 +74,4 @@ scripts/ci/check-ac-coverage.sh && scripts/ci/check-spec-sections.sh && scripts/
 
 PR stays draft until phase B is green.
 
-Plan review: round 1 changes requested (2 reasons), round 2 changes requested (1 reason: the guard test, fixed by dropping it, option (c)); cap of 2 rounds reached, round-2 fix unreviewed · Plan approved by: · Rounds: 1
+Plan review: round 1 changes requested (2 reasons), round 2 changes requested (1 reason: the guard test, fixed by dropping it, option (c)); cap of 2 rounds reached, round-2 fix unreviewed, accepted by the lead · Plan approved by: lead (session reply "approve"), 2026-10-31 · Rounds: 1
