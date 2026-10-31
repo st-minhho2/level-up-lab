@@ -214,4 +214,20 @@ test.describe('§16 search by title', () => {
     await expect(page.getByRole('listitem')).toHaveText(['Buy milk', 'Call mom']);
     await expect(searchBox(page)).toHaveValue('');
   });
+
+  // The filter stays 'all' while the query goes from 'milk' to '', so only the query changes between the two views.
+  test('on /?q=milk, text typed but not submitted is dropped when "All" is followed: the address is /, the list is [D, C, B, A] and the box is empty (REQ-16.2)', async ({
+    page,
+  }) => {
+    await seedFourTodos();
+    await openHydrated(page, '/?q=milk');
+    await expect(searchBox(page)).toHaveValue('milk');
+
+    await searchBox(page).fill('bread');
+    await filterLink(page, 'All').click();
+
+    await expect(page).toHaveURL(addressIs('/'));
+    await expect(page.getByRole('listitem')).toHaveText(['Buy milk', 'Milkshake', 'Call mom', 'Walk the dog']);
+    await expect(searchBox(page)).toHaveValue('');
+  });
 });
