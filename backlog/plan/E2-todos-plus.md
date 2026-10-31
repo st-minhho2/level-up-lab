@@ -29,8 +29,7 @@ _F11 · section 13_
 ### B2.3 · Mark all todos complete
 
 _F12 · section 14_
-**Status: Open** — `git grep -n "export async function" src/actions/todos.ts` → create, toggle, update title, clear
-completed; no action completes every todo
+**Status: Done** — b3339e0, 6 AC-14.n tests green (unit 138, e2e 24), mutation 90.67
 
 - **Spec:** §14 — unchanged (section written from `work/B2.3/analysis.md`; contract `spec/contracts/12-complete-all.md`)
 - **Test:** `src/lib/todo-complete-all.test.ts::AC-14.1: updates exactly the not-completed rows to completed and returns the count` — red because: `completeAllTodos` is not exported from `src/lib/todo-complete-all.ts`
