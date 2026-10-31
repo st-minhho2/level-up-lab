@@ -86,7 +86,7 @@ Behavior dropped by B (listed as cons above): shareable and reloadable view, wor
 - Security: `filter` is untrusted input, reduced to a three-value union by `parseTodoFilter` before use; it is never
   echoed into HTML or a query. The link `href`s are constants.
 - Performance: the full list is already read per render; filtering in memory adds one pass. Unchanged query.
-- Isolation: `src/app/page.tsx` is the only file shared with other Doing cards. B2.2 (remaining count, §13) also wants
+- Isolation: `src/app/page.tsx` is the only file shared with other Doing cards. B2.2 (remaining count, section 13) also wants
   a line in `page.tsx`; per D-20 only one card holds it at a time, so B2.2 must wait for this card's merge or be
   rebased on it. Which list B2.2's count reads (unfiltered or filtered) is B2.2's analysis to settle, not §12's.
 - `revalidatePath('/')` under a query string (REQ-12.11): Next re-renders the current route with its current search
