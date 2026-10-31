@@ -12,8 +12,14 @@ export function parseSearchQuery(value: string | string[] | undefined): string {
 
 // REQ-16.3, REQ-16.5, REQ-16.9: plain substring, case-insensitive, no accent folding; `filter` keeps input order and
 // returns a new array. No shortcut for '': `includes('')` is true for every title.
+// D-21, REQ-16.5: the length check runs on the trimmed query before lowercasing, because `toLowerCase` can lengthen a
+// title (200 'İ' become 400 code units) and let an over-long query match.
 export function searchTodos<T extends { readonly title: string }>(todos: readonly T[], query: string): T[] {
-  const needle = query.trim().toLowerCase();
+  const trimmed = query.trim();
+  if (trimmed.length > SEARCH_QUERY_MAX_LENGTH) {
+    return [];
+  }
+  const needle = trimmed.toLowerCase();
   return todos.filter((todo) => todo.title.toLowerCase().includes(needle));
 }
 
