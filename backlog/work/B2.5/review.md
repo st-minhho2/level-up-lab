@@ -55,3 +55,71 @@ Costs the lead accepts with this approach (not reasons, already in the plan or a
   unit tests, so round 2 restates both after `git merge origin/main` (B2.2 did the same in `a1adb62`).
 - Paperwork conflicts with B2.4 (F13/F14 map rows, section 15/16 index rows, `docs/metrics.md`, two package guides)
   fall to the second PR to merge, rows kept in numeric order.
+
+## Plan review (round 2)
+
+Reviewed at `7939d8e` (`plan.md` 76 lines; diff `b910f06..7939d8e` touches only `plan.md`: the test-file row, the
+form row, Verification lines 1–2, step 3b, the status line). Run here: `pnpm test` → `Tests  138 passed (138)`;
+`scripts/next-task.sh --check B2.5` → `[next-task] B2.5: no overlap with any Doing or Review card` (exit 0);
+`scripts/ci/check-spec-sections.sh` → `OK: sections cited: 1 … 14 16`; `scripts/ci/check-features-map.sh` → `OK`;
+`scripts/ci/check-ac-coverage.sh` → `§16: ✗, no tests expected yet (7 criteria)` then `OK`. Probe (independent clone
+under `$TMPDIR`, not the tree): the planned sequence skeleton (`SEARCH_QUERY_MAX_LENGTH: number = TITLE_MAX_LENGTH`) →
+`test(todos): B2.5 … (red)` → `feat(todos)` → step 3b guard commit → step 5 `test(ui): B2.5 search on / (red)`
+(e2e only), then `scripts/verify-red.sh B2.5 --range <base>..HEAD` after each: after green and after 3b `RESULT: red
+for the right reason`; after step 5 `src/lib/todo-search.test.ts: 2 ran (2 new), 1 new failed, 1 new passed -> GREEN
+before implementation: the search limit is the title limit, 200` and `::error::B2.5 tests are not red for the right
+reason` (reason 1).
+
+Round-1 reasons:
+
+- Reason 1 (red gate unreachable with the guard in the red commit): resolved for phase A. The guard leaves the red
+  commit for step 3b `test(todos): B2.5 review pass 1 -- max length guard`, no `(red)`, the subject
+  `backlog/CLAUDE.md:34` prescribes; red is 7 new (5 lib: 16.1, 16.2, 16.3 ×2, 16.4; 2 component), 138 + 7 = 145
+  after green, 146 after the guard. The move breaks phase B instead (new reason 1 below). My round-1 option (a) and
+  its claim that phase-A tests "stay proven at phase B" missed this: `verify-red.sh` copies every red-touched file
+  from the **last** `(red)` commit.
+- Reason 2 (literal 200 in the form): resolved. The `todo-search-form.tsx` row now reads
+  `maxLength={SEARCH_QUERY_MAX_LENGTH}` imported (never a literal 200); the diff review holds the code to it.
+
+| Check                                                                                  | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                         | pass: unchanged from round 1; the four phase-A files are the paths §16's Function contracts name, F14 lands `✗` in the skeleton; phase-B files declared, not listed                                                                                                                                                                                                                                                                                                                                                         |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | pass: Interfaces block unchanged, copies §16 verbatim; the form now imports the constant from a pure lib module (no Prisma, no `server-only`), allowed in a Server Component                                                                                                                                                                                                                                                                                                                                                |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass: Approach A, Way 1, wiring A; the advice's "use `SEARCH_QUERY_MAX_LENGTH` there" is now in the plan; the e2e-in-phase-B departure from `analysis.md` Q8 stays stated                                                                                                                                                                                                                                                                                                                                                   |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass: 7 criteria, each Then an exact value, id list, address, count or text                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| verification lists exact commands with expected numbers                                | fail: the phase-A numbers hold (verify-red 7 new red / 0 new pass, 145 → 146, e2e 24, mutation ≥ 70 with hot spots), but the phase-B line "e2e/16 red 3 failed → green" omits that `scripts/verify-red.sh B2.5` (and CI's `verify-red.sh --auto`, `.github/workflows/ci.yml:154`) exits 1 once the phase-B red commit exists (reason 1)                                                                                                                                                                                     |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | fail: step 3b's subject follows `backlog/CLAUDE.md:34`, but its position (before step 5's `(red)` commit, in a file a `(red)` commit touched) makes the final PR's red gate fail (reason 1); the rest unchanged and conventional                                                                                                                                                                                                                                                                                            |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by you | pass: `spec/contracts/14-search.md:5` `- [ ] Lead approves spec (lead, <date>)`, unticked; plan routes it through the gate's `approve` (D-7)                                                                                                                                                                                                                                                                                                                                                                                |
+| no settled D-n contradicted                                                            | pass: D-20 (a), D-5 (one limit, now also kept one in the component), D-7, D-19 none needed                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `scripts/next-task.sh --check B2.5` on the committed plan says no overlap              | pass, and no longer vacuous: `[next-task] B2.5: no overlap with any Doing or Review card`. The brief says B2.4 has no plan; it has one: `feat/B2.4-due-date` `dd1d6cf docs(backlog): B2.4 plan` (19:57, before `7939d8e`), B2.4 is `Doing` on `--list`, and `plan-files.sh --any B2.4 feat/B2.4-due-date` lists 16 files, none of B2.5's four. B2.4's plan does not list `src/app/page.tsx` or `src/lib/todo-schema.ts` ("B2.5 may take the page at once") but does list `src/lib/CLAUDE.md` and `src/components/CLAUDE.md` |
+
+Verdict: changes requested
+
+1. **The phase-B red commit makes `verify-red.sh B2.5` fail on the step-3b guard, so the final PR's CI is red.**
+   `verify-red.sh` collects the `*.test.ts(x)` files of every `(red)` commit, takes the base as the parent of the
+   first one (the skeleton) and copies those files from the last one (lines 66–90). Step 5 `test(ui): B2.5 search on
+/ (red)` becomes the last `(red)` commit; at it `src/lib/todo-search.test.ts` already holds the step-3b guard,
+   which is new against the base and passes on the skeleton (a constant cannot be red, as round 1 found). Trigger:
+   the planned sequence up to step 5, then `scripts/verify-red.sh B2.5` or CI's `verify-red.sh --auto` on the PR.
+   Wrong behaviour: `-> GREEN before implementation: <guard title>`, exit 1 (probed above). Pick one and fix
+   Verification and the Work breakdown to match: (a) the guard lands after the last `(red)` commit (after step 5, e.g.
+   with phase B's review as `test(todos): B2.5 review pass 2 -- max length guard`; phase-A total stays 145); (b) the
+   guard goes in a test file no `(red)` commit touches (one more Files row); or (c) drop the guard and let AC-16.5's
+   `maxlength` `200`, through the now-imported constant, pin the value. The same trap holds for any hardening test
+   that phase A's review (step 4) adds to `todo-search.test.ts` or `todo-search-form.test.tsx`: state that phase-A
+   hardening tests follow the same rule.
+
+Costs the lead accepts with this approach (not reasons; restated from round 1 with the round-2 facts):
+
+- Two approvals and a held WIP slot; AC-16.6, AC-16.7, REQ-16.1, REQ-16.7, REQ-16.9, REQ-16.10 have no proof until
+  phase B; the PR stays draft and nothing is user-visible after phase A.
+- The early start is now half open. B2.4's written plan (`dd1d6cf`, not yet approved) lists neither `page.tsx` nor
+  `todo-schema.ts`, which meets the plan's "Earlier only if" clause; but phase B also plans `src/lib/CLAUDE.md` and
+  `src/components/CLAUDE.md`, which B2.4 lists and `next-task.sh --check` does not treat as paperwork (`paper()`
+  covers only `backlog/`, `spec/`, `docs/metrics.md`, `docs/mistake-log.md`), so the clause's "`--check` is clean"
+  fails while phase B keeps the two guide rows. Starting before B2.4 merges means dropping those rows from phase B
+  (or B2.4 dropping them), or waiting.
+- Phase-B numbers will move once `origin/main` carries B2.4 (`e2e/15`, its unit tests): "24 + 3 = 27" and the unit
+  total are restated in the round-2 amendment.
+- Paperwork conflicts with B2.4 (F13/F14 map rows, section 15/16 index rows, `docs/metrics.md`, two package guides)
+  fall to the second PR to merge, rows kept in numeric order.
