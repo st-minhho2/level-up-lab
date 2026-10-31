@@ -13,7 +13,7 @@ ticks §16's `Lead approves spec` box (D-7). No dependency, migration, env key o
 | File                                       | Change                                                                                                                                                                      | Why (AC-16.n)       |
 | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
 | `src/lib/todo-search.ts`                   | Add: `SEARCH_QUERY_MAX_LENGTH`, `parseSearchQuery`, `searchTodos`, `searchEmptyMessage` (pure)                                                                              | 16.1–16.4           |
-| `src/lib/todo-search.test.ts`              | Add (red): AC-16.1, AC-16.2, AC-16.3 (punctuation; Café), AC-16.4; after green, unprefixed guard = real `TITLE_MAX_LENGTH`                                                  | 16.1–16.4, REQ-16.5 |
+| `src/lib/todo-search.test.ts`              | Add (red): AC-16.1, AC-16.2, AC-16.3 (punctuation; Café), AC-16.4 (no guard test: AC-16.5's `maxlength` 200 pins the constant through the form, review round 2)             | 16.1–16.4, REQ-16.5 |
 | `src/components/todo-search-form.tsx`      | Add: `TodoSearchForm` (no `'use client'`), `maxLength={SEARCH_QUERY_MAX_LENGTH}` imported (never a literal 200), label id `search-todos`, hidden `filter` only when not All | 16.5                |
 | `src/components/todo-search-form.test.tsx` | Add (red): AC-16.5, two renders (`all`/`''`, `active`/`'milk'`)                                                                                                             | 16.5                |
 
@@ -29,7 +29,9 @@ When B2.4 is merged: `git merge origin/main` (never rebase), amend this plan wit
 (`docs(backlog): B2.5 plan round 2 approved`). Then red e2e (no script proof: commit body records
 `pnpm test:e2e e2e/16-search.spec.ts` → 3 failed), green mount: `shown = searchTodos(filterTodos(todos, filter), query)`,
 empty text `searchEmptyMessage(filter, todos.length, query)`, count and both bulk buttons still from `todos`
-(REQ-16.9). Earlier only if B2.4's written plan lists neither `page.tsx` nor `todo-schema.ts` and `--check` is clean.
+(REQ-16.9). Earlier only if B2.4's written plan lists neither `page.tsx` nor `todo-schema.ts` and `--check` is clean. B2.4's plan (dd1d6cf) lists
+neither, but lists `src/lib/CLAUDE.md` and `src/components/CLAUDE.md`: an early phase B drops those two rows (closing
+commit instead) or waits.
 
 ## Interfaces touched
 
@@ -49,7 +51,7 @@ No route, action, Zod schema, Prisma model or env var changes. Query param `q` (
 
 ```bash
 scripts/verify-red.sh B2.5   # phase A: 7 new tests (5 lib, 2 component) fail on NotImplementedError or an assertion, 0 new pass
-pnpm lint && pnpm typecheck && pnpm test   # after green 145; after the guard commit 138 + 6 (lib) + 2 (component) = 146 green
+pnpm lint && pnpm typecheck && pnpm test   # 138 + 5 (lib) + 2 (component) = 145 green
 pnpm test:e2e                # phase A: unchanged, 24 passed
 pnpm test:mutation           # ≥ 70; todo-search.ts no survivors (trim, toLowerCase both sides, includes, guard order)
 scripts/ci/check-ac-coverage.sh && scripts/ci/check-spec-sections.sh && scripts/ci/check-feat-commits.sh \
@@ -59,18 +61,17 @@ scripts/ci/check-ac-coverage.sh && scripts/ci/check-spec-sections.sh && scripts/
 
 ## Work breakdown
 
-| Step       | Role / skill                                                         | Produces                          | Commit                                                |
-| ---------- | -------------------------------------------------------------------- | --------------------------------- | ----------------------------------------------------- |
-| 1 skeleton | `new-feature-slice`                                                  | 2 stubs, F14 row (✗)              | `chore(todos): B2.5 skeleton`                         |
-| 2 red      | `test-writer` → red gate (dev-lead)                                  | lib + component tests             | `test(todos): B2.5 search by title (red)`             |
-| 3 green    | `code-writer` → green gate (dev-lead)                                | two modules                       | `feat(todos): B2.5 search by title`                   |
-| 3b guard   | `test-writer` (no `(red)`: a constant cannot be red, review round 1) | length guard test                 | `test(todos): B2.5 review pass 1 -- max length guard` |
-| 4 review   | `reviewer` (diff), `/review-loop`                                    | `review.md` diff section          | `docs(backlog): B2.5 diff review …`                   |
-| 5 B red    | `test-writer` (after round-2 approve)                                | `e2e/16`, red on the page         | `test(ui): B2.5 search on / (red)`                    |
-| 6 B green  | `code-writer` → green gate                                           | page mount + 2 CLAUDE.md          | `feat(ui): B2.5 mount search`                         |
-| 7 map      | dev-lead                                                             | F14 row: tests, page; metrics row | `docs(map): F14 search by title [B2.5]`               |
-| 8 review   | `reviewer` (diff), `/review-loop`                                    | pass 2, gate clear                | `docs(backlog): B2.5 diff review …`                   |
+| Step       | Role / skill                          | Produces                          | Commit                                    |
+| ---------- | ------------------------------------- | --------------------------------- | ----------------------------------------- |
+| 1 skeleton | `new-feature-slice`                   | 2 stubs, F14 row (✗)              | `chore(todos): B2.5 skeleton`             |
+| 2 red      | `test-writer` → red gate (dev-lead)   | lib + component tests             | `test(todos): B2.5 search by title (red)` |
+| 3 green    | `code-writer` → green gate (dev-lead) | two modules                       | `feat(todos): B2.5 search by title`       |
+| 4 review   | `reviewer` (diff), `/review-loop`     | `review.md` diff section          | `docs(backlog): B2.5 diff review …`       |
+| 5 B red    | `test-writer` (after round-2 approve) | `e2e/16`, red on the page         | `test(ui): B2.5 search on / (red)`        |
+| 6 B green  | `code-writer` → green gate            | page mount + 2 CLAUDE.md          | `feat(ui): B2.5 mount search`             |
+| 7 map      | dev-lead                              | F14 row: tests, page; metrics row | `docs(map): F14 search by title [B2.5]`   |
+| 8 review   | `reviewer` (diff), `/review-loop`     | pass 2, gate clear                | `docs(backlog): B2.5 diff review …`       |
 
 PR stays draft until phase B is green.
 
-Plan review: round 1 changes requested (2 reasons: guard test after green; component imports the constant), round 2 pending · Plan approved by: · Rounds: 1
+Plan review: round 1 changes requested (2 reasons), round 2 changes requested (1 reason: the guard test, fixed by dropping it, option (c)); cap of 2 rounds reached, round-2 fix unreviewed · Plan approved by: · Rounds: 1
