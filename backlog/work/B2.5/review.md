@@ -505,3 +505,93 @@ the box and the hidden `filter`).
 | ---- | --- | --------------------------------------------------------------------------- | -------- | ------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 3    | 1   | `src/components/todo-search-form.tsx:16` `key={query}` misses filter links  | reviewer | plan-mismatch | fix now          | lead chose option A ("Chọn A", 2026-11-01): a fourth pass; test-writer adds P7's steps as a red e2e case, code-writer keys the input on filter and query (P9) |
 | 3    | R   | second submit from `/?filter=active&q=MILK` dropping the old `q` (riskiest) | reviewer | test gap      | no change needed | the form sends only `q` and the hidden `filter`; a native GET replaces the whole query string, AC-16.6 asserts `[D]` after it with `q=MILK`                   |
+
+## Diff review (pass 4)
+
+Reviewed at `60e0853` (since pass 3 `73b7d56`: dispositions and plan row `4c5141a`, red e2e `da858e3`, fix `60e0853`).
+Scope: ui (`src/components/todo-search-form.tsx`, `e2e/16-search.spec.ts`), limited by the lead's option A to pass-3
+finding 1 and what the fix touches. Pass 4 is past the 3-pass cap; it exists only by that decision.
+
+Run here (last line of each):
+
+| Command                              | Result                                                                                                  |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                          | `All matched files use Prettier code style!` (exit 0)                                                   |
+| `pnpm typecheck`                     | `tsc --noEmit` (no error)                                                                               |
+| `pnpm test`                          | `Tests  169 passed (169)`                                                                               |
+| `pnpm test:e2e`                      | `31 passed (38.8s)`                                                                                     |
+| `pnpm test:mutation`                 | `Final mutation score of 91.82 is greater than or equal to break threshold 70`; `todo-search.ts` 100.00 |
+| `scripts/ci/check-suppressions.sh`   | `OK: no new suppressions`                                                                               |
+| `scripts/ci/check-config-change.sh`  | `OK: no protected config changed`                                                                       |
+| `scripts/ci/check-feat-commits.sh`   | `OK: no feat commit touches tests`                                                                      |
+| `scripts/ci/check-ac-coverage.sh`    | `OK: every criterion of a shipped section has a test`                                                   |
+| `scripts/ci/check-spec-sections.sh`  | `OK: sections cited: 1 … 16`                                                                            |
+| `scripts/ci/check-features-map.sh`   | `OK`                                                                                                    |
+| `scripts/ci/check-plan-scope.sh`     | `OK: feat/B2.5-search stays inside the approved plan of B2.5`                                           |
+| `scripts/next-task.sh --check B2.5`  | `B2.5: no overlap with any Doing or Review card`                                                        |
+| `scripts/verify-red.sh B2.5`         | `RESULT: red for the right reason` (lib 8/8, component 2/2; `da858e3` is not a `(red)` commit, see P10) |
+| `git diff --stat origin/main...HEAD` | `19 files changed, 1630 insertions(+), 6 deletions(-)`                                                  |
+
+Probes (rsync copy in the scratchpad, never the tree; scratch spec `e2e/99-probe.spec.ts` in the copy only):
+
+- P10, revert `60e0853` to `key={query}` → e2e/16 `1 failed, 5 passed`; the failure is exactly the new test (`:203`,
+  `Expected: ""`, `Received: "bread"`). Answers the dev-lead's second question: yes, and only that test.
+- P11, `key={filter}` (query half dropped) → e2e/16 `6 passed`. Q5 (`/?q=milk`, fill `bread`, click "All") and Q6
+  (`/?filter=active&q=milk`, fill `bread`, click "Active") → both `Received: "bread"`. Under the shipped key both pass.
+  Without typing (Q1, Q4) both keys pass: an untouched uncontrolled input follows its new `defaultValue`.
+- P12, shipped key, Q2: on `/`, fill `bread`, click "All" (the current filter's own link) → address `/`, 4 rows, box
+  `Received: "bread"`. Same filter, same query, same key: no remount.
+- P13, shipped key, `/?q=%00milk` → 200, 0 rows, box `"\u0000milk"`. `TodoFilter` is `'all' | 'active' | 'completed'`
+  (`src/lib/todo-filter.ts:3`), none holds NUL, so `${filter}\u0000${query}` splits uniquely at the first NUL even
+  when the query holds one. Dev-lead's first question: lint (prettier) and typecheck pass with the escape; React keys
+  are not rendered to the DOM. Any separator absent from the three names would do (`|` reads easier); not a finding.
+
+### Checklist
+
+| Check                                                   | Result                                                                                                                                            |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| pass-3 finding 1 fixed                                  | pass: P7's steps are `e2e/16:203`, red at `da858e3` (P10), green at `60e0853`                                                                     |
+| no test weakened after the red commit                   | pass: `8bfc8e4..HEAD -- '*.test.*' e2e/` lists only `da858e3`, a `test(ui)` commit adding 15 lines, no deletion; `--merges --remerge-diff`: empty |
+| every changed file is in `plan.md`                      | pass: `todo-search-form.tsx` and `e2e/16` are Files rows; the row's wording was amended in `4c5141a`; `check-plan-scope` OK                       |
+| interfaces match the section's contracts                | pass: `TodoSearchForm({ filter, query })` unchanged; only the `key` changed                                                                       |
+| Zod · Prisma only in `src/lib` · no raw SQL · migration | n/a: no action, lib, Prisma or migration change since pass 3                                                                                      |
+| no secret, no suppression                               | pass                                                                                                                                              |
+| features map row moved                                  | pass: unchanged since pass 3 (F14 ✅)                                                                                                             |
+| would a test fail if one changed line were reverted     | pass for the line (P10); the `query` half of the key is held by no test (P11, finding 2)                                                          |
+
+### Findings
+
+```
+[1] KIND: plan-mismatch
+    WHERE: src/components/todo-search-form.tsx:13-15 (comment) and plan.md Files row todo-search-form.tsx (4c5141a)
+    DEFECT: the plan row says "every soft navigation (filter link or search) shows the current query, not typed
+            text", and the comment says the same, but the key changes only when filter or query changes, so a
+            filter link to the current address keeps the typing.
+    TRIGGER: AC-16.6's four todos, browser on `/` (hydrated); type `bread`, do not submit; click "All" (P12, Q2).
+    WRONG BEHAVIOUR: address `/`, 4 rows, no search applied, box reads "bread". Amendment cost 2 asked for "link
+            changes of filter or query", which the code does; the overclaim is in the new wording. §16 is silent
+            on a link to the current address, so no key can fix it without a guess (a per-request key would also
+            drop typing on every Server Action refresh, which pass 3 ruled out). Fix the wording ("each change of
+            filter or query"), or the lead rules on §16.
+    CONFIDENCE: confirmed (P12 ran: Expected "", Received "bread")
+
+[2] KIND: coverage
+    WHERE: src/components/todo-search-form.tsx:17 (`${query}` half of the key); e2e/16-search.spec.ts
+    DEFECT: no test changes the query while the filter stays, so dropping the query half of the key leaves every
+            suite green.
+    TRIGGER: `key={filter}` in place of the shipped key, then `/?q=milk`, type `bread`, click "All" (P11, Q5).
+    WRONG BEHAVIOUR: under that mutant the address is `/` and no search applies, but the box reads "bread"
+            (REQ-16.2 "show the current query"); e2e/16 still reports 6 passed. The shipped code is right; a
+            regression would ship unseen. Q5 or Q6 as an unprefixed REQ-16.2 e2e case closes it (green on arrival,
+            `test(ui)` commit).
+    CONFIDENCE: confirmed (P11 ran: e2e/16 6 passed; Q5, Q6 Received "bread")
+```
+
+Verdict: back to test-writer (finding 2: one e2e case; finding 1: a wording change to the comment and the plan row,
+code-writer and dev-lead). Pass 4 was the last pass the lead allowed. The lead's options: (A) a fifth pass for the
+test and the rewording; (B) accept both as known limits, stated in the PR body, and `mark-reviewed.sh` runs on that
+decision. Neither finding is wrong behavior in the shipped code against a stated §16 Then.
+
+Riskiest unfalsified: the shipped key is a server-rendered prop on a Server Component input, so it remounts only
+when the RSC payload carries a new key; a Next.js router-cache hit on back/forward (`/?filter=active` → back to `/`
+after typing) is traced to restore the cached payload with the old key and the typing, but not probed.
