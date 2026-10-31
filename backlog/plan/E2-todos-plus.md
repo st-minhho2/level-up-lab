@@ -40,8 +40,7 @@ _F12 · section 14_
 ### B2.4 · An optional due date per todo
 
 _F13 · section 15_
-**Status: Open** — `prisma/schema.prisma` `model Todo` has `id`, `title`, `completed`, `createdAt`, `updatedAt`, no due
-date; `spec/contracts/01-scope-and-gates.md` §1 lists due dates as not in scope, lifted by D-20
+**Status: Done** — 315b97e (#86), 7 AC-15.n tests green (unit 159, e2e 25), mutation 91.13
 
 - **Spec:** §15 — unchanged (section written from `work/B2.4/analysis.md`; contract `spec/contracts/13-due-date.md`; §1, §3 and §5 out-of-scope lines adjusted in the same commit)
 - **Test:** `src/lib/todo-due-date.test.ts::AC-15.1: accepts an empty value and a real YYYY-MM-DD date, and rejects every other value with "Due date must be a valid date"` — red because: the skeleton's `setTodoDueDateSchema` stub rejects every value, so the accepted dates fail
