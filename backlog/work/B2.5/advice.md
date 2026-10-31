@@ -39,7 +39,7 @@ page is free. Same shape as B2.2 and B2.3.
   green (draft PR until phase B).
 - Cons: AC-16.6 and AC-16.7 and the card's "done" wait for B2.4's merge, so B2.5 holds its WIP slot; two plan
   approvals; `spec/technical-requirements.md`, `spec/features-map.md` and `docs/metrics.md` (adjacent rows F13/F14,
-  §15/§16) conflict trivially with B2.4: the second PR to merge resolves them, rows in numeric order.
+  sections 15/16) conflict trivially with B2.4: the second PR to merge resolves them, rows in numeric order.
 - Fits rules: yes. Invariant 1 (a module per §16), 2 (red before each `feat`, the phase-B `feat` touches no test),
   3 and 4 (no mutation, no Prisma: this card adds neither), 5 (no stateful value; `action="/"` is the route, not a port).
 
@@ -125,7 +125,7 @@ How section 15's due date rendering touches the page mount (the brief's question
   button `Edit due date` per row. §16's e2e (AC-16.6, AC-16.7) asserts `listitem` text, which stays `D`, `C`, … for
   rows seeded with no due date, and counts `listitem` elements (the search form and its button are not list items).
   Seed with `prisma.todo.create({ data: { title, completed, createdAt } })` as `e2e/14` does, setting no `dueDate`
-  (the column is nullable, §15). Titles are searched, never due dates (§16 Out of scope), so a `Due 2026-…` text never
+  (the column is nullable, section 15). Titles are searched, never due dates (§16 Out of scope), so a `Due 2026-…` text never
   matches a query.
 - No row-level interaction: the search chain is in `page.tsx`, the due date is in `TodoItem`; neither reads the other.
 - Merge: if B2.4's plan does touch `page.tsx`, expect an adjacent-line conflict around the `shown` assignment and the
