@@ -90,4 +90,4 @@ or `NotImplementedError` (never an import): `src/lib/todo-due-date.test.ts` 7, `
 | 4    | dev-lead                              | F13 ✅                                                 | `docs(map): F13 … [B2.4]`      |
 | 5    | reviewer (diff)                       | `review.md` diff section                               | `docs(backlog): B2.4 review …` |
 
-Plan review: round 1 changes requested (2 reasons, applied dc63cc0) · round 2 changes requested (1 reason, applied 98acca2; review cap of 2 reached, the lead decides) · Plan approved by: · Rounds: 1
+Plan review: round 1 changes requested (2 reasons, applied dc63cc0) · round 2 changes requested (1 reason, applied 98acca2; review cap of 2 reached, the lead decides) · Plan approved by: lead, 2026-10-31 · Rounds: 1
