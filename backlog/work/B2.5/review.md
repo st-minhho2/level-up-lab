@@ -498,3 +498,10 @@ Riskiest unfalsified: the AC-16.6 "after the reload" step uses `page.reload()` o
 the query-string order (`filter` before `q`) is the browser's. `addressHas` ignores order, and nothing pins that a
 second submit from `/?q=milk&filter=active` drops the old `q`. That step is traced, not probed (the form sends only
 the box and the hidden `filter`).
+
+### Dispositions (pass 3, dev-lead)
+
+| Pass | #   | Finding                                                                     | Source   | Kind          | Disposition      | Justification                                                                                                                                                 |
+| ---- | --- | --------------------------------------------------------------------------- | -------- | ------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3    | 1   | `src/components/todo-search-form.tsx:16` `key={query}` misses filter links  | reviewer | plan-mismatch | fix now          | lead chose option A ("Chọn A", 2026-11-01): a fourth pass; test-writer adds P7's steps as a red e2e case, code-writer keys the input on filter and query (P9) |
+| 3    | R   | second submit from `/?filter=active&q=MILK` dropping the old `q` (riskiest) | reviewer | test gap      | no change needed | the form sends only `q` and the hidden `filter`; a native GET replaces the whole query string, AC-16.6 asserts `[D]` after it with `q=MILK`                   |
