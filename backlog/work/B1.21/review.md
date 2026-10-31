@@ -326,3 +326,14 @@ drop.
 Riskiest unfalsified: Loop 9's "wait until a `ci` run exists for the head SHA" has no command. `gh pr checks <n>
 --watch` run straight after the push may exit on the old head's checks or on "no checks reported". I could not push
 to test it.
+
+### Dispositions (pass 1, dev-lead)
+
+| #   | Finding                                                       | Disposition | Evidence                                                                                                                 |
+| --- | ------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 1   | merge-resolved test edits pass every gate                     | fix now     | `146a0df`: second command `--first-parent --merges --remerge-diff`; reviewer reads it; on this branch both print 0 lines |
+| 2   | tdd-loop and reviewer.md still use `git diff <red>..HEAD`     | fix now     | plan amended (548b2a7), lead round 2 "approve" (d0ac6aa); `146a0df` updates both                                         |
+| 3   | git-workflow.md Lifecycle step 5 opens the PR at the end      | fix now     | `146a0df`: draft at the gate, ready at Loop 9                                                                            |
+| 4   | BEHIND after `gh pr ready` re-merges without CI               | fix now     | `146a0df`: `gh pr ready --undo`, merge, green, ready again                                                               |
+| 5   | empty base rc 255; warning text; fetch for an existing branch | fix now     | K6 red at 0c0b0f5 (b1d5c85), green in `146a0df`; warning names the fallback; existing branch skips the fetch             |
+| 6   | `else BASE=main` mutant survives                              | fix now     | K5 (b1d5c85); smoke 6 of 6 on bash 5 and 3.2                                                                             |
