@@ -16,7 +16,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §9  | [contracts/07-clear-completed.md](contracts/07-clear-completed.md)     | Todos: clear completed                                                 | ✅     |
 | §10 | [contracts/08-mutation-feedback.md](contracts/08-mutation-feedback.md) | Todos: feedback when a mutation fails                                  | ✅     |
 | §11 | [contracts/09-logging.md](contracts/09-logging.md)                     | Logging failures: a swallowed mutation failure is recorded server-side | ✅     |
-| §12 | [contracts/10-filter.md](contracts/10-filter.md)                       | Todos: filter the list (All / Active / Completed)                      | ✗      |
+| §12 | [contracts/10-filter.md](contracts/10-filter.md)                       | Todos: filter the list (All / Active / Completed)                      | ✅     |
 | §13 | [contracts/11-remaining-count.md](contracts/11-remaining-count.md)     | Todos: remaining count                                                 | ✗      |
 
 Reading order: §1 → §2 → the section your backlog card names → [features-map.md](features-map.md).

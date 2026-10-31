@@ -7,9 +7,7 @@ own modules; `src/app/page.tsx`, `src/lib/todos.ts` and `src/actions/todos.ts` a
 ### B2.1 · Filter the list: All / Active / Completed
 
 _F10 · section 12_
-**Status: Open** — `git grep -n "searchParams" src/app src/lib` → no match; `src/lib/todos.ts:20`
-`export async function listTodos(): Promise<Todo[]>` takes no filter; `spec/contracts/03-todos.md` "Out of scope" lists
-filtering, lifted by D-20
+**Status: Done** — 830901d, 7 AC-12.n tests green (unit 119, e2e 16), mutation 89.94
 
 - **Spec:** §12 — unchanged
 - **Test:** `src/lib/todo-filter.test.ts::AC-12.1: keeps the todos that match the filter, in input order, and never mutates the input` — red because: `src/lib/todo-filter.ts` and `filterTodos` do not exist yet
