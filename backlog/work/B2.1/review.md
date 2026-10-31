@@ -57,3 +57,33 @@ Costs the lead accepts by approving (none blocks; listed so they are not found a
 - If AC-12.6 shows the filter lost after `revalidatePath('/')`, the fix touches `src/actions/todos.ts` and the plan
   stops for re-approval (the plan's own Risk line). `TodoItem` and `ClearCompletedButton` call the actions without a
   router call, so the current URL with its query is what re-renders; not falsified without a running server.
+
+## Plan review (round 2)
+
+Plan at `5aeb4d3`. `git diff be8f63d 5aeb4d3` touches only `plan.md` (5 lines: the overlap sentence, the two
+verification lines, the status footer); Files, Interfaces and Work breakdown are byte-identical to round 1. §12
+(`spec/contracts/10-filter.md`) unchanged since `d6cbb31`; B2.2's branch tip is still `b69db78`.
+
+| Check                                                                             | Result                                                                                                                                                                                                                                                  |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: unchanged from round 1; `scripts/ci/plan-files.sh --any B2.1 HEAD` still prints exactly the 10 Files rows                                                                                                                                         |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass: Interfaces block unchanged, still §12's Function contracts verbatim                                                                                                                                                                               |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: Approach A                                                                                                                                                                                                                                        |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: AC-12.1 to AC-12.7, unchanged                                                                                                                                                                                                                     |
+| verification lists exact commands with expected numbers                           | pass: round-1 reasons 1 and 2 fixed. `pnpm test` → "115 unchanged + ≥ 4 new (≥ 1 per AC-12.1–12.4) green" is a floor tied to titles; `pnpm test:e2e` → "13 + 3 = 16 passed", naming 05, 06, 09, 10 and smoke (the 6 files under `e2e/` after this card) |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: unchanged                                                                                                                                                                                                                                         |
+| the section has a `Lead approves spec` box, ticked only by a human                | pass: `spec/contracts/10-filter.md:5` still `- [ ] Lead approves spec (lead, <date>)`; left to the lead's `approve` (D-7)                                                                                                                               |
+| no settled D-n contradicted                                                       | pass: D-20 (a) and D-7 as in round 1                                                                                                                                                                                                                    |
+| `scripts/next-task.sh --check B2.1` on the committed plan                         | pass: `[next-task] B2.1: no overlap with any Doing or Review card` (run at `5aeb4d3`, exit 0). Round-1 reason 3 fixed: the plan now cites B2.2's `b69db78`, which still lists no `src/app/page.tsx`                                                     |
+
+Note (not blocking): the plan's footer reads `Rounds: 1`; after this review it is 2. The e2e "+ 3" commits the
+test-writer to one test per AC-12.5 to AC-12.7; if AC-12.7's three states land as separate tests the total moves to 18
+and the diff reviewer will ask for it to be stated in the red commit body.
+
+Costs the lead accepts by approving: the six listed under round 1 stand unchanged (§12 approved with its two new
+empty texts and REQ-12.10's hidden-clear behavior; filter links drop other query parameters, which B2.5 must change in
+the spec; focus lost when a checked row leaves the Active list; `page.tsx` held until merge, B2.2 phase B waits;
+REQ-12.10/12.11 held only by e2e AC-12.6, outside Stryker; the `revalidatePath('/')` filter-retention risk, which
+stops for re-approval if it materialises).
+
+Verdict: approved (ready for the lead's gate, not approved for build)
