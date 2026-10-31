@@ -4,20 +4,27 @@ Approach: three read-only scripts beside B1.16's, smoke probes on its fixture, o
 (round 1: not worth it unless it exports every approval round; each new script carries its own 3-line `cards`).
 spec-analyst/advisor skipped (no section). Round 1 (9 reasons) applied below.
 
-- **Throughput** (D-18): per calendar day UTC+7, cards whose feature PR merged that day ÷ span × 8, summed over days;
-  span = from the earlier of the day's first plan-approval commit (any card, round 1) and the day's first merge, to the
-  day's last merge. **Baseline = D-18's window B1.1–B1.15: ≈ 4.85 cards / 8 h → target ≥ 6.3**; B1.1–B1.21 printed
-  for context (≈ 5.23). Departure stated: a card approved the day before adds no span to the day it merges.
-- **Wait time** (B1.21 (b)): plan gate = Σ over the card's approval rounds of (approval commit − its first parent);
-  PR = merge − first green `ci` run completed on the card's last own commit or later (own = first-parent, not a merge,
-  not `chore(ci)`), so a BEHIND merge or a label re-run does not reset it. Medians. Stated bias: a commit the session
-  makes while waiting shortens the gate wait.
-- **Plan deviations no hook caught**: a merged card PR's file outside `check-plan-scope.sh`'s paperwork set and not
-  in `plan-files.sh <card> <head>`; no approval → `n/a`. Prototype: 0 of 19 measured (B1.2–B1.21), B1.1 `n/a`.
+- **Throughput** (D-18): Σ cards whose feature PR merged ÷ Σ daily spans × 8 (one ratio, not a sum of daily ratios);
+  day = UTC+7 calendar day, `(epoch + 25200) / 86400` in bash; span = the day's first plan-approval commit (any card)
+  → the day's last feature-PR merge. **Lead's call (X)**: literal D-18 (baseline B1.1–B1.15 **5.11 → target ≥ 6.64**)
+  or start the span at the earlier of that and the day's first merge (**4.85 → ≥ 6.31**, recorded as a D-18 amendment).
+  Recommended: literal (no ruling to change). B1.1–B1.21 printed for context (5.56 / 5.23).
+- **Wait time** (B1.21 (b)): plan gate = Σ over approval rounds of (approval commit − its first parent); median 1 min
+  (19 cards, B1.1 n/a). PR wait, **lead's call (Y)**: (a) first green `ci` run at or after the last own commit → merge,
+  printed with created → merge as the upper bound (median 1 / 22 min; B1.18 reads 0 because its own commit's run was red
+  for want of the label and the first green run is on `d518e69`); (b) `ready_for_review` → merge, which needs the
+  events API (`gh api`, a human-only command here). Recommended: (a), bias stated in the row.
+- **Plan deviations no hook caught**: a merged card PR's file outside `check-plan-scope.sh`'s paperwork set and not in
+  `plan-files.sh <card> <head>`; no approval → `n/a`; 0 of 19 (B1.2–B1.21). **Lead's call (Z)**: since #60 the same
+  rule runs in the required `guards` job, so from B1.18 on it is 0 by construction and counts only bypasses (`hotfix`
+  label skips `guards`, or a ruleset bypass). Recommended: keep it as that bypass counter, stated in the row.
 - **Batch review** (`git-workflow.md`): the lead takes plans and ready PRs in batches (e.g. late morning, late
-  afternoon). Costs stated there: a card waiting at the plan gate is Doing, so 3 plans waiting fill WIP 3; a card
-  waiting as a ready PR is Review and frees its slot; a batch of k ready PRs costs k − 1 serial CI cycles (≈ 4 min each)
-  because the ruleset requires up-to-date branches. Plan > 40 lines: the lead accepts or trims.
+  afternoon). Costs stated there: a card waiting at the plan gate is Doing, so 3 waiting plans fill WIP 3 and
+  `next-task.sh` refuses new picks until the batch drains; a ready PR is Review and frees its slot; merging k ready PRs
+  costs k − 1 serial CI cycles (≈ 4 min each, strict up-to-date ruleset); after each merge every other ready PR goes
+  BEHIND: its session (stopped, waiting) is woken by the orchestrating session or the lead, runs `gh pr ready --undo`
+  (back to Doing, above the WIP cap until it is ready again), merges `origin/main`, waits for green, readies. The lead
+  merges in any order. Plan > 40 lines: the lead accepts or trims.
 
 ## Files
 
@@ -52,13 +59,14 @@ M19 a file outside B9.1's plan → counted, a listed file and paperwork → not;
 
 ```bash
 scripts/metrics-smoke.sh   # test commit: 11 ok, 7 FAIL (M14–M20, scripts missing); green: 18 ok, 0 FAIL
-scripts/metrics/throughput.sh B1.1 … B1.15 | tail -1   # ≈ 4.85;  all cards ≈ 5.23
-scripts/metrics/wait-time.sh | tail -1; scripts/metrics/plan-deviations.sh | tail -1   # 0/19
+scripts/metrics/throughput.sh B1.1 … B1.15 | tail -1   # (X) literal 5.11, min-start 4.85
+scripts/metrics/wait-time.sh | tail -1   # gate median 1 min (19); PR median 1 min (20), upper bound 22 min
+scripts/metrics/plan-deviations.sh | tail -1   # uncaught plan deviations 0/19
 bash -n scripts/*.sh scripts/metrics/*.sh && scripts/ci/check-plan-scope.sh && scripts/ci/check-backlog.sh
 ```
 
 Steps: `test(scripts)` → `feat(scripts)` → `reviewer` diff → draft PR at the gate, ready at Loop 9 (B1.21),
 `config-change-approved` (D-19: `.claude/docs`).
 
-Plan review: changes requested, round 1 (9 reasons, applied) · Plan approved by: <empty until the lead approves> ·
+Plan review: changes requested, round 2 (cap); round-1 and round-2 reasons applied above, not re-reviewed · Plan approved by: <empty until the lead approves> ·
 Rounds: 1

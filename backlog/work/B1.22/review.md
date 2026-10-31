@@ -98,3 +98,92 @@ size.
 
 Waiting on the lead after the dev-lead revision: the choices in reasons 1 (a or b), 2 (literal D-18 or min, as a
 deviation) and 9.
+
+## Plan review (round 2)
+
+Plan at b369451 (64 lines). Everything below was re-derived read-only from `refs/remotes/pr/N` (B1.1–B1.21, 20 PRs),
+`gh pr view` (mergedAt, createdAt, headRefOid, files), `gh run list --commit <sha> --workflow ci` on every first-parent
+commit from the PR head down to the last own commit, `scripts/ci/plan-files.sh <card> refs/remotes/pr/N`, and the PR
+timeline of #63. Today `scripts/metrics-smoke.sh` prints `[metrics-smoke] 11 ok, 0 FAIL`.
+
+| Plan claims (revised definitions)                  | Re-derived                                                                                                                                                                                                                                     |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| throughput B1.1–B1.15 ≈ 4.85, target ≥ 6.3         | confirmed: 15 cards / 24.73 h → **4.852** (10-28 1.77 h, start = merge; 10-29 15.11 h, start = approval; 10-30 7.86 h, start = merge). 1.3 × 4.852 = **6.31**. D-18 literal start: 23.49 h → 5.108, target 6.64                                |
+| throughput B1.1–B1.21 ≈ 5.23                       | confirmed: 20 cards / 30.61 h → **5.228** (10-30 11.34 h, 10-31 2.39 h, both starting at a merge). Literal: 28.80 h → 5.555                                                                                                                    |
+| gate wait summed over rounds, B1.5 → 5, B1.21 → 13 | confirmed: B1.5 = 5 + 0 (`ef73bec`, `9efec0b`), B1.21 = 7 + 6 (`9f87c9a`, `d0ac6aa`). Values 0,0,0,1,1,1,1,1,1,1,2,3,5,5,6,13,16,20,82 → **median 1 min (19)**, B1.1 n/a. Floor per round and floor of the sum give the same values            |
+| PR wait anchored on the last own commit            | per card: B1.1 128, B1.2 0, B1.3 13, B1.4 1, B1.5 0, B1.6 0, B1.7 20, B1.8 1, B1.9 1, B1.10 0, B1.11 372, B1.12 14, B1.13 42, B1.14 22, B1.15 2, B1.16 0, B1.17 1, **B1.18 0**, B1.19 0, B1.21 8 → **median 1 min (20)**, 7 zeros (round 1: 9) |
+| deviations 0 of 19                                 | confirmed: `uncaught plan deviations 0/19` with `check-plan-scope.sh`'s set (`backlog/* spec/* docs/metrics.md docs/mistake-log.md`) and its glob match; B1.1 n/a (plan-files exit 3)                                                          |
+
+Round 1, reason by reason: 1 partly resolved (merges of `main` no longer reset the anchor: B1.3 0 → 13, B1.7 0 → 20;
+the `chore(ci)` case is not, reason 1 below). 2 partly resolved (min start, "any card", round-1 approval; wording and
+the D-18 departure, reason 2). 3 resolved. 4 resolved (the "changes reply with no approval commit" limit is no longer
+stated; not blocking). 5 partly resolved (reason 3). 6 resolved, with a new cost (reason 4). 7 resolved (11 one-line
+groups today + 7 one-line probes = 18). 8 resolved by dropping `lib.sh`. `plan-deviations.sh` must still resolve
+`scripts/ci/plan-files.sh` from its own directory before the `cd` (B1.18's pass-1 fix); M19 runs in a fixture repo
+that has no `scripts/`, so it would catch this. 9 stated ("the lead accepts or trims"); 64 lines.
+
+| Check                                                                             | Result                                                                                                                         |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| every file in the plan belongs to the section's features (map)                    | pass: tooling card, no §; the Files are the card's Acceptance plus plan/review; `lib.sh` dropped                               |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass (n/a): nothing under `src/` or `prisma/`                                                                                  |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: advisor skipped (no section), stated                                                                                     |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: 5 acceptance clauses; M14–M20 each name an observable outcome                                                            |
+| verification lists exact commands with expected numbers                           | fail: `wait-time.sh \| tail -1` has no expected value (reason 5)                                                               |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: B1.16 precedent, `test(scripts)` red (scripts missing) → `feat(scripts)` → reviewer; no § so no map row                  |
+| the section has a `Lead approves spec` box, ticked only by a human                | pass (n/a): no section, nothing ticked                                                                                         |
+| no settled D-n contradicted                                                       | fail: the span start departs from D-18's text and the plan does not say so (reason 2). D-19 handled (label for `.claude/docs`) |
+
+Verdict: changes requested
+
+1. **B1.18 still reads 0, and "a label re-run does not reset it" is false whenever the own commit's run is not green.**
+   The anchor is the first green run on the last own commit or later, so a `chore(ci)` commit is excluded as an own
+   commit but its run is still a candidate anchor. B1.18 #63: its last own commit `fd6dc5a` was pushed at
+   10-30T11:38Z (PR created 11:38Z). Its only completed run failed, because it ran on the unlabeled payload. The lead
+   added `config-change-approved` at 10-31T02:54:44Z (timeline), and the first green run is the one on `d518e69`
+   (`chore(ci)`), at 03:17:05Z. Merge was at 03:17:51Z, so the script reads **0**. The real wait is ≥ 916 min to the
+   lead's first action and 939 min to merge. The same pattern gives B1.19 0: both runs on `52a0af2` were cancelled
+   and the green run is on `chore(ci)` `cc8d244`, while created → merge is 15 min. It gives B1.17 1 min: the run on
+   `524143f` failed at 10:01Z and the green labeled run came at 10:21Z. Also, `updatedAt` is the last attempt:
+   `fd6dc5a`'s run was created on 10-30 and reads 10-31T03:07Z after a manual Re-run, so a Re-run of a green run moves
+   the anchor later. D-19 plus B1.21 (label added on the draft at the gate) make this case rare from now on. But the
+   baseline holds three such PRs, and the plan claims the opposite. Fix (lead picks one): (a) state the bias in the
+   plan and the metrics row. A PR whose own commit's run is red or cancelled until the lead acts (label) reads only
+   the time after that action. Name B1.17, B1.18 and B1.19, and also print created → merge (median 22 min) as the upper
+   bound. (b) Anchor on the PR's first `ready_for_review` timeline event, or `createdAt` for a PR that was never a
+   draft. This gives B1.18 939 min, but it overstates older PRs that were pushed to after opening (B1.12: 97 vs 14).
+2. **Throughput: the formula text and the D-18 departure.** (i) "per calendar day … ÷ span × 8, summed over days" is
+   Σ of daily ratios. For B1.1–B1.15 with min start, that is 9.04 + 4.24 + 5.09 = **18.4**, not 4.85. D-18 and the
+   plan's own output line are Σ cards ÷ Σ spans × 8. Reword it, or a code-writer can implement the wrong formula and
+   M14 written from the same text will agree. (ii) Starting the span at min(first approval, first merge) departs from
+   D-18 ("from the first plan-approval commit"). The only departure the plan names is the day-before one, which is
+   D-18 literal. Name it as a departure with both baselines: literal 5.11 → target 6.64, min 4.85 → target 6.31. Then
+   the lead's approval is the ruling, recorded as a D-18 amendment in `00-decisions.md` (paperwork). (iii) Write the
+   target as ≥ 6.31, not 6.3, and name how the UTC+7 day is computed in bash 3.2 (integer `(t + 25200) / 86400`; no
+   `strftime`, and `date -r` / `date -d` differ).
+3. **Batch review still omits what a batch costs the lead and the board.** The plan's statements are correct against
+   the code. A local branch with no PR, or a draft, is Doing (`next-task.sh:6`, `state_of`). An open non-draft PR is
+   Review. The ruleset is strict (`.github/rulesets/main.json:36`). The median green PR run is 4.1 min (40 runs:
+   3.0–5.1), so "k − 1 cycles ≈ 4 min" holds. Round 1 also asked for what the lead does, and that is still missing.
+   After `gh pr ready`, each session stopped (`dev-lead.md:80-82`). So each of the k − 1 BEHIND siblings needs the
+   lead to wake its session, one at a time, in merge order. Each `gh pr ready --undo` turns that card back into
+   Doing. `--undo` is not WIP-gated, so if the slots the Review PRs freed were taken meanwhile, Doing reaches
+   3 + (k − 1) and `next-task.sh` exits 1 for every pick until the batch drains. Add: the merge order (e.g. smallest
+   or oldest first), who wakes the sessions, and this WIP overshoot. The lead could also choose GitHub's "Update
+   branch" for clean merges. That needs no session, but it skips dev-lead step 9's `mark-reviewed.sh` re-run, so it is
+   the lead's call to state, not mine.
+4. **After B1.17's guard, the deviation count can only detect bypasses, and the metrics row must say so.**
+   `check-plan-scope.sh` runs in the required `guards` job (`ci.yml:140`, ruleset `guards`). The metric uses the same
+   rule (round 1 asked for that), so any PR merged after #60 (2026-10-30 17:22 +07) can count only if `guards` was
+   skipped (the `hotfix` label, `ci.yml:116`) or the ruleset was bypassed. The D-18 guardrail "= 0" is then true by
+   construction for B1.18 onward, and only B1.2–B1.17 (16 PRs) were measured without the guard. State this in the
+   plan and the row ("counts hotfix-lane and bypassed merges; pre-#60 PRs are the only independent sample"), or ask
+   the lead for a definition the guard cannot already enforce.
+5. **The verification gives no expected value for wait time.** Add `median plan-gate wait 1 min (19), median PR wait
+1 min (20)` (or the values under the anchor chosen in reason 1), and the B1.18 value the lead should expect.
+
+Not blocking: B1.7 and B1.10 read gate 0 because a decision commit (D-13, D-16) landed 2 s before approval. The plan's
+stated bias covers this.
+
+This is round 2, the cap (`dev-lead.md` ≤ 2 rounds), so the plan now goes to the lead as **Waiting on human**, with
+these reasons attached. Choices for the lead: reason 1 (a or b), reason 2 (ii) (accept the min start as a D-18
+amendment or keep literal), reason 4 (accept as a bypass counter or redefine), and the 64-line length.
