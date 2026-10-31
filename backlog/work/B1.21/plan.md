@@ -71,4 +71,4 @@ scripts/hook-smoke.sh && scripts/ci/check-agent-frontmatter.sh && scripts/ci/che
 Steps: `test(scripts)` → `fix(scripts)` → `reviewer` diff → PR labeled `config-change-approved` (D-19). This card
 follows the new Loop 5/9 itself from the gate on.
 
-Plan review: changes requested, round 2 (cap); round-1 and round-2 reasons applied above, not re-reviewed · Plan approved by: lead (session reply "approve (b), chấp nhận độ dài"), 2026-10-31 · Rounds: 2 (lead round 2 pending)
+Plan review: changes requested, round 2 (cap); round-1 and round-2 reasons applied above, not re-reviewed · Plan approved by: lead (session reply "approve (b), chấp nhận độ dài"), 2026-10-31 · Rounds: 2 (lead round 2: "approve", 2026-10-31)
