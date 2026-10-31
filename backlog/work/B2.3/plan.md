@@ -21,9 +21,7 @@ CI-protected path (no `config-change-approved`).
 | `src/components/complete-all-button.tsx`      | Add: `CompleteAllButton` (`'use client'`), alert as next sibling        | 14.4, 14.5     |
 | `src/components/complete-all-button.test.tsx` | Add (red): AC-14.4 (a), (b); AC-14.5                                    | 14.4, 14.5     |
 | `e2e/14-complete-all.spec.ts`                 | Add in phase B only (needs the mount); seed via `PrismaClient` as `09`  | 14.6           |
-| `src/lib/CLAUDE.md`                           | one row `todo-complete-all.ts` (§14)                                    | docs           |
 | `src/actions/CLAUDE.md`                       | "four actions" sentence names the fifth, `complete-all.ts`              | docs           |
-| `src/components/CLAUDE.md`                    | one line `complete-all-button.tsx`                                      | docs           |
 
 Paperwork (exempt): `spec/features-map.md` F12 row ✗ in the skeleton (three modules), tests + page in `docs(map)`;
 §14 index row stays ✗ until the closing commit (`check-ac-coverage.sh` would demand AC-14.6 before phase B);
@@ -31,12 +29,13 @@ Paperwork (exempt): `spec/features-map.md` F12 row ✗ in the skeleton (three mo
 
 ## Sequence (phase B)
 
-Waits until B2.1's PR #78 is MERGED (in Review it still holds the page). Then `git merge origin/main` (never rebase);
-amend this plan with one row for `src/app/page.tsx` (`<CompleteAllButton disabled={!todos.some((todo) => !todo.completed)} />`
-
-- import, outside the list, both states, right after `<ClearCompletedButton …/>`, fed the unfiltered array, never
-  B2.1's filtered one); lead re-approves as `docs(backlog): B2.3 plan round 2 approved`; re-run `--check B2.3`. B2.2's
-  phase B edits the same JSX region: whichever phase A reaches Review first takes the page first, the other merges after.
+Waits until B2.1's PR #78 is MERGED (in Review it still holds the page and both package guides). Then
+`git merge origin/main` (never rebase) and amend this plan with three rows: `src/app/page.tsx` (one JSX line and its
+import, outside the list, both states, right after the clear button, `disabled` from the unfiltered array, never
+B2.1's filtered one); `src/lib/CLAUDE.md` (row `todo-complete-all.ts`, §14) and `src/components/CLAUDE.md` (line
+`complete-all-button.tsx`), both deferred from phase A because B2.1's plan holds them (`--check`). Lead re-approves as
+`docs(backlog): B2.3 plan round 2 approved`; re-run `--check B2.3`. B2.2's phase B edits the same JSX region: the card
+whose phase A reaches Review first takes the page first, the other merges `origin/main` after it.
 
 ## Interfaces touched
 
@@ -76,7 +75,7 @@ scripts/ci/check-ac-coverage.sh && scripts/ci/check-spec-sections.sh && scripts/
 | ---------- | ------------------------------------- | ------------------------------------ | ------------------------------------------- |
 | 1 skeleton | `new-feature-slice`                   | 3 stubs, logger member, F12 row (✗)  | `chore(todos): B2.3 skeleton`               |
 | 2 red      | `test-writer` → red gate (dev-lead)   | lib, action, component tests         | `test(todos): B2.3 mark all complete (red)` |
-| 3 green    | `code-writer` → green gate (dev-lead) | three modules, `CLAUDE.md` rows      | `feat(todos): B2.3 mark all complete`       |
+| 3 green    | `code-writer` → green gate (dev-lead) | three modules, actions guide line    | `feat(todos): B2.3 mark all complete`       |
 | 4 B red    | `test-writer` (after round-2 approve) | `e2e/14`, red on the page            | `test(ui): B2.3 mark all on / (red)`        |
 | 5 B green  | `code-writer` → green gate            | the page mount                       | `feat(ui): B2.3 mount mark all complete`    |
 | 6 map      | dev-lead                              | F12 row: tests, page; metrics row    | `docs(map): F12 mark all complete [B2.3]`   |
