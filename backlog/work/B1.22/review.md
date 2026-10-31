@@ -526,3 +526,11 @@ Verdict: ready for PR. Neither finding blocks.
 Riskiest unfalsified: `plan-deviations.sh` reads `gh pr view --json files`, which I believe returns at most 100 files
 without paginating [unverified, carried from passes 1 and 2]. A card PR above 100 files would under-count silently.
 No card PR comes near that size, so I could not trigger it.
+
+### Dispositions, pass 3 (dev-lead)
+
+| #    | Disposition                                                                                                                                                                                                  | Evidence                                            |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| 1    | fix now (hardening): probe M25, `throughput.sh B8.1` and a day-4 pick with no approval                                                                                                                       | 289310f; mutant (L) → M25 5.8, mutant (F) → M25 n/a |
+| 2    | fix now: row names the baseline cards (B1.1–B1.17) and the shared day 10-30 (10-31 alone 13.1); the PR body's Plan section lists the lead's rulings and the interface additions; `plan.md` stays as approved | `docs/metrics.md`, PR #74 body                      |
+| note | `scripts/CLAUDE.md` probes M1–M25                                                                                                                                                                            | —                                                   |
