@@ -42,6 +42,22 @@ sibling's merge leaves it BEHIND: the ruleset blocks a branch that is not up to 
 from a freshly fetched `origin/main` (B1.21). The PR is a draft from the plan gate until CI is green on the merged
 head; only then `gh pr ready` and the report to the lead.
 
+## Batch review (B1.22)
+
+The lead takes waiting plans and ready PRs in batches (for example late morning and late afternoon) instead of one at a
+time. A session stops at its fixed lines ("Plan for <card> is ready…", "PR for <card> is ready for the lead: <url>")
+and the desktop app notifies. What a batch costs, by the rules above:
+
+- A card waiting at the plan gate is Doing (`scripts/next-task.sh`): three waiting plans fill WIP 3, and new picks are
+  refused until the batch drains: an approved card stays Doing, a draft PR, until its PR is ready.
+- A ready PR is Review and frees its slot. Merging k ready PRs costs k − 1 serial CI cycles (≈ 4 min each): the
+  ruleset requires an up-to-date branch, so after each merge every other ready PR is BEHIND. Its session, stopped and
+  waiting, is woken by the orchestrating session or the lead; it runs `gh pr ready --undo` (Doing again, above the WIP
+  cap until it is ready), merges `origin/main`, waits for green CI and readies the PR again. The lead merges in any
+  order.
+- `scripts/metrics/wait-time.sh` and `throughput.sh` measure what a batch rhythm does to the session wait and to cards
+  per 8 h (`docs/metrics.md`, D-18).
+
 ## Hotfix lane
 
 For a production incident only, and never as a silent bypass:
