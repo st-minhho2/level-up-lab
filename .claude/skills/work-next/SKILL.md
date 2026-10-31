@@ -29,12 +29,13 @@ Nothing under `src/`, `prisma/`, `e2e/` changes before `plan.md` carries `Plan a
 ## Exit
 
 Report: PR link, verification numbers (tests, e2e, mutation %), rounds (plan, review), one "Waiting on you" list.
-Labels and merging are human actions. After the merge: `scripts/card-status.sh <card> Done "<sha>, <tests>"` on
+Merging is the lead's; add `config-change-approved` at PR creation when the approved plan changes a protected path
+(D-19). After the merge: `scripts/card-status.sh <card> Done "<sha>, <tests>"` on
 `main` (`docs(backlog): <card> done`), `scripts/worktree-prune.sh`.
 
 ## Guardrails
 
 - One card per invocation; one role at a time; each role gets only the brief template.
 - `ESCALATE` / `NEEDS RULING` / `DISPUTED` from a role → `/advise` once; still unresolved → "Waiting on human", stop.
-- Never bypass hooks, never force push, never label or merge, never clear the review gate with findings open.
+- Never bypass hooks, never force push, never merge, never clear the review gate with findings open; labels per D-19.
 - A role stopped by its path hook → log a row in `docs/mistake-log.md`, rerun once with a narrower brief.

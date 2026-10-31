@@ -25,8 +25,8 @@ this file and the nested `CLAUDE.md` files are what an agent needs to act.
 - **The main checkout is never edited.** Work in a worktree (`scripts/worktree.sh`), commit, push the branch, open a
   PR; never merge, never force push, never bypass a hook.
 - **Secrets stay out.** Never read or print `.env*` (except `.env.example`), keys, `~/.ssh`, `~/.aws`; hooks block it.
-- **Ask before** any dependency, tool, CI, hook or configuration change (the `config-change-approved` label is a
-  human's).
+- **Ask before** any dependency, tool, CI, hook or configuration change: the lead approves it in the plan, then the
+  agent adds the `config-change-approved` label to the PR (D-19); merging stays the lead's.
 
 ## Rules
 
