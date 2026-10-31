@@ -183,3 +183,72 @@ Verdict: ready for PR (phase A banked; per the plan the PR stays draft until pha
 Riskiest unfalsified: phase A — no test pins the `<p>`'s attributes, so an out-of-scope live region
 (`aria-live="polite"`) would pass every test; phase B — the argument of `countRemaining(` on the merged `page.tsx`
 (B2.1's filtered array would pass all 7 criteria and break REQ-13.5).
+
+## Plan review (phase B amendment)
+
+Reviewed: the amendment `76e750e` (`f11454b..76e750e` on `plan.md`: 3 Files rows added, "Sequence (phase B)"
+rewritten, status line) and the merge `b2db063` (parents `f11454b`, `830901d` = `origin/main`), against §13, §12, §9,
+§7, D-7, D-20 and the rules. The round-1 plan stays approved (`25327bd`); only the amendment is judged here. Run here on
+2026-10-31 at `76e750e`: `pnpm test` → `Tests  130 passed (130)` (16 files); `pnpm exec playwright test --list` →
+`Total: 16 tests in 6 files`; `check-spec-sections.sh` → `OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11 12 13`;
+`check-features-map.sh` → `OK`; `check-ac-coverage.sh` → `§13: ✗, no tests expected yet (7 criteria)`, OK;
+`check-plan-scope.sh` → `OK: feat/B2.2-remaining-count stays inside the approved plan of B2.2`; `plan-files.sh B2.2`
+(approved) → the 5 round-1 paths, `plan-files.sh --any B2.2 HEAD` → those 5 + the 3 new rows. Probe (scratch copy of
+`76e750e` + the planned two imports and `<RemainingCount count={countRemaining(todos)} />` after `<TodoFilterNav>`):
+`tsc --noEmit` exit 0, `eslint src/app/page.tsx` exit 0.
+
+**Merge `b2db063`.** `git show --remerge-diff b2db063`: three conflicts, each one appended row against one appended row
+(`docs/metrics.md` B2.1 / B2.2, `spec/features-map.md` F10 / F11, `spec/technical-requirements.md` §12 / §13); each
+resolution keeps both, in id order, byte-identical to its side. `git diff origin/main HEAD -- src/app e2e src/actions
+prisma src/lib/todos.ts src/lib/todo-filter.ts src/components/todo-filter-nav.tsx` → empty, so the merged `page.tsx`
+is B2.1's verbatim. `git log --first-parent --merges --remerge-diff --format= 09e53b9..HEAD -- '*.test.*' e2e/` →
+empty; `--no-merges` → empty: no test touched after the red.
+
+**Merged `page.tsx`.** `todos` is the `listTodos()` result (all stored rows), `shown = filterTodos(todos, filter)`.
+§13's contract ("from the same `listTodos()` result") and REQ-13.5 require `todos`; the amendment names `todos` and
+forbids `shown`, the same source as the clear button (REQ-12.10). Placement after `<TodoFilterNav>`, before the list or
+empty text: §9 (button "between `<TodoForm />` and the list") and §12 (nav "between `<ClearCompletedButton />` and the
+list or the empty text") still hold, both "between", not "next to"; outside the `<ul>`, both states (REQ-13.2). No
+existing e2e or component assertion selects a `<p>` or "left" text (`grep` over `e2e/`), and AC-12.4 keeps the nav at
+0 `listitem`, so AC-13.4's 3 listitems and AC-13.3's single "No todos yet" (`emptyListMessage('all', 0)`) hold.
+
+| Check                                                                             | pass / fail: reason                                                                                                                                                                                                                                                                                                                                                                                                           |
+| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: `src/app/page.tsx` is named by §13's Function contracts; the two package guides close the doc drift both earlier reviews carried (`src/components/CLAUDE.md` says "client components"; `src/lib/CLAUDE.md` lacks `todo-count.ts`). F11 gains `src/app/page.tsx` and `e2e/13` at step 6.                                                                                                                                 |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass: no new signature; `HomePage` keeps §12's; the mount is §13's contract line; no action, schema, Prisma or `'use client'`. Probe above typechecks and lints.                                                                                                                                                                                                                                                              |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: Approach A phase B, exactly as sequenced (mount only after B2.1 MERGED; `git merge`, not rebase).                                                                                                                                                                                                                                                                                                                       |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: §13 unchanged, 7 criteria; its `Lead approves spec` box now reads ticked (lead, 2026-10-31).                                                                                                                                                                                                                                                                                                                            |
+| verification lists exact commands with expected numbers                           | **fail**: `pnpm test … = 126 green` is stale after the merge: measured `130 passed (130)` (B2.1 brought 4), and phase B adds no unit test, so the gate expects 130. `pnpm test:e2e` "phase A: unchanged" / "phase B green: + 5" give no base: measured 16 tests in 6 files today, so phase B green is 21 in 7. The phase-B red line (`e2e/13` → 5 failed) still holds (each test's first count assertion; traced in round 2). |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass, with notes: steps 4–7 unchanged; the two package-guide rows are assigned to no step (state it: step 5 `feat` or step 6 `docs(map)`); `test(ui)` / `feat(ui)` use a `<pkg>` that `backlog/CLAUDE.md` lists (`todos`, `health`, `env`, `ui`) and match `verify-red.sh`'s `(red)` pattern.                                                                                                                                 |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7)          | pass: ticked "(lead, 2026-10-31, plan gate of B2.2)"; not touched by this review.                                                                                                                                                                                                                                                                                                                                             |
+| no settled D-n contradicted                                                       | pass: D-20 (a) "mount points held by one Doing card at a time (`next-task.sh --check`)": B2.2 now holds `src/app/page.tsx`; B2.3's plan (`feat/B2.3-complete-all`, Sequence) states the same tie-break ("the first card to commit its amended plan with `--check` clean takes the page"), so "B2.3 waits for this card to merge" agrees with B2.3's own plan.                                                                 |
+| `scripts/next-task.sh --check B2.2` says no overlap                               | pass: `[next-task] B2.2: no overlap with any Doing or Review card` (exit 0, at `76e750e`); B2.3's planned Files (local and `origin/` ref) hold none of the 8 paths.                                                                                                                                                                                                                                                           |
+
+Verdict: changes requested
+
+1. **Verification numbers.** Replace `= 126 green` with the post-merge expectation (`pnpm test` → 130 passed, 16 files,
+   phase B adds none) and give `pnpm test:e2e` absolute counts (phase B red: `e2e/13` 5 failed, the other 16 passed;
+   phase B green: 21 passed in 7 files). TRIGGER: the step-5 green gate runs `pnpm test`, reads 130 against the plan's
+   126, and either stops on a false mismatch or learns to ignore the plan's number.
+
+Costs the lead accepts by approving the amendment (none blocking):
+
+- **REQ-13.5 under a filter is still guarded by `grep` only.** All 7 criteria render `/` (filter `all`, where `shown`
+  equals `todos`), so `countRemaining(shown)` passes every test; `/?filter=completed` with 2 open todos would read
+  "0 items left". Only the plan's `git grep` line and the diff reviewer stop it; a test needs a §13 change (7 of 7).
+- **Phase-B red has no script proof.** `verify-red.sh` lists `e2e/*.spec.ts` as "skipped, needs a server"
+  (`verify-red.sh:70`) and re-proves only the phase-A unit files, so `verify-red.sh B2.2` exit 0 says nothing about
+  step 4. The proof is the manual `pnpm test:e2e e2e/13-remaining-count.spec.ts` output; record it in the step-4
+  commit body and `review.md`. Step 4 does not name dev-lead's red gate as step 2 does.
+- **Re-approval subject.** The amendment dropped the old Sequence's "`docs(backlog): B2.2 plan round 2 approved`".
+  `plan-files.sh` honours only subjects matching `^docs\(backlog\): B2\.2 plan (round [0-9]+ )?approved`; any other
+  wording leaves the approved Files at the 5 round-1 paths and the plan-scope hook blocks `page.tsx` (fails safe).
+- **The claim is local.** The branch is 3 commits ahead of `origin/feat/B2.2-remaining-count`; B2.3's `--check`
+  resolves `refs/heads/` first, so it sees the page row only from this machine until the branch is pushed.
+- **Diff-review base.** Local `main` is `fa98ab2`, `origin/main` is `830901d`: `git diff --stat main...HEAD` now shows
+  27 files (B2.1's included), `origin/main...HEAD` shows 13. The phase-B diff review uses `origin/main`, as
+  `check-plan-scope.sh` does.
+- **Length:** `plan.md` is 76 lines against `planning.md`'s ≈ 40 (73 at round 2).
+
+Riskiest unfalsified: the argument of `countRemaining(` in the phase-B `page.tsx`; no criterion renders a filtered view,
+so `shown` in place of `todos` passes every planned test and breaks REQ-13.5.
