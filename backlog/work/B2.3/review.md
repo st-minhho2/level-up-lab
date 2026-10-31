@@ -24,7 +24,7 @@ section 12 and one for section 13 (reason 1; the section sign is left out here s
 Verdict: changes requested
 
 1. **CI is red on this branch now, and D-20's citation rule is broken.** `backlog/work/B2.3/analysis.md:36` writes
-   "B2.1 (§12) and B2.2 (§13)" and `backlog/work/B2.3/advice.md:237` writes "in §13, the count"; neither heading exists
+   "B2.1 (&sect;12) and B2.2 (&sect;13)" (sign spelled out by dev-lead so this quote passes the same check) and `backlog/work/B2.3/advice.md:237` writes "in &sect;13, the count"; neither heading exists
    on this branch (they land with B2.1 and B2.2). `scripts/ci/check-spec-sections.sh` greps all of `backlog/` and exits
    1, and `.github/workflows/ci.yml` runs it, so every phase-A push fails CI, and the plan's own verification line
    (`check-ac-coverage.sh && check-spec-sections.sh && …`) cannot pass. Fix: a `docs(backlog)` commit writing "section 12"

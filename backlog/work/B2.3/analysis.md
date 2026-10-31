@@ -33,7 +33,7 @@ Limits taken from existing sections: message `Could not save, try again` (§10 `
    view and enabled-with-no-effect in others. Proposed: the mounting card computes `disabled` from the unfiltered list;
    §14 puts "marking only a filtered view" out of scope. Whoever merges second (B2.1 or B2.3) reconciles it in
    `page.tsx`; changes otherwise: a divergence that `/spec-trace` would report after both merge.
-3. **Index table rows.** `spec/technical-requirements.md` gets a §14 row now; B2.1 (§12) and B2.2 (§13) will add their
+3. **Index table rows.** `spec/technical-requirements.md` gets a §14 row now; B2.1 (section 12) and B2.2 (section 13) will add their
    rows to the same table, so expect a trivial adjacent-line merge conflict. Proposed: resolve in the second PR to
    merge, keep rows in numeric order.
 4. **e2e file name.** Existing e2e files carry the section number (`05`, `06`, `09`, `10`), not the contract file number.

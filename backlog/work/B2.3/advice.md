@@ -234,7 +234,7 @@ Verdict:     Unfiltered. REQ-14.4/14.5 say "todos" with no view qualifier, REQ-1
              `updateMany` has no filter), and filtering is out of scope; a disabled state derived from a filtered view would
              disable the button in "Completed" while open todos exist, contradicting REQ-14.4. In "Completed" with only open
              todos stored the button is enabled and the visible list is empty; that is the spec's behavior, not a bug.
-             Same variable as the clear button and, in §13, the count (REQ-13.5): the full `listTodos()` array.
+             Same variable as the clear button and, in section 13, the count (REQ-13.5): the full `listTodos()` array.
 Next action: Phase B plan names the argument: the array returned by `listTodos()`, not `filterTodos(...)`. Diff review
              check: `git grep -n "some((todo) => !todo.completed)" src/app/` names the unfiltered variable.
 Must not:    Pass B2.1's filtered array, or rename B2.1's `todos` binding to make the expression compile.

@@ -34,8 +34,10 @@ Waits until B2.1's PR #78 is MERGED (in Review it still holds the page and both 
 import, outside the list, both states, right after the clear button, `disabled` from the unfiltered array, never
 B2.1's filtered one); `src/lib/CLAUDE.md` (row `todo-complete-all.ts`, §14) and `src/components/CLAUDE.md` (line
 `complete-all-button.tsx`), both deferred from phase A because B2.1's plan holds them (`--check`). Lead re-approves as
-`docs(backlog): B2.3 plan round 2 approved`; re-run `--check B2.3`. B2.2's phase B edits the same JSX region: the card
-whose phase A reaches Review first takes the page first, the other merges `origin/main` after it.
+`docs(backlog): B2.3 plan round 2 approved`. B2.2's phase B edits the same JSX region and both PRs stay draft
+(Doing) until phase B is green, so the tie-break is the guard itself: the first card to commit its amended plan with
+`scripts/next-task.sh --check` clean takes the page; the other's `--check` then reports the overlap and it waits for
+that PR to merge (or the lead picks the order).
 
 ## Interfaces touched
 
