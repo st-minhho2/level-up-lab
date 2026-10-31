@@ -181,3 +181,82 @@ test would not catch a future regression for a thrown non-Error value.
 Dev-lead own pass: the eight invariants hold (no Zod needed: no input, §14; Prisma only in `src/lib/todo-complete-all.ts`;
 no test changed after a18a9a9; no file outside the plan's Files under `src/`). Reverting any line of the three modules
 fails at least one test (mutation 6/6 killed in the new lib/action files; component probes as above).
+
+## Plan review (phase-B amendment)
+
+Reviewed: the amendment `414e95c` (`plan.md`: 3 Files rows added, "Sequence (phase B)" rewritten, phase-B verification
+lines, step 5 "Produces", status line) and the merges `577a463` (parents `704b52b`, `830901d`) and `2f9a1c1` (parents
+`577a463`, `0af252c` = `origin/main`), against §14, §13, §12, §10, §9, §7, D-7, D-20 and the rules. Phase A stays
+approved (`90bfc23`) and reviewed (diff pass 1); only the amendment is judged here. Run here on 2026-10-31 at `414e95c`:
+`pnpm test` → `Tests  138 passed (138)` (19 files); `pnpm exec playwright test --list` → `Total: 21 tests in 7 files`;
+`check-spec-sections.sh` → `OK: sections cited: 1 2 3 4 5 6 7 8 9 10 11 12 13 14`; `check-features-map.sh` → `OK`;
+`check-ac-coverage.sh` → `§13: ✗ …`, `§14: ✗, no tests expected yet (6 criteria)`, `OK`; `check-plan-scope.sh` →
+`OK: feat/B2.3-complete-all stays inside the approved plan of B2.3`; `plan-files.sh B2.3` (approved, `90bfc23`) → the 9
+round-1 paths; `plan-files.sh --any B2.3 HEAD` → those 9 + `src/app/page.tsx`, `src/lib/CLAUDE.md`,
+`src/components/CLAUDE.md`. Probe (scratch copy of `414e95c` + the planned import, the header naming §14 and
+`<CompleteAllButton disabled={!todos.some((todo) => !todo.completed)} />` after `<ClearCompletedButton …/>`):
+`tsc --noEmit` exit 0, `eslint src/app/page.tsx` exit 0. Not run: the e2e suite on the probe [unverified].
+
+**Merges.** `git show --remerge-diff` on each: three conflicts per merge, all paperwork (`docs/metrics.md`,
+`spec/features-map.md`, `spec/technical-requirements.md`), each an appended row against an appended row; both rows
+kept, in id order (B2.1, B2.2, B2.3; F10, F11, F12; §12 ✅, §13 ✗, §14 ✗). `git diff origin/main HEAD -- src/app e2e
+src/lib/todos.ts src/lib/todo-filter.ts src/lib/todo-count.ts src/components/todo-filter-nav.tsx
+src/components/remaining-count.tsx src/lib/CLAUDE.md src/components/CLAUDE.md` → empty: the merged `page.tsx` and both
+guides are `main`'s verbatim. `git log --first-parent --no-merges a18a9a9..HEAD -- '*.test.*' e2e/` → empty;
+`--merges --remerge-diff` → 0 lines: no test touched after the red.
+
+**Merged `page.tsx`.** `todos` is the `listTodos()` result, `shown = filterTodos(todos, filter)`. The amendment uses
+`todos`, as §14's contract line does verbatim and as REQ-14.4/14.5 ("every todo") require; the same source as the clear
+button (REQ-12.10) and the count (REQ-13.5). Placement after `<ClearCompletedButton …/>`, before `<TodoFilterNav>`:
+§14 leaves it to the mounting card; §9 (clear button "between `<TodoForm />` and the list") still holds; §12 (nav
+"between `<ClearCompletedButton />` and the list or the empty text") holds under the "between, not next to" reading
+B2.2's amendment review already applied when the count went between nav and list. The clear button's §10 alert stays
+inside its own wrapper as the button's next sibling (`clear-completed-button.tsx`), so REQ-10.4 is untouched; the new
+button's wrapper keeps REQ-14.9's alert adjacent. Collision check over `e2e/`: button locators are `Add`, `Edit title`,
+`Save`, `Clear completed` (substring match, none a substring of "Mark all complete" or vice versa); the only alert
+locator is scoped to `form` (`e2e/10`); `getByText` calls match "No … todos" / "… left" text; no assertion reads DOM
+order between controls. Playwright runs `workers: 1`, `fullyParallel: false`, so AC-14.6 marking every row cannot race
+another file's seed.
+
+| Check                                                                             | pass / fail: reason                                                                                                                                                                                                                                                                                                                                                              |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: `src/app/page.tsx` is named by §14's Function contracts (last line); the two package guides close the drift for the new modules (`src/lib/CLAUDE.md` lacks `todo-complete-all.ts`; `src/components/CLAUDE.md` names no §14 file). F12 gains `src/app/page.tsx` and `e2e/14` at step 6. No CI-protected path (`check-config-change.sh` pattern excludes `src/**/CLAUDE.md`) |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass: no new signature; `HomePage` keeps §12's; the JSX is §14's contract line byte for byte; no action, schema or Prisma change, no `'use client'` on the page. Probe typechecks and lints                                                                                                                                                                                      |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: Approach A phase B after B2.1 MERGED; placement "directly after `<ClearCompletedButton …/>`" is the advice's suggestion. Advice said "then rebases"; the plan merges (`577a463`, `2f9a1c1`), which the branch rules require (no force push) and B2.2 did                                                                                                                   |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: §14 unchanged, 6 criteria                                                                                                                                                                                                                                                                                                                                                  |
+| verification lists exact commands with expected numbers                           | pass: `pnpm test` → 138 measured here (phase B adds no unit test); `pnpm test:e2e` 21 measured (7 files) → 23 in 8 files after `e2e/14` (AC-14.6 (a), (b)). Notes: the phase-B red line gives only the `e2e/14` file (2 failed), not the full-suite count (2 failed, 21 passed); the `= 123 green` line is phase A's and is not labelled so                                      |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: steps 4–7 unchanged except step 5 now names the page and both guides (the gap B2.2's amendment review found is not repeated here); `test(ui)` / `feat(ui)` use a listed `<pkg>`; step 4's subject ends `(red)`                                                                                                                                                             |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7)          | pass: `spec/contracts/12-complete-all.md:5` reads "[x] Lead approves spec (lead, 2026-10-31, plan gate of B2.3)"; not touched by this review                                                                                                                                                                                                                                     |
+| no settled D-n contradicted                                                       | pass: D-20 (a) "the shared mount points … are held by one Doing card at a time (`next-task.sh --check`)": B2.1 and B2.2 are merged, the board shows B2.2 "Closing" and no other Doing card plans the page; this card now holds it                                                                                                                                                |
+| `scripts/next-task.sh --check B2.3` says no overlap                               | pass: `[next-task] B2.3: no overlap with any Doing or Review card` (exit 0, at `414e95c`)                                                                                                                                                                                                                                                                                        |
+
+Verdict: approved
+
+This means ready for the lead's gate, not approved for build. Costs the lead accepts by approving the amendment (none
+blocking):
+
+- **REQ-14.4 under a filter is guarded by `grep` only.** AC-14.6 renders `/` (filter `all`, where `shown` equals
+  `todos`), so `disabled={!shown.some((todo) => !todo.completed)}` passes all 6 criteria. Trigger: stored todos C (open),
+  B (done); `/?filter=completed` shows only B, and the button reads disabled while C is open. Only the plan's
+  `git grep -n "CompleteAllButton disabled" src/app/page.tsx` line and the diff reviewer stop it; a test needs a §14
+  change (6 of 7 criteria used, so room exists for one).
+- **Phase-B red has no script proof.** `verify-red.sh` skips `e2e/*.spec.ts` ("needs a server") and re-proves only
+  phase A's unit files, so `verify-red.sh B2.3` exit 0 says nothing about step 4. The proof is the manual
+  `pnpm test:e2e e2e/14-complete-all.spec.ts` output (expected 2 failed, each on "Mark all complete" not found);
+  record it in the step-4 commit body and here. Step 4 does not name dev-lead's red gate as step 2 does.
+- **Re-approval subject.** The amendment dropped the old Sequence's "`docs(backlog): B2.3 plan round 2 approved`".
+  `plan-files.sh` honours only subjects matching `^docs\(backlog\): B2\.3 plan (round [0-9]+ )?approved` and reads
+  `plan.md` at that commit; any other wording leaves the approved Files at the 9 round-1 paths and the plan-scope hook
+  blocks `page.tsx` (fails safe, costs a round trip).
+- **The claim on the page is local.** The branch is 4 commits ahead of `origin/feat/B2.3-complete-all` (both merges and
+  the amendment). Worktrees on this machine share `refs/heads/` and see the page row; a session elsewhere planning
+  B2.4 (due date) or B2.5 (search), both likely to touch `page.tsx`, does not until the branch is pushed.
+- **Section 12's "between" is read loosely twice now.** The nav no longer directly follows the clear button (this
+  card) nor directly precedes the list (B2.2). Every §9/§12 contract line still holds as "somewhere between"; if the
+  lead reads "between" as adjacent, that is a §12 text change, not this card's.
+- **Package guide scope.** The `src/lib/CLAUDE.md` row adds `todo-complete-all.ts`; the `logger.ts` row still reads
+  "§11" only although §14 widened `MutationActionName`. Optional, same commit.
+- **Length:** `plan.md` is 90 lines against `planning.md`'s ≈ 40 (88 at round 2).
+
+Riskiest unfalsified: the argument of `!…some(` in the phase-B `CompleteAllButton` line; no criterion renders a filtered
+view, so `shown` in place of `todos` passes every planned test and breaks REQ-14.4 on `/?filter=completed`.
