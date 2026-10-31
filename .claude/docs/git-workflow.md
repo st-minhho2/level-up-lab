@@ -20,10 +20,11 @@ checks|comment`. Everything the project scripts do.
 
 ## Needs a human (and the hooks say so)
 
-`git push --force` in any spelling, pushes to `main`, `gh pr merge|review`, `gh api`, labels, any change under
+`git push --force` in any spelling, pushes to `main`, `gh pr merge|review`, `gh api`, the `hotfix` label, any change under
 `.github/`, `.claude/hooks`, `.claude/settings.json`, `.claude/agents`, `.claude/skills`, `.claude/rules`,
 `.claude/docs`, `scripts/ci/`, `lefthook.yml`, `stryker.config.mjs`, `vitest.config.mts`, `playwright.config.ts`,
-`tsconfig*.json`, `eslint.config.mjs` (label `config-change-approved` on the PR), dependencies.
+`tsconfig*.json`, `eslint.config.mjs` (label `config-change-approved` on the PR: the agent adds it when the lead's
+approved plan names the change, D-19), dependencies.
 
 Adding or removing a label (`config-change-approved`, `hotfix`) starts a fresh `ci` run that reads the new labels and
 cancels the one in flight. "Re-run jobs" replays the old event and never sees a label added after it.
