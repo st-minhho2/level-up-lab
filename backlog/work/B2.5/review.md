@@ -595,3 +595,11 @@ decision. Neither finding is wrong behavior in the shipped code against a stated
 Riskiest unfalsified: the shipped key is a server-rendered prop on a Server Component input, so it remounts only
 when the RSC payload carries a new key; a Next.js router-cache hit on back/forward (`/?filter=active` → back to `/`
 after typing) is traced to restore the cached payload with the old key and the typing, but not probed.
+
+### Dispositions (pass 4, dev-lead)
+
+| Pass | #   | Finding                                                                     | Source   | Kind          | Disposition  | Justification                                                                                                              |
+| ---- | --- | --------------------------------------------------------------------------- | -------- | ------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| 4    | 1   | `todo-search-form.tsx:13-15` and the plan row claim "every soft navigation" | reviewer | plan-mismatch | fix now      | lead option A ("Chọn A", 2026-11-01): wording becomes "each change of filter or query" (plan here, comment by code-writer) |
+| 4    | 2   | query half of the key untested (`key={filter}` passes e2e/16)               | reviewer | coverage      | fix now      | test-writer adds one unprefixed REQ-16.2 case: `/?q=milk`, type `bread`, click "All" → box reads `milk`                    |
+| 4    | R   | back/forward from the router cache may keep typed text (riskiest, traced)   | reviewer | spec gap      | out of scope | §16 is silent on history navigation; reported to the lead as a possible §16 question                                       |
