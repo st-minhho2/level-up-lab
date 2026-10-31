@@ -3,6 +3,7 @@
 // §7 TodoItem, with the §6 edit mode and the §10 message of a failed toggle or save.
 import { useState, useTransition, type FormEvent, type ReactNode } from 'react';
 import { toggleTodoAction, updateTodoTitleAction } from '@/actions/todos';
+import { TodoDueDate } from '@/components/todo-due-date';
 import type { Todo } from '@/lib/todos';
 
 export function TodoItem({ todo }: { readonly todo: Todo }): ReactNode {
@@ -95,6 +96,7 @@ export function TodoItem({ todo }: { readonly todo: Todo }): ReactNode {
           </button>
         </>
       )}
+      <TodoDueDate todoId={todo.id} dueDate={todo.dueDate} />
       {error !== undefined && (
         <span id={errorId} role="alert" className="ml-auto text-sm text-red-600">
           {error}

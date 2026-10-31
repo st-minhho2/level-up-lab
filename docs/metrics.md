@@ -67,5 +67,6 @@ metric reads 0 cards.
 | B2.1  | §12         | 7               | 7 (100 %) | 89.94 (todo-filter.ts 100)        | 0              | e0b4e64                               | 830901d |
 | B2.2  | §13         | 7               | 7 (100 %) | 90.37 (todo-count.ts 100)         | 0              | 09e53b9, f41aa2a                      | 0af252c |
 | B2.3  | §14         | 6               | 6 (100 %) | 90.67 (complete-all 100)          | 0              | a18a9a9, 05f5fe6                      | b3339e0 |
+| B2.4  | §15         | 7               | 7 (100 %) | 91.13 (due-date 95.00)            | 0              | 2822ab9                               | bbf823e |
 
 A value below target for two consecutive measurements opens a row in `docs/mistake-log.md` and a fix in `.claude/`.

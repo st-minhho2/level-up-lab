@@ -13,11 +13,13 @@ datasource db {
 
 // §3 Todo (card B1.1)
 model Todo {
-  id        String   @id @default(cuid())
-  title     String   @db.VarChar(200)
-  completed Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String    @id @default(cuid())
+  title     String    @db.VarChar(200)
+  completed Boolean   @default(false)
+  // §15: a calendar day, no time of day; null = no due date. No index: nothing orders or filters by it (§1).
+  dueDate   DateTime? @db.Date
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@index([createdAt])
   @@map("todos")
