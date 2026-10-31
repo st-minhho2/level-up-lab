@@ -410,3 +410,91 @@ blocking):
 Riskiest unfalsified: the search box after a soft navigation once the person has typed in it (cost 2); confirmed for
 filter links, unprobed for the Server Action refresh after a toggle or edit on `/?q=…` (REQ-16.10), where the same
 uncontrolled input keeps whatever was typed.
+
+## Diff review (pass 3)
+
+Phase B, reviewed at `28af6dd` (since pass 2 `915c1b3`: merge `c8a95ae` of `origin/main` = `32b474c`, plan round 2
+`020642d`/`29485f2`/`87419ca`/`48ff0ae`, hardening `2ff988c`, red `8bfc8e4`, green `65674d4`, map `28af6dd`). Scope:
+all (`src/app`, `src/components`, `e2e`, guides, map). This is pass 3 of 3.
+
+Run here (last line of each):
+
+| Command                             | Result                                                                                                                         |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm lint`                         | `All matched files use Prettier code style!` (exit 0)                                                                          |
+| `pnpm typecheck`                    | `tsc --noEmit` (exit 0)                                                                                                        |
+| `pnpm test`                         | `Tests  169 passed (169)`                                                                                                      |
+| `pnpm test:e2e`                     | `30 passed (31.2s)`                                                                                                            |
+| `pnpm test:mutation`                | `Final mutation score of 91.82 is greater than or equal to break threshold 70`; `todo-search.ts` 100.00, 21 killed, 0 survived |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                                                      |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                                              |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                                             |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test`                                                                          |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 16`                                                                                                   |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                                                           |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B2.5-search stays inside the approved plan of B2.5`                                                                  |
+| `scripts/next-task.sh --check B2.5` | `B2.5: no overlap with any Doing or Review card`                                                                               |
+| `scripts/verify-red.sh B2.5`        | lib `8 ran (8 new), 8 new failed`; component `2 ran (2 new), 2 new failed`; `RESULT: red for the right reason`                 |
+| `git diff --stat main...HEAD`       | local `main` is stale (`702c095`): 43 files. Against `origin/main...HEAD`: 19 files, 1516 insertions, 6 deletions              |
+
+Probes (rsync copy in the scratchpad, never the tree; e2e/16 only unless named):
+
+- P6, revert one line each: `key={query}` removed → `1 failed` (the REQ-16.2 test); `shown = searchTodos(todos, query)`
+  (filter dropped) → `2 failed`; `countRemaining(shown)` → `1 failed`; `emptyListMessage(filter, todos.length)` as
+  the empty text → `3 failed`; Clear completed disabled from `shown` → `1 failed`. Every changed line of `page.tsx`
+  and the `key` is held by a test.
+- P7 (finding 1): on `/` with AC-16.6's four todos, `fill('bread')` in "Search todos" without submitting, click
+  "Active" → address `/?filter=active`, rows `[Buy milk, Call mom]`, box `Received: "bread"` (expected `""`).
+- P8 (the dev-lead's question 1, REQ-16.10): on `/?q=milk`, `fill('bread')` without submitting, check the first row
+  (Server Action + `revalidatePath`) → the row is checked, the address stays `/?q=milk`, box `Received: "bread"`.
+  With no typing, the box keeps `milk` after a refresh by trace (same `key`, same `defaultValue`) [not run].
+- P9: `key={`${filter}\u0000${query}`}` instead of `key={query}` → e2e/16 plus the P7 case `6 passed`, component test
+  `2 passed`.
+
+### Checklist
+
+| Check                                                                | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-§.n has a test whose assertion matches its Then             | pass: AC-16.6 (`e2e/16:92`) asserts every address, row list, the empty box after "Active", `MILK` after reload, `toHaveCount(1)` for the no-match text, `/?q=%20%20`; AC-16.7 (`e2e/16:131`) asserts `[D]`, "2 items left" once, both buttons enabled, 0 rows + one no-match text + address after the retitle, "0 items left", and the stored D, C, B completed by `expect.poll`. AC-16.1 to 16.5 unchanged since pass 2                                 |
+| no test weakened after the red commit                                | pass: `git log --first-parent --no-merges 8bfc8e4..HEAD -- '*.test.*' e2e/` empty. From phase A red `b70450c`: `3a3348a`, `9467b13`, `2ff988c`, `8bfc8e4`, all `test(...)`; `2ff988c` adds 20 lines and changes one comment (N3), no assertion. `--merges --remerge-diff`: `c8a95ae`, conflicts only in `spec/features-map.md` (F13 kept, F14 ✗ appended) and `spec/technical-requirements.md` (§15 kept, §16 ✗ appended); no test file                  |
+| every changed file is in `plan.md`                                   | pass: `page.tsx`, `e2e/16`, the two guides are round-2 Files rows; `docs/metrics.md` and the map are paperwork; `check-plan-scope` OK                                                                                                                                                                                                                                                                                                                    |
+| interfaces match the section's contracts                             | pass: `searchParams: Promise<{ filter?: string \| string[]; q?: string \| string[] }>`; `query = parseSearchQuery(params.q)`; `shown = searchTodos(filterTodos(todos, filter), query)`; `<TodoSearchForm filter={filter} query={query} />` outside the list in both states; empty text `searchEmptyMessage(filter, todos.length, query)`; count and both buttons from `todos`                                                                            |
+| Zod at every action boundary · Prisma only in `src/lib` · no raw SQL | pass, vacuous: no action, Prisma or SQL change; the page reads through `src/lib`; `TodoSearchForm` stays a Server Component                                                                                                                                                                                                                                                                                                                              |
+| migration reversible and indexed                                     | n/a                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| no secret, no suppression                                            | pass                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| features map row moved                                               | pass: F14 ✅ with `src/app/page.tsx` and `e2e/16-search.spec.ts` (`28af6dd`). §16's index row stays ✗ until the closing commit (`backlog/CLAUDE.md` "Closing a card" step 3); the precedent holds: at `72d581a` (B2.3) F12 was ✅ with §14 ✗, at `f10d869` (B2.4) F13 ✅ with §15 ✗ (dev-lead question 3)                                                                                                                                                |
+| guide rows (dev-lead question 2)                                     | pass: `src/lib/CLAUDE.md` names `DUE_DATE_INVALID_MESSAGE`, `setTodoDueDateSchema`, `dueDateToDate`, `dueDateOf`, the four value exports of `todo-due-date.ts` (the type `SetTodoDueDateInput` is not listed; other rows list types, so this is cosmetic), and "pure: no Prisma, no `server-only`" matches its header. `src/components/CLAUDE.md`: `todo-due-date.tsx` is `'use client'` and rendered inside `TodoItem` (`todo-item.tsx:99`), as written |
+| would a test fail if one changed line were reverted                  | pass (P6)                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+
+### Findings
+
+```
+[1] KIND: plan-mismatch
+    WHERE: src/components/todo-search-form.tsx:16 (and the comment at :13; plan.md Files row todo-search-form.tsx)
+    DEFECT: `key={query}` remounts the box only when the query changes, so a filter-link navigation whose query
+            stays '' keeps text typed but not submitted, which is the case amendment cost 2 was approved to fix.
+    TRIGGER: AC-16.6's four todos stored, browser on `/` (hydrated); type `bread` in "Search todos", do not submit;
+             click "Active" (P7).
+    WRONG BEHAVIOUR: address `/?filter=active`, rows [Buy milk, Call mom] (no search applied), but the box reads
+             "bread". The plan row promises "a soft navigation shows the current query, not typed text (REQ-16.2,
+             amendment review cost 2)". The source comment says the same, and cost 2 described a key that "fixes
+             link changes of filter or query". Here the current query is '' and the box shows a search that is not
+             active (REQ-16.7 "that filter without a search"). The shipped REQ-16.2 test only covers a query that
+             changes ('milk' → ''), so it passes.
+    CONFIDENCE: confirmed (P7 ran: `Expected: ""`, `Received: "bread"`; P9: a key of filter and query passes all 6)
+```
+
+Not a finding (dev-lead question 1, REQ-16.10): P8 shows that text typed but not submitted also survives a Server
+Action refresh on `/?q=milk`. That is not a navigation: §16 is silent on unsubmitted text there, cost 2 was about
+links, and dropping a person's typing on an unrelated toggle would be a guess in code. If the lead wants it dropped,
+that is a §16 question, not part of this fix.
+
+Verdict: back to test-writer (blocked at pass 3/3). The fix needs a red e2e case (P7's steps), then a one-line
+`feat(ui)` with the `plan.md` row's `key={query}` wording amended. The fix stays unreviewed unless the lead allows a
+fourth pass. Otherwise the lead can accept finding 1 as a known limit, stated in the PR body, and
+`mark-reviewed.sh` runs on that decision.
+
+Riskiest unfalsified: the AC-16.6 "after the reload" step uses `page.reload()` on a URL built by the native form, so
+the query-string order (`filter` before `q`) is the browser's. `addressHas` ignores order, and nothing pins that a
+second submit from `/?q=milk&filter=active` drops the old `q`. That step is traced, not probed (the form sends only
+the box and the hidden `filter`).
