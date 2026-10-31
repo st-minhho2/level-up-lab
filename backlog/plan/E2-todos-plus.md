@@ -32,7 +32,9 @@ _F12 · section 14_
 **Status: Open** — `git grep -n "export async function" src/actions/todos.ts` → create, toggle, update title, clear
 completed; no action completes every todo
 
-- **Acceptance:** section 14 criteria, set by `spec-analyst` (contract `spec/contracts/12-complete-all.md`)
+- **Spec:** §14 — unchanged (section written from `work/B2.3/analysis.md`; contract `spec/contracts/12-complete-all.md`)
+- **Test:** `src/lib/todo-complete-all.test.ts::AC-14.1: updates exactly the not-completed rows to completed and returns the count` — red because: `completeAllTodos` is not exported from `src/lib/todo-complete-all.ts`
+- **Acceptance:** AC-14.1–AC-14.6
 - **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B2.3/`
 
