@@ -227,3 +227,82 @@ falsifies a regression there.
 | 1    | 1   | `src/lib/todo-search.ts:16-17` (REQ-16.5 vs contract line) | reviewer | spec-mismatch | out of scope for phase A: waits on the lead's D-n | `/advise` verdict: spec ≠ spec inside section 16, escalate human (`decision-request.md`, README "Waiting on human"); code matches the contract line; ruling before phase B round 2, option A adds red test + guard |
 | 1    | 2   | hidden `filter` under Completed untested (riskiest)        | reviewer | test gap      | out of scope for phase A: phase B e2e             | phase B amendment adds a search from `/?filter=completed` keeping `filter=completed` (REQ-16.6) to `e2e/16-search.spec.ts`                                                                                         |
 | 1    | 3   | dev-lead own pass: invariants 1–8, plan Files, map row     | dev-lead | —             | no change needed                                  | no Zod/action/Prisma (pure lib + Server Component); diff = plan Files + paperwork; F14 row ✗ as planned; reverting any line of `searchTodos` fails AC-16.2/16.3 (mutation 16/16 killed)                            |
+
+## Diff review (pass 2)
+
+Phase A after D-21, reviewed at `9467b13` (since pass 1 `3beb57b`: dispositions `cf32104`, D-21 `214cc6d`,
+`docs(spec)` `af4f5dc`, review-pass test `3a3348a`, fix `b43ef24`, hardening test `9467b13`). Scope: lib (the only
+`src/` change since pass 1 is `src/lib/todo-search.ts` and its test).
+
+Run here (last line of each):
+
+| Command                             | Result                                                                                                                                     |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm lint`                         | `All matched files use Prettier code style!` (exit 0)                                                                                      |
+| `pnpm typecheck`                    | `tsc --noEmit` (exit 0)                                                                                                                    |
+| `pnpm test`                         | `Tests  147 passed (147)`                                                                                                                  |
+| `pnpm test:e2e`                     | `24 passed (21.7s)`                                                                                                                        |
+| `pnpm test:mutation`                | `Final mutation score of 91.59 is greater than or equal to break threshold 70`; `todo-search.ts` 100.00, 21 killed, 0 survived             |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                                                                  |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                                                          |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests` (`b43ef24` is `fix(todos)`, 1 file, `src/lib/todo-search.ts`)                                           |
+| `scripts/ci/check-ac-coverage.sh`   | `§16: ✗, no tests expected yet (7 criteria)` then `OK`                                                                                     |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 14 16`                                                                                                            |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                                                                       |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B2.5-search stays inside the approved plan of B2.5`                                                                              |
+| `scripts/verify-red.sh B2.5`        | lib `5 ran (5 new), 5 new failed, 0 new passed`; component `2 ran (2 new), 2 new failed, 0 new passed`; `RESULT: red for the right reason` |
+| `git diff --stat main...HEAD`       | 14 files, 1082 insertions, 1 deletion; `src/`: the 4 planned files only                                                                    |
+
+Probes (scratch clone under `$TMPDIR`, never the tree):
+
+- P4, the dev-lead's question (`verify-red.sh` once phase B adds a later `(red)` commit): on a clone at `9467b13` plus
+  a dummy `test(ui): B2.5 search on / (red)` adding `e2e/16-search.spec.ts`, both `scripts/verify-red.sh B2.5` and
+  `--auto` print `test commits : b70450cfd4 91f4d7b828`, base `edf5727c66` (skeleton), `src/lib/todo-search.test.ts:
+7 ran (7 new), 7 new failed, 0 new passed`, component `2 ran … 2 new failed`, `RESULT: red for the right reason`
+  (exit 0). The script copies the test files from the LAST `(red)` commit onto the parent of the FIRST, so the two
+  review-pass tests are judged too; at the skeleton both fail with `NotImplementedError: searchTodos(1, …) is not
+implemented` (vitest at `edf5727`'s `todo-search.ts`), not on an assertion that could pass. Safe as long as phase
+  B's red commit adds no test that passes against the skeleton, which a page/e2e-only red commit cannot.
+- P5, variants of the guard against `todo-search.test.ts` (7 tests): guard removed → `1 failed | 6 passed`; guard
+  on the untrimmed `query` → `1 failed`; `>` → `>=` → `1 failed`; guard moved after `toLowerCase` (on `needle`) →
+  `7 passed`; threshold `> 201` → `7 passed`. Neither survivor is a Stryker operator, so 100 % does not see them.
+
+### Checklist
+
+| Check                                                                | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D-21 as recorded matches the lead's ruling                           | pass: option A's Behavior ("any trimmed query with `length > 200` (JS `.length`, the unit of §5's `max(200)`) returns `[]`") is D-21's Decision and the new contract line; the request's AC-16.8 case (title `'İ'` × 200, query `'i̇'` × 101 → `[]`) is now in AC-16.3's Given/When/Then with the same input and outcome. Only the id differs; `check-ac-coverage.sh:13` (`[[ $total -gt 7 ]]`) confirms the 7-criteria cap. No behavior of the ruling is lost |
+| every AC-§.n has a test whose assertion matches its Then             | pass for phase A: AC-16.3's new case is `src/lib/todo-search.test.ts:101`: asserts title length 200, query length 202, that the lowercased title does contain the query (so the case is live), and `[]`; at `3a3348a` it failed (1 failed, 145 passed), at HEAD it passes. AC-16.1, 16.2, 16.4, 16.5 unchanged since pass 1. AC-16.6, 16.7 are phase B                                                                                                        |
+| no test weakened after the red commit                                | pass: `git log --first-parent --no-merges b70450c..HEAD -- '*.test.*' e2e/` → `3a3348a`, `9467b13`, both `test(todos): B2.5 review pass 1 -- …` commits, additions only (13 and 14 lines, 0 deletions); `--merges --remerge-diff` → empty (no merge)                                                                                                                                                                                                          |
+| every changed file is in `plan.md`                                   | pass: `src/lib/todo-search.ts` and its test are Files rows; `00-decisions.md`, `README.md`, `decision-request.md`, the §16 contract are paperwork under D-21; `check-plan-scope.sh` OK                                                                                                                                                                                                                                                                        |
+| interfaces match the section's contracts                             | pass: `searchTodos` signature unchanged; body follows the new contract line: trims, `trimmed.length > SEARCH_QUERY_MAX_LENGTH` → `[]` before any `toLowerCase`/`includes`, then the old comparison; `filter` still returns a new array in input order                                                                                                                                                                                                         |
+| Zod at every action boundary · Prisma only in `src/lib` · no raw SQL | pass, vacuous: no action, no Prisma, no SQL                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| migration reversible and indexed                                     | n/a: no `prisma/` change                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| no secret, no suppression                                            | pass: `check-suppressions` OK; no `skip`/`only`/`todo` added                                                                                                                                                                                                                                                                                                                                                                                                  |
+| features map row moved                                               | pass for phase A: F14 ✗ since the skeleton; moves at step 7                                                                                                                                                                                                                                                                                                                                                                                                   |
+| would a test fail if one changed line were reverted                  | pass: removing the guard, or measuring the untrimmed query, fails 1 test (P5); `>` → `>=` fails the hardening test (P5, and Stryker 21/21). Two non-revert variants survive (P5): the guard after lowercasing, and a threshold of 201. Not findings: HEAD is correct by trace, and AC-16.3's Then names the 202 query, so the tests copy the spec. The first is the riskiest spot below                                                                       |
+
+### Notes (non-blocking, for the lead)
+
+- N1. D-21's Consequence says "REQ-16.5 unchanged", but `af4f5dc` adds "(UTF-16 code units, as §5 counts titles)" to
+  REQ-16.5. That unit is the one option A's Behavior column and D-21's Decision name, so the edit is inside the
+  ruling and changes no outcome the code produces; only the record's wording is off. `00-decisions.md` is never
+  rewritten, so if it matters, a later D-n or the closing note says so.
+- N2. `af4f5dc` (agent-authored) re-labels §16's ticked box `(lead, 2026-10-31, plan gate of B2.5; D-21)`. The lead's
+  "action A" ruled the behavior, not the exact text of REQ-16.5 and AC-16.3; reading `af4f5dc` (12 lines) before
+  the phase-B round-2 approval makes the box's claim true.
+- N3. `src/lib/todo-search.test.ts:102` says "Escapes, not literals" but lines 103–104 hold literal `İ` (bytes
+  `304 260`) and `i̇` (`i` + `314 207`); it has been literals since `3a3348a`. The code units are right, and an NFD
+  rewrite of the file would fail the `toHaveLength(200)` assertion instead of passing silently, so this is only
+  a false comment. Fixing it is a `test(todos)` commit by `test-writer`.
+
+### Findings
+
+None blocking.
+
+Verdict: ready for PR (draft, phase A; pass-1 finding 1 resolved by D-21 + `3a3348a`/`b43ef24`)
+
+Riskiest unfalsified: where the guard measures. HEAD checks `trimmed.length` before `toLowerCase`, as D-21 requires
+(traced), but no test tells it apart from a check on the lowercased needle (P5: `7 passed`). Under that refactor a
+query of 101 `İ` (length 101, lowercased 202) would match nothing, even though the title `'İ'` × 101 contains it
+and REQ-16.5 allows it. No AC's Then pins it, so nothing fails if someone moves the line.
