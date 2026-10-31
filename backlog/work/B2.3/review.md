@@ -167,3 +167,17 @@ Riskiest unfalsified: REQ-14.8's "for any reason" is exercised only with `Error`
 `if (!(error instanceof Error)) throw error;` at the top of the `catch` in `src/actions/complete-all.ts:14` survives
 all 3 action tests (probed). The shipped `catch (error)` has no such guard, so the code is correct by trace; only the
 test would not catch a future regression for a thrown non-Error value.
+
+### Dispositions (dev-lead, pass 1)
+
+| Pass | #   | Finding (file:line)                                                                      | Source             | Kind     | Disposition      | Justification                                                                                                                       |
+| ---- | --- | ---------------------------------------------------------------------------------------- | ------------------ | -------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | N1  | REQ-14.8 "any reason" tested only with `Error` values (`src/actions/complete-all.ts:14`) | reviewer (note)    | coverage | no change needed | the shipped `catch (error)` has no type guard; input `completeAllTodos` rejecting `'x'` takes the same branch. Regression risk only |
+| 1    | N2  | "inside one wrapper element" not pinned (`src/components/complete-all-button.tsx:22`)    | reviewer (note)    | coverage | no change needed | REQ-14.9 (next sibling, same parent) is pinned by AC-14.5; `ClearCompletedButton` carries the same unpinned wrapper on main         |
+| 1    | N3  | metrics row in the feat commit; Green cell "phase A feat (this commit)"                  | reviewer, dev-lead | docs     | fix now (step 6) | the `docs(map)` commit replaces the cell with `5a3ebfe` and adds the phase B sha; numbers verified (89.41, actions 28/28)           |
+| 1    | N4  | F12 row names test files and `logger.ts`, plan said three modules                        | reviewer (note)    | docs     | no change needed | the row is more complete than the plan text; `check-features-map.sh` OK; paperwork path, outside plan-scope                         |
+| 1    | Q1  | criterion-less titles with a `(REQ-14.n)` suffix                                         | dev-lead           | style    | no change needed | `src/lib/logger.test.ts:239` uses the same suffix on main; `check-ac-coverage.sh` OK                                                |
+
+Dev-lead own pass: the eight invariants hold (no Zod needed: no input, §14; Prisma only in `src/lib/todo-complete-all.ts`;
+no test changed after a18a9a9; no file outside the plan's Files under `src/`). Reverting any line of the three modules
+fails at least one test (mutation 6/6 killed in the new lib/action files; component probes as above).
