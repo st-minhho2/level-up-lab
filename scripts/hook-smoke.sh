@@ -156,6 +156,12 @@ q="'"; nl=$'\n'
 for c in "git push origin \"\$(cat <<${q}X${q}${nl}+main${nl}X${nl})\"" "git push origin main \$(cat <<${q}X${q}${nl}-f${nl}X${nl})"; do
   probe_msg 2 'force pushes' guard-bash.sh "$(pr_cmd "$c" "$PWD")"
 done
+# a plain config read on one line exempts only itself, not the lines after it
+for c in "git config --get user.name${nl}git config remote.origin.mirror true${nl}git push origin" \
+         "git config --get user.name${nl}git -c remote.origin.mirror=true push origin" \
+         "git config --get user.name${nl}git config remote.origin.push +refs/heads/*:refs/heads/*${nl}git push origin"; do
+  probe_msg 2 'force pushes' guard-bash.sh "$(pr_cmd "$c" "$PWD")"
+done
 while IFS= read -r c; do probe 0 guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'PLAIN'
 git push
 git -C . push -u origin feat/x
