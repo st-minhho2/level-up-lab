@@ -1,52 +1,54 @@
 # B1.23 plan — Card sessions run their own PR steps: push, open, label, mark ready (tooling)
 
-Approach: four exact `permissions.allow` rules in `.claude/settings.json`, so auto mode stops refusing the PR steps
-B1.21's Loop 9 and D-19 already assign to `dev-lead` (refused in batch 2–3: `gh pr ready 78`, B3.2's `git push` and
-`gh pr create`). Nothing else widens: merge, review, hooks and the force-push guard stay as they are. Probes in
-`scripts/hook-smoke.sh` pin the exact set. Tooling card: spec-analyst and advisor skipped (no section; the card's
-Acceptance is the contract).
-
-- `git push` is safe to allow because `guard-bash.sh` (PreToolUse) blocks every forced-push spelling before
-  permissions apply; hook-smoke already probes `--force`, `-f`, `+main`, `--force-with-lease`.
-- `gh pr edit` is allowed only with `--add-label config-change-approved` (D-19); `hotfix` stays the lead's.
-- `.claude/docs/hooks.md` says `allow` "pre-approves the routine project commands" and `deny` stops `gh api` and
-  environment dumps; neither is true today (`allow` is empty; no such deny). The paragraph is corrected to the file.
+Round 2. Round 1 (6 reasons) showed a `Bash(...)` allow rule cannot limit arguments: `Bash(git push*)` would auto-approve
+force and delete spellings `guard-bash.sh` misses, and `gh pr create|edit` would auto-approve `hotfix`, `-R` and
+`--body-file .env`. So no raw `git`/`gh` rule is allowed. Instead one wrapper, `scripts/pr-step.sh`, does exactly the
+five PR steps dev-lead owns (B1.21 Loop 5/9, D-19) and checks every argument itself; the only new allow rule is
+`Bash(scripts/pr-step.sh *)`. Raw `git push` / `gh pr …` keep today's behavior (asked or refused). Tooling card:
+spec-analyst and advisor skipped; the card's Acceptance is updated to this design in the plan commit.
 
 ## Files
 
-| File                           | Change                                                         |
-| ------------------------------ | -------------------------------------------------------------- |
-| `.claude/settings.json`        | `permissions.allow`: the four rules below                      |
-| `scripts/hook-smoke.sh`        | `== permissions (B1.23)` probes P1–P4                          |
-| `.claude/docs/hooks.md`        | the permissions paragraph states the real allow and deny lists |
-| `backlog/work/B1.23/plan.md`   | plan                                                           |
-| `backlog/work/B1.23/review.md` | reviews                                                        |
+| File                                                    | Change                                                                                               |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `scripts/pr-step.sh`                                    | new: `push`, `draft <title> <body.md>`, `body <n> <body.md>`, `label <n>`, `ready <n> [--undo]`      |
+| `scripts/pr-step-smoke.sh`                              | new: probes R1–R12 on a throwaway repo with `git` remote and `gh` shim                               |
+| `scripts/hook-smoke.sh`                                 | probe: `allow` is exactly `["Bash(scripts/pr-step.sh *)"]`; the whole 16-entry `deny` list unchanged |
+| `.claude/settings.json`                                 | `permissions.allow`: `Bash(scripts/pr-step.sh *)`                                                    |
+| `.claude/agents/dev-lead.md`                            | Loop 5 and Loop 9 call `scripts/pr-step.sh` instead of raw commands                                  |
+| `.claude/skills/work-next/SKILL.md`                     | "`gh pr ready`" → "`scripts/pr-step.sh ready`"                                                       |
+| `.claude/docs/git-workflow.md`, `.claude/docs/hooks.md` | PR steps via the wrapper; the permissions text matches the file (no `gh api` deny, allow = wrapper)  |
+| `scripts/CLAUDE.md`                                     | rows for the two scripts                                                                             |
+| `backlog/plan/E1-todos.md`, `backlog/work/B1.23/*`      | Acceptance to this design; plan; reviews                                                             |
 
 ## Interfaces touched
 
-```json
-"allow": [
-  "Bash(git push*)",
-  "Bash(gh pr create*)",
-  "Bash(gh pr ready*)",
-  "Bash(gh pr edit * --add-label config-change-approved)"
-]
+```bash
+scripts/pr-step.sh push                     # git push -u origin HEAD:refs/heads/<current>; refuses main, detached, a name not <type>/<slug>; takes no other argument
+scripts/pr-step.sh draft <title> <body.md>  # gh pr create --draft --base main --head <current> --title --body-file; body.md a regular .md file under backlog/work/ or $TMPDIR, not a symlink
+scripts/pr-step.sh body <n> <body.md>       # gh pr edit <n> --body-file <body.md> (same file rule)
+scripts/pr-step.sh label <n>                # gh pr edit <n> --add-label config-change-approved; nothing else
+scripts/pr-step.sh ready <n> [--undo]       # gh pr ready <n> [--undo]
+# <n>: digits only, and PR <n>'s headRefName must equal the current branch (gh pr view <n> --json headRefName)
 ```
 
-Probes: P1 `allow` equals exactly those four strings (order-free); P2 no other `allow` entry starts with `Bash(gh` or
-`Bash(git`; P3 `deny` still holds `Bash(gh pr merge*)`, `Bash(gh pr review*)` and the three `--no-verify` / `-n` rules;
-P4 `guard-bash.sh` still blocks `git push --force origin main` after the change (existing probe re-asserted by name).
+Probes (`pr-step-smoke.sh`, red at the test commit: script missing): R1 push of `feat/B9.1-x` runs the exact git line;
+R2 on `main` refused; R3 extra argument to `push` refused; R4 draft with a body under `backlog/work/` runs the exact gh
+line; R5 body file `.env`, `~/.ssh/x`, a symlink, a non-`.md` refused; R6 `label 7` exact line; R7 `label` with any extra
+word refused; R8 `ready 7` / `ready 7 --undo` exact lines; R9 `<n>` not digits refused; R10 PR whose head is another
+branch refused; R11 unknown subcommand refused; R12 no shell metacharacter in a title reaches a second command.
 
 ## Verification (in the card worktree)
 
 ```bash
-scripts/hook-smoke.sh            # test commit: P1, P2 FAIL (allow empty), P3, P4 ok; green: 288 probes OK
-scripts/ci/check-config-change.sh  # local ::error:: on the two protected files; PR carries config-change-approved
-scripts/ci/check-plan-scope.sh && scripts/ci/check-backlog.sh
+scripts/pr-step-smoke.sh   # test commit: 0 ok, 12 FAIL (missing); green: 12 ok, 0 FAIL, bash 5 and /bin/bash 3.2
+scripts/hook-smoke.sh      # test commit: 1 FAIL (allow empty); green: 286 probes OK
+scripts/ci/check-plan-scope.sh | tail -1 ; scripts/ci/check-backlog.sh | tail -1   # OK, OK
 ```
 
-After merge: the next card session's `git push`, `gh pr create`, label and `gh pr ready` run without a refusal
-(checked on the next card PR; reported in the closing PR).
+Assumption: auto mode keeps a narrow allow rule. Done only when the next card session runs `push`, `draft`, `label`
+and `ready` through the wrapper with no refusal (recorded in the closing PR); a refusal leaves the card Partial.
+Out of scope (filed after): `guard-bash.sh` misses quoted `+refspec`, `+<sha>`, `--mirror`, branch deletes — unchanged
+by this card, since no raw push is auto-approved.
 
-Steps: `test(scripts)` (red) → `chore(config)` (green) → `reviewer` diff → draft PR at the gate, labeled
-`config-change-approved` (D-19: `.claude/settings.json`, `.claude/docs/`), ready at Loop 9.
+Steps: `test(scripts)` (red) → `chore(scripts)` (green) → `reviewer` diff → draft PR, `config-change-approved` (D-19).

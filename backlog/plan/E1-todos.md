@@ -331,12 +331,12 @@ _tooling · no §_
 hand and B3.2's draft PR could not open (batch 1 PR wait median 17 min, `docs/metrics.md`)
 
 - **Spec:** none — tooling (`.claude/settings.json`, `.claude/docs/hooks.md`); no `src/` change, no section
-- **Test:** a probe in `scripts/hook-smoke.sh` — red because: `.claude/settings.json` allows none of the four PR steps,
-  while `gh pr merge` and `gh pr review` must stay denied and `guard-bash.sh` must still block a forced push
-- **Acceptance:** `permissions.allow` gains exactly `Bash(git push*)`, `Bash(gh pr create*)`, `Bash(gh pr ready*)` and
-  `Bash(gh pr edit * --add-label config-change-approved)`; the existing denies (`gh pr merge*`, `gh pr review*`,
-  `--no-verify`, `.env*` reads) stay; `guard-bash.sh` still blocks every forced-push spelling it blocks today (force
-  flags, lease flag, `+refspec`); no broader `gh` or `git` rule; a card session runs the four steps under auto mode
-  (checked on the next card PR); the PR carries `config-change-approved` (D-19)
+- **Test:** `scripts/pr-step-smoke.sh` (new) and a settings probe in `scripts/hook-smoke.sh` — red because: no wrapper
+  exists and `.claude/settings.json` allows nothing, so a session's PR steps fall to auto mode's judgement
+- **Acceptance:** (plan round 2) `scripts/pr-step.sh` runs exactly `push`, `draft`, `body`, `label` (only
+  `config-change-approved`) and `ready [--undo]`, checking every argument (current card branch only, PR head must match,
+  body file a regular `.md` under `backlog/work/` or `$TMPDIR`); `permissions.allow` is exactly
+  `Bash(scripts/pr-step.sh *)` and no raw `git`/`gh` rule; the 16 deny entries stay; dev-lead Loop 5/9 call the wrapper;
+  the next card session runs its PR steps through it with no refusal; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.23/`
