@@ -357,3 +357,20 @@ feat/x` and `scripts/pr-step.sh push` (B1.23) still exit 0; the existing force-p
   `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.24/`
+
+### B1.25 · verify-red reads escaped quotes in existing test titles
+
+_tooling · no §_
+**Status: Open** — `scripts/verify-red.sh` `baseTitles` keeps the escapes of a quoted test title it reads from source
+(`titles.add(m[2])`), so a title written `'… query \'\' …'` at the base never equals vitest's `… query '' …`; the
+existing test counts as new and passing, and the script reports "GREEN before implementation" (exit 1). Seen on B4.2's
+red commit b5fc079 (two AC-16.5 titles); a copy with `m[2].replace(/\\(.)/g, '$1')` reports red for the right reason
+
+- **Spec:** none — tooling (`scripts/verify-red.sh`, a new smoke); no `src/` change, no section
+- **Test:** `scripts/verify-red-smoke.sh` (new) on a throwaway worktree — red because: a base test whose title has an
+  escaped quote, kept unchanged next to a new failing test, makes `verify-red.sh` exit 1 ("GREEN before implementation")
+- **Acceptance:** an existing title with escaped quotes (single, double, backtick) is recognised as old; a new failing
+  test still makes the card red; a new passing test still fails the gate; the PR carries `config-change-approved`
+  (D-19: `scripts/verify-red.sh`)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.25/`

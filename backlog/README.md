@@ -7,11 +7,11 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open  | Total  |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ----- | ------ |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 21     | 1       | 2     | 24     |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 21     | 1       | 3     | 25     |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0     | 5      |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0     | 3      |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 1      | 0       | 2     | 3      |
-| **Total**        |                                                      | **30** | **1**   | **4** | **35** |
+| **Total**        |                                                      | **30** | **1**   | **5** | **36** |
 
 ## Execution order
 
@@ -66,6 +66,7 @@ flowchart TD
   S33["33 · created date<br/>B4.1"]
   S34["34 · clear search<br/>B4.2"]
   S35["35 · all done<br/>~~B4.3~~"]
+  S36["36 · verify-red escaped titles<br/>B1.25"]
 ```
 
 ## Remaining
@@ -80,6 +81,7 @@ at most 3 cards Doing (B1.18).
 | 32   | B1.24 | guard-bash blocks every forced-push and branch-delete spelling             | —                      | Open    | —          | Lead  | S [estimate] |
 | 33   | B4.1  | Show the creation date of each todo                                        | new, section 20 (D-24) | Open    | —          | Lead  | S [estimate] |
 | 34   | B4.2  | Clear the search with one link                                             | new, section 21 (D-24) | Open    | —          | Lead  | S [estimate] |
+| 36   | B1.25 | verify-red reads escaped quotes in existing test titles                    | —                      | Open    | —          | Lead  | S [estimate] |
 
 ## Waiting on human
 
