@@ -52,4 +52,4 @@ scripts/ci/check-plan-scope.sh | tail -1; scripts/ci/check-backlog.sh | tail -1 
 No `(red)` marker on step 1: CI's `verify-red.sh --auto` judges only vitest files. PR via `scripts/pr-step.sh`, label
 `config-change-approved` (D-19: `scripts/next-task.sh`).
 
-Plan review: approved, round 1 (4 costs in review.md: inner spaces kept, `grep -F` titles, W26 crash-only, header W22–W26) · Plan approved by: · Rounds: 1
+Plan review: approved, round 1 (4 costs in review.md: inner spaces kept, `grep -F` titles, W26 crash-only, header W22–W26) · Plan approved by: lead (session reply "approve"), 2026-11-01 · Rounds: 1
