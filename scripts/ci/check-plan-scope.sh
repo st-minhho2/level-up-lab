@@ -21,8 +21,8 @@ fail=0
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
   case "$f" in backlog/* | spec/* | docs/metrics.md | docs/mistake-log.md) continue ;; esac
-  listed=0
-  if [[ $rc -eq 0 ]]; then while IFS= read -r p; do [[ -n "$p" && "$f" == $p ]] && listed=1; done <<< "$pats"; fi
+  listed=0 # literal first: a row with [ ] (src/app/[id]/page.tsx) never glob-matches itself
+  if [[ $rc -eq 0 ]]; then while IFS= read -r p; do [[ -n "$p" && ( "$f" == "$p" || "$f" == $p ) ]] && listed=1; done <<< "$pats"; fi
   if [[ $listed -eq 0 ]]; then
     [[ $fail -eq 0 ]] && echo "::error::$branch changes files outside backlog/work/$card/plan.md as approved (plan-files exit $rc):"
     echo "  $f"; fail=1

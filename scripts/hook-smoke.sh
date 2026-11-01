@@ -401,6 +401,32 @@ if [[ $rc -eq 3 ]]; then echo "ok   plan-files exit 3  C8 an approval phrase in 
 else echo "FAIL plan-files exit $rc (want 3)  C8 an approval phrase in a commit body is not an approval (review pass 1)"; fail=1; fi
 rm -rf "$CO"
 
+echo "== plan rows with [ ] (B1.20): a Files token matches its own path literally, then as a glob, per layout"
+# Fixture: the plan lists src/app/[id]/page.tsx (as a glob, a bracket expression that never matches itself) and the
+# glob src/app/*/layout.tsx. plan-scope.sh runs from every layout (L1–L3); check-plan-scope.sh on a card branch checked
+# out in every layout of a clone with an origin (L4–L6). Explicit `git add` paths keep nested worktrees unstaged.
+LS="$(mktemp -d)"; LC="$LS/c"
+git init -q --bare "$LS/origin.git" && git clone -q "$LS/origin.git" "$LC" 2>/dev/null
+gs "$LC" checkout -q -b main && gs "$LC" commit -q --allow-empty -m init && gs "$LC" push -q origin main
+gs "$LC" checkout -q -b feat/B9.10-main
+plan_md "$LC" B9.10 "src/app/[id]/page.tsx" "src/app/*/layout.tsx" && gs "$LC" add backlog
+gs "$LC" commit -q -m "docs(backlog): B9.10 plan approved"
+i=0; for lay in $LAYOUTS; do [[ "$lay" == . ]] || { i=$((i+1)); gs "$LC" worktree add -q -b "feat/B9.10-l$i" "$LC/$lay" feat/B9.10-main; }; done
+for lay in $LAYOUTS; do
+  w="$LC/$lay"
+  ps 0 "$LC" "$w/src/app/[id]/page.tsx" - "L1 $lay listed path with [ ]"
+  ps 2 "$LC" "$w/src/app/[slug]/page.tsx" - "L2 $lay unlisted path with [ ]"
+  ps 0 "$LC" "$w/src/app/x/layout.tsx" - "L3 $lay path matched by a glob row"
+  mkdir -p "$w/src/app/x" "$w/src/app/[id]" "$w/src/app/[slug]"
+  echo x > "$w/src/app/x/layout.tsx" && gs "$w" add src/app/x && gs "$w" commit -q -m "feat(todos): B9.10 layout"
+  cps 0 "$w" "L4 $lay glob row covers the diff"
+  echo i > "$w/src/app/[id]/page.tsx" && gs "$w" add "src/app/[id]" && gs "$w" commit -q -m "feat(todos): B9.10 page"
+  cps 0 "$w" "L5 $lay listed path with [ ] in the diff"
+  echo s > "$w/src/app/[slug]/page.tsx" && gs "$w" add "src/app/[slug]" && gs "$w" commit -q -m "feat(todos): B9.10 slug"
+  cps 1 "$w" "L6 $lay unlisted path with [ ] in the diff"
+done
+rm -rf "$LS"
+
 echo "== review gate (require-review.sh / mark-reviewed.sh)"
 STATE="node_modules/.cache/level-up-lab"; saved=""; [[ -f "$STATE/reviewed" ]] && saved="$(cat "$STATE/reviewed")"
 rm -f "$STATE/gate-warned"
