@@ -841,3 +841,12 @@ pass cap is already extended, so the lead decides whether to fix or to accept [1
 
 Riskiest unfalsified: bash 5 verdicts for the newline join (`${joined//$'\n'/ }`) were not re-run this pass. No bash 5
 is on PATH, and pass 3's 354-command parity check predates b23234e.
+
+### Pass 4 dispositions (dev-lead) — the lead asked for both fixes, then ready, with no further review pass
+
+| Pass | #   | Finding                                                         | Source   | Kind   | Disposition | Justification                                                                                                           |
+| ---- | --- | --------------------------------------------------------------- | -------- | ------ | ----------- | ----------------------------------------------------------------------------------------------------------------------- |
+| 4    | 1   | a one-line config read exempts the later lines of the command   | reviewer | bypass | fix now     | own newlines are marked inside a segment; the exemption needs a one-line segment; 3 probes (268d229 red, dae5d2f green) |
+| 4    | 2   | hooks.md guard-bash row broken by unescaped pipes in code spans | reviewer | doc    | fix now     | row rewritten with no pipe inside a code span: 3 cells, `GIT_CONFIG_*` and the regex example restored (dae5d2f)         |
+
+hook-smoke: 416 probes OK. Earlier reviewer lists re-run: only the stated misses remain. Not re-reviewed (the lead's call).

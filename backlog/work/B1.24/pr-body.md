@@ -3,7 +3,7 @@
 B1.24 — guard-bash blocks every forced-push and branch-delete spelling (tooling, no spec section)
 
 - spec: none — tooling card; the card's Acceptance (`backlog/plan/E1-todos.md` ### B1.24) is the contract
-- test: 104 new probes in `scripts/hook-smoke.sh` (83 exit-2 with the force-push message, 21 exit-0) — red before (a9eff38: 41 FAIL; review passes 1–3 added 12 + 2, 10 and 4 red probes), green after: `hook-smoke: 413 probes OK` (baseline 309)
+- test: 107 new probes in `scripts/hook-smoke.sh` (86 exit-2 with the force-push message, 21 exit-0) — red before (a9eff38: 41 FAIL; review passes 1–4 added 12 + 2, 10, 4 and 3 red probes), green after: `hook-smoke: 416 probes OK` (baseline 309)
 - acceptance: every listed spelling exits 2 with the force-push message; plain push, `push -u origin feat/x` and `scripts/pr-step.sh push` exit 0; existing force-push probes stay; label `config-change-approved` (D-19)
 
 ## Plan
@@ -81,7 +81,7 @@ None: tooling card, no `spec/features-map.md` row.
 
 ## Review
 
-`/review-loop`: **3/3 passes used, not clean after pass 3** (the cap); the pass-3 fixes are not re-reviewed. Full
+`/review-loop`: 3 passes plus a pass 4 the lead granted for the pass-3 fixes; its 2 findings were fixed at the lead's request without a further pass. Full
 findings and the disposition tables: `backlog/work/B1.24/review.md`.
 
 | Pass | Findings | Fix now | Out of scope / out of reach                                                                                  | Red probes |
@@ -89,6 +89,7 @@ findings and the disposition tables: `backlog/work/B1.24/review.md`.
 | 1    | 8        | 8       | —                                                                                                            | 12 + 2     |
 | 2    | 7        | 6       | `${IFS}`-joined words (named out of reach)                                                                   | 10         |
 | 3    | 5        | 4       | a `;`/`&`/`\|` inside a quoted argument after push or gh api (named out of reach; origin/main misses it too) | 4          |
+| 4    | 2        | 2       | — (granted by the lead for the pass-3 fixes only; fixed at the lead's request, not re-reviewed)              | 3          |
 
 Regressions against origin/main's hook that the reviews found (`\git`, `;git`, `gh api -iX DELETE`, a heredoc line
 inside `$( )`) are all fixed with probes. Stated costs (false positives) and out-of-reach forms are listed in the
