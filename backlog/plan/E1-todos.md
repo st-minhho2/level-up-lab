@@ -361,10 +361,7 @@ feat/x` and `scripts/pr-step.sh push` (B1.23) still exit 0; the existing force-p
 ### B1.25 · verify-red reads escaped quotes in existing test titles
 
 _tooling · no §_
-**Status: Open** — `scripts/verify-red.sh` `baseTitles` keeps the escapes of a quoted test title it reads from source
-(`titles.add(m[2])`), so a title written `'… query \'\' …'` at the base never equals vitest's `… query '' …`; the
-existing test counts as new and passing, and the script reports "GREEN before implementation" (exit 1). Seen on B4.2's
-red commit b5fc079 (two AC-16.5 titles); a copy with `m[2].replace(/\\(.)/g, '$1')` reports red for the right reason
+**Status: Done** — e284106 (#114), scripts/verify-red-smoke.sh 6 of 6 on bash 5.2 and 3.2 (6d73ab0: 1 ok, 5 FAIL); B4.2 0118ee5..b5fc079 red for the right reason (was GREEN); 21 of 22 historical red commits unchanged; no src/ change, mutation 93.05 unchanged
 
 - **Spec:** none — tooling (`scripts/verify-red.sh`, a new smoke); no `src/` change, no section
 - **Test:** `scripts/verify-red-smoke.sh` (new) on a throwaway worktree — red because: a base test whose title has an
@@ -373,7 +370,7 @@ red commit b5fc079 (two AC-16.5 titles); a copy with `m[2].replace(/\\(.)/g, '$1
   test still makes the card red; a new passing test still fails the gate; the PR carries `config-change-approved`
   (D-19: `scripts/verify-red.sh`)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.25/`
+- **Work:** `work/B1.25/` — plan (review rounds 2, lead 1), review (diff pass 1/3, ready; 3 fail-closed findings carried with the plan's out-of-scope items to a follow-up card); squash `e284106` (#114)
 
 ### B1.26 · pr-step opens a card closing PR
 
