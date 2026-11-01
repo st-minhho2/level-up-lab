@@ -176,3 +176,154 @@ Verdict: approved (ready for the lead's gate; the three reasons below are carrya
 
 Riskiest unfalsified: whether the real smoke's `trap EXIT` cleanup and both bashes (5 and `/bin/bash` 3.2) behave as
 planned. I emulated the probes with my own harness, not the planned `verify-red-smoke.sh`, which does not exist yet.
+
+## Diff review (pass 1)
+
+SCOPE: tooling (`scripts/verify-red.sh`, `scripts/verify-red-smoke.sh`, `scripts/CLAUDE.md` row); no `src/`, no
+section. Range `origin/main...1074168` (local `main` is stale): test 6d73ab0, fix 1074168. Probes on clones under the
+session scratchpad: `b125d1` (a `--no-local` clone), `b125ds` (a `-s` clone that reaches the historical red commits),
+`b125lx` (run in `node:24-bookworm` after its own `pnpm install --frozen-lockfile`). The worktree was not edited.
+
+### Commands
+
+| Command                                                | Last line                                                                                                      |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                            | `All matched files use Prettier code style!` (exit 0)                                                          |
+| `pnpm typecheck`                                       | `> tsc --noEmit` (exit 0)                                                                                      |
+| `pnpm test`                                            | `Tests  193 passed (193)`                                                                                      |
+| `pnpm test:e2e`                                        | `39 passed (1.0m)`                                                                                             |
+| `pnpm test:mutation`                                   | `Final mutation score of 93.05 is greater than or equal to break threshold 70`                                 |
+| `scripts/ci/check-suppressions.sh`                     | `OK: no new suppressions`                                                                                      |
+| `scripts/ci/check-config-change.sh`                    | exit 1 unlabeled (`scripts/verify-red.sh`); `CONFIG_CHANGE_APPROVED=true` → exit 0 (PR #114 carries the label) |
+| `scripts/ci/check-feat-commits.sh`                     | `OK: no feat commit touches tests` (1074168 is `fix(`: `scripts/CLAUDE.md`, `scripts/verify-red.sh` only)      |
+| `scripts/ci/check-ac-coverage.sh`                      | `OK: every criterion of a shipped section has a test`                                                          |
+| `scripts/ci/check-spec-sections.sh`                    | `OK: sections cited: 1 … 19 22`                                                                                |
+| `scripts/ci/check-features-map.sh`                     | `OK`                                                                                                           |
+| `scripts/ci/check-plan-scope.sh`                       | `OK: feat/B1.25-verify-red stays inside the approved plan of B1.25`                                            |
+| `scripts/ci/check-backlog.sh`                          | `OK: README matches the cards`                                                                                 |
+| `scripts/ci/plan-files.sh B1.25`                       | the 5 Files rows; `git diff --stat origin/main...HEAD` lists the same 5 paths                                  |
+| `scripts/verify-red.sh --auto` (CI form, branch range) | `no test(...): B<e>.<n> … (red) commit in range; nothing to verify` (exit 0)                                   |
+| `verify-red-smoke.sh`, `/bin/bash` 3.2.57              | 1074168 `6 ok, 0 FAIL` (8.8 s); 6d73ab0 `1 ok, 5 FAIL` (V6 ok)                                                 |
+| `verify-red-smoke.sh`, bash 5.2.15 (Debian container)  | 1074168 `6 ok, 0 FAIL` (10.9 s); 6d73ab0 `1 ok, 5 FAIL`, the same five FAIL lines as on 3.2                    |
+| `verify-red.sh B4.2 --range 0118ee5..b5fc079` (fix)    | `todo-search-form.test.tsx: 4 ran (2 new), 2 new failed, 0 new passed`, `RESULT: red for the right reason`     |
+| `verify-red.sh B4.1 --range e91dbd6..a5475db` (fix)    | `RESULT: red for the right reason` (2 + 3 new failed, the same as at main)                                     |
+
+Smoke hygiene:
+
+- After each run, `git worktree list` shows only the checkout and `git for-each-ref` is unchanged (34 refs).
+- A run with `TMPDIR` set to an empty directory leaves nothing in it except node's compile cache.
+- Each run leaves about 56 loose, unreferenced objects (fixture blobs, trees, commits), as the plan states. `git gc`
+  prunes them.
+- The diff contains no `--no-verify`, `LEFTHOOK=` or `HUSKY=`. `lefthook.yml` has no `post-checkout`, so
+  `git worktree add` runs no hook.
+- CI runs no `*-smoke.sh` (none appears in `.github/workflows/`). The Debian run (fresh install, identity only via
+  `commit-tree -c`) shows CI could run it.
+
+### Checklist
+
+| Check                                                    | Result                                                                                                                                                                                                                                                                                                                         |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every Acceptance item has a probe whose assertion fits   | pass: an old escaped `'` `"` `` ` `` title is recognised as old (V1, V2); a new failing test stays red (V1, V2, V5, V6 exit 0); a new passing test fails the gate (V3, V4 exit 1); the label is on #114                                                                                                                        |
+| red at the parent, for the stated reason                 | pass: 6d73ab0 gives `1 ok, 5 FAIL` on both bashes. Each FAIL line matches the commit body: V4 is `rc=0 … OK`, the others are GREEN on the old title                                                                                                                                                                            |
+| no test weakened after the red commit                    | pass: `git log 6d73ab0..HEAD -- scripts/verify-red-smoke.sh '*.test.*' e2e/` is empty; no merges                                                                                                                                                                                                                               |
+| every changed file in `plan.md`                          | pass: 5/5                                                                                                                                                                                                                                                                                                                      |
+| interfaces match the plan                                | pass: arguments, output lines and exit codes are unchanged. The decode set and the `%[sdifjo]` placeholder set are as planned                                                                                                                                                                                                  |
+| no secret, no suppression, no raw SQL, no `src/`         | pass                                                                                                                                                                                                                                                                                                                           |
+| no new passing test hidden that main caught (22 commits) | pass: I ran main's script and the fix's script on `C^..C` for all 22 historical red commits. 21 are identical (exit code and every file line). 1 differs: B4.2 b5fc079. The two titles main called new are at the base (lines 18, 41), and the fix reports `0 new passed`. The 3 e2e-only `test(ui)` commits exit 1 under both |
+| would a test fail if one changed line were reverted?     | partly: see the mutants below and [3]                                                                                                                                                                                                                                                                                          |
+
+Mutants of 1074168's `verify-red.sh` (on the clone; killed = the smoke goes red):
+
+```
+titles.add(m[2]) (no unescape)   killed (V1 V2 V3 V5)    drop `n` from named        killed (V5)
+isOld exact → startsWith(o)      killed (V4)             drop the prefix branch     killed (V6)
+drop the \u / \u{} branch        SURVIVES [3]            drop the \x branch         SURVIVES [3]
+drop `t` from named              SURVIVES [3]            PLACEHOLDER → /%s/         survives (no %d probe)
+slice(0, at) → main's replace(/%[sdifjo]/g, '')   survives (differs only for a mid-title placeholder; the plan's choice)
+```
+
+**`unescape` against JS string semantics.** I evaluated each case as a literal in node 24.
+
+- **Equal to JS:** `\'` `\"` `` \` `` `\\` `\\n` `\n` `\t` `\r` `\b` `\f` `\v` `\0` `\08` `\x41` `A` `\u{41}`
+  `\u{0000041}` `\u{1F600}` `😀` `\a` `\é`.
+- **Differs only where JS rejects the literal:** `\x4`, `\x4g`, `\u{}`, a trailing `\`, `\u{110000}`. It also differs
+  where strict mode rejects it: `\1`, `\8`. See [1].
+- **Line continuation:** never captured, because the title regex's `.` does not cross a newline. That title counts as
+  new, the same as at main.
+- **Partial capture:** `it('it\'s \` followed by a newline backtracks to the title `it\`. This is harmless: the match is
+  exact, so it fails closed.
+
+**`isOld` with placeholders.**
+
+- **Placeholder at index 0** (`'%s'`, `'%d: AC-0.2'`): the prefix is empty, so every title in that file counts as old
+  and the file reports `no new test executed` (exit 1). This fails closed, and main did the same (`'%s'.replace(…)` is
+  `''`).
+- **Several placeholders:** the prefix is cut at the first one (`rejects PORT=`). This is the stated out-of-scope cost.
+- **`%%`:** see [2].
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: scripts/verify-red.sh:118 (unescape, String.fromCodePoint)
+    DEFECT: a `\u{…}` escape above 10FFFF, in text the title regex captures, throws RangeError. That kills the embedded
+            node for the whole report, instead of counting that one title as new.
+    TRIGGER: a base test file holding the comment `// it('\u{110000}') is not a valid title` plus one passing test,
+            and a red commit that adds one failing test (plumbing commits on `b125ds`).
+    WRONG BEHAVIOUR: main's script prints `2 ran (1 new), 1 new failed, 0 new passed` and
+            `RESULT: red for the right reason`. 1074168 prints `RangeError: Invalid code point 1114112`, then
+            `::error::B9.9 tests are not red for the right reason`, and exits 1. It fails closed (no false pass). The
+            escape is a SyntaxError in any real string literal, so only a comment, a regex literal or a `String.raw`
+            template can reach it. Not blocking: a follow-up can return the escape unchanged when the code point is
+            above 0x10FFFF.
+    CONFIDENCE: confirmed (ran)
+
+[2] KIND: plan-mismatch
+    WHERE: scripts/verify-red.sh:125-130 (PLACEHOLDER, isOld); plan.md "Out of scope … `%%` titles (counted new, so
+           the gate stays strict)"
+    DEFECT: when `%%` is followed by one of `sdifjo`, the code reads a placeholder one character early. The prefix
+            then over-matches, instead of the title counting as new.
+    TRIGGER: an old `it.each(['x'])('AC-0.3: 50%%s done %s', …)` (vitest reports `AC-0.3: 50% xs done undefined`),
+            and a new passing `it('AC-0.3: 50% brand new')` in the same red commit.
+    WRONG BEHAVIOUR: isOld cuts at index 11, giving the prefix `AC-0.3: 50%`, so the new passing test counts as old
+            (ran through isOld in node). The same happens for a plain, non-`.each` title holding a literal `%s`,
+            which vitest does not format. Main's rule counted both as new. The repo has no `%%` and no literal `%s`
+            outside `.each` (round 2 scan). So this is a sentence to correct in the follow-up card, not a block.
+    CONFIDENCE: confirmed (isOld run in node; vitest title observed); end-to-end verify-red not run
+
+[3] KIND: coverage
+    WHERE: scripts/verify-red-smoke.sh:54-66 (V1–V6) against scripts/verify-red.sh:116-119
+    DEFECT: the smoke covers only the quotes and `\n`. The `\x` branch, the `\u`/`\u{}` branch and the `t` `r` `b` `f`
+            `v` `0` entries can each be deleted and the smoke still prints `6 ok, 0 FAIL`.
+    TRIGGER: in a copy, delete line 118 (or line 119, or `t: '\t'`), then run the smoke.
+    WRONG BEHAVIOUR: `[verify-red-smoke] 6 ok, 0 FAIL` for each mutant. A broken branch fails closed: the old title
+            counts as new, so a legit red commit exits 1 and no false pass hides. The approved plan names only V1–V6.
+            Not blocking: one probe like round 2's `'café \x41 \u{1F600} tab\there'` would pin all of them.
+    CONFIDENCE: confirmed (ran)
+```
+
+Not findings:
+
+- **Octal `\1`:** it compiles under vitest (esbuild), which reports the title as `oct \u0001 x`, while `unescape` gives
+  `oct 1 x`. That old title counts as new (exit 1, fails closed), exactly as at main.
+- **PR body:** the Plan section still shows `Plan approved by:` empty and "test: … (pending)". Refresh it at the ready
+  step.
+- **Follow-up card:** the plan's out-of-scope items are "filed after", and no follow-up card exists yet. [1] and [2]
+  belong in it.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: a title that vitest reports differently from its decoded source, in a shape that neither the
+193-test scan nor the 22 historical commits contain. String concatenation (`'a' + 'b'`) is one: main's prefix rule
+tolerated it, and exact matching now counts it as new. That fails closed, but it would block a legit red commit that
+extends such a file.
+
+### Dispositions, pass 1 (dev-lead)
+
+| #   | Disposition                                                                                                                                      | Evidence |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| 1   | carried: a `\u{…}` escape above 10FFFF in a comment throws in `unescape` (fails closed); follow-up card                                          | review   |
+| 2   | carried: `%%` before a placeholder letter, or a literal `%s` in a plain title, cuts the prefix early (no such title in the repo); follow-up card | review   |
+| 3   | carried: one probe for `\x`, `\u`, `\u{…}` and `\t`; follow-up card                                                                              | review   |
+
+B4.2 waits on this PR, so the three non-blocking findings go to the follow-up card with the plan's out-of-scope items.
