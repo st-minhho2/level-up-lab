@@ -375,11 +375,7 @@ _tooling · no §_
 ### B1.26 · pr-step opens a card closing PR
 
 _tooling · no §_
-**Status: Open** — `scripts/pr-step.sh:41` reads the `draft` body only from `backlog/work/<card>/pr-body.md`, and
-`draft` opens only drafts. After a card's feature PR merges, that file on `main` holds the feature PR's body, and the
-closing lane (`backlog/CLAUDE.md` "Closing a card") may not touch it, so B4.1's closing PR #113 (branch
-`docs/B4.1-done`) was opened with a plain `gh pr create` outside the wrapper. The filing lane lists no work-folder file
-either, so a filing PR has the same gap
+**Status: Done** — 2930ac4 (#122), scripts/pr-step-smoke.sh 14 of 14 on bash 3.2 (cbaa667: 11 ok, 3 FAIL; R11-R14 cover open on docs/<card>-done|-partial|-card and draft refused there; db5e9b8 pins the committed body); live check: this PR opened with scripts/pr-step.sh open; no src/ change, mutation 93.40
 
 - **Spec:** none — tooling (`scripts/pr-step.sh`, `scripts/pr-step-smoke.sh`, `.claude/agents/dev-lead.md`); no `src/`
   change, no section
@@ -391,16 +387,12 @@ either, so a filing PR has the same gap
   feature branch are unchanged; pr-step-smoke R1–R10 stay green; the PR carries `config-change-approved` (D-19:
   `scripts/pr-step.sh`)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.26/`
+- **Work:** `work/B1.26/` — plan (review rounds 2, lead 1), review (diff pass 2/3, ready; 2 findings fixed in ba87a93); squash `2930ac4` (#122)
 
 ### B1.27 · next-task reads board titles with quote characters
 
 _tooling · no §_
-**Status: Open** — `scripts/next-task.sh:73-75` trims every README "Remaining" cell with `echo "$x" | xargs`, and
-`xargs` parses quotes: a lone `'` or `"` in any title (`echo "x | Show each todo's date" | xargs` → `xargs: unterminated
-quote`) makes every mode exit 1 for every card, and a paired `"…"` is silently stripped from the title. Seen when #104
-filed B4.1 ("todo's") and B4.3 (`Say "all done" …`): `--claim B4.1` and `--claim B4.3` exited 1 until #107 reworded both
-titles without quote characters; the script is unchanged
+**Status: Done** — 7d419ab (#121), scripts/next-task-smoke.sh 26 of 26 on bash 3.2 (969614b: 21 ok, 5 FAIL; W22-W26 cover a lone ', a lone ", a paired "…" and a backslash in pick, --claim, --check, --list); next-task.sh has no xargs; no src/ change, mutation 93.40
 
 - **Spec:** none — tooling (`scripts/next-task.sh`, `scripts/next-task-smoke.sh`); no `src/` change, no section
 - **Test:** a new probe in `scripts/next-task-smoke.sh` — red because: a "Remaining" row whose title holds `'` (and
@@ -410,7 +402,7 @@ titles without quote characters; the script is unchanged
   backslash in any title, and `--list` prints the title as written; next-task-smoke W1–W21 stay green; the PR carries
   `config-change-approved` (D-19: `scripts/next-task.sh`)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.27/`
+- **Work:** `work/B1.27/` — plan (review rounds 1, lead 1), review (diff pass 1/3, ready; 2 findings: 1 fixed in 20448af, 1 no change needed — a tab in a README cell fails prettier); squash `7d419ab` (#121)
 
 ### B1.28 · Package guides name the batch 4 modules
 

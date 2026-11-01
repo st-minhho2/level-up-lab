@@ -25,6 +25,9 @@ case "${1:-}" in
   *) echo "usage: $0 [--list | --claim <card> | --check <card>]" >&2; exit 2 ;;
 esac
 warn() { echo "[next-task] warning: $*" >&2; }
+# pure bash on purpose (B1.27): a trim through a tool that parses quotes and backslashes strips them from a title, or
+# exits 1 on a lone ' or "
+trim() { local s="$1"; s="${s#"${s%%[![:space:]]*}"}"; printf '%s' "${s%"${s##*[![:space:]]}"}"; }
 
 GIT_TERMINAL_PROMPT=0 git fetch -q origin </dev/null 2>/dev/null || warn "git fetch failed; using the last fetched origin/main"
 BASE=origin/main
@@ -70,9 +73,9 @@ state_of() { # <card> <status> → To do | Doing | Review | Closing; also sets H
 rows="$(awk '/^## Remaining/{f=1;next} /^## /{f=0} f && /^\| *[0-9]+ *\|/' "$TMP/readme")"
 : > "$TMP/board"
 while IFS='|' read -r _ step id title spec status blocked owner size _; do
-  id="$(echo "$id" | xargs)"; [[ "$id" =~ ^B[0-9]+\.[0-9]+$ ]] || continue
-  step="$(echo "$step" | xargs)"; title="$(echo "$title" | xargs)"; owner="$(echo "$owner" | xargs)"
-  spec="$(echo "$spec" | xargs)"; blocked="$(echo "$blocked" | xargs)"
+  id="$(trim "$id")"; [[ "$id" =~ ^B[0-9]+\.[0-9]+$ ]] || continue
+  step="$(trim "$step")"; title="$(trim "$title")"; owner="$(trim "$owner")"
+  spec="$(trim "$spec")"; blocked="$(trim "$blocked")"
   card="$(card_text "$id")"; file="$(card_file "$id")"
   cstatus="$(echo "$card" | sed -nE 's/^\*\*Status: ([A-Za-z]+)\*\*.*/\1/p' | head -1)"
   why=""
