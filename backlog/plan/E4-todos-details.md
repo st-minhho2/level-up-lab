@@ -22,3 +22,12 @@ _F19 · section 21_
 - **Acceptance:** section 21 criteria, set by `spec-analyst` (contract `spec/contracts/19-clear-search.md`; mounts in `src/components/todo-search-form.tsx` only)
 - **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B4.2/`
+
+### B4.3 · Say "all done" when every todo is completed
+
+_F20 · section 22_
+**Status: Open** — `src/lib/todo-count.ts:8` returns only `N item(s) left`; `git grep -n -i "all done" src/` → no match
+
+- **Acceptance:** section 22 criteria, set by `spec-analyst` (contract `spec/contracts/20-all-done.md`; mounts in `src/components/remaining-count.tsx` only)
+- **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B4.3/`

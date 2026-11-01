@@ -10,8 +10,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 21     | 0       | 3     | 24     |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0     | 5      |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0     | 3      |
-| E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 0      | 0       | 2     | 2      |
-| **Total**        |                                                      | **29** | **0**   | **5** | **34** |
+| E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 0      | 0       | 3     | 3      |
+| **Total**        |                                                      | **29** | **0**   | **6** | **35** |
 
 ## Execution order
 
@@ -65,6 +65,7 @@ flowchart TD
   S32["32 · guard-bash every forced push<br/>B1.24"]
   S33["33 · created date<br/>B4.1"]
   S34["34 · clear search<br/>B4.2"]
+  S35["35 · all done<br/>B4.3"]
 ```
 
 ## Remaining
@@ -79,6 +80,7 @@ at most 3 cards Doing (B1.18).
 | 32   | B1.24 | guard-bash blocks every forced-push and branch-delete spelling             | —                      | Open   | —          | Lead  | S [estimate] |
 | 33   | B4.1  | Show each todo's creation date                                             | new, section 20 (D-24) | Open   | —          | Lead  | S [estimate] |
 | 34   | B4.2  | Clear the search with one link                                             | new, section 21 (D-24) | Open   | —          | Lead  | S [estimate] |
+| 35   | B4.3  | Say "all done" when every todo is completed                                | new, section 22 (D-24) | Open   | —          | Lead  | S [estimate] |
 
 ## Waiting on human
 
