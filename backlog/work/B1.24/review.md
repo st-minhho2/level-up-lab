@@ -337,3 +337,219 @@ Stated costs kept (hooks.md row): any `{` after push (`"${BRANCH}"`, `HEAD@{u}`,
 remote named `mirror`, a push word followed by `+`/`:` for another reason, quoted command text after `git … push`. Out
 of reach kept: curl on the GitHub API, git config files written with an editor tool, variables, aliases.
 hook-smoke: 393 probes OK (14 red at the two pass-1 test commits, 12 + 2).
+
+## Diff review (pass 2)
+
+Range `origin/main...HEAD` (merge base 588d4b4): 6 files, +649 −15 (hooks.md, guard-bash.sh, hook-smoke.sh, plan,
+pr-body, review). Pass 1 commits f5c0a55, c5b60f3, 36350ca, 410c51a, 1b4e90c. Hook verdicts below come from the HEAD
+hook (a copy) run through its real JSON input. Verdicts are compared with `origin/main` and with 13c0dc3 (the hook
+pass 1 reviewed). Bash 3.2 = `/bin/bash`; bash 5.2 = `docker run bash:5.2` on rule 2 extracted. Real git: a scratch
+bare remote with `main`=two and `feat/x`=two, and a clone reset to one.
+
+### Command results (last line of each)
+
+| Command                                    | Result                                                                                                        |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                | `All matched files use Prettier code style!` (1 warning, `src/components/todo-form.tsx:23`, not in this diff) |
+| `pnpm typecheck`                           | `tsc --noEmit`, exit 0                                                                                        |
+| `pnpm test`                                | `Tests  202 passed (202)`                                                                                     |
+| `pnpm test:e2e`                            | `43 passed (51.6s)`                                                                                           |
+| `pnpm test:mutation`                       | `Final mutation score of 93.40 is greater than or equal to break threshold 70`                                |
+| `check-suppressions.sh`                    | `OK: no new suppressions`                                                                                     |
+| `check-config-change.sh`                   | exit 1: `.claude/docs/hooks.md`, `.claude/hooks/guard-bash.sh` (expected until the PR has the D-19 label)     |
+| `check-feat-commits.sh`                    | `OK: no feat commit touches tests`                                                                            |
+| `check-ac-coverage.sh`                     | `OK: every criterion of a shipped section has a test`                                                         |
+| `check-spec-sections.sh`                   | `OK: sections cited: 1 … 22`                                                                                  |
+| `check-features-map.sh`                    | `OK`                                                                                                          |
+| `check-plan-scope.sh` / `check-backlog.sh` | `OK: … stays inside the approved plan of B1.24` / `OK: README matches the cards`                              |
+| `verify-red.sh B1.24`                      | `no 'test(<pkg>): B1.24 … (red)' commit` (the plan explains it: verify-red judges only vitest)                |
+| `scripts/hook-smoke.sh`                    | `hook-smoke: 393 probes OK`, 0 FAIL                                                                           |
+| earlier probe lists at HEAD                | see "Regressions of earlier probes" below                                                                     |
+| rule 2, bash 3.2 vs 5.2                    | identical verdicts on 127 commands (pass-1 lists plus the 29 below)                                           |
+
+### Pass 1 dispositions: do they hold?
+
+| #   | Disposition                                  | Holds?                                                                                                  |
+| --- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 1   | `\` before git                               | yes: `\git push -f origin main` exits 2                                                                 |
+| 2   | `$'…'` config value                          | yes: all three triggers exit 2                                                                          |
+| 3   | exemption only for a whole plain config read | **no**: a `$( )` or backtick word inside the "plain" read still exempts the segment, see [2]            |
+| 4   | `--mirr=push`, `clone --mirror`              | yes                                                                                                     |
+| 5   | names git on the whole command               | yes for the pass-1 triggers, but the change creates the regression in [1] and the false positive in [6] |
+| 6   | probes for the unprobed routes               | yes (mutants below)                                                                                     |
+| 7   | `gh pr close -d`, `git-push` binary          | partly: `-d` passes when it is clustered, quoted, or comes after a flag placed before `pr`, see [5]     |
+| 8   | read-only gh api paths pass                  | yes, but narrowing the method match let `-iX DELETE` through, see [4]                                   |
+| —   | "Stated costs kept (hooks.md row)"           | **no**: the row states 2 of the 4 costs listed, see [6]                                                 |
+
+**Regressions of earlier probes.** I re-ran round-1/2 lists `adv`, `adv2`, `adv4`, `plan`, `probes.tsv`, `adv3`,
+`extra0` and the pass-1 lists `forced`, `plain`, `adv`, `reg`, `adv1` at HEAD. No probe that wanted exit 2 went to
+exit 0, apart from the forms the plan states:
+
+- a real newline;
+- `curl`, which is out of reach;
+- `git commit -m "… git push --force"`, `"v$(date +%Y)"` and `gh pr create --title "… --force"`, stated false
+  positives;
+- `scripts/pr-step.sh push`, which the runner calls from a non-top-level cwd.
+
+### Checklist
+
+- Card Acceptance: every listed spelling exits 2 with the message. Plain `git push`, `push -u origin feat/x` and
+  `scripts/pr-step.sh push` exit 0, and the original probes stay. **pass**, except the regression in [1]: invariant
+  6, which the card closes, gets weaker for `;git` forms that origin/main blocks.
+- No test weakened: `git diff a9eff38 HEAD -- scripts/hook-smoke.sh` deletes only the 10 B1.23 pr-step lines. f5c0a55
+  re-adds them unchanged above the B1.24 block, and its body says so. No `fix(` commit touches hook-smoke.sh, and the
+  branch has no merges. **pass**
+- Every changed file is in `plan.md` (6 of 6). Interfaces, input JSON and exit codes are unchanged. **pass**
+- Zod, Prisma, raw SQL, migration, features-map: n/a. No secret, no suppression. **pass**
+- Revert probes: 10 mutants of pass-1 lines were each run through the full `hook-smoke.sh` in a clone, where the
+  baseline already has 1 unrelated FAIL (`require-review.sh spoke on a clean tree`, caused by the symlinked
+  node_modules). Each mutant either removes one pass-1 change or switches off one gate:
+
+  | Mutant                    | FAIL (baseline 1) |
+  | ------------------------- | ----------------- |
+  | `\` removed from W        | 2                 |
+  | `-push`/`-send-pack` word | 2                 |
+  | config `$`                | 3                 |
+  | `--mi` prefix             | 2                 |
+  | `clone` route             | 2                 |
+  | read-only anchor          | 2                 |
+  | gh pr close               | 3                 |
+  | gh api gate off           | 8                 |
+  | names_git gate off        | 1 (survives)      |
+  | GIT_CONFIG_VALUE `$`      | 1 (survives)      |
+
+  **fail** on the last two, see [7].
+
+- The comment and hooks.md match the code: **fail**. The comment says "a command that names git anywhere", and
+  [1] contradicts it. The comment says "a plain `git config … --get`", and [2] contradicts it. The out-of-reach list
+  is still incomplete, [3]. The costs claimed in the dispositions are missing from hooks.md, [6].
+- `pr-body.md` still says "369 probes OK" and "47 exit-2 probes". At HEAD the counts are 393 probes, 64 exit-2 (62 listed plus 2 continuations) and 19 exit-0. This is not a
+  finding, but dev-lead must update it before the PR.
+
+### Findings
+
+```
+[1] KIND: correctness (regression, introduced by c5b60f3)
+    WHERE: .claude/hooks/guard-bash.sh:42 (W has no ; & |), :60 (names_git on the joined command), :67
+    DEFECT: "names git" now runs before the split, on the whole command. W allows only ^ space " ' ( ` / = \ before
+            git, so a git right after ; & or | is not seen. With no other git word in the command, rule 2 skips
+            every segment.
+    TRIGGER: `true;git push -f origin main`, `cd ..;git push --force origin main`, `true&&git push origin +main`,
+             `echo x|git push -f`, `true;git config remote.origin.mirror true`, `true;git remote add --mirror=push m url`
+    WRONG BEHAVIOUR: HEAD exits 0 on all six. origin/main exits 2 on the first, second, third and fifth (four
+             push forms). 13c0dc3 exits 2 on all six. Real git: `true;git push -f -q origin HEAD:main` reset the
+             remote main from two to one. No hook-smoke probe puts a separator directly before git.
+    CONFIDENCE: confirmed (three hook versions on the same input; real git on a bare remote)
+```
+
+```
+[2] KIND: correctness (pass-1 [3] disposition does not hold)
+    WHERE: .claude/hooks/guard-bash.sh:48 (CONFIG_READ_ONLY words `[^[:space:]#]+`), :69
+    DEFECT: the "whole plain read" accepts any non-space word, including `$(`, `"$(` and backticks. A config write or
+            a `-c …mirror=true` push inside a substitution after `git config --get` therefore turns off the config
+            check for the whole segment.
+    TRIGGER: `git config --get x "$(git -c remote.origin.mirror=true push origin)"`;
+             `git config --get x $(git config remote.origin.mirror true)` (also with backticks, `--unset`,
+             `$(git remote add --mirror=push m url)`, `$(git config remote.origin.push +refs/heads/*:refs/heads/*)`)
+    WRONG BEHAVIOUR: all exit 0, the same as at 13c0dc3. Real git: the first form ran a mirror push in one command,
+             which deleted feat/x and reset main to one. The second form left `remote.origin.mirror=true` in the
+             clone, so the next plain `git push` (which exits 0 at the hook) mirrors.
+    CONFIDENCE: confirmed
+```
+
+```
+[3] KIND: correctness (route neither blocked nor named out of reach)
+    WHERE: .claude/hooks/guard-bash.sh:47 (CONFIG_ROUTE needs a W before `config`; `-` is not in W), comment :32–38, hooks.md row
+    DEFECT: `git --config-env=<key>=<ENV>` (git ≥ 2.31) sets inline config the way `-c` does, but nothing matches
+            it. The plan lists the config routes as git config, remote, -c and GIT_CONFIG_*, and the out-of-reach
+            list does not name --config-env. A related form is plausible: `${IFS}` between words
+            (`git${IFS}push${IFS}-f`). It exits 0 here and on origin/main. It is not named, unless "a command built
+            at run time" is meant to cover it.
+    TRIGGER: `V=true git --config-env=remote.origin.mirror=V push origin` (also `--config-env remote.origin.mirror=V`)
+    WRONG BEHAVIOUR: exit 0. Real git 2.39.5: feat/x deleted and main reset to one on the bare remote.
+    CONFIDENCE: confirmed (--config-env); plausible (${IFS}: hook verdict run, git not run)
+```
+
+```
+[4] KIND: correctness (regression of pass-1 [8]'s narrowing, against 13c0dc3)
+    WHERE: .claude/hooks/guard-bash.sh:51 (GH_WRITE_METHOD `(-x|--method)` needs `-` directly before x)
+    DEFECT: gh (pflag) accepts a bool shorthand clustered before -X, so the method flag does not start with `-x`.
+    TRIGGER: `gh api -iX DELETE repos/o/r/git/refs/heads/feat/x`, `gh api -iXDELETE repos/o/r/git/refs/heads/feat/x`
+    WRONG BEHAVIOUR: exit 0 (13c0dc3: exit 2). gh 2.103.2 with GH_DEBUG=api against an unresolvable host prints
+             `> DELETE /api/v3/repos/o/r/git/refs/heads/feat/x`, so the request is a branch delete. `-zX` is
+             rejected as an unknown flag.
+    CONFIDENCE: confirmed (hook verdict; gh parse; not sent to GitHub)
+```
+
+```
+[5] KIND: correctness (pass-1 [7] disposition holds only for the exact spelling)
+    WHERE: .claude/hooks/guard-bash.sh:53 (GH_BRANCH_DELETE: `gh[[:space:]]+pr` and an unquoted `[[:space:]](-d|--delete-branch)`)
+    DEFECT: a clustered `-d`, a quoted `-d`, or a flag placed before `pr` slips past the regex. gh parses all three.
+    TRIGGER: `gh pr close 7 -dc bye`; `gh pr close 7 "-d"` (also `'--delete-branch'`); `gh -R o/r pr close 7 -d`
+    WRONG BEHAVIOUR: exit 0. Against an unreachable host, gh accepted every form and failed only at the network step.
+             The control `-zc` / `-z` is rejected with "unknown shorthand flag". `gh pr close --help`: -d deletes
+             the local and remote branch.
+    CONFIDENCE: confirmed (hook verdict, gh parse); remote delete not run against GitHub
+```
+
+```
+[6] KIND: plan-mismatch (stated costs)
+    WHERE: .claude/docs/hooks.md:11 guard-bash row; review.md "Stated costs kept (hooks.md row)"; guard-bash.sh:60, :53
+    DEFECT: the dispositions say the row states four costs, but it names only `{` and a remote named mirror. Three
+            other costs appear nowhere: a push word followed by +/: for another reason, quoted command text after
+            git … push, and a stash message with braces. Pass 1 also added false positives that no doc states.
+    TRIGGER: `git status && docker push -d img` (exit 2; 13c0dc3: 0, because names_git now spans segments);
+             `git stash push -- ':(exclude)x'` (exit 2); `gh pr close 7 -c "fix -d later"` and
+             `gh pr merge 7 --squash --delete-branch=false` (exit 2; 13c0dc3: 0);
+             `git log -1 && echo "push -f"` (exit 2; 13c0dc3: 0)
+    WRONG BEHAVIOUR: these commands are blocked with the force-push message, and nothing a session reads explains why.
+    CONFIDENCE: confirmed (grep of hooks.md; hook verdicts run)
+```
+
+```
+[7] KIND: coverage
+    WHERE: scripts/hook-smoke.sh FORCED/PLAIN lists against guard-bash.sh:58 (GIT_CONFIG value class `$`) and :67 (names_git gate)
+    DEFECT: two pass-1 behaviours have no probe. Pass-1 disposition [2] says `$` was added for GIT_CONFIG_VALUE too,
+            but no probe uses a `$'…'` GIT_CONFIG value. No exit-0 probe needs the "names git" gate either.
+    TRIGGER: delete `\$` from `=[\"\'\\$]*[+:]` on :58, or replace `[[ $names_git -eq 1 ]] || continue` with `true` (on a copy)
+    WRONG BEHAVIOUR: hook-smoke stays at its baseline (1 unrelated FAIL in the clone) for both mutants. The first
+             mutant passes `GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=remote.origin.push GIT_CONFIG_VALUE_0=$'+refs/heads/*:refs/heads/*' git push origin`
+             (HEAD: exit 2, mutant: exit 0).
+    CONFIDENCE: confirmed
+```
+
+Answers to the caller's three doubts:
+
+- Anchored CONFIG_READ_ONLY: the anchor fixes the `# config --get` and push-segment forms. Its word class lets
+  substitutions in, [2].
+- names_git on the whole command: it closes pass-1 [5], but it has two costs. The regex has no `;&|` boundary, which
+  causes the regression in [1]. Unrelated segments now trigger the push check, [6] (`docker push -d`,
+  `echo "push -f"`).
+- GH_BRANCH_DELETE `-d`: it blocks comments and `--delete-branch=false`, [6], and misses clustered, quoted or
+  flag-first spellings, [5]. `gh pr merge` is also in `permissions.deny`, so the `merge` half mostly protects nothing
+  new.
+
+Verdict: back to test-writer. [1]–[5] each need an exit-2 probe that is red first, or dev-lead names the form in the
+out-of-reach list. [1] and [4] are regressions, so naming them out of reach needs the lead. [6] needs the costs in
+the row, or narrower matches with exit-0 probes. [7] needs two probes: an exit-2 probe for a `$'…'` GIT_CONFIG value,
+and an exit-0 probe for a non-git push word in a command that names no git. Then code-writer. Pass 3 is the last
+pass.
+
+Riskiest unfalsified: other characters that can come right before a command word and are missing from W, the same
+class as [1]. These are covered: `{ `, `( `, `$(`, backticks, `! `, `time `, `while `, `sudo`, `env`, tabs and
+newlines. `true &git push -f` exits 0, which is [1] again. I did not enumerate every bash grammar position.
+
+### Pass 2 dispositions (dev-lead)
+
+| Pass | #   | Finding                                          | Source   | Kind     | Disposition            | Justification                                                                                                                                                                                                                |
+| ---- | --- | ------------------------------------------------ | -------- | -------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2    | 1   | no `; & \|` before git (regression)              | reviewer | bypass   | fix now                | `; & \|` in the word-start class; probes `true;git …`, `echo x\|git …`, `true &git …` (05157cf red, 0e631e7 green)                                                                                                           |
+| 2    | 2   | plain-read exemption accepts `$( )`/backticks    | reviewer | bypass   | fix now                | exemption words exclude `$`, backtick and `(`; 2 probes                                                                                                                                                                      |
+| 2    | 3   | `--config-env`; `${IFS}`-joined words            | reviewer | bypass   | fix now / out of scope | `--config-env` is a config route (probe); `${IFS}` named out of reach in the rule comment and hooks.md (a text check cannot expand it)                                                                                       |
+| 2    | 4   | `gh api -iX DELETE` (regression)                 | reviewer | bypass   | fix now                | method flag may sit in a short cluster; probe                                                                                                                                                                                |
+| 2    | 5   | `gh pr close -dc`, `"-d"`, `gh -R … pr close -d` | reviewer | bypass   | fix now                | gh global flags may come first; `-d` in a cluster or quoted; 3 probes                                                                                                                                                        |
+| 2    | 6   | stated costs incomplete in hooks.md              | reviewer | doc      | fix now                | hooks.md row lists every false positive found (braces, `+`/`:`/`-d` after any push word once git is named, quoted command text, remote named mirror, `git config get/unset`, gh comment with ` -d`, `--delete-branch=false`) |
+| 2    | 7   | 2 surviving mutants                              | reviewer | test gap | fix now                | probes: `$'…'` GIT_CONFIG_VALUE (exit 2), `docker push -d …` with no git (exit 0)                                                                                                                                            |
+
+Reviewer pass-2 list (`p2/new.txt`): sections A–D all exit 2; E (`${IFS}`) exit 0, out of reach; F false positives, stated.
+Earlier lists: only the stated misses remain. pr-body counts are refreshed at Loop 9. hook-smoke: 405 probes OK.
