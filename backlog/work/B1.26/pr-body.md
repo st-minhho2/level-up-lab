@@ -74,7 +74,7 @@ Live check after the merge: `scripts/pr-step.sh push`, then `scripts/pr-step.sh 
 Steps: `test(scripts): B1.26 …` (no `(red)` marker: tooling) → `fix(scripts): B1.26 …` (+ the doc rows above) →
 reviewer diff → `config-change-approved` (D-19: `scripts/pr-step.sh`, `.claude/agents`, `.claude/skills`, `.claude/docs`).
 
-Plan review: approved, round 2 · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: lead (session reply "approve"), 2026-11-01 · Rounds: 1
 
 ## Map delta
 
