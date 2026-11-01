@@ -69,6 +69,8 @@ refused 'section mark mid-title' draft 'feat(todos): B9.1 add § x' || r6=1
 : > "$LOG"; rc="$(run draft "feat(todos): B9.1 $(printf 'x%.0s' $(seq 1 62))")"; [[ "$rc" == 0 ]] || { echo "     80 chars: rc=$rc"; r6=1; }
 : > "$LOG"; rc="$(run draft 'feat(todos): B9.1 add the x (§9)')"
 grep -qF -- '--title feat(todos): B9.1 add the x (§9) ' "$LOG" && [[ "$rc" == 0 ]] || { echo "     (§n) suffix: rc=$rc"; r6=1; }
+t80="feat(todos): B9.1 $(printf 'x%.0s' $(seq 1 57)) (§9)" # 80 characters, 81 bytes
+: > "$LOG"; rc="$(LC_ALL=C run draft "$t80")"; [[ "$rc" == 0 ]] || { echo "     80 chars with (§9), C locale: rc=$rc"; r6=1; }
 [[ $r6 -eq 0 ]] && ok R6 || fail R6
 # R7
 : > "$LOG"; a="$(run ready 7)"; b="$(run ready 7 --undo)"

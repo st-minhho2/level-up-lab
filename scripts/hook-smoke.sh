@@ -49,6 +49,13 @@ git -C "$PRT" -c user.name=s -c user.email=s@x commit -q --no-verify -m y
 probe 2 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh push' "$PRT")"   # identical copy, untracked
 rm -f "$PRT/scripts/pr-step.sh"; rmdir "$PRT/scripts" 2>/dev/null; rm -rf "$PRT/.git"; rmdir "$PRT" 2>/dev/null
 probe 0 guard-bash.sh "$(pr_cmd "scripts/pr-step.sh draft 'feat(todos): B9.1 add the x (§9)'" "$PWD")"
+# review pass 2: escapes out of a quoted argument; the real layout (hooks from one checkout, the call in another checkout
+# holding the same committed wrapper)
+for c in "scripts/pr-step.sh draft \"a\\\" 'b\" \$(touch P) \"' \"\\\"" 'scripts/pr-step.sh draft "a `touch P` b"' \
+         "scripts/pr-step.sh draft 'a' \$(touch P) 'b'"; do probe 2 guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done
+PRW="$(mktemp -d)/wt"; git worktree add -q --detach "$PRW" HEAD 2>/dev/null
+probe 0 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh ready 7' "$PRW")"
+git worktree remove --force "$PRW" 2>/dev/null; rmdir "$(dirname "$PRW")" 2>/dev/null
 for c in 'scripts/pr-step.sh ready 7' 'scripts/pr-step.sh draft "feat(todos): B9.1 add the x"' \
          'git add scripts/pr-step.sh' 'cat scripts/pr-step.sh'; do probe 0 guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done
 
