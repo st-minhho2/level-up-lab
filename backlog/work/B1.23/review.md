@@ -387,3 +387,16 @@ Riskiest unfalsified: whether Claude Code's matcher auto-approves `scripts/pr-st
 parser reads as `=` and a subshell) and the TOCTOU on `pr-body.md` (a background job swapping it for a hard link to
 `.env` between the `find -links 1` check and gh's read); I could not run the matcher, and the race needs a
 concurrent command that the allow rule does not cover.
+
+### Dispositions, pass 1 (dev-lead)
+
+| #   | Disposition                                                                                                                                                                       | Evidence                                                                          |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| 1   | fix now: rule 5 accepts only plain-word or quoted arguments                                                                                                                       | probes `=(touch X)`, `*(e:'touch X':)` red at a2977c9 (08c44bc), green at 0a208a1 |
+| 2   | fix now: the called wrapper must be byte-identical (`cmp -s`) to the one beside the hook; stronger form of the plan's "tracked and unmodified", stated to the lead at the PR line | probe: a committed foreign wrapper red at a2977c9, green at 0a208a1               |
+| 3   | fix now (coverage): an identical untracked copy in a repo with a commit                                                                                                           | probe added at 08c44bc, exit 2                                                    |
+| 4   | fix now (coverage): newline probe; the title cap at exactly 80 (accepted) and 81 (refused)                                                                                        | R6 and hook-smoke at 08c44bc                                                      |
+| 5   | fix now: a title may end in the PR convention's ` (§<n>)`; `§` elsewhere is refused                                                                                               | R6 red at a2977c9, green at 0a208a1                                               |
+| 6   | no code change: documented in `.claude/docs/hooks.md` (commit messages quoting a wrapper call → `git commit -F` or reword)                                                        | hooks.md                                                                          |
+
+Counts now: pr-step-smoke 10 ok; hook-smoke 305 probes OK (bash 5 and /bin/bash 3.2).
