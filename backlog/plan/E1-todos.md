@@ -375,11 +375,7 @@ _tooling · no §_
 ### B1.26 · pr-step opens a card closing PR
 
 _tooling · no §_
-**Status: Open** — `scripts/pr-step.sh:41` reads the `draft` body only from `backlog/work/<card>/pr-body.md`, and
-`draft` opens only drafts. After a card's feature PR merges, that file on `main` holds the feature PR's body, and the
-closing lane (`backlog/CLAUDE.md` "Closing a card") may not touch it, so B4.1's closing PR #113 (branch
-`docs/B4.1-done`) was opened with a plain `gh pr create` outside the wrapper. The filing lane lists no work-folder file
-either, so a filing PR has the same gap
+**Status: Done** — 2930ac4 (#122), scripts/pr-step-smoke.sh 14 of 14 on bash 3.2 (cbaa667: 11 ok, 3 FAIL; R11-R14 cover open on docs/<card>-done|-partial|-card and draft refused there; db5e9b8 pins the committed body); live check: this PR opened with scripts/pr-step.sh open; no src/ change, mutation 93.40
 
 - **Spec:** none — tooling (`scripts/pr-step.sh`, `scripts/pr-step-smoke.sh`, `.claude/agents/dev-lead.md`); no `src/`
   change, no section
@@ -391,7 +387,7 @@ either, so a filing PR has the same gap
   feature branch are unchanged; pr-step-smoke R1–R10 stay green; the PR carries `config-change-approved` (D-19:
   `scripts/pr-step.sh`)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.26/`
+- **Work:** `work/B1.26/` — plan (review rounds 2, lead 1), review (diff pass 2/3, ready; 2 findings fixed in ba87a93); squash `2930ac4` (#122)
 
 ### B1.27 · next-task reads board titles with quote characters
 
