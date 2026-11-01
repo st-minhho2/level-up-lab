@@ -51,7 +51,7 @@ _F13 · section 15_
 ### B2.5 · Search todos by title
 
 _F14 · section 16_
-**Status: Open** — `git grep -n -i "search" src/app src/components` → no match; `listTodos()` takes no query
+**Status: Done** — 827e4fe (#85), 7 AC-16.n tests green (unit 169, e2e 32), mutation 91.82
 
 - **Spec:** §16 — unchanged (section written from `work/B2.5/analysis.md`; contract `spec/contracts/14-search.md`)
 - **Test:** `src/lib/todo-search.test.ts::AC-16.2: keeps the todos whose title contains the trimmed query, ignoring case, in input order, and never mutates the input` — red because: `src/lib/todo-search.ts` does not exist, `searchTodos` is not exported
