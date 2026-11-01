@@ -76,14 +76,25 @@ None: tooling card, no feature row.
 
 ## Review
 
-Pending: `/review-loop` after the fix commit.
+`/review-loop`: pass 1 of 3, verdict ready for PR (reviewer diff review), 0 findings. Suites at fb75fc0: vitest
+`Tests 202 passed (202)` · playwright `43 passed` · stryker `93.40` (≥ 70) · hook-smoke `8 FAIL` (L1, L5 x 4 layouts)
+at f83e5da → `hook-smoke: 440 probes OK` at fb75fc0 and after merging origin/main (0e2a720). Full text:
+`backlog/work/B1.20/review.md` "Diff review (pass 1)".
+
+| Pass | #   | Finding                                                                                                              | Kind     | Disposition  | Justification                                                                      |
+| ---- | --- | -------------------------------------------------------------------------------------------------------------------- | -------- | ------------ | ---------------------------------------------------------------------------------- |
+| 1    | —   | glob half over-matches: `[id]` allows `src/app/i/page.tsx`, `[...slug]` allows `src/app/./page.tsx`, `*` crosses `/` | coverage | out of scope | on main since #60, not widened here (D-25) → follow-up card at closing             |
+| 1    | —   | CI never runs `hook-smoke.sh`, so L probes get no bash 5 run                                                         | coverage | out of scope | `grep -l hook-smoke .github/workflows/*` → none (D-25) → follow-up card at closing |
+
+Revert check (reviewer, scratch clone): plan-scope line only → L1 FAIL x4; both literal-only → L3–L5 FAIL x4; both
+reverted → L1, L5 FAIL x4.
 
 ## Checklist
 
-- [ ] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
-- [ ] Red commit precedes the fix commit; the fix touches no test.
+- [x] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
+- [x] Red commit (f83e5da) precedes the fix commit (fb75fc0); the fix touches no test.
 - [x] Every `AC-§.n` of the section is a test title — n/a, tooling.
-- [ ] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected paths `.claude/`, `scripts/ci/` → label `config-change-approved`.
+- [x] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected paths `.claude/`, `scripts/ci/` → label `config-change-approved`.
 - [x] Migrations — n/a.
 - [ ] `docs/metrics.md` per-card row filled at closing.
 
