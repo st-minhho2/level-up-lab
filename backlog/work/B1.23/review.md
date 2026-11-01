@@ -95,3 +95,133 @@ Verdict: changes requested
 Riskiest unfalsified: whether Claude Code applies the allow rules to commands with `$VAR`/`$(...)` (for
 example `git push origin +$BR`) or prompts for them. I could not run the matcher, so reason 1 treats them as
 allowed.
+
+## Plan review (round 2)
+
+SCOPE: tooling (`scripts/pr-step.sh`, `.claude/settings.json` allow, dev-lead Loop 5/9, docs); no `src/`, no
+section. Plan at 0f7a6c9 (54 lines). Last round: these reasons go to the lead with the plan.
+
+### Round-1 reasons
+
+| #   | Status                                                                                                                                    |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | closed: no raw `git push` rule; `push` builds `HEAD:refs/heads/<current>` itself (no `+`, no delete). guard-bash gaps → out-of-scope note |
+| 2   | closed for `hotfix` / other flags (`label <n>` takes nothing else); the D-19 condition is not checked (reason 3 below)                    |
+| 3   | closed for `-R`, `--label`, non-draft; `--body-file` secret posting is narrowed but still open (reason 2 below)                           |
+| 4   | closed: deny pinned whole (16), settings probe red on empty `allow`; new red-count gap (reason 4 below)                                   |
+| 5   | closed: `git-workflow.md`, `hooks.md` in Files                                                                                            |
+| 6   | closed: `check-plan-scope.sh` / `check-backlog.sh` print `OK` today (run below); auto-mode assumption and Partial rule stated             |
+
+### Checklist
+
+| Check                                              | Result                                                                                                             |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| every file belongs to the card                     | pass, but reasons 1 and 3 add `.claude/hooks/guard-bash.sh` and `scripts/ci/check-config-change.sh`                |
+| ts-style / actions / Prisma                        | n/a: no TypeScript                                                                                                 |
+| `advice.md` followed or deviation stated           | pass: advisor skipped (tooling, quick), stated                                                                     |
+| ≤ 7 criteria, every Then measurable                | fail: R12 "no shell metacharacter … reaches a second command" names no input and no assertion (reason 4)           |
+| verification: exact commands with expected numbers | fail: "12 FAIL (missing)" is false for refusal probes that only assert non-zero (reason 4)                         |
+| work breakdown, convention subjects                | pass: `test(scripts)` red → `chore(scripts)` green → reviewer → draft PR + `config-change-approved`                |
+| `Lead approves spec` box                           | n/a: no section. The plan has no `Plan review: · Plan approved by: · Rounds:` trailer line (reason 6)              |
+| no settled D-n contradicted                        | fail: D-19 makes the label conditional on an approved plan holding a protected path; `label <n>` is not (reason 3) |
+| one screen                                         | marginal: 54 lines; fixes must replace prose, not add to it (reason 6)                                             |
+| `scripts/next-task.sh --check B1.23`               | pass: `[next-task] B1.23: no overlap with any Doing or Review card`                                                |
+
+Runs: `scripts/hook-smoke.sh` → `hook-smoke: 284 probes OK`; `scripts/ci/check-plan-scope.sh` → `[check-plan-scope] OK:
+feat/B1.23-pr-steps changes only paperwork (B1.23 has no approved plan)`; `scripts/ci/check-backlog.sh` →
+`[check-backlog] OK: README matches the cards`; `scripts/ci/plan-files.sh --any B1.23 HEAD` → the 11 Files rows, exit 0.
+
+### Matcher: known vs assumed
+
+- Known (Claude Code permission docs): `Bash(scripts/pr-step.sh *)` is a string prefix match, `*` spans spaces;
+  `&&`, `||`, `;`, `|` split a command and every part must be allowed; deny beats allow; a PreToolUse hook exiting 2
+  blocks even an allowed command. The match is on text: it says nothing about which file `scripts/pr-step.sh` names
+  (that depends on the cwd) or whether that file is the reviewed one.
+- Assumed (not verifiable here): whether a command whose argument holds `$(…)` or backticks, a redirection
+  (`> f`, `< f`), or a leading `VAR=x` assignment is still matched by the prefix or sent to a prompt; that a newline
+  splits like `;`; that `cd <dir>` inside an allowed working directory (the worktree, the session scratchpad) runs
+  without asking. The plan's safety must not rest on these, and the wrapper cannot see any of them: the shell
+  expands `$(…)`, opens redirections and applies `VAR=x` before the wrapper runs. Only `guard-bash.sh`, which reads
+  the raw command for every Bash call, can.
+
+### Probes I ran
+
+`guard-bash.sh` copy in the session scratchpad, exit 0 = passes the hook (so, under the new rule, runs if the matcher matches):
+
+```
+exit 0  scripts/pr-step.sh draft "$(< .env)" backlog/work/B1.23/plan.md      title = the file, posted to a public repo
+exit 0  scripts/pr-step.sh draft "`< ~/.ssh/id_rsa`" backlog/work/B1.23/plan.md
+exit 2  scripts/pr-step.sh draft "$(cat .env)" …                             (READER word present; `$(<` has none)
+exit 0  scripts/pr-step.sh ready 7 > .claude/settings.json                    truncates the file, no Edit/Write hook sees it
+exit 0  GH_REPO=someone/else scripts/pr-step.sh draft 'feat(x): y' …           gh honors GH_REPO
+exit 0  cd /tmp/x && scripts/pr-step.sh push                                  runs /tmp/x/scripts/pr-step.sh
+exit 0  ln .env backlog/work/B1.23/body.md · dd if=.env of=… · ln -s ~/.ssh backlog/work/B1.23/d
+exit 0  scripts/pr-step.sh body 7 backlog/work/../../.env.md
+```
+
+`/bin/bash` 3.2.57 on this machine, dummy files: a hard link `work/h.md` to `sec/s.md` passes `-f` and `! -L`;
+`work/d/s.md` through a symlinked directory passes `-f` and `! -L` (only `cd -P … && pwd -P` exposes `sec/`);
+`find f -links 1` prints nothing for the hard link (portable nlink check); `TMPDIR` is
+`/var/folders/…/T/` (trailing slash) and resolves to `/private/var/folders/…/T`, so comparing a resolved path to raw
+`$TMPDIR` refuses every valid file; with `TMPDIR=""` the prefix `"$TMPDIR"/*` accepts `/etc/x.md`; `$(< f)` works in 3.2.
+`/bin/realpath` exists (macOS 15) but takes no `-e`/`-m`; `cd -P "$(dirname f)" && pwd -P` is the portable form.
+`lefthook.yml` has no `pre-push`, so `push` skips no local hook.
+
+Verdict: changes requested — Waiting on human (round cap reached). Blocking = the plan must change before the lead
+approves (Files or the safety claim change); carryable = may be fixed in the build without re-approval, or filed.
+
+1. **Blocking. The allow rule trusts a relative path and a command shape that only guard-bash can check.**
+   Text matched by `Bash(scripts/pr-step.sh *)` can (if the matcher matches it, assumed above) truncate any file
+   (`… > .claude/hooks/guard-bash.sh` empties a hook, which disables it), post a secret as the title (`"$(< .env)"`),
+   redirect `gh` (`GH_REPO=…`), or run a different `scripts/pr-step.sh` (`cd <scratchpad> && …` after a Write
+   there, which `plan-scope.sh` lets through as outside the project; or a `sed -i` edit in the worktree, which no
+   Edit/Write hook sees). Each runs without auto mode's judgement, which is more than the five steps. Fix: add
+   `.claude/hooks/guard-bash.sh` to Files with one rule: a command that mentions `pr-step.sh` must be a single
+   segment matching `^scripts/pr-step\.sh( |$)` (no leading `cd` or `VAR=`), contain none of `$`, backtick, `<`,
+   `>`, `;`, `&`, `|`, `\`, newline, run with the hook payload's `cwd` equal to `git rev-parse --show-toplevel`, and
+   `scripts/pr-step.sh` tracked and clean (`git diff --quiet HEAD -- scripts/pr-step.sh`). One exit-2 probe in
+   `hook-smoke.sh` per spelling in "Probes I ran" plus `scripts/pr-step.sh ready 7` and a quoted conventional title
+   at exit 0; all red before the change (they exit 0 today).
+2. **Blocking. The body-file and title rules as written let a secret through.** `..` (`backlog/work/../../x.md`),
+   a symlinked directory component, a hard link to `.env` (`ln`, `dd if=` pass guard-bash) and `TMPDIR=""` all pass
+   "regular `.md` under `backlog/work/` or `$TMPDIR`, not a symlink"; comparing to raw `$TMPDIR` on macOS refuses
+   every valid temp file. Fix, in the Interfaces block: resolve with `cd -P "$(dirname f)" && pwd -P` and compare to
+   the resolved `$(git rev-parse --show-toplevel)/backlog/work/` and resolved `${TMPDIR:?}` (non-empty, not `/`);
+   require `find f -links 1`; the title one line matching the PR title convention
+   (`^(feat|fix|chore|docs|test|refactor)\([^)]+\): ` plus a length cap), so a `KEY=value` file cannot be a title.
+   Extend R5 with `..`, symlinked directory, hard link, `TMPDIR=` empty, and a resolved `$TMPDIR` file accepted.
+3. **Blocking. `label` drops D-19's condition, and the wrapper itself is unprotected.** D-19: the agent labels
+   "when the lead-approved plan changes a CI-protected path … a protected change outside an approved plan is never
+   labeled by an agent". `label <n>` checks only digits and head branch, so any session on any card branch can
+   auto-apply `config-change-approved`, which turns `check-config-change.sh` green for every protected file. Fix:
+   `label` refuses unless `scripts/ci/plan-files.sh <card>` exits 0 (approval commit exists) and one of its Files
+   matches `check-config-change.sh`'s `PROTECTED`. Separately, `scripts/pr-step.sh` is now the permission
+   boundary but is not in `PROTECTED` (only `scripts/ci/`, `verify-red.sh`, `next-task.sh`, `card-status.sh`
+   are), so a later plan can widen it with no label; add `scripts/pr-step.sh` to `PROTECTED`
+   (`scripts/ci/check-config-change.sh` into Files). The head check should also require
+   `isCrossRepository == false`: a fork PR with the same branch name (public repository) passes `headRefName` alone.
+   Probes: label refused without approval commit / without a protected path; fork-head PR refused.
+4. **Blocking. Red count and R12 are not measurable as written.** Seven probes (R2, R3, R5, R7, R9, R10, R11)
+   test a refusal; if they assert only a non-zero exit, a missing script (exit 127) passes them and the test
+   commit shows 5 FAIL, not 12. State that every refusal probe asserts the wrapper's own exit code and refusal
+   message and an empty `gh`/`git` shim log, so a missing script fails all of them. R12: name the inputs
+   (`'x; touch P'`, `'$(touch P)'`, ``'`touch P`'``) and the assertion (`P` absent, shim received the title
+   byte for byte). Recompute both expected lines after 1–3 (`pr-step-smoke.sh` N ok; `hook-smoke.sh` 284 + 2 + the
+   guard-bash probes).
+5. **Carryable.** Done criterion: add `body` (Loop 9 fills Map delta / Review through it); `label` is exercised
+   only on a card whose plan holds a protected path, so say "label, or not exercised" or the card can never close.
+   `draft` must print the PR number (Loop 5's `label <n>` needs it). Loop 9's `git fetch`/`git merge` and
+   `gh pr checks --watch` stay outside the wrapper: the closing PR records whether any of them was refused. Scrub
+   `GH_REPO`, `GH_HOST`, `GIT_DIR`, `GIT_WORK_TREE`, `GIT_CONFIG_*` inside the wrapper as defence in depth behind 1.
+6. **Carryable.** Add the `Plan review: … · Plan approved by: … · Rounds: 1` trailer the gate writes into; trim the
+   7-line round-1 preamble to one line to stay near one screen. The out-of-scope note is acceptable (no raw push is
+   auto-approved, so this card does not widen the guard-bash gaps), provided the card is filed with an id in this
+   PR's backlog change, not "after".
+
+Dev-lead coverage: Loop 5 (push, draft, label) and Loop 9 (push, body, ready, `ready --undo`, ready) map onto the
+five subcommands once `draft` returns the number (reason 5); no PR step is left needing a raw `gh pr` call except
+the read-only `gh pr checks`/`view`.
+
+Riskiest unfalsified: whether Claude Code's matcher auto-approves `scripts/pr-step.sh …` when the argument holds
+`$(…)`, a redirection or a `VAR=` prefix. I could not run it; reason 1 makes the answer irrelevant by blocking those
+shapes in `guard-bash.sh` before the matcher is consulted.
