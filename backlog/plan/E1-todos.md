@@ -342,3 +342,20 @@ hand and B3.2's draft PR could not open (batch 1 PR wait median 17 min, `docs/me
   the PR carries `config-change-approved` (D-19). Labels and the PR body edit stay outside the wrapper
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.23/`
+
+### B1.24 · guard-bash blocks every forced-push and branch-delete spelling
+
+_tooling · no §_
+**Status: Open** — B1.23 plan review round 1 ran `.claude/hooks/guard-bash.sh` on a copy: these exit 0 (pass) today while
+invariant 6 says an agent never force-pushes: a quoted `+refspec` (`'+main'`, `"+feat/x"`), a `+` before a non-letter
+(`+@:feat/x`, `+0a1b2c3:refs/heads/feat/x`, `+$BR`), `--mirror`, `git -C . push` with a force flag; and deleting
+another card's branch passes too (`--delete`, `:branch`, `--prune`). The `main` ruleset does not protect card branches
+
+- **Spec:** none — tooling (`.claude/hooks/guard-bash.sh`, `.claude/docs/hooks.md`); no `src/` change, no section
+- **Test:** new exit-2 probes in `scripts/hook-smoke.sh`, one per spelling above — red because: `guard-bash.sh` exits 0
+  on each today
+- **Acceptance:** every spelling above exits 2 with the force-push message; plain `git push`, `git push -u origin
+feat/x` and `scripts/pr-step.sh push` (B1.23) still exit 0; the existing force-push probes stay; the PR carries
+  `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.24/`

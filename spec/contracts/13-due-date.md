@@ -83,9 +83,8 @@ Lib test for REQ-15.8 (no criterion): `setTodoDueDate('missing', …)` with `fin
 
 ## Out of scope
 
-Setting a due date while creating a todo (§5's form is unchanged), an overdue or due-soon highlight or any
-comparison with today's date, sorting or grouping by due date (ordering stays creation time only, §1), filtering or
-searching by due date, due times, time zones, recurring dates, reminders, a date range limit other than the format
+Setting a due date while creating a todo (§5's form is unchanged), a due-soon highlight, sorting or grouping by due
+date (ordering stays creation time only, §1), filtering or searching by due date, due times, time zones, recurring dates, reminders, a date range limit other than the format
 (past dates are accepted), cancelling an edit (Escape/blur), a locale-formatted date, two tabs acting at once, undo.
 
 ## Unchanged behavior

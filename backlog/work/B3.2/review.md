@@ -1,0 +1,273 @@
+# B3.2 review
+
+## Plan review (round 1)
+
+SCOPE: all (`src/lib`, `src/components`, `e2e`; no `src/actions`, no `prisma/`)
+
+Read: `plan.md` (92aa66a), `spec/contracts/16-title-counter.md`, `analysis.md`, `advice.md`, D-5, D-7, D-21, card
+B3.2, `spec/features-map.md`, `src/components/todo-form.tsx` and its test, `src/lib/todo-schema.ts`,
+`scripts/ci/check-features-map.sh`, `scripts/ci/plan-files.sh`, `scripts/ci/check-suppressions.sh`. Ran:
+`pnpm test` → `Tests  169 passed (169)` (baseline confirmed); `grep -cE '^\s*test\(' e2e/*.spec.ts` → 32 (baseline
+confirmed); react-dom 19.1.0 `react-dom-client.development.js`: `recursivelyResetForms` at 13422 runs inside the
+mutation pass, `flushMutationEffects()` 15401 precedes `flushLayoutEffects()` 15402 (agrees with the advice);
+`eslint-plugin-react-hooks` is 5.2.0, which has no set-state-in-effect rule, so approach A needs no suppression.
+
+| Check                                                                             | Result                                                                                                                                                                                                                                                                    |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: `title-count.ts` and its test form the new F16 row (✗ in the skeleton, which `check-features-map.sh` allows for missing paths); `todo-form.tsx` and its test are already F4/F8 and D-21 assigns that file to B3.2; `e2e/18-title-counter.spec.ts` is §18's own file |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass: two pure exports with explicit return types, no Prisma, no `server-only` (client-importable, imports only `todo-schema.ts` → `zod`); `TodoForm(): ReactNode` unchanged; no action, schema or message touched                                                        |
+| plan follows `advice.md`'s recommendation or states the deviation                 | fail: approach A as recommended, but the plan also pre-authorizes fallback B as "a code-writer choice" without the cost the advice lists (reason 1)                                                                                                                       |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: 7 criteria, every Then is exact text, counts, values or an accessible description; no banned adjective                                                                                                                                                              |
+| verification lists exact commands with expected numbers                           | pass, with a note: commands are exact; baselines 169 and 32 are right; targets are written "about 6" / "~175" although the plan fixes 1 test per AC (reason 2, minor)                                                                                                     |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: `chore(todos): B3.2 skeleton` → `test(todos): B3.2 … (red)` → `feat(todos): B3.2 …` → `docs(map): F16 … [B3.2]` → `docs(backlog): B3.2 review …`                                                                                                                    |
+| the section has a `Lead approves spec` box, ticked only by a human                | pass: `- [ ] Lead approves spec (lead, <date>)` present and unticked; the plan says approval ticks it (D-7); not touched by this review                                                                                                                                   |
+| no settled D-n contradicted                                                       | pass: D-21 (no `page.tsx`, `todo-due-date.tsx`, `todo-item.tsx`, `todos.ts`, `actions/todos.ts`, `logger.ts`, `src/*/CLAUDE.md` in Files); D-5 (200 imported as `TITLE_MAX_LENGTH`, one definition); D-19 (no config change)                                              |
+| `scripts/next-task.sh --check B3.2` on the committed plan says no overlap         | pass: `[next-task] B3.2: no overlap with any Doing or Review card` (exit 0, run on 92aa66a)                                                                                                                                                                               |
+
+Verdict: changes requested
+
+1. **Fallback B is pre-approved without its cost, and B breaks the Function contract.** `plan.md` line 6: "Fallback
+   B (`onReset` → `setDraft(kept)`) stays inside the same two files." Approving the plan would let the code-writer
+   switch to B with no re-approval. B sets the counter from the `defaultValue` prop (`kept`) and never reads the
+   box after the reset. The contract says the counter "is derived from the box itself, read after every input event
+   and after every form reset" (`16-title-counter.md`, Function contracts). `advice.md` lists the cost: "Dropped by
+   B: reading the real box value after reset (REQ-18.6's wording)". B also lets box and counter disagree whenever a
+   script cancels the `reset` event or `kept` changes without the handler. The lead would be approving a mechanism the
+   spec excludes without seeing that. Fix: either delete the fallback sentence, or say that switching to B (or to
+   `onReset` + `queueMicrotask`) is a plan change that needs re-approval and a §18 ruling because it drops the
+   read-from-the-box property.
+2. (minor) Verification: replace "about 6 new" and "169 → ~175" with the exact targets the Files table implies
+   (`title-count.test.ts` 2 + `todo-form.test.tsx` 4 = 6; 169 → 175; e2e 32 → 33), and keep the sentence that a
+   different count goes in the red commit.
+
+Costs the lead approves with approach A (stated here so approval happens with them in view):
+
+- The component is not mutation-tested (Stryker covers `src/lib` and `src/actions` only), so the 4 component tests
+  AC-18.3 to AC-18.6 are the only guard of the reset logic. Their exact literals (`'0 / 200'`, `'8 / 200'`,
+  `'12 / 200'`) are what make them a guard; `titleCounterText(box.value)` alone (AC-18.4 b) proves only agreement.
+- A depends on TodoForm re-rendering in the commit that resets the form, so that its layout effect runs. React
+  19.1.0 source supports this, but only AC-18.4 to AC-18.6 going red then green prove it.
+- The layout effect with no dependency array also runs on the first commit after hydration, so text typed before
+  hydration shows its count at hydration instead of `0 / 200`. §18 puts this case out of scope (allowed, not
+  required) and no AC asserts either way. No existing behavior is dropped: `kept` still reads `draft` only after a
+  `form` failure, and `onSubmit` still sets `draft` again on every submit.
+
+Riskiest unfalsified: approach A assumes the reset commit re-renders TodoForm and runs its layout effect. I checked
+the react-dom 19.1.0 commit order by reading it, not by running it.
+
+## Plan review (round 2)
+
+SCOPE: all (`src/lib`, `src/components`, `e2e`; no `src/actions`, no `prisma/`)
+
+Read: `plan.md` at d5de514, `git diff 92aa66a d5de514 -- backlog/work/B3.2/plan.md` (+5 −4 lines, Approach paragraph
+and Verification only), `spec/contracts/16-title-counter.md`, `advice.md`, `analysis.md`, card B3.2, D-21 (batch 3),
+`src/components/todo-form.tsx`, `scripts/ci/plan-files.sh`, `scripts/ci/check-plan-scope.sh`. Ran:
+`git diff 92aa66a HEAD --stat -- src e2e prisma` → empty (no code moved since round 1); `pnpm test` →
+`Tests  169 passed (169)`; `grep -cE '^\s*test\(' e2e/*.spec.ts` summed → 32; no `e2e/18-*` yet;
+`scripts/ci/plan-files.sh --any B3.2` → the 5 Files rows exactly (`title-count.ts`, `title-count.test.ts`,
+`todo-form.tsx`, `todo-form.test.tsx`, `e2e/18-title-counter.spec.ts`), so `check-plan-scope.sh` will hold the build to them.
+
+Round 1 reasons:
+
+1. Applied. The fallback sentence is gone; the plan now reads "No fallback without the lead: B (`onReset` →
+   `setDraft(kept)`) or `onReset` + `queueMicrotask` would not read the box after the reset (§18 Function contracts),
+   so switching is a plan change that needs re-approval and a §18 ruling."
+2. Applied. "6 new", "169 → 175", "32 → 33"; the different-count sentence is kept.
+
+| Check                                                                             | Result                                                                                                                                                                                                                                                       |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every file in the plan belongs to the section's features (map)                    | pass: unchanged from round 1; `plan-files.sh --any` prints the 5 rows, all F16 (`title-count.*`, `e2e/18`) or the D-21 mount `todo-form.*`; paperwork (`spec/features-map.md`, `docs/metrics.md`) is exempt in `check-plan-scope.sh`                         |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass: two pure exports with explicit return types copied from §18 Function contracts; `TodoForm(): ReactNode` unchanged; no action, schema, message or Prisma touched                                                                                        |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: approach A as recommended; the one deviation (advice calls a switch to B "a code-writer choice … no plan change", the plan makes it a re-approval plus a §18 ruling) is stated in the Approach paragraph with its reason                               |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: 7 criteria (AC-18.1 to AC-18.7), each Then is exact counts, texts, values, role counts or an accessible description                                                                                                                                    |
+| verification lists exact commands with expected numbers                           | pass: `verify-red.sh B3.2` exit 0 with 6 failing (2 + 4), e2e 1 failed in red; `pnpm test` 169 → 175 (baseline re-run: 169); `pnpm test:e2e` 32 → 33 (baseline re-counted: 32); mutation ≥ 70 with `title-count.ts` 100; `pnpm build`; `check-plan-scope.sh` |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: `chore(todos): B3.2 skeleton` → `test(todos): B3.2 … (red)` → `feat(todos): B3.2 …` → `docs(map): F16 … [B3.2]` → `docs(backlog): B3.2 review …`                                                                                                       |
+| the section has a `Lead approves spec` box, ticked only by a human                | pass: `- [ ] Lead approves spec (lead, <date>)` present and unticked at d5de514; the plan says the lead's approval ticks it (D-7); not touched by this review                                                                                                |
+| no settled D-n contradicted                                                       | pass: D-21 batch 3 (UI only in `todo-form.tsx`, no `page.tsx`, no sibling component, no `src/*/CLAUDE.md`); D-5 (200 imported as `TITLE_MAX_LENGTH`); D-19 (no config change)                                                                                |
+| `scripts/next-task.sh --check B3.2` on the committed plan says no overlap         | pass: `[next-task] B3.2: no overlap with any Doing or Review card` (exit 0, run on d5de514)                                                                                                                                                                  |
+
+Verdict: approved (ready for the lead's gate, not approved for build)
+
+Costs the lead approves with approach A (carried from round 1, still true):
+
+- The component is not mutation-tested (Stryker covers `src/lib` and `src/actions` only); the 4 component tests
+  AC-18.3 to AC-18.6, with their exact literals `'0 / 200'`, `'8 / 200'`, `'12 / 200'`, are the only guard of the reset
+  logic. AC-18.4 (b) asserts only `titleCounterText(box.value)` agreement, by the spec's own wording.
+- A depends on TodoForm re-rendering in the reset commit so its layout effect runs; only AC-18.4 to AC-18.6 going red
+  then green prove it. If they stay red, the plan stops at the lead (no silent switch to B): that is a re-approval and a
+  §18 ruling, and it costs at least one more lead round-trip on this card.
+- The no-dependency layout effect also runs on the first commit after hydration, so text typed before hydration shows
+  its count then instead of `0 / 200` until the next event. §18 Out of scope allows this; no AC asserts either way.
+- No existing behavior is dropped: `kept` still reads `draft` only after a `form` failure, and `onSubmit` still re-seeds
+  `draft` on every submit, so the 6 existing `todo-form.test.tsx` tests keep their oracle.
+
+Notes (not blocking, for the lead):
+
+- `plan.md` is 59 lines against `planning.md`'s "≈ 40 lines"; the Files table and Interfaces block are the bulk and
+  carry no second task, so I did not split it (round 1 passed the same shape at 58 lines).
+- `backlog/00-decisions.md` holds two rows with id `D-21` (lines 41 and 47: §16 `searchTodos` length rule, and batch 3).
+  The plan means the batch-3 row. Ids are "permanent, never reused" (`backlog/CLAUDE.md`); this predates the card and is
+  not this plan's to fix, but "D-21" is ambiguous wherever it is cited.
+
+Riskiest unfalsified: approach A's layout effect running in the same commit as React 19.1.0's `form.reset()` (read in
+react-dom source in round 1, not run); AC-18.4 to AC-18.6 are the first execution of that assumption.
+
+## Diff review (round 1)
+
+SCOPE: all (`src/lib`, `src/components`, `e2e`; no `src/actions`, no `prisma/`)
+
+Range `main...HEAD` (merge-base d53f4c7; the branch is 2 commits behind `origin/main`, #92 and #96). Read: §18, `plan.md`,
+`advice.md`, every changed file, the red commit body. Probes ran on a copy (scratchpad `probe/`), never on the tree.
+
+### Commands (last line of each, run by the reviewer)
+
+| Command                             | Result                                                                                                         |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | exit 0; `✖ 1 problem (0 errors, 1 warning)` (react-hooks/exhaustive-deps, `todo-form.tsx:23`); prettier OK     |
+| `pnpm typecheck`                    | `tsc --noEmit`, no output, exit 0                                                                              |
+| `pnpm test`                         | `Tests  175 passed (175)`                                                                                      |
+| `pnpm test:e2e`                     | `33 passed (1.3m)`                                                                                             |
+| `pnpm test:mutation`                | `Final mutation score of 91.88 is greater than or equal to break threshold 70`; `title-count.ts` 100.00 (2/2)  |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                                      |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                              |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                             |
+| `scripts/ci/check-ac-coverage.sh`   | `OK` (§18 is ✗ in the index, so the script skips it; coverage checked by hand below: 7/7)                      |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 16 18`                                                                                |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                                           |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B3.2-title-counter stays inside the approved plan of B3.2`                                           |
+| `scripts/verify-red.sh B3.2`        | `RESULT: red for the right reason` (component 4 new failed, lib 2 new failed; e2e skipped, body says 1 failed) |
+| `git diff --stat main...HEAD`       | 14 files, +875 −5 (code: `title-count.ts` +11, `todo-form.tsx` +25 −5)                                         |
+
+### Checklist
+
+| Check                                         | Result                                                                                                                                                                                                                          |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-18.n has a test matching its Then    | pass: AC-18.1 (12 values, `'é'` is bytes `65 cc 81`, `'İ'` is `c4 b0`), AC-18.2 (5 texts, 4 schema rows, agreement), AC-18.3 (a)–(e), AC-18.4 (a)(b), AC-18.5 (a)(b)(c), AC-18.6 (fail and success renders), AC-18.7 every step |
+| no test weakened after red                    | pass: `git log --first-parent --no-merges d480a51..HEAD -- '*.test.*' e2e/` empty; `--merges --remerge-diff` empty (no merges)                                                                                                  |
+| every changed file in `plan.md`               | pass: 5 Files rows + exempt paperwork (`spec/features-map.md`, `docs/metrics.md`, backlog, spec docs commits)                                                                                                                   |
+| interfaces match §18 Function contracts       | pass: both signatures exact; `TITLE_MAX_LENGTH` imported (one 200); `<p id="new-todo-count">`, no role, no `aria-live`; `aria-describedby` `'new-todo-error new-todo-count'` / `'new-todo-count'`; `TodoForm(): ReactNode`      |
+| Zod at every action boundary                  | n/a: no action touched                                                                                                                                                                                                          |
+| Prisma only in `src/lib`, no raw SQL          | pass: none added; `title-count.ts` imports only `todo-schema.ts` → `zod` (client-safe)                                                                                                                                          |
+| migration                                     | n/a                                                                                                                                                                                                                             |
+| no secret, no suppression                     | pass                                                                                                                                                                                                                            |
+| features map row moved                        | pass: F16 ✗ in b4b372f, ✅ in 506a8bb (see note 3)                                                                                                                                                                              |
+| would a test fail if a changed line reverted? | pass for every §18 line (probe table); the pre-existing `onSubmit` seed is now covered by nothing (note 2)                                                                                                                      |
+
+Probes (`todo-form.tsx` variant → `vitest run src/components/todo-form.test.tsx`):
+
+| Variant                                                        | Result                                                                                                 |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| layout effect removed                                          | 3 fail: AC-18.4, AC-18.5, AC-18.6                                                                      |
+| layout effect with `[]`                                        | 3 fail: AC-18.4, AC-18.5, AC-18.6                                                                      |
+| `useEffect` instead of `useLayoutEffect`                       | 2 fail: AC-10.5 (existing), AC-18.5                                                                    |
+| `onChange` writer removed                                      | 3 fail: AC-18.3, AC-18.6, pending-typing                                                               |
+| `aria-describedby` order swapped / counter id dropped on error | 1 fail each: AC-18.5                                                                                   |
+| layout effect with `[state, pending]` or `[state]`             | 10 pass; `eslint` on the file exit 0, 0 warnings                                                       |
+| `onSubmit` seed removed                                        | 10 pass                                                                                                |
+| `kept` = draft after any failure (title error too)             | 10 pass (pre-existing gap, see Q3)                                                                     |
+| SSR: `renderToString(<TodoForm />)`                            | `<p id="new-todo-count" …>0 / 200</p>`, box `aria-describedby="new-todo-count"` (REQ-18.3 server half) |
+
+### Findings
+
+None blocking.
+
+### Answers to the code-writer's questions
+
+1. **Lint warning.** It is not a CI failure (`"lint": "eslint . && prettier --check ."`, no `--max-warnings`, exit 0)
+   and not a suppression. The "infinite chain" it warns of does not happen: `setDraft` with an equal string bails out,
+   and the 175 unit + 33 e2e tests terminate. But it is the repo's only lint warning, and the round-1 plan review said
+   approach A needed no suppression without naming this warning, so the lead approved without seeing it. A dependency
+   list `[state, pending]` clears it (probe: eslint 0 warnings, 10/10 component tests) and is still approach A (ref +
+   layout effect reading the box, one `draft`; not B's `onReset`/`kept`). React resets the form only in the commit that
+   settles the action transition, and that commit always flips `pending`, so "read after every form reset" (§18
+   Function contracts) still holds. It does change the plan's literal words "no-dependency `useLayoutEffect` … after
+   every commit", so it is the lead's call (keep the warning, or amend the Approach line and change the effect in a
+   new `feat`/`fix` commit), not a reviewer finding. Not tested: `[state, pending]` against `pnpm test:e2e`.
+2. **Read on mount.** No conflict. §18 Out of scope lists "a value that reaches the box … typed before the page is
+   interactive … until the next input event or form reset": not required, not forbidden. REQ-18.3's server HTML is still
+   `0 / 200` (SSR probe), and counting the real value sooner matches the Intent ("right at every moment the box holds
+   text"). No AC asserts either way.
+3. **Draft/kept after a title error.** No §10 behavior change. `kept` is unchanged (`draft` only when
+   `fieldErrors.form` is set). After a title error the box resets to `''` and the effect now sets `draft` to `''`;
+   before, `draft` kept the submitted text, but it was read only after a `form` failure, which needs a submit, and
+   `onSubmit` re-seeds `draft` on every submit. So the old value was never visible. The 6 existing component tests
+   and `e2e/10` pass. Separately (pre-existing on `main`, not this card): no test pins the box being empty after a title
+   error. The `kept`-on-any-failure probe passes 10/10, and §18 leaves the box content after a title error to §5.
+
+### Notes (not blocking)
+
+1. The lint warning (Q1) needs a lead decision before the PR, or the PR body names it.
+2. `onSubmit` seeding (`todo-form.tsx:32-35`, pre-existing) is now redundant: the submit commit flips `pending`, and the
+   layout effect reads the box in that commit. The comment "Three writers keep the draft equal" counts it as a
+   writer that no test can tell apart. Not dead in intent, but uncovered. Remove it later only with a test.
+3. Work breakdown said F16 goes ✅ in `docs(map)`. It went ✅ in the `feat` commit 506a8bb (with `docs/metrics.md`), and
+   the `docs(map)` commit a203032 touches only `docs/metrics.md`. Both are exempt paperwork and the guards pass, but the
+   PR body should say so.
+4. f0eeb23 and 7c7f413 cite D-22, which exists only on `origin/main` (#96). On this branch `00-decisions.md` still has
+   the two `D-21` rows. The citations resolve once the branch takes `main`.
+5. `title-count.test.ts:17` comment says "Escapes, not literals", but `'İ'` and `'é'` are literal characters. The
+   bytes are right. If an editor normalizes `'é'` to NFC, the test fails loudly rather than lying.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the counter after a real failed save in a browser. AC-18.5 runs only in jsdom, and `e2e/18`
+covers just the success reset. A Chromium form failure (§10 DB rejection) with the counter reading the kept title is
+unexercised. The same is true of `[state, pending]` under e2e, if the lead picks it.
+
+## Diff review (round 2)
+
+SCOPE: all, limited to the merge `b143af0` (origin/main `02da94e`, B3.3 #93, into the branch). The earlier merge
+`1c5f378` (#92, #96) touches only `backlog/`. Read: `git show --remerge-diff b143af0`, every B3.3 file that a §18 path
+or test could reach (`todo-item.tsx`, `delete-todo-button.tsx`, `logger.ts`, `03-todos.md`, `e2e/19-delete.spec.ts`),
+`page.tsx`, `todo-form.tsx`, `e2e/18`, `playwright.config.ts`. No probe on a copy was needed. Every question here is
+answered by the merge's own diff or by running the suites.
+
+### Commands (last line of each, run by the reviewer on `b143af0`)
+
+| Command                             | Result                                                                                                                         |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm lint`                         | exit 0; `✖ 1 problem (0 errors, 1 warning)`, the same `todo-form.tsx:23` warning the lead kept                                 |
+| `pnpm typecheck`                    | `tsc --noEmit`, no output, exit 0                                                                                              |
+| `pnpm test`                         | `Tests  184 passed (184)` (175 + B3.3's 9: lib 2, action 4, button 2, todo-item 1)                                             |
+| `pnpm test:e2e`                     | `34 passed (37.8s)` (33 + `e2e/19` 1)                                                                                          |
+| `pnpm test:mutation`                | `Final mutation score of 92.68 is greater than or equal to break threshold 70`; `title-count.ts` 100.00 (2/2)                  |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions` (range `02da94e936..HEAD`)                                                                           |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                                              |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                                             |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test` (§18, §19 still ✗, so the script skips them; §18 covered 7/7 in round 1) |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 16 18 19`                                                                                             |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                                                           |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B3.2-title-counter stays inside the approved plan of B3.2`                                                           |
+| `scripts/ci/check-backlog.sh`       | `OK: README matches the cards`                                                                                                 |
+| `scripts/verify-red.sh B3.2`        | `RESULT: red for the right reason` (lib 2 new failed, component 4 new failed)                                                  |
+| `git diff --stat main...HEAD`       | 30 files, +2227 −9; `git diff --stat 02da94e b143af0` gives 14 files, all B3.2's own                                           |
+
+### Checklist (merge only)
+
+| Check                                      | Result                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| conflict resolutions correct               | pass: the 3 conflicts (`docs/metrics.md`, `spec/features-map.md`, `spec/technical-requirements.md`) each keep both one-line rows, B3.2's then B3.3's, in section order (§18/F16 before §19/F17). No row was edited. No marker left.                                                                                                                                                                         |
+| merge is a pure union                      | pass: `git diff 02da94e b143af0` touches only the 14 B3.2 paths. Every B3.3 file equals main's. `todo-item.tsx`, `logger.ts`, `03-todos.md` diff 0 lines from main                                                                                                                                                                                                                                          |
+| no test weakened after red                 | pass: `git log --first-parent --no-merges d480a51..HEAD -- '*.test.*' e2e/` empty. `--merges --remerge-diff` output 0 lines (no test or e2e file conflicted)                                                                                                                                                                                                                                                |
+| B3.3 interacts with the counter            | none found: `DeleteTodoButton` renders no `<form>`, no id, no text (icon, `aria-label`). Its `role="alert"` sits in the `<li>`, outside the new-todo `<form>` that AC-18.3/18.5 scope to. `e2e/18`'s `counter()` filters `form` by the "New todo" box. Its `listitem` `toHaveText(['Walk the dog'])` holds because the button adds no text (REQ-19.3). `todo-form.tsx` and `page.tsx` are untouched by B3.3 |
+| e2e shared database                        | pass: `workers: 1`, `fullyParallel: false`, and `e2e/18` and `e2e/19` each `deleteMany` in `beforeEach`. `e2e/19` cannot remove `e2e/18`'s rows mid-test                                                                                                                                                                                                                                                    |
+| §18 still matches its contract after merge | pass: `03-todos.md`'s only change is the §5 out-of-scope line (`deleting a todo (§19)`). §18 cites §5 for `TITLE_MAX_LENGTH` and the messages, and neither changed                                                                                                                                                                                                                                          |
+| every changed file in `plan.md`            | pass: the B3.3 paths arrive from `main` through the merge and are not this branch's diff once rebased onto `main`. `check-plan-scope.sh` OK                                                                                                                                                                                                                                                                 |
+| branch current with `main`                 | pass: `origin/main` (`02da94e`) is an ancestor of `HEAD`. Round 1 note 4 (D-22 citations) now resolves                                                                                                                                                                                                                                                                                                      |
+
+### Findings
+
+None blocking.
+
+### Notes (not blocking)
+
+1. The lint warning at `todo-form.tsx:23` is unchanged by the merge (the lead kept it). The PR body should still name it.
+2. Round 1 note 3 (F16 went ✅ in the `feat` commit, not `docs(map)`) still applies to the PR body.
+3. The §18 index row is still ✗, and so is §19, which already merged on `main`. That matches the plan ("stays ✗ until the
+   closing PR"). Flipping both is the closing lane's job, not this PR's.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: unchanged from round 1. No browser test drives a failed save (§10 DB rejection) and then checks
+that the counter reads the kept title. AC-18.5 runs only in jsdom. B3.3 adds a second failing-mutation path in the same
+page (a row's delete alert), but that path shares no state with `TodoForm`.

@@ -1,8 +1,16 @@
 'use client';
 
-// §15 TodoDueDate: a todo's due-date text and its edit control, rendered inside the TodoItem row.
-import { useState, useTransition, type FormEvent, type ReactNode } from 'react';
+// §15 TodoDueDate: a todo's due-date text and its edit control, rendered inside the TodoItem row; §17 adds the
+// overdue marker after the date.
+import { useLayoutEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from 'react';
 import { setTodoDueDateAction } from '@/actions/todos';
+import { isOverdue, OVERDUE_LABEL, todayOf } from '@/lib/todo-overdue';
+
+// §17: the row's completed state is the first checkbox of the nearest `li`; no `li` or no checkbox is not completed.
+function rowIsCompleted(wrapper: HTMLElement | null): boolean {
+  const checkbox = wrapper?.closest('li')?.querySelector<HTMLInputElement>('input[type="checkbox"]');
+  return checkbox?.checked ?? false;
+}
 
 export function TodoDueDate({
   todoId,
@@ -15,8 +23,23 @@ export function TodoDueDate({
   const [error, setError] = useState<string | undefined>(undefined);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
+  // Undefined on the server and in the first client render, so both show no marker (REQ-17.5).
+  const [today, setToday] = useState<string | undefined>(undefined);
+  const [completed, setCompleted] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const fieldId = `todo-${todoId}-due-date`;
   const errorId = `${fieldId}-error`;
+
+  // The day is read once per mount (REQ-17.7, no timer); the checkbox is re-read after every render (REQ-17.4).
+  function syncOverdueInputs(): void {
+    setToday((previous) => previous ?? todayOf(new Date()));
+    setCompleted(rowIsCompleted(wrapperRef.current));
+  }
+
+  // No dependency array on purpose: the row re-renders this component when its checkbox changes, and only the DOM
+  // knows the new state. The setters bail out when nothing changed, so it settles; a layout effect runs before
+  // paint, so a tick never paints the marker beside a checked box.
+  useLayoutEffect(syncOverdueInputs);
 
   function onEdit(): void {
     setDraft(dueDate ?? '');
@@ -39,7 +62,7 @@ export function TodoDueDate({
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div ref={wrapperRef} className="flex items-center gap-2">
       {editing ? (
         <form onSubmit={onSave} className="flex items-center gap-2">
           <label htmlFor={fieldId} className="sr-only">
@@ -64,7 +87,11 @@ export function TodoDueDate({
         </form>
       ) : (
         <>
-          {dueDate !== undefined && <span className="text-sm text-zinc-500">Due {dueDate}</span>}
+          {/* One text node, so the server markup holds the plain `Due <date>` string. */}
+          {dueDate !== undefined && <span className="text-sm text-zinc-500">{`Due ${dueDate}`}</span>}
+          {today !== undefined && isOverdue(dueDate, today, completed) && (
+            <span className="text-sm font-medium text-red-600">{OVERDUE_LABEL}</span>
+          )}
           {/* Icon only: a row without a due date must show no text beyond §5 and §6 (REQ-15.5). */}
           <button
             type="button"
