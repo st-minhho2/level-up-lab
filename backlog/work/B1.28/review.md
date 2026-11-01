@@ -114,3 +114,74 @@ belongs to the PR step, so name it there or leave it as in earlier cards.
 
 Riskiest unfalsified: whether the final L1–L4 text survives prettier with each fact on one unwrapped line. If a line is
 hard-wrapped, the plan's `git grep -c` counts drop to 0 for that phrase, and only the diff review can show it.
+
+## Diff review (pass 1)
+
+SCOPE: lib, ui (documentation only: `src/lib/CLAUDE.md`, `src/components/CLAUDE.md`; no code, no §)
+
+Diff reviewed at `dacbfcd docs(src): B1.28 package guides name sections 20 to 22`, range `33e7f7d..HEAD` (the
+merge-base with `origin/main`; local `main` is stale, so `git diff --stat main...HEAD` lists 117 files from earlier
+merged PRs). `git diff --stat 33e7f7d..HEAD`: 5 files, 248 insertions, 6 deletions (`src/components/CLAUDE.md` 10,
+`src/lib/CLAUDE.md` 6, `work/B1.28/` plan, pr-body, review). `origin/main` is 1 commit ahead (`73c6da2`, D-25 row in
+`00-decisions.md` only); `git merge-tree --write-tree origin/main HEAD` is clean.
+
+Command results (last line of each):
+
+| Command                                                            | Result                                                                                                      |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                                        | `All matched files use Prettier code style!`                                                                |
+| `pnpm typecheck`                                                   | `tsc --noEmit`, exit 0                                                                                      |
+| `pnpm test`                                                        | `Tests  202 passed (202)` (33 files), as on `33e7f7d`                                                       |
+| `pnpm test:e2e`                                                    | `43 passed (1.1m)`                                                                                          |
+| `pnpm test:mutation`                                               | `Final mutation score of 93.40 is greater than or equal to break threshold 70`                              |
+| `scripts/ci/check-suppressions.sh`                                 | `OK: no new suppressions`                                                                                   |
+| `scripts/ci/check-config-change.sh`                                | `OK: no protected config changed`                                                                           |
+| `scripts/ci/check-feat-commits.sh`                                 | `OK: no feat commit touches tests`                                                                          |
+| `scripts/ci/check-ac-coverage.sh`                                  | `OK: every criterion of a shipped section has a test`                                                       |
+| `scripts/ci/check-spec-sections.sh`                                | `OK: sections cited: 1 2 … 22`                                                                              |
+| `scripts/ci/check-features-map.sh`                                 | `OK`                                                                                                        |
+| `scripts/ci/check-plan-scope.sh`, `check-backlog.sh`               | `OK: … stays inside the approved plan of B1.28`; `OK: README matches the cards`                             |
+| `scripts/verify-red.sh B1.28`                                      | `::error::no 'test(<pkg>): B1.28 … (red)' commit`: expected, no test file by design (plan, "Red/green")     |
+| Card Test, before: `git grep -n -e todo-created -e clear-search …` | on `33e7f7d`: no output, exit 1 (red)                                                                       |
+| Card Test, after                                                   | 2 lines (`src/lib/CLAUDE.md:22`, `:23`), exit 0 (green)                                                     |
+| Plan counts                                                        | `§22` in lib guide → 2; components: 1, 1, 1, 1 and `Server Component; §2` → 2, as the plan states           |
+| Revert probe (base `src/components/CLAUDE.md` from `33e7f7d`)      | the four Acceptance phrases count 0 each, so reverting any of L1–L4 drops its count; lib rows drop the Test |
+| `prettier --check` on both guides and this file                    | clean; every L1–L4 fact is on one unwrapped line (round 2's riskiest unfalsified is closed)                 |
+
+Checklist:
+
+| Check                                                                                             | Result                                                                                                                                                                                                               |
+| ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every Acceptance clause holds                                                                     | pass: lib rows for `todo-created.ts` (§20) and `clear-search.ts` (§21) list the 3 + 3 exports F18/F19 map to; `todo-count.ts` cites §13, §22; components names the §20 `<time>`, §21 link, §22 message; headings §22 |
+| export names match source                                                                         | pass: the 9 `^export` lines of the three modules are named exactly, no extra name                                                                                                                                    |
+| lib row text matches the function contracts                                                       | pass: `allDoneMessage` "'All done' when count === 0, otherwise undefined" (§22); `clearSearchHref` `/` for All, `/?filter=<f>` else, never `q` (REQ-21.3); `createdDayOf` UTC getters (REQ-20.1)                     |
+| components lines match source and contracts                                                       | pass: `remaining-count.tsx` renders `<p>` + sibling `<span>`; `todo-search-form.tsx` has no `'use client'` and a `next/link`; `todo-item.tsx` empty `<time>` after `<TodoDueDate>`, `::after` from `data-created`    |
+| L1 qualifier is true                                                                              | pass: idle row without due date = label (title) + icon-only "Edit title", "Edit due date", "Delete todo" (`aria-label`, `svg aria-hidden`) + empty `<time>`; `Due <date>` and `Overdue` are the only idle text nodes |
+| no test touched after red (`git log --first-parent --no-merges 33e7f7d..HEAD -- '*.test.*' e2e/`) | pass: empty; no merge commits in range                                                                                                                                                                               |
+| every changed file in `plan.md`                                                                   | pass: 5 of 5                                                                                                                                                                                                         |
+| interfaces / Zod / Prisma / raw SQL / migration                                                   | n/a: no code                                                                                                                                                                                                         |
+| no secret, no suppression                                                                         | pass                                                                                                                                                                                                                 |
+| features map row moved                                                                            | n/a: no § (F18–F20 already ✅)                                                                                                                                                                                       |
+
+Findings: none blocking.
+
+Non-blocking (no change asked; not widening the card):
+
+- L4 says the §22 element "is not a `<p>` and has no role"; the §22 function contract says "not a `<p>`, `<li>`,
+  `<button>`, `<a>` and has no role". The three omitted tags all carry a role (`listitem`, `button`, `link` with
+  `href`), so the guide's wording implies them; only an `<a>` without `href` would slip through, which no writer would
+  pick for plain text. Accurate as written.
+- "keeps the filter, drops `q`" (lib `clear-search.ts` row) matches REQ-21.3: All's address is the bare `/` (§12
+  REQ-12.6), so "keeps" holds for all three filters.
+- L2 and L3/L4 carry a few words more than the plan's L1–L4 text (`after todo-due-date.tsx`, `src/lib/…` pointers, the
+  `not a <p>` clause) and fold into the existing §13 and §16 lines instead of adding lines; same file, same facts, the
+  plan's counts hold, so not a plan mismatch.
+- The new lines run past the 120-column wrap of the surrounding prose; this is the plan's "none hard-wrapped" rule
+  (round 1 reason 3) and prettier keeps it.
+- Out of scope (D-25 follow-up, as the plan states): root `CLAUDE.md` Map `src/lib/` §3–§6 and `src/CLAUDE.md` package
+  table (`lib/` §3–§6, `components/` §7) remain stale.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: nothing in CI guards the guides, so a later edit that drops a row passes every gate; only the
+card's grep (run by hand) would catch it.
