@@ -30,7 +30,7 @@ Probe block (own `echo "== plan rows with [ ] (B1.20) …"` header, its own fixt
 apart): a clone of a bare origin on `feat/B9.10-main` whose approved plan lists `src/app/[id]/page.tsx` and
 `src/app/*/layout.tsx`, a worktree per `$LAYOUTS` entry. Per layout (`.`, `.worktrees/s`, `.claude/worktrees/n`,
 `.claude/worktrees/n/.worktrees/b`): L1 write `src/app/[id]/page.tsx` → plan-scope 0 · L2 `src/app/[slug]/page.tsx` → 2
-· L3 `src/app/x/layout.tsx` → 0 · then commits in that worktree: L4 layout only → check-plan-scope 0 · L5 + `[id]` page
+· L3 `src/app/x/layout.tsx` → 0 · then commits in that worktree (staging only `src/app`: `add -A` would stage nested worktrees as gitlinks): L4 layout only → check-plan-scope 0 · L5 + `[id]` page
 → 0 · L6 + `[slug]` page → 1. Red at HEAD: L1 and L5 in each layout (8).
 
 ## Verification (in the card worktree, /bin/bash 3.2)
@@ -47,11 +47,17 @@ scripts/ci/check-plan-scope.sh | tail -1; scripts/ci/check-backlog.sh | tail -1 
 
 | Step | Role / skill | Produces                          | Commit                                                           |
 | ---- | ------------ | --------------------------------- | ---------------------------------------------------------------- |
-| 1    | dev-lead     | L1–L6 probes, 8 FAIL              | `test(hooks): B1.20 plan-scope probes for bracketed plan rows`   |
-| 2    | dev-lead     | literal-then-glob in both, 440 ok | `fix(hooks): B1.20 plan-scope matches bracketed paths literally` |
+| 1    | main session | L1–L6 probes, 8 FAIL              | `test(hooks): B1.20 plan-scope probes for bracketed plan rows`   |
+| 2    | main session | literal-then-glob in both, 440 ok | `fix(hooks): B1.20 plan-scope matches bracketed paths literally` |
 | 3    | reviewer     | diff review in `review.md`        | `docs(backlog): B1.20 review`                                    |
 
-No `(red)` marker on step 1: CI's `verify-red.sh --auto` judges only vitest files. PR via `scripts/pr-step.sh`, label
-`config-change-approved` (D-19: `.claude/`, `scripts/ci/`).
+Steps 1–2 run in the lead's main session acting as dev-lead via `/work-next` (no `agent_type`; the `dev-lead`
+subagent's path-guard refuses these files), as B1.24 and B1.27 did. No skeleton step (no § function; hook-smoke has no
+`NotImplementedError` analogue) and no map step (tooling has no `features-map.md` row). No `(red)` marker on step 1:
+CI's `verify-red.sh --auto` judges only vitest files. PR via `scripts/pr-step.sh`, label `config-change-approved`
+(D-19: `.claude/`, `scripts/ci/`). PR (squash) title, from the lead's batch brief:
+`chore(hooks): B1.20 plan-scope matches bracketed paths`. Cost the lead accepts with it: both lines come from B1.17's
+#60 (merged 2026-10-30), and `change-failure-rate.sh` counts only `fix(`/revert titles, so this repair of B1.17 stays
+out of the CFR (one repair uncounted); a `fix(hooks): …` title instead would count it within the 14-day window.
 
-Plan review: … · Plan approved by: · Rounds: 1
+Plan review: round 2 pending (r1: 3 changes requested, addressed) · Plan approved by: · Rounds: 1
