@@ -140,9 +140,20 @@ gh api -iX DELETE repos/o/r/git/refs/heads/feat/x
 gh pr close 7 -dc bye
 gh pr close 7 "-d"
 gh -R o/r pr close 7 -d
+gh pr close -d 7
+gh pr close --delete-branch 7
+git config --get x `git config remote.origin.mirror true`
+git config --get x =(git config remote.origin.mirror true)
+V=+refs/heads/*:refs/heads/* git --config-env=remote.origin.push=V push
+gh -R o/r api -X DELETE repos/o/r/git/refs/heads/feat/x
 FORCED
 # line continuations: the second line belongs to the same command
 for c in "$(printf 'git push origin \\\n+main')" "$(printf 'git \\\npush -f')"; do
+  probe_msg 2 'force pushes' guard-bash.sh "$(pr_cmd "$c" "$PWD")"
+done
+# a heredoc inside $( ): its lines are words of the same push
+q="'"; nl=$'\n'
+for c in "git push origin \"\$(cat <<${q}X${q}${nl}+main${nl}X${nl})\"" "git push origin main \$(cat <<${q}X${q}${nl}-f${nl}X${nl})"; do
   probe_msg 2 'force pushes' guard-bash.sh "$(pr_cmd "$c" "$PWD")"
 done
 while IFS= read -r c; do probe 0 guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'PLAIN'
