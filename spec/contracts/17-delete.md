@@ -2,7 +2,7 @@
 
 Tier: full
 
-- [ ] Lead approves spec (lead, <date>)
+- [x] Lead approves spec (lead, 2026-11-01, plan gate of B3.3)
 
 ## Intent
 
