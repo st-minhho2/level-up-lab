@@ -20,6 +20,8 @@ Every script is bash 3.2-safe and parses JSON with node. Probe table:
 `.env` reads and edits and `~/.ssh`, `~/.aws`, `~/.kube` reads. `permissions.allow` holds one rule,
 `Bash(scripts/pr-step.sh *)` (B1.23): a `Bash(...)` rule cannot limit arguments, so the wrapper checks them and
 `guard-bash.sh` rule 5 keeps the shell from changing the call; every other command follows the session's mode.
+Rule 5 sees a wrapper call wherever a segment starts with it, so a commit message that quotes one is blocked too:
+write such messages to a file (`git commit -F`) or reword them.
 
 `path-guard.sh` matches the path relative to the worktree that holds the file, not to `CLAUDE_PROJECT_DIR` (the main
 checkout when a session writes into `.worktrees/<slug>/` or the desktop app's `.claude/worktrees/<name>/`): it asks
