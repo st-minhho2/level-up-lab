@@ -7,22 +7,22 @@ own exit 3, its message and an empty shim log. Forced-push spellings `guard-bash
 
 ## Files
 
-| File                                | Change                                                                                                                                                                                         |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `scripts/pr-step.sh`                | new: `push`, `draft "<title>"`, `ready <n> [--undo]`; clears `GH_REPO`, `GH_HOST`, `GIT_DIR`, `GIT_WORK_TREE`, `GIT_CONFIG_*`                                                                  |
-| `scripts/pr-step-smoke.sh`          | new: probes R1–R10, throwaway repo, `git` remote and `gh` shim with a call log                                                                                                                 |
-| `.claude/hooks/guard-bash.sh`       | a `pr-step.sh` call must be one plain segment starting `scripts/pr-step.sh` (no `$`, backtick, `<`, `>`, `;`, `&`, pipe, backslash, newline), `cwd` = top level, script tracked and unmodified |
-| `scripts/hook-smoke.sh`             | G1–G6 for the guard-bash rule; S1: `allow` exactly the wrapper rule, the 16 `deny` entries unchanged                                                                                           |
-| `.claude/settings.json`             | `permissions.allow`: `Bash(scripts/pr-step.sh *)`                                                                                                                                              |
-| `scripts/ci/check-config-change.sh` | `PROTECTED` gains `scripts/pr-step\.sh` (the wrapper is a permission boundary)                                                                                                                 |
-| `.claude/agents/dev-lead.md`        | Loop 5/9 call the wrapper for push, draft, ready, undo                                                                                                                                         |
-| `.claude/skills/work-next/SKILL.md` | the ready step names the wrapper                                                                                                                                                               |
-| `.claude/docs/git-workflow.md`      | PR steps via the wrapper; the false `gh api` deny claim removed                                                                                                                                |
-| `.claude/docs/hooks.md`             | permission paragraph matches the file; the new guard-bash rule                                                                                                                                 |
-| `scripts/CLAUDE.md`                 | rows for the two scripts                                                                                                                                                                       |
-| `backlog/plan/E1-todos.md`          | B1.23 Acceptance to (B)                                                                                                                                                                        |
-| `backlog/work/B1.23/plan.md`        | plan                                                                                                                                                                                           |
-| `backlog/work/B1.23/review.md`      | reviews                                                                                                                                                                                        |
+| File                                | Change                                                                                                                                                                                                                                                                           |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/pr-step.sh`                | new: `push`, `draft "<title>"`, `ready <n> [--undo]`; clears `GH_REPO`, `GH_HOST`, `GIT_DIR`, `GIT_WORK_TREE`, `GIT_CONFIG_*`                                                                                                                                                    |
+| `scripts/pr-step-smoke.sh`          | new: probes R1–R10, throwaway repo, `git` remote and `gh` shim with a call log                                                                                                                                                                                                   |
+| `.claude/hooks/guard-bash.sh`       | a `pr-step.sh` call must be one segment starting `scripts/pr-step.sh` whose arguments are plain words or quoted strings, `cwd` = top level, the wrapper tracked, unmodified and byte-identical to the copy in the checkout the hooks load from (round 2, diff review passes 1–2) |
+| `scripts/hook-smoke.sh`             | G1–G6 for the guard-bash rule; S1: `allow` exactly the wrapper rule, the 16 `deny` entries unchanged                                                                                                                                                                             |
+| `.claude/settings.json`             | `permissions.allow`: `Bash(scripts/pr-step.sh *)`                                                                                                                                                                                                                                |
+| `scripts/ci/check-config-change.sh` | `PROTECTED` gains `scripts/pr-step\.sh` (the wrapper is a permission boundary)                                                                                                                                                                                                   |
+| `.claude/agents/dev-lead.md`        | Loop 5/9 call the wrapper for push, draft, ready, undo                                                                                                                                                                                                                           |
+| `.claude/skills/work-next/SKILL.md` | the ready step names the wrapper                                                                                                                                                                                                                                                 |
+| `.claude/docs/git-workflow.md`      | PR steps via the wrapper; the false `gh api` deny claim removed                                                                                                                                                                                                                  |
+| `.claude/docs/hooks.md`             | permission paragraph matches the file; the new guard-bash rule                                                                                                                                                                                                                   |
+| `scripts/CLAUDE.md`                 | rows for the two scripts                                                                                                                                                                                                                                                         |
+| `backlog/plan/E1-todos.md`          | B1.23 Acceptance to (B)                                                                                                                                                                                                                                                          |
+| `backlog/work/B1.23/plan.md`        | plan                                                                                                                                                                                                                                                                             |
+| `backlog/work/B1.23/review.md`      | reviews                                                                                                                                                                                                                                                                          |
 
 ## Interfaces touched
 
@@ -48,8 +48,10 @@ scripts/hook-smoke.sh      # test commit: 7 FAIL (G1–G6, S1); green: 291 probe
 scripts/ci/check-plan-scope.sh | tail -1; scripts/ci/check-backlog.sh | tail -1   # OK; OK
 ```
 
-Assumes auto mode keeps a narrow allow rule. Done when the next card session runs `push`, `draft`, `ready` with no
+Assumes auto mode keeps a narrow allow rule. Cost (round 2): a session can call the wrapper only while its
+hooks' checkout holds the same `scripts/pr-step.sh`; after the wrapper changes on `main`, card sessions restart from
+an updated checkout, and a card that changes the wrapper runs its own PR steps by hand. Done when the next card session runs `push`, `draft`, `ready` with no
 refusal (recorded in the closing PR); a refusal leaves the card Partial. Steps: `test(scripts)` → `chore(scripts)` →
 reviewer diff → draft PR, `config-change-approved` (D-19).
 
-Plan review: changes requested, round 2 (cap); lead chose (B) at the gate · Plan approved by: lead (session reply "approve, chấp nhận độ dài"), 2026-11-01 · Rounds: 1
+Plan review: changes requested, round 2 (cap); lead chose (B) at the gate · Plan approved by: lead (session reply "approve, chấp nhận độ dài"), 2026-11-01 · Rounds: 2 (round 2: the guard-bash row and cost above, from diff review pass 2 finding 1)

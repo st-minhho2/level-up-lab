@@ -553,3 +553,16 @@ Verdict: back to test-writer (probes for [3] and [4]), then code-writer for [2] 
 Riskiest unfalsified: a race between the hook's `cmp` and the shell's exec of `scripts/pr-step.sh` (and between
 `find -links 1` and gh's read of `pr-body.md`): a background job started earlier could swap the file in between. I
 did not run it; it needs a concurrent command the allow rule does not cover.
+
+### Dispositions, pass 2 (dev-lead)
+
+| #   | Disposition                                                                                                                                                                            | Evidence                                 |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| 1   | waiting on the lead: plan round 2 rewords the guard-bash row and states the cost (restart card sessions after a wrapper change; a card changing the wrapper runs its PR steps by hand) | `plan.md`                                |
+| 2   | fix now: rule 5 comment, both block messages (the foreign-wrapper one names both paths) and the hooks doc describe the current rule                                                    | 38e6728                                  |
+| 3   | fix now (coverage): three escapes out of a quoted argument                                                                                                                             | ca4b3ee, exit 2                          |
+| 4   | fix now (coverage): a call from a second worktree holding the same committed wrapper                                                                                                   | ca4b3ee, exit 0                          |
+| 5   | fix now (text): comment and hooks doc state the limit (a session opened in the card worktree compares the file with itself)                                                            | 38e6728                                  |
+| 6   | fix now: title length counts characters in any locale                                                                                                                                  | ca4b3ee red at 0a208a1, green at 38e6728 |
+
+Counts now: pr-step-smoke 10 ok; hook-smoke 309 probes OK (bash 5 and /bin/bash 3.2).
