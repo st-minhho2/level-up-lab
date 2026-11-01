@@ -128,6 +128,7 @@ gh api graphql -f query='mutation { deleteRef(input: {refId: "x"}) { clientMutat
 gh api graphql -f query='mutation { updateRef(input: {refId: "x", oid: "y", force: true}) { clientMutationId } }'
 gh pr close 7 --delete-branch
 gh pr close 7 -d
+git config remote.origin.mirror true # config --get
 FORCED
 # line continuations: the second line belongs to the same command
 for c in "$(printf 'git push origin \\\n+main')" "$(printf 'git \\\npush -f')"; do
@@ -152,6 +153,7 @@ gh pr close 7 -c "superseded"
 git config -l | grep remote.origin.mirror
 git config --unset remote.origin.mirror
 git clone --bare url m
+git config --global --get remote.origin.mirror
 PLAIN
 probe 0 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh push' "$PWD")"   # the wrapper's push (B1.23) still runs
 
