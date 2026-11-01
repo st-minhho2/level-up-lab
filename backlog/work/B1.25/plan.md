@@ -1,37 +1,48 @@
 # B1.25 plan — verify-red reads escaped quotes in existing test titles (tooling)
 
-Approach: `baseTitles` in `scripts/verify-red.sh` unescapes each title it reads from the base's source
-(`m[2].replace(/\\(.)/g, '$1')`), so a title written with escaped quotes matches the title vitest reports. Lead's
-choice A for B4.2's red gate (b5fc079: two AC-16.5 titles counted as new and passing). Tooling card: spec-analyst and
-advisor skipped (no section; the card's Acceptance is the contract).
+Round 2 (plan review round 1: 6 reasons). In `scripts/verify-red.sh`'s embedded node: `baseTitles` decodes JS
+single-character escapes in each title read from the base (`\'` `\"` `` \` `` `\\` `\n` `\t` `\r` `\b` `\f` `\v`
+`\0` `\xHH` `\uHHHH` `\u{H…}`), so it equals the title vitest reports; and `isNew` matches an old title exactly, using a
+prefix only for an old title with a `%s`-style placeholder (`.each`), cut at its first placeholder. Exact matching
+closes the prefix hole round 1 found (an old `AC-0.1: query` hid a new passing `AC-0.1: query is trimmed`, at HEAD
+too). Out of scope: template literals with `${…}` (still counted new, so the gate stays strict). Lead's choice A for
+B4.2's red gate. Tooling card: spec-analyst and advisor skipped.
 
 ## Files
 
-| File                           | Change                                                                           |
-| ------------------------------ | -------------------------------------------------------------------------------- |
-| `scripts/verify-red.sh`        | `baseTitles`: unescape `\x` → `x` in each title read from the base               |
-| `scripts/verify-red-smoke.sh`  | new: probes V1–V3 on a throwaway detached worktree of HEAD (node_modules linked) |
-| `scripts/CLAUDE.md`            | row for the smoke                                                                |
-| `backlog/work/B1.25/plan.md`   | plan                                                                             |
-| `backlog/work/B1.25/review.md` | reviews                                                                          |
+| File                           | Change                                                                 |
+| ------------------------------ | ---------------------------------------------------------------------- |
+| `scripts/verify-red.sh`        | `baseTitles` decodes escapes; `isNew` exact match, prefix only for `%` |
+| `scripts/verify-red-smoke.sh`  | new: probes V1–V6                                                      |
+| `scripts/CLAUDE.md`            | row for the smoke                                                      |
+| `backlog/work/B1.25/plan.md`   | plan                                                                   |
+| `backlog/work/B1.25/review.md` | reviews                                                                |
 
 ## Interfaces touched
 
-None. `scripts/verify-red.sh <card> [--range <base>..<head>]` keeps its arguments, output and exit codes.
+None: `scripts/verify-red.sh <card> [--range <base>..<head>]` keeps its arguments, output format and exit codes.
 
-Probes (each a base commit with an existing passing test, then a `test(todos): B9.9 probe (red)` commit, then
-`scripts/verify-red.sh B9.9 --range <base>..<red>`):
-V1 the existing title in single quotes with `\'\'` + one new failing test → exit 0 "red for the right reason";
-V2 the same with `\"` in double quotes and `` \` `` in a template literal → exit 0;
-V3 the existing escaped title + one new passing test → exit 1 "GREEN before implementation" (the gate still bites).
+Smoke mechanics: a detached `git worktree add` of HEAD under `$TMPDIR` with `node_modules` linked, removed by `trap EXIT`;
+fixture commits made with plumbing (`hash-object`, `update-index`, `write-tree`, `commit-tree`: no hook runs and none is
+bypassed; the commits stay unreferenced); the script under test is the working copy (`$ROOT/scripts/verify-red.sh`,
+run with the scratch worktree as cwd); the fixture is `src/lib/vr-probe.test.ts`. Each probe asserts the exit code and
+the summary line (`N ran (k new), f new failed, p new passed`), and V3/V4 that only the new title is named.
+V1 old `'… \'\' …'` + new failing → exit 0 · V2 old `"… \" …"` and `` `… \` …` `` + new failing → exit 0 · V3 old
+escaped title + new passing → exit 1, `(1 new), 0 new failed, 1 new passed` · V4 old `'AC-0.1: query'` + new passing
+`'AC-0.1: query is trimmed'` → exit 1 · V5 old `'a\nb'` + new failing → exit 0 · V6 old `it.each(...)('AC-0.2: %s')` kept
+
+- new failing → exit 0 (the placeholder prefix still matches).
 
 ## Verification (in the card worktree)
 
 ```bash
-scripts/verify-red-smoke.sh   # test commit: V1, V2 FAIL (exit 1), V3 ok; green: 3 ok, 0 FAIL (bash 5 and /bin/bash 3.2)
-scripts/verify-red.sh B4.2 --range <B4.2 base>..b5fc079   # on B4.2's branch after merge: red for the right reason
+scripts/verify-red-smoke.sh   # test commit: "[verify-red-smoke] 1 ok, 5 FAIL" (V6 ok); fix: "6 ok, 0 FAIL" (bash 5, /bin/bash 3.2)
+scripts/verify-red.sh B4.2 --range 0118ee5..b5fc079   # HEAD: exit 1 GREEN; fix: "RESULT: red for the right reason"
+scripts/verify-red.sh B4.1 --range e91dbd6..a5475db   # stays "red for the right reason" (no regression)
 scripts/ci/check-plan-scope.sh | tail -1; scripts/ci/check-backlog.sh | tail -1   # OK; OK
 ```
 
-Steps: `test(scripts)` → `fix(scripts)` → reviewer diff → draft PR via `scripts/pr-step.sh`, `config-change-approved`
-(D-19: `scripts/verify-red.sh`).
+Steps: `test(scripts): B1.25 …` (no `(red)` marker: CI's `verify-red.sh --auto` judges only vitest files) →
+`fix(scripts)` → reviewer diff → draft via `scripts/pr-step.sh`, `config-change-approved` (D-19: `scripts/verify-red.sh`).
+
+Plan review: changes requested, round 1 (6 reasons applied above) · Plan approved by: · Rounds: 1
