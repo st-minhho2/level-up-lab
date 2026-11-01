@@ -9,8 +9,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | --------------- | -------------------------------------------------- | ------ | ------- | ----- | ------ |
 | E1 Todos        | [plan/E1-todos.md](plan/E1-todos.md)               | 21     | 0       | 2     | 23     |
 | E2 Todos plus   | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)     | 5      | 0       | 0     | 5      |
-| E3 Todos polish | [plan/E3-todos-polish.md](plan/E3-todos-polish.md) | 0      | 0       | 3     | 3      |
-| **Total**       |                                                    | **26** | **0**   | **5** | **31** |
+| E3 Todos polish | [plan/E3-todos-polish.md](plan/E3-todos-polish.md) | 1      | 0       | 2     | 3      |
+| **Total**       |                                                    | **27** | **0**   | **4** | **31** |
 
 ## Execution order
 
@@ -59,7 +59,7 @@ flowchart TD
   S27["27 · search by title<br/>~~B2.5~~"]
   S28["28 · overdue marker<br/>B3.1"]
   S29["29 · title counter<br/>B3.2"]
-  S30["30 · delete a todo<br/>B3.3"]
+  S30["30 · delete a todo<br/>~~B3.3~~"]
   S31["31 · sessions run their PR steps<br/>B1.23"]
 ```
 
@@ -73,7 +73,6 @@ at most 3 cards Doing (B1.18).
 | 20   | B1.20 | Plan rows with `[ ]` match their own path in the plan-scope hook and guard | —                      | Open   | ~~B1.17~~  | Lead  | S [estimate] |
 | 28   | B3.1  | Mark overdue todos                                                         | new, section 17 (D-22) | Open   | —          | Lead  | S [estimate] |
 | 29   | B3.2  | Show a character counter while typing a title                              | new, section 18 (D-22) | Open   | —          | Lead  | S [estimate] |
-| 30   | B3.3  | Delete a todo                                                              | new, section 19 (D-22) | Open   | —          | Lead  | S [estimate] |
 | 31   | B1.23 | Card sessions run their own PR steps: push, open, label, mark ready        | —                      | Open   | —          | Lead  | S [estimate] |
 
 ## Waiting on human

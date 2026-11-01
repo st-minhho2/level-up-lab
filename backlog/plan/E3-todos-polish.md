@@ -26,7 +26,7 @@ _F16 · section 18_
 ### B3.3 · Delete a todo
 
 _F17 · section 19_
-**Status: Open** — `git grep -n -i delete src/actions src/components` → only §9's clear completed; `spec/contracts/03-todos.md` "Out of scope" lists deleting a todo, lifted by D-22
+**Status: Done** — 02da94e (#93), 7 AC-19.n tests green (unit 178, e2e 33), mutation 92.63
 
 - **Spec:** §19 — unchanged (section written from `work/B3.3/analysis.md`; contract `spec/contracts/17-delete.md`; §5 out-of-scope line points at §19 in the same commit)
 - **Test:** `src/lib/todo-delete.test.ts::AC-19.1: resolves undefined for a deleted id, rejects TodoNotFoundError with id "missing" when nothing was deleted, calls deleteMany exactly twice by id and no other prisma.todo method` — red because: `src/lib/todo-delete.ts` does not exist, `deleteTodo` is not exported
