@@ -62,8 +62,18 @@ Plan review: round 2 changes requested (2 reasons, both applied as worded; ≤ 2
 
 ## Map delta
 
-pending
+None: no section; F18–F20 stay ✅ (`scripts/ci/check-features-map.sh` → OK).
 
 ## Review
 
-pending
+`/review-loop`: pass 1/3, verdict ready for PR, 0 findings (full table: `backlog/work/B1.28/review.md` "Diff review (pass 1)").
+Plan review: 2 rounds (4 + 2 reasons, all applied); the lead approved after round 2.
+
+| Pass | #   | Finding | Source                   | Kind | Disposition | Justification                                                                                                      |
+| ---- | --- | ------- | ------------------------ | ---- | ----------- | ------------------------------------------------------------------------------------------------------------------ |
+| 1    | —   | none    | reviewer + dev-lead pass | —    | —           | the three wordings flagged as unsure (§22 element, `clearSearchHref`, `allDoneMessage`) match source and contracts |
+
+Gates on `dacbfcd`: `pnpm test` → `Tests  202 passed (202)`; `pnpm test:e2e` → `43 passed (1.1m)`; mutation 93.40 (≥ 70);
+lint, typecheck, `check-*` all OK. Card Test: before (33e7f7d) no output, exit 1; after 2 lines (`src/lib/CLAUDE.md:22`, `:23`).
+Riskiest unfalsified: no CI gate checks the package guides, so a later edit dropping these rows passes CI.
+Follow-up (D-25, out of scope): stale § ranges in root `CLAUDE.md` Map (`src/lib/` §3–§6) and `src/CLAUDE.md` package table.
