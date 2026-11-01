@@ -344,10 +344,7 @@ _tooling · no §_
 ### B1.24 · guard-bash blocks every forced-push and branch-delete spelling
 
 _tooling · no §_
-**Status: Open** — B1.23 plan review round 1 ran `.claude/hooks/guard-bash.sh` on a copy: these exit 0 (pass) today while
-invariant 6 says an agent never force-pushes: a quoted `+refspec` (`'+main'`, `"+feat/x"`), a `+` before a non-letter
-(`+@:feat/x`, `+0a1b2c3:refs/heads/feat/x`, `+$BR`), `--mirror`, `git -C . push` with a force flag; and deleting
-another card's branch passes too (`--delete`, `:branch`, `--prune`). The `main` ruleset does not protect card branches
+**Status: Done** — 0d20a6e (#124), scripts/hook-smoke.sh 416 of 416 on bash 3.2 (a9eff38: 41 FAIL; review passes 1–4 added 12 + 2, 10, 4 and 3 red probes); 107 new probes (86 exit-2 with the force-push message, 21 exit-0); what a text check cannot see and the false positives are listed in the guard-bash row of .claude/docs/hooks.md (follow-up B1.30); no src/ change, mutation 93.40
 
 - **Spec:** none — tooling (`.claude/hooks/guard-bash.sh`, `.claude/docs/hooks.md`); no `src/` change, no section
 - **Test:** new exit-2 probes in `scripts/hook-smoke.sh`, one per spelling above — red because: `guard-bash.sh` exits 0
@@ -356,7 +353,7 @@ another card's branch passes too (`--delete`, `:branch`, `--prune`). The `main` 
 feat/x` and `scripts/pr-step.sh push` (B1.23) still exit 0; the existing force-push probes stay; the PR carries
   `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.24/`
+- **Work:** `work/B1.24/` — plan (review rounds 2, both changes requested; lead 1), review (diff passes 3/3 plus a pass 4 the lead granted; 22 findings, 20 fixed with red probes first, 2 named out of reach); squash `0d20a6e` (#124)
 
 ### B1.25 · verify-red reads escaped quotes in existing test titles
 
