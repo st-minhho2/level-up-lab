@@ -129,6 +129,17 @@ gh api graphql -f query='mutation { updateRef(input: {refId: "x", oid: "y", forc
 gh pr close 7 --delete-branch
 gh pr close 7 -d
 git config remote.origin.mirror true # config --get
+true;git push -f origin main
+echo x|git push -f origin main
+true &git push -f origin main
+git config --get x "$(git -c remote.origin.mirror=true push origin)"
+git config --get x $(git config remote.origin.mirror true)
+V=true git --config-env=remote.origin.mirror=V push origin
+GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=remote.origin.push GIT_CONFIG_VALUE_0=$'+refs/heads/*:refs/heads/*' git push
+gh api -iX DELETE repos/o/r/git/refs/heads/feat/x
+gh pr close 7 -dc bye
+gh pr close 7 "-d"
+gh -R o/r pr close 7 -d
 FORCED
 # line continuations: the second line belongs to the same command
 for c in "$(printf 'git push origin \\\n+main')" "$(printf 'git \\\npush -f')"; do
@@ -154,6 +165,7 @@ git config -l | grep remote.origin.mirror
 git config --unset remote.origin.mirror
 git clone --bare url m
 git config --global --get remote.origin.mirror
+docker push -d registry.example.com/img:1
 PLAIN
 probe 0 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh push' "$PWD")"   # the wrapper's push (B1.23) still runs
 
