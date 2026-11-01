@@ -43,4 +43,4 @@ scripts/ci/check-plan-scope.sh | tail -1; scripts/ci/check-backlog.sh | tail -1 
 Steps: `test(scripts): B1.25 …` (no `(red)` marker: CI's `verify-red.sh --auto` judges only vitest files) →
 `fix(scripts)` → reviewer diff → draft via `scripts/pr-step.sh`, `config-change-approved` (D-19: `scripts/verify-red.sh`).
 
-Plan review: changes requested, round 1 (6 reasons applied above) · Plan review round 2: approved, 3 carryable reasons applied above · Plan approved by: · Rounds: 1
+Plan review: changes requested, round 1 (6 reasons applied above) · Plan review round 2: approved, 3 carryable reasons applied above · Plan approved by: lead (session reply "approve"), 2026-11-01 · Rounds: 1
