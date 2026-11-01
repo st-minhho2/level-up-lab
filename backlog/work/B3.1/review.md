@@ -168,3 +168,84 @@ Notes (not blocking): the plan is 69 lines against `planning.md`'s ≈ 40 (as in
 
 Riskiest unfalsified: no browser frame capture shows that ticking an overdue row never paints `Overdue` beside a
 checked box; it rests on React flushing layout-effect updates before paint in a transition commit (traced, jsdom only).
+
+## Diff review (round 1)
+
+Range `d53f4c7..da67575` (skeleton 4c7f1c6, red fae3314, green 4bda829, map da67575). All commands run by the
+reviewer in the worktree; probes on a copy under `$TMPDIR`; nothing in the tree was edited but this file.
+
+| Command                             | Last line                                                                                                                        |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!` (eslint 0 problems)                                                                 |
+| `pnpm typecheck`                    | `tsc --noEmit` clean                                                                                                             |
+| `pnpm test`                         | `Tests  175 passed (175)`                                                                                                        |
+| `pnpm test:e2e`                     | `33 passed (35.5s)`                                                                                                              |
+| `pnpm test:mutation`                | `Final mutation score of 92.14 is greater than or equal to break threshold 70` (`todo-overdue.ts` 100.00, 11 killed, 0 survived) |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                                                        |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                                                |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                                               |
+| `scripts/ci/check-ac-coverage.sh`   | `OK` (§17 still ✗ in the index, so not checked; manual: AC-17.1–17.7 each in exactly one title)                                  |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 17`                                                                                                     |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                                                             |
+| `scripts/verify-red.sh B3.1`        | `RESULT: red for the right reason` (2 + 4 new failed, 0 new passed; e2e skipped, red body quotes 1 failed)                       |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B3.1-overdue stays inside the approved plan of B3.1`                                                                   |
+| `git diff --stat main...HEAD`       | `17 files changed, 1155 insertions(+), 8 deletions(-)`                                                                           |
+
+Checklist:
+
+- every AC-§.n has a test whose assertion matches its Then: pass. AC-17.1 (5 dates × 3 zones, Kiritimati / Pago_Pago /
+  UTC), AC-17.2 (8 results + constant), AC-17.3 (a)–(d) counts, order, no role/aria-label/button, (d) text `''`,
+  AC-17.4 `[0, 1, 0, 1]`, AC-17.5 identical strings, 1 × `Due 2026-10-31`, 0 × `Overdue`, 0 recoverable errors, 1 after
+  effects, AC-17.6 edit/save/re-render/midnight `[0, 0, 1]`, AC-17.7 every step incl. B checked and row texts.
+- no test weakened after red: pass; `git log --first-parent --no-merges fae3314..HEAD -- '*.test.*' e2e/` empty; no
+  merge commits in range (remerge-diff empty).
+- every changed file in `plan.md`: pass for `src/`, `e2e/`, `spec/features-map.md`, `spec/contracts/13-due-date.md`
+  (D-23 option 1). The rest is pipeline paperwork outside the plan's code scope: §17 contract + index row (spec
+  authoring before the plan), D-23 row, card status, `docs/metrics.md`; `check-plan-scope` OK.
+- interfaces match §17's contracts: pass; `OVERDUE_LABEL`, `todayOf`, `isOverdue` and `TodoDueDate` props exact.
+- Zod at every action boundary / Prisma only in `src/lib` / no raw SQL / migration: n/a, no action, query or schema
+  changed; `todo-overdue.ts` is pure and has no `server-only`.
+- no secret, no suppression: pass (scripts above; no `eslint-disable` in the diff).
+- features map row moved: pass, F15 ✗ → ✅ in da67575.
+- would a test fail if a changed line were reverted (probes on the copy, `vitest run src/components
+src/lib/todo-overdue.test.ts`):
+  - `previous ?? todayOf(...)` → `todayOf(...)`: AC-17.6 fails.
+  - `setCompleted(rowIsCompleted(...))` → `setCompleted(false)`: AC-17.4 fails.
+  - `{`Due ${dueDate}`}` → `Due {dueDate}`: AC-17.5 fails.
+  - `today` initialised to `todayOf(new Date())`: AC-17.3, AC-17.5 and 5 §6/§10/§15 tests fail.
+  - `checkbox?.checked ?? false` → `?? true`: AC-17.3–17.6 fail.
+  - marker rendered in edit mode: AC-17.6 + 3 × AC-15.6 fail.
+  - `todayOf` on `getUTC*`: AC-17.1 fails.
+  - survives: `wrapper?.closest('li')` → `wrapper?.parentElement` (41/41 green). Equivalent for every DOM that exists
+    today (the wrapper is a direct child of the `li` in `TodoItem` and in the AC-17.4 `Row`); it would differ only for
+    a checkbox beside the wrapper outside any `li`, which no AC states. Not a finding; B3.3 should keep the wrapper a
+    direct child of the `li` or this stays untested.
+  - survives: `useLayoutEffect` → `useEffect` (41/41 unit green, AC-17.7 green). See question 2 below; not a §17 AC.
+
+The orchestrator's three questions, answered by measurement:
+
+1. Toggle paths (jsdom, real `TodoItem`, `toggleTodoAction` held pending): start `checked=false, Overdue=1` →
+   pending `checked=false, disabled=true, Overdue=1` → failed result `checked=false, Overdue=1`; success then the
+   revalidated re-render `completed: true` → `checked=true, Overdue=0`; untick re-render → `checked=false, Overdue=1`.
+   React restores the controlled box before the pending commit, so no path leaves `completed` stale. Cost per row:
+   one `closest` + `querySelector` per render; both setters bail out on equal values (eager bailout), so an extra
+   render happens only when `today` is first set or `completed` actually changes (traced, not profiled).
+2. Paint (real Chromium, `pnpm dev` from the copy, 31 overdue rows, A ticked and unticked 5 times, a
+   `requestAnimationFrame` loop checking every `li`): 76 frames, 0 frames with a checked box beside `Overdue`, 0 frames
+   with an open overdue row missing it. Sensitivity check: the same probe with `useEffect` records 2 bad frames
+   (`ADue 2020-01-01 unchecked, no Overdue` after an untick), so the probe can see the flash and the layout effect
+   prevents it. No committed test guards this (above); it is the plan's design, not a §17 Then.
+3. e2e dates: the seed writes `<day>T00:00:00.000Z` explicitly and the server reads the DATE back as written, so the
+   runner's and the server's zones do not matter; days come from the browser's local fields as AC-17.7 states. The
+   only exposure is a run that crosses the browser's local midnight between `browserDays` and the last assertion
+   (one test, a few seconds per day): C becomes overdue and the count goes to 2. Inherent to AC-17.7's Given; not a
+   finding. e2e/15 asserts B's whole-row text with `Due 2026-11-05` but B is completed, so it stays green after
+   2026-11-05.
+
+Findings: none blocking.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the `useLayoutEffect` no-flash property and "wrapper is a direct child of the `li`" are guarded
+only by this review's probes, not by a committed test; B3.3 (which owns `todo-item.tsx`) can break either silently
+except through AC-17.7's end-state counts.
