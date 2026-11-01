@@ -6,8 +6,8 @@ the base has, with the JSON reporter, into `.verify-red-base.json`. A test is na
 (`JSON.stringify([...ancestorTitles, title])`), counted per file over the base tests that ran (`passed` or `failed`:
 a skeleton's `it.todo` placeholder or a skipped test is not old — prototype without this turned B1.2 and B1.3 to exit 1);
 a test in the red run is old only while its name occurs no more often than in the base run, so a repeated name is new
-in every occurrence. No base copy, or a base run that wrote no report: nothing is old (strict, as for a new file today). `baseTitles`, `unescape`, `PLACEHOLDER` and
-`isOld` are deleted, so no prefix or escape rule remains and the carried B1.25 cases (`.each` prefix, another
+in every occurrence. No base copy, or a base run that wrote no report: nothing is old (strict, as for a new file
+today). `baseTitles`, `unescape`, `PLACEHOLDER` and `isOld` are deleted, so no prefix or escape rule remains and the carried B1.25 cases (`.each` prefix, another
 `describe`, `\u{110000}`, `%%`, a literal `%s`) are decided by what vitest reports. Cost: one more vitest run per card
 (the base's files only, CI's `--auto` too). Costs (plan review round 1): a red commit that renames or wraps an existing
 `describe` counts its old passing tests as new → exit 1 (fails closed; restructure in a commit without `(red)`); an
