@@ -1,10 +1,12 @@
 'use client';
 
-// §7 TodoItem, with the §6 edit mode, the §19 delete button and the §10 message of a failed toggle or save.
+// §7 TodoItem, with the §6 edit mode, the §19 delete button, the §20 creation date and the §10 message of a failed
+// toggle or save.
 import { useState, useTransition, type FormEvent, type ReactNode } from 'react';
 import { toggleTodoAction, updateTodoTitleAction } from '@/actions/todos';
 import { DeleteTodoButton } from '@/components/delete-todo-button';
 import { TodoDueDate } from '@/components/todo-due-date';
+import { createdDayOf, createdLabel } from '@/lib/todo-created';
 import type { Todo } from '@/lib/todos';
 
 export function TodoItem({ todo }: { readonly todo: Todo }): ReactNode {
@@ -98,6 +100,12 @@ export function TodoItem({ todo }: { readonly todo: Todo }): ReactNode {
         </>
       )}
       <TodoDueDate todoId={todo.id} dueDate={todo.dueDate} />
+      {/* §20: empty on purpose; the date is ::after content, so the row's text stays its title (AC-5.1 and others). */}
+      <time
+        dateTime={createdDayOf(todo.createdAt)}
+        data-created={createdLabel(todo.createdAt)}
+        className="text-sm text-zinc-500 after:content-[attr(data-created)]"
+      />
       {error !== undefined && (
         <span id={errorId} role="alert" className="ml-auto text-sm text-red-600">
           {error}
