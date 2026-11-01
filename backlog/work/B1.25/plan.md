@@ -29,9 +29,7 @@ run with the scratch worktree as cwd); the fixture is `src/lib/vr-probe.test.ts`
 the summary line (`N ran (k new), f new failed, p new passed`), and V3/V4 that only the new title is named.
 V1 old `'… \'\' …'` + new failing → exit 0 · V2 old `"… \" …"` and `` `… \` …` `` + new failing → exit 0 · V3 old
 escaped title + new passing → exit 1, `(1 new), 0 new failed, 1 new passed` · V4 old `'AC-0.1: query'` + new passing
-`'AC-0.1: query is trimmed'` → exit 1 · V5 old `'a\nb'` + new failing → exit 0 · V6 old `it.each(...)('AC-0.2: %s')` kept
-
-- new failing → exit 0 (the placeholder prefix still matches).
+`'AC-0.1: query is trimmed'` → exit 1 · V5 old `'a\nb'` + new failing → exit 0 · V6 old `it.each(...)('AC-0.2: %s')` kept plus a new failing test → exit 0 (the placeholder prefix still matches).
 
 ## Verification (in the card worktree)
 
