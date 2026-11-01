@@ -12,32 +12,34 @@ no `src/*/CLAUDE.md`. Analysis Q1–Q9 as proposed: accompanies "0 items left"; 
 
 | File                                      | Change                                                                           | Why (AC-22.n) |
 | ----------------------------------------- | -------------------------------------------------------------------------------- | ------------- |
-| `src/lib/todo-count.ts`                   | Add `allDoneMessage` + `ALL_DONE_MESSAGE` constant; header `// §13, §22`         | 22.1          |
-| `src/lib/todo-count.test.ts`              | Add (red): AC-22.1, counts 0, 1, 2, 11 → `'All done'`, 3 × `undefined`           | 22.1          |
+| `src/lib/todo-count.ts`                   | Add `allDoneMessage` (text in a module-private const); header `// §13, §22`      | 22.1          |
+| `src/lib/todo-count.test.ts`              | Add (red): AC-22.1, counts 0, 1, 2, 11 → literal `'All done'`, 3 × `undefined`   | 22.1          |
 | `src/components/remaining-count.tsx`      | Fragment: §13 `<p>` unchanged + `<span>` when `allDoneMessage(count)` is defined | 22.2–22.7     |
-| `src/components/remaining-count.test.tsx` | Add (red): AC-22.2 (count 0), AC-22.3 (1, 2, 11); the 3 AC-13.2 tests unchanged  | 22.2, 22.3    |
+| `src/components/remaining-count.test.tsx` | Add: AC-22.3 (1, 2, 11) pinned green, then AC-22.2 (count 0) red; AC-13.2 kept   | 22.2, 22.3    |
 | `e2e/22-all-done.spec.ts`                 | Add (red): AC-22.4 to AC-22.7, titles A, B, C (never "All done")                 | 22.4–22.7     |
 
 Paperwork (exempt): `spec/features-map.md` F20 row ✗ in the skeleton, ✅ in `docs(map)`; §22 index row stays ✗ until
 the closing PR; `docs/metrics.md` per-card row. Expected order-only conflict on the index rows when B4.1/B4.2 merge.
 
 Skeleton stub: `allDoneMessage` throws `NotImplementedError`; `remaining-count.tsx` unchanged (AC-22.2 fails on a
-missing "All done" element, an assertion, not an import).
+missing "All done" element, an assertion, not an import). AC-22.3 holds already (no "All done" at counts 1, 2, 11), so
+it lands green in its own `test(todos): B4.3 pin AC-22.3 …` commit (no `(red)` marker) before the red commit, as B1.11
+did: `verify-red.sh` fails on any new test that is green before the code (`scripts/verify-red.sh:15`).
 
 ## Interfaces touched
 
 ```ts
 // src/lib/todo-count.ts (§13, §22) — pure, no Prisma, no server-only; countRemaining, remainingLabel unchanged
-export const ALL_DONE_MESSAGE = 'All done';
-export function allDoneMessage(count: number): string | undefined; // ALL_DONE_MESSAGE when count === 0, else undefined
+export function allDoneMessage(count: number): string | undefined; // 'All done' when count === 0, else undefined
+// the text is a module-private const (not exported: §22 adds one export); tests assert the literal
 // src/components/remaining-count.tsx: RemainingCount({ count }: { readonly count: number }): ReactNode — props
 // unchanged; <p>{remainingLabel(count)}</p> plus, when defined, <span>{allDoneMessage(count)}</span>; no role, no aria-live
 ```
 
 ## Verification
 
-Red (`test(todos): B4.3 … (red)`): `scripts/verify-red.sh B4.3` exit 0; AC-22.1 and AC-22.2 fail on
-`NotImplementedError` / a missing element; AC-22.3 and AC-22.7(b) pass by design (named in the commit body);
+Pin (`test(todos): B4.3 pin AC-22.3 …`): AC-22.3 green, 190 → 191. Red (`test(todos): B4.3 … (red)`):
+`scripts/verify-red.sh B4.3` exit 0; AC-22.1 and AC-22.2 fail on `NotImplementedError` / a missing element;
 `pnpm test:e2e e2e/22-all-done.spec.ts` → AC-22.4, 22.5, 22.6, 22.7 failed (22.7 on part a), recorded in the body.
 Green: `pnpm lint && pnpm typecheck` clean · `pnpm test` 190 → 193 passed, the 8 existing `todo-count.test.ts` and 3
 `remaining-count.test.tsx` tests unchanged and green · `pnpm test:e2e` 35 → 39 passed (`13`, `16` unchanged) ·
@@ -47,12 +49,13 @@ stated in the red commit.
 
 ## Work breakdown
 
-| Step | Role / skill        | Produces                               | Commit                         |
-| ---- | ------------------- | -------------------------------------- | ------------------------------ |
-| 1    | `new-feature-slice` | `allDoneMessage` stub, F20 ✗           | `chore(todos): B4.3 skeleton`  |
-| 2    | test-writer         | 2 test files + `e2e/22`, red           | `test(todos): B4.3 … (red)`    |
-| 3    | code-writer         | `todo-count.ts`, `remaining-count.tsx` | `feat(todos): B4.3 …`          |
-| 4    | dev-lead            | F20 ✅                                 | `docs(map): F20 … [B4.3]`      |
-| 5    | reviewer (diff)     | `review.md` diff section               | `docs(backlog): B4.3 review …` |
+| Step | Role / skill        | Produces                               | Commit                            |
+| ---- | ------------------- | -------------------------------------- | --------------------------------- |
+| 1    | `new-feature-slice` | `allDoneMessage` stub, F20 ✗           | `chore(todos): B4.3 skeleton`     |
+| 2a   | test-writer         | AC-22.3 in `remaining-count.test.tsx`  | `test(todos): B4.3 pin AC-22.3 …` |
+| 2b   | test-writer         | AC-22.1, AC-22.2 + `e2e/22`, red       | `test(todos): B4.3 … (red)`       |
+| 3    | code-writer         | `todo-count.ts`, `remaining-count.tsx` | `feat(todos): B4.3 …`             |
+| 4    | dev-lead            | F20 ✅                                 | `docs(map): F20 … [B4.3]`         |
+| 5    | reviewer (diff)     | `review.md` diff section               | `docs(backlog): B4.3 review …`    |
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: round 1 changes requested (2 reasons applied), round 2 pending · Plan approved by: · Rounds: 1
