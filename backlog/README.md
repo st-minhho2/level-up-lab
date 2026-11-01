@@ -9,8 +9,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | --------------- | -------------------------------------------------- | ------ | ------- | ----- | ------ |
 | E1 Todos        | [plan/E1-todos.md](plan/E1-todos.md)               | 21     | 0       | 1     | 22     |
 | E2 Todos plus   | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)     | 5      | 0       | 0     | 5      |
-| E3 Todos polish | [plan/E3-todos-polish.md](plan/E3-todos-polish.md) | 0      | 0       | 1     | 1      |
-| **Total**       |                                                    | **26** | **0**   | **2** | **28** |
+| E3 Todos polish | [plan/E3-todos-polish.md](plan/E3-todos-polish.md) | 0      | 0       | 2     | 2      |
+| **Total**       |                                                    | **26** | **0**   | **3** | **29** |
 
 ## Execution order
 
@@ -58,6 +58,7 @@ flowchart TD
   S26["26 · due date (migration)<br/>~~B2.4~~"]
   S27["27 · search by title<br/>~~B2.5~~"]
   S28["28 · overdue marker<br/>B3.1"]
+  S29["29 · title counter<br/>B3.2"]
 ```
 
 ## Remaining
@@ -69,6 +70,7 @@ at most 3 cards Doing (B1.18).
 | ---- | ----- | -------------------------------------------------------------------------- | ---------------------- | ------ | ---------- | ----- | ------------ |
 | 20   | B1.20 | Plan rows with `[ ]` match their own path in the plan-scope hook and guard | —                      | Open   | ~~B1.17~~  | Lead  | S [estimate] |
 | 28   | B3.1  | Mark overdue todos                                                         | new, section 17 (D-21) | Open   | —          | Lead  | S [estimate] |
+| 29   | B3.2  | Show a character counter while typing a title                              | new, section 18 (D-21) | Open   | —          | Lead  | S [estimate] |
 
 ## Waiting on human
 

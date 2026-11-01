@@ -13,3 +13,12 @@ _F15 · section 17_
 - **Acceptance:** section 17 criteria, set by `spec-analyst` (contract `spec/contracts/15-overdue.md`; mounts in `src/components/todo-due-date.tsx` only)
 - **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B3.1/`
+
+### B3.2 · Show a character counter while typing a title
+
+_F16 · section 18_
+**Status: Open** — `src/components/todo-form.tsx:36` sets `maxLength={200}` (D-5) with no visible count of characters used or left
+
+- **Acceptance:** section 18 criteria, set by `spec-analyst` (contract `spec/contracts/16-title-counter.md`; mounts in `src/components/todo-form.tsx` only)
+- **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B3.2/`
