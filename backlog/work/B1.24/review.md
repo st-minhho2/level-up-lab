@@ -77,3 +77,113 @@ Riskiest spot, not disproved: the `--`-prefix alternation (`fo?r?c?e?`, `de?l?e?
 leftmost-longest matching. It matches non-adjacent letter subsets (`--fe`, `--dt`, `--pe`) that git does not accept as
 prefixes. That only causes false positives, and none of the 25 legitimate push forms probed (`--porcelain`,
 `--progress`, `--push-option`, `--dry-run`, `--follow-tags`, `-4`, `-n`, `-q`, `-v`) hit one.
+
+## Plan review (round 2)
+
+SCOPE: tooling (`.claude/hooks/guard-bash.sh` rule 2, `scripts/hook-smoke.sh`, `.claude/docs/hooks.md`); no `src/`,
+no section. The card's Acceptance (`backlog/plan/E1-todos.md` ### B1.24) is the contract.
+
+Evidence. The reviewer ran everything on copies under `$TMPDIR/b124probe/` with bash 3.2.57 on macOS. The revised
+prototype is `r2/guard-bash.sh` and the HEAD hook is `cur/guard-bash.sh`.
+
+- `scripts/hook-smoke.sh` at `9f4c50c`: `hook-smoke: 309 probes OK`, 0 FAIL. The baseline holds.
+- The plan's own list (38 exit-2, 12 exit-0) run on HEAD: 34 exit-2 misses. HEAD blocks 4 of them already
+  (`git status && …`, `… ; … -uf …`, `(… -f)`, continuation `+main`). That gives the plan's 34 FAIL lines on the
+  test commit, and 309 + 38 + 12 = 359. On the prototype: 0 misses. `scripts/pr-step.sh push` needs the `cwd` that
+  hook-smoke's `pr_cmd` supplies.
+- Round-1 lists on the prototype: `probes.tsv` gives `ok=41 bad=0`, and `extra0.tsv` gives `ok=5 bad=0`. On the 61
+  round-1 probes, 59 come out as expected. The other 2 are the ones the plan now names: a real newline before
+  `+main` passes, and a `-m` message is blocked.
+- Round-1 reasons: 1 applied (continuations joined, all 3 probes block). 2 partly applied (see reason 1 below).
+  3 applied (`-C a\ b`). 4 partly applied (see reasons 3 to 5). 5 applied (`git commit -F`, `pr-body.md`).
+  6 applied (`chore(scripts)` subject).
+- 47 new round-2 probes (`adv2.js`, `adv3.tsv`, `adv4.js`). 31 should block and 28 of them exit 0. 16 should pass
+  and 5 of them exit 2; HEAD also blocks 1 of those 5 (a `gh pr create --title` that names a force push). The reviewer
+  also ran a local bare remote (`$TMPDIR/b124probe/realgit.sh`, no network) to confirm that git really forces or
+  deletes on the forms in reasons 2 to 4.
+- Speed: a 20,000-character command, 60 `-c` options and 40 `-C a\ b` options each finish in under 1 s.
+
+| Check                                                                          | Result                                                                                                                                               |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file belongs to the card's scope                                         | pass: the three files the card names, plus `work/B1.24/` paperwork                                                                                   |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib | n/a: no TypeScript; PreToolUse JSON in, exit 0/2 out, unchanged                                                                                      |
+| follows `advice.md` or states the deviation                                    | pass: advisor and spec-analyst skipped (tooling, quick), stated                                                                                      |
+| ≤ 7 criteria, every Then measurable                                            | pass: 4 Acceptance clauses, each an exit code, a stderr substring or a label                                                                         |
+| verification lists exact commands with expected numbers                        | pass: 359 probes; 34 then 0 FAIL lines; reproduced above                                                                                             |
+| work breakdown with convention subjects                                        | pass: `test(scripts)` → `fix(scripts)` → reviewer diff → PR `chore(scripts)`. No skeleton or map row (no §). The missing `(red)` marker is explained |
+| `Lead approves spec` box                                                       | n/a: no section                                                                                                                                      |
+| no settled D-n contradicted                                                    | pass: D-19 label named for `.claude/hooks/` and `.claude/docs/`; D-7 and D-8 untouched                                                               |
+| `scripts/next-task.sh --check B1.24`                                           | pass: `[next-task] B1.24: no overlap with any Doing or Review card`; the B1.26 and B1.27 files are not in the Files table                            |
+
+Verdict: changes requested
+
+1. **A brace list next to a dash, or a `${…}` default, still gets past the rule. The plan claims brace lists are
+   covered, and neither form is in the out-of-reach list.** The prototype exits 0 on `git push origin
+--{force,verbose} feat/x`, `git push origin --{force,} feat/x`, `git push origin -{f,q} feat/x`,
+   `--{delete,verbose}`, `--{mirror,verbose}`, `git push origin ${X:-+main}` and `${X:---force}`. In bash 3.2,
+   `printf '<%s>'` shows they become `<--force><-->`, `<-f><-q>` and `<--force>`. On the bare remote,
+   `--{force,verbose} main` and `${X:-+main}` each replaced a diverged `main`. The cause is that `PUSH_FORCE` needs
+   `-`, `+` or `:` right after a space, `{` or `,` (plus `Q`). A brace list placed after the dash, or a `${X:-`
+   operator in front of the value, never fits that shape. Fix: in a push segment, block any `{…,…}` group and any
+   `${…:-|:+|-|+…}` whose word starts with `+`, `:` or `-`. Add 3 probes. Or name both forms in the out-of-reach list.
+2. **Saved-config routes match case-sensitively, and git config keys are case-insensitive. The env form of `-c` is
+   not covered either.** These exit 0: `git config remote.origin.MIRROR true`, `git config remote.origin.Push
++refs/heads/*:refs/heads/*`, `git -c remote.origin.Mirror=true push origin`,
+   `GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=remote.origin.mirror GIT_CONFIG_VALUE_0=true git push origin`, the same with
+   `KEY_0=remote.origin.push VALUE_0=+refs/heads/*:refs/heads/*`, and `GIT_CONFIG_PARAMETERS="'remote.origin.mirror'='true'" git push origin`.
+   On the bare remote, `git config --get remote.origin.mirror` printed `true` after the `MIRROR` write. The plain
+   `git push origin` that followed deleted `feat/x` on the remote. The `GIT_CONFIG_COUNT` push-refspec form replaced
+   a diverged `main`. `scripts/pr-step.sh` line 11 already unsets `GIT_CONFIG_*` for this reason. Fix: match
+   `CONFIG_FORCE` case-insensitively (`shopt -s nocasematch` exists in bash 3.2), check `GIT_CONFIG_*` and
+   `GIT_CONFIG_PARAMETERS` prefixes in a push segment, and add 3 probes. Or name both gaps.
+3. **The prototype stops blocking 4 forms that the hook blocks today, and the plan does not state it.** The prototype
+   checks only the leftmost `git … push|send-pack|config|remote` in a segment. When that match is `config` or
+   `remote`, its `.*$` swallows the rest of the segment, and the push check is skipped (the `if … config|remote …
+else` branch). HEAD exits 2 and the prototype exits 0 on `URL=$(git remote get-url origin) git push --force
+origin main`, `b=$(git config --get branch.main.remote) git push -f`, `echo "$(git config user.name)" "$(git push
+--force)"` and ``git remote show origin `git push origin +main` ``. The first two shapes come up in real agent
+   commands. Fix: run the push check on every `git … push|send-pack` in the segment, independent of the config
+   check, or also split on `(` and a backtick as rule 5 does. Add the first two as exit-2 probes so the old
+   coverage is pinned.
+4. **Some quoted or substituted words before `push` still get past the rule.** These exit 0: `"git" push -f`,
+   `'git' push -f`, `git -C $(git rev-parse --show-toplevel) push -f` (an unquoted substitution with a space as the
+   `-C` argument) and `git -C $'a b' push -f`. On the bare remote, `"git" push origin --delete feat/y` deleted the
+   branch. The plan covers `git "push" -f`, so a quoted `git` sits right next to a covered case. It is not "a word
+   quoted in pieces". Allow `["']?git["']?` in `GIT_REF_WRITE`, and accept `$(…)` and `$'…'` in `QARG`, or name these
+   forms.
+5. **The out-of-reach list should name the remaining routes, so the hooks.md row and the rule's comment do not claim
+   more than the rule covers.** All of these exit 0 under the prototype, and none appears in the plan:
+   - `gh repo sync <repo> --branch <b> --force`. gh documents it as a hard reset of the destination branch.
+   - `gh api -X POST repos/o/r/branches/<b>/rename -f new_name=…`. It moves another card's branch name away.
+   - `gh api -X delete …/git/refs/…` (lower-case method).
+   - `curl -X DELETE …/git/refs/…`.
+   - A write to `.git/config`, by `printf … >> .git/config` or the Edit tool, followed by a plain `git push`.
+
+   Naming them in one line is enough. Covering them is the plan's choice. The `gh` items are plausible: they were
+   traced, not run against GitHub.
+
+6. **New false positives are a cost, and the plan does not state them.** HEAD exits 0 and the prototype exits 2 on
+   `git config --get remote.origin.mirror`, `git config --unset remote.origin.mirror` (the agent cannot inspect or
+   undo a mirror setting), `git push origin "v$(date +%Y)"` (a `+` after a space inside a substitution) and
+   `git config user.name "a=:b"`. Either limit `CONFIG_FORCE` to writes (not `--get`, `--get-regexp`, `--unset`,
+   `--list`) or list these next to "Still blocked as before this card".
+
+Riskiest spot, not disproved: `GIT_REF_WRITE`'s option parse can read `push` as the argument of an earlier option.
+`git -P push remote --force` exits 0, because `-P push` is read as an option with its value and `remote` as the
+subcommand. A force needs a remote literally named `remote` or `config`, so no realistic input was found.
+
+## Round 2 dispositions (dev-lead)
+
+Plan round 3 applies them; prototype re-run on every reviewer probe list (adv, adv2, adv3, adv4, plan) and the plan's 60
+probes: 0 misses except the ones stated below. Not re-reviewed: the 2-round cap is reached, the lead decides.
+
+1. Fix now: any `{` after the push word blocks (brace lists anywhere in a word, `${X:-…}`).
+2. Fix now: saved-config checks run on the lower-cased text; a `GIT_CONFIG_*` variable anywhere in the command that
+   sets a mirror or a `.push` key with a `+`/`:` value blocks.
+3. Fix now: no option parsing and no leftmost-subcommand branch; the tail after the segment's first push word is
+   checked whenever the segment names git, and the config check runs independently.
+4. Fix now: a quoted or path git word counts; options are not parsed, so `-C $(…)` and `-C $'a b'` cannot hide push.
+5. Partly: lower-case `gh api -X delete`, `…/rename` and `gh repo sync --force` are covered; `curl` on the GitHub API
+   and writing `.git/config` directly are named out of reach (plan and hooks.md).
+6. Stated in the plan: `git config --get/--unset` pass again; `git config user.name "a=:b"` passes (the generic `=+`/`=:`
+   check is gone); `git push origin "v$(date +%Y)"` and quoted command text after `git … push` stay blocked.
