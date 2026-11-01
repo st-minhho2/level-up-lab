@@ -56,4 +56,4 @@ different count is stated in the red commit.
 | 4    | dev-lead            | F16 ✅                                 | `docs(map): F16 … [B3.2]`      |
 | 5    | reviewer (diff)     | `review.md` diff section               | `docs(backlog): B3.2 review …` |
 
-Plan review: approved, round 2 (round 1: 2 reasons applied d5de514) · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 (round 1: 2 reasons applied d5de514) · Plan approved by: lead, 2026-11-01 · Rounds: 1
