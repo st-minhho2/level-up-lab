@@ -8,7 +8,7 @@ its UI in a component no other card in the batch changes; no card changes `src/a
 ### B4.1 · Show the creation date of each todo
 
 _F18 · section 20_
-**Status: Open** — `git grep -n -i createdAt src/components` (tests aside) → no match: `src/components/todo-item.tsx` renders the title, checkbox, due date and delete button, not when the todo was created
+**Status: Done** — e898d17 (#110), 6 AC-20.n tests green (unit 198, e2e 40), mutation 93.16
 
 - **Spec:** §20 — unchanged (section written from `work/B4.1/analysis.md`; contract `spec/contracts/18-created-date.md`)
 - **Test:** `src/lib/todo-created.test.ts::AC-20.1: writes the UTC creation day as YYYY-MM-DD under Pacific/Kiritimati and America/Los_Angeles` — red because: the skeleton's `createdDayOf` throws `NotImplementedError`
