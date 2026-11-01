@@ -15,6 +15,8 @@
 #   review pass 1: W17 an identical path with [ ] collides; W18 a lower, ineligible step (B9.6, Human) is skipped and
 #   rows out of order still pick the lowest step; W19 --check sees a Review card's plan; W20 a ready PR on one branch
 #   and none on another → Doing; W21 --check reads a Doing card's plan from an origin-only branch
+#   B1.27, titles with quote characters on a second repo: W22 --list prints a paired "…" and a \ as written, trimmed;
+#   W23 with a lone ' and a lone " too → exit 0, all four as written; W24 pick, W25 --claim, W26 --check → exit 0
 set -uo pipefail
 cd "$(git rev-parse --show-toplevel)"
 SRC="$PWD/scripts/next-task.sh"
@@ -127,6 +129,31 @@ plan_on "$TMP/wt1" B9.1 'src/app/[id]/page.tsx'; plan_on "$TMP/wt4" B9.4 'src/ap
 [[ $rc -eq 1 ]] && grep -q 'B9.1' "$TMP/out" && ok W17 || fail "W17 rc=$rc $(head -1 "$TMP/out")"
 prs 'feat/B9.5-o\tOPEN\tfalse\n'; g branch feat/B9.5-b main
 nt "$R" --list; board B9.5 Doing && ok W20 || fail "W20 $(grep 'B9.5 ' "$TMP/out")"
+
+# --- quote characters in titles (B1.27): a second repo, so W1–W21 keep plain titles ---------------------------------
+Q="$TMP/q"; mkdir -p "$Q/backlog/plan"
+gq() { gw "$Q" "$@"; }
+qrow() { printf '| %s | B8.%s | %s | §5 | Open | | Dev | S |\n' "$1" "$1" "$2"; }
+qcard() { printf '### B8.%s · %s\n**Status: Open** — fixture\n- **Spec:** §5 — unchanged\n- **Test:** `x.test.ts::AC-5.%s t` — red because: x\n\n' "$1" "$2" "$1"; }
+{ printf '# Backlog\n\n## Remaining\n\n| Step | ID | Title | Spec § | Status | Blocked by | Owner | Size |\n'
+  printf '| ---- | -- | ----- | ------ | ------ | ---------- | ----- | ---- |\n'
+  qrow 1 'say "all done"'; qrow 2 'back\slash path'; printf '\n## Waiting on human\n'; } > "$Q/backlog/README.md"
+{ qcard 1 'say "all done"'; qcard 2 'back\slash path'; qcard 3 "todo's date"; qcard 4 'a lone " quote'; } > "$Q/backlog/plan/E8-quotes.md"
+gq init -q -b main && gq add -A && gq commit -q -m init
+git init -q --bare "$TMP/q.git" && gq remote add origin "$TMP/q.git" && gq push -q origin main
+nt "$Q" --list
+[[ $rc -eq 0 ]] && grep -qF 'B8.1   say "all done" ' "$TMP/out" && grep -qF 'B8.2   back\slash path ' "$TMP/out" && ok "W22 (paired \"…\" and \\ kept)" \
+  || fail "W22 rc=$rc $(grep -E 'B8\.[12] ' "$TMP/out" | tr '\n' ' ')"
+awk '{print} /^\| 2 \| B8\.2 /{print "| 3 | B8.3 | todo'"'"'s date | §5 | Open | | Dev | S |"; print "| 4 | B8.4 | a lone \" quote | §5 | Open | | Dev | S |"}' \
+  "$Q/backlog/README.md" > "$TMP/rd" && mv "$TMP/rd" "$Q/backlog/README.md"
+gq commit -qam "lone quotes" && gq push -q origin main
+nt "$Q" --list; t=0
+for s in 'B8.1   say "all done" ' 'B8.2   back\slash path ' "B8.3   todo's date " 'B8.4   a lone " quote '; do grep -qF "$s" "$TMP/out" && t=$((t + 1)); done
+[[ $rc -eq 0 && $t -eq 4 ]] && ! grep -q xargs "$TMP/out" && ok "W23 (lone ' and \" kept)" || fail "W23 rc=$rc titles=$t/4 $(head -1 "$TMP/out")"
+nt "$Q"; [[ $rc -eq 0 ]] && grep -qx 'B8.1 backlog/plan/E8-quotes.md' "$TMP/out" && ok W24 || fail "W24 rc=$rc $(head -1 "$TMP/out")"
+nt "$Q" --claim B8.3; [[ $rc -eq 0 ]] && grep -q 'B8.3 may start' "$TMP/out" && ok W25 || fail "W25 rc=$rc $(head -1 "$TMP/out")"
+gq branch feat/B8.4-q main && gw "$Q" worktree add -q "$TMP/wq4" feat/B8.4-q && plan_on "$TMP/wq4" B8.4 src/lib/q.ts
+nt "$TMP/wq4" --check B8.4; [[ $rc -eq 0 ]] && grep -q 'no overlap' "$TMP/out" && ok W26 || fail "W26 rc=$rc $(head -1 "$TMP/out")"
 
 [[ -s "$FIX/denied.log" ]] && { fail "gh shim denied:"; sed 's/^/  /' "$FIX/denied.log"; }
 echo "[next-task-smoke] $oks ok, $fails FAIL"
