@@ -26,8 +26,8 @@ while IFS= read -r segment; do
   [[ $recursive -eq 1 && $force -eq 1 ]] && block "$ME" "rm -rf is not allowed. Delete named files, or ask the human to remove the directory."
 done < <(printf '%s\n' "$CMD" | tr ';&|' '\n\n\n')
 
-# 2. Anything that overwrites or deletes a remote branch (B1.24), per command segment after joining `\`-newline
-#    continuations. In a command that names git anywhere (quoted, escaped, in $( ) or backticks, as a path, or as the
+# 2. Anything that overwrites or deletes a remote branch (B1.24), per command segment (split on ; & | only, after
+#    joining `\`-newline continuations; other newlines count as spaces, as in a heredoc inside $( )). In a command that names git anywhere (quoted, escaped, in $( ) or backticks, as a path, or as the
 #    git-push binary; anywhere, because the split ignores quotes and $( )), the words after a segment's first push or
 #    send-pack word block on: -f or -d in a short-option cluster, --force*, --mirror, --delete, --prune (and any prefix
 #    git accepts for them, `--mir`), a refspec starting with + or : (`+@:x`, `+$BR`, `:feat/x`), each optionally behind
@@ -38,8 +38,9 @@ done < <(printf '%s\n' "$CMD" | tr ';&|' '\n\n\n')
 #    comment or substitution. So does gh (global flags may come first): api with a DELETE/PATCH method (`-iX DELETE`) or
 #    force=true on git/refs, deleteRef, updateRef, a branch rename; repo sync --force; pr close or merge with -d (in a
 #    cluster or quoted) or --delete-branch. Out of reach of a text check: a flag or refspec held in a variable, words
-#    joined by ${IFS} or another expansion, an alias, a word quoted in pieces, a command built at run time, git config
-#    files written directly, other HTTP clients (curl) calling the GitHub API.
+#    joined by ${IFS} or another expansion, an alias, a word quoted in pieces, a command built at run time, a ; & or |
+#    inside a quoted argument (it splits the segment early: `-o "a;b" -f`), git config files written directly, other
+#    HTTP clients (curl) calling the GitHub API.
 W='(^|[[:space:];&|"'"'"'(`/=\\])'
 E='(["'"'"'[:space:]`)]|$)'
 GIT_WORD="${W}git(${E}|-push|-send-pack)"
@@ -51,7 +52,7 @@ CONFIG_FORCE='mirror|--mi?r?r?o?r?([^a-z]|$)|\.push["'"'"']?([[:space:]]+|=)["'"
 GH_API="${W}gh[[:space:]](.*[[:space:]])?api[[:space:]]"
 GH_WRITE_METHOD='(-[a-z]*x|--method)[[:space:]=]*["'"'"']?(delete|patch)|force[[:space:]]*[=:][[:space:]]*true'
 GH_REF_EDIT='deleteref|updateref|branches/[^[:space:]]+/rename'
-GH_BRANCH_DELETE="${W}gh[[:space:]](.*[[:space:]])?(repo[[:space:]]+sync.*--force|pr[[:space:]]+(close|merge)[[:space:]].*[[:space:]][\"']?(-[a-z]*d|--delete-branch))"
+GH_BRANCH_DELETE="${W}gh[[:space:]](.*[[:space:]])?(repo[[:space:]]+sync.*--force|pr[[:space:]]+(close|merge)([[:space:]].*)?[[:space:]][\"']?(-[a-z]*d|--delete-branch))"
 FORCE_MSG="force pushes and remote branch deletes are not allowed from an agent session."
 joined="${CMD//\\$'\n'/}"
 low="$(printf '%s' "$joined" | tr '[:upper:]' '[:lower:]')"
@@ -68,7 +69,7 @@ while IFS= read -r segment; do
   [[ $names_git -eq 1 ]] || continue
   [[ "$segment" =~ $PUSH_TAIL && "${BASH_REMATCH[3]}" =~ $PUSH_FORCE ]] && block "$ME" "$FORCE_MSG"
   [[ "$low" =~ $CONFIG_ROUTE && "$low" =~ $CONFIG_FORCE && ! "$low" =~ $CONFIG_READ_ONLY ]] && block "$ME" "$FORCE_MSG"
-done < <(printf '%s\n' "$joined" | tr ';&|' '\n\n\n')
+done < <(printf '%s\n' "${joined//$'\n'/ }" | tr ';&|' '\n\n\n') # a newline may sit in $( ) or a heredoc of the push
 
 # 3. Prisma: destructive subcommands never; migrate/db subcommands only against a local host.
 PRISMA_DESTRUCTIVE='prisma[[:space:]]+(migrate[[:space:]]+reset|db[[:space:]]+push|db[[:space:]]+execute)'
