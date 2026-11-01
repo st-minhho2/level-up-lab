@@ -123,10 +123,12 @@ refused 'other card' open 'docs(backlog): B9.2 done' || r13=1
 refused 'done plus words' open 'docs(backlog): B9.1 done now' || r13=1
 refused 'filing title on -done' open 'docs(backlog): card B9.1 add x' || r13=1
 g checkout -q docs/B9.1-partial; refused 'partial without --' open 'docs(backlog): B9.1 partial' || r13=1
+refused 'partial, B9x1' open 'docs(backlog): B9x1 partial -- x' || r13=1
 g checkout -q docs/B9.1-card
 refused 'two lines' open "$(printf 'docs(backlog): card B9.1 a\nb')" || r13=1
 refused 'other card' open 'docs(backlog): card B9.2 add x' || r13=1
 refused '81 chars' open "docs(backlog): card B9.1 $(printf 'x%.0s' $(seq 1 56))" || r13=1
+refused 'card, B9x1' open 'docs(backlog): card B9x1 add x' || r13=1
 g checkout -q docs/B9.1-done; C="$REPO/backlog/work/B9.1/closing-pr-body.md"
 mv "$C" "$TMP/keepc.md"; refused 'body missing' open "$T" || r13=1
 ln -s "$TMP/secret.md" "$C"; refused 'body symlink' open "$T" || r13=1; rm -f "$C"
@@ -134,6 +136,8 @@ ln "$TMP/keepc.md" "$C"; refused 'body hard link' open "$T" || r13=1; rm -f "$C"
 mv "$REPO/backlog/work/B9.1" "$TMP/realdirc"; mv "$TMP/keepc.md" "$TMP/realdirc/closing-pr-body.md"
 ln -s "$TMP/realdirc" "$REPO/backlog/work/B9.1"; refused 'body symlinked dir' open "$T" || r13=1
 rm -f "$REPO/backlog/work/B9.1"; mv "$TMP/realdirc" "$REPO/backlog/work/B9.1"
+printf 'edited\n' >> "$C"; refused 'body edited after the lane commit' open "$T" || r13=1; g checkout -- "$C"
+g update-ref -d refs/remotes/origin/main; refused 'no origin/main' open "$T" || r13=1; g fetch -q origin
 # a Partial close left its body on main; a Done branch that does not rewrite it would reuse it
 g checkout -q main && printf 'partial body\n' > "$C" && g add backlog/work/B9.1/closing-pr-body.md \
   && g commit -q --no-verify -m partial && g push -q origin main
@@ -145,6 +149,8 @@ for b in docs/B9.1-done docs/B9.1-partial docs/B9.1-card; do
   g checkout -q "$b"; [[ -f "$REPO/backlog/work/B9.1/pr-body.md" ]] || { echo "     $b: no pr-body.md"; r14=1; }
   refused "draft on $b" draft 'docs(backlog): B9.1 done' || r14=1
 done
+g checkout -q main && g checkout -q -b docs/B9.1-done-x; : > "$LOG"; rc="$(run draft 'docs(backlog): B9.1 done')"
+[[ "$rc" == 0 ]] && grep -q -- '--draft' "$LOG" || { echo "     draft on docs/B9.1-done-x (not a lane): rc=$rc"; r14=1; }
 [[ $r14 -eq 0 ]] && ok R14 || fail R14
 
 echo "[pr-step-smoke] $oks ok, $fails FAIL"
