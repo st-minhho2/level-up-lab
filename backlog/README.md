@@ -71,9 +71,9 @@ at most 3 cards Doing (B1.18).
 | Step | ID    | Title                                                                      | Spec §                 | Status | Blocked by | Owner | Size         |
 | ---- | ----- | -------------------------------------------------------------------------- | ---------------------- | ------ | ---------- | ----- | ------------ |
 | 20   | B1.20 | Plan rows with `[ ]` match their own path in the plan-scope hook and guard | —                      | Open   | ~~B1.17~~  | Lead  | S [estimate] |
-| 28   | B3.1  | Mark overdue todos                                                         | new, section 17 (D-21) | Open   | —          | Lead  | S [estimate] |
-| 29   | B3.2  | Show a character counter while typing a title                              | new, section 18 (D-21) | Open   | —          | Lead  | S [estimate] |
-| 30   | B3.3  | Delete a todo                                                              | new, section 19 (D-21) | Open   | —          | Lead  | S [estimate] |
+| 28   | B3.1  | Mark overdue todos                                                         | new, section 17 (D-22) | Open   | —          | Lead  | S [estimate] |
+| 29   | B3.2  | Show a character counter while typing a title                              | new, section 18 (D-22) | Open   | —          | Lead  | S [estimate] |
+| 30   | B3.3  | Delete a todo                                                              | new, section 19 (D-22) | Open   | —          | Lead  | S [estimate] |
 | 31   | B1.23 | Card sessions run their own PR steps: push, open, label, mark ready        | —                      | Open   | —          | Lead  | S [estimate] |
 
 ## Waiting on human
