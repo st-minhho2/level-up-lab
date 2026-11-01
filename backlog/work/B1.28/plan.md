@@ -50,4 +50,4 @@ Red/green: the Test command's "before" is the red; no `test(...)` commit (no tes
 `config-change-approved` label. Out of scope (D-25 follow-up): stale § ranges in root `CLAUDE.md` Map (`src/lib/`
 §3–§6) and `src/CLAUDE.md` package table (`lib/` §3–§6, `components/` §7).
 
-Plan review: round 2 changes requested (2 reasons, both applied as worded; ≤ 2 rounds reached → lead decides) · Plan approved by: · Rounds: 1
+Plan review: round 2 changes requested (2 reasons, both applied as worded; ≤ 2 rounds reached → lead decides) · Plan approved by: lead (session reply "approve"), 2026-11-01 · Rounds: 1
