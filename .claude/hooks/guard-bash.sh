@@ -27,36 +27,50 @@ while IFS= read -r segment; do
 done < <(printf '%s\n' "$CMD" | tr ';&|' '\n\n\n')
 
 # 2. Anything that overwrites or deletes a remote branch (B1.24), per command segment after joining `\`-newline
-#    continuations. In a segment that names git (quoted, in $( ) or backticks, or as a path), the words after its first
-#    push or send-pack word block on: -f or -d in a short-option cluster, --force*, --mirror, --delete, --prune (and any
-#    prefix git accepts for them, `--mir`), a refspec starting with + or : (`+@:x`, `+$BR`, `:feat/x`), each optionally
-#    behind quotes, \ or $ (`'+main'`, `$'+main'`), any { (brace lists, ${X:-…}) and any $'…\…' escape. Git options
-#    before push are not parsed, so none hides it. Saved config counts, any case: a git config, git remote or -c (or a
-#    GIT_CONFIG_* variable anywhere in the command) that sets a mirror or a +/: push refspec, unless it only reads or
-#    unsets (--get, --unset, --list); so does gh deleting, renaming or force-updating a ref, or `gh repo sync --force`.
-#    Out of reach of a text check: a flag or refspec held in a variable, an alias, a word quoted in pieces, a command
-#    built at run time, git config files written directly, other HTTP clients (curl) calling the GitHub API.
-W='(^|[[:space:]"'"'"'(`/=])'
+#    continuations. In a command that names git anywhere (quoted, escaped, in $( ) or backticks, as a path, or as the
+#    git-push binary; anywhere, because the split ignores quotes and $( )), the words after a segment's first push or
+#    send-pack word block on: -f or -d in a short-option cluster, --force*, --mirror, --delete, --prune (and any prefix
+#    git accepts for them, `--mir`), a refspec starting with + or : (`+@:x`, `+$BR`, `:feat/x`), each optionally behind
+#    quotes, \ or $ (`'+main'`, `$'+main'`), any { (brace lists, ${X:-…}, also "${BRANCH}") and any $'…\…' escape.
+#    Git options before push are not parsed, so none hides it. Saved config counts, any case: git config, remote, clone
+#    or -c (or a GIT_CONFIG_* variable anywhere in the command) that sets a mirror (`--mirr=push` too) or a +/: push
+#    refspec, unless the segment only reads or unsets (--get, --unset, --list, -l) and holds no push word and no -c. So
+#    does gh: api with a DELETE/PATCH method or force=true on git/refs, deleteRef, updateRef, a branch rename; repo sync
+#    --force; pr close or merge with --delete-branch. Out of reach of a text check: a flag or refspec held in a
+#    variable, an alias, a word quoted in pieces, a command built at run time, git config files written directly, other
+#    HTTP clients (curl) calling the GitHub API.
+W='(^|[[:space:]"'"'"'(`/=\\])'
 E='(["'"'"'[:space:]`)]|$)'
-GIT_WORD="${W}git${E}"
-PUSH_TAIL="${W}(push|send-pack)(${E}.*)$"
+GIT_WORD="${W}git(${E}|-push|-send-pack)"
+PUSH_TAIL="${W}(git-push|git-send-pack|push|send-pack)(${E}.*)$"
 PUSH_FORCE='[[:space:]]["'"'"'\\$]*(-[A-Za-z0-9]*[fd]|--(fo?r?c?e?|mi?r?r?o?r?|de?l?e?t?e?|pr?u?n?e?)([^A-Za-z]|$)|[+:])|\{|\$'"'"'[^'"'"']*\\'
-CONFIG_ROUTE="${W}(config|remote|-c)${E}"
+CONFIG_ROUTE="${W}(config|remote|clone|-c)${E}"
 CONFIG_READ='[[:space:]]config[[:space:]]+(--get|--unset|--list|-l)'
-CONFIG_FORCE='mirror|\.push["'"'"']?([[:space:]]+|=)["'"'"'\\]*[+:]'
-GH_REF_WRITE="${W}gh[[:space:]]+(api[[:space:]].*(git/refs.*(delete|patch|force)|(delete|patch|force).*git/refs|deleteref|updateref|/rename)|repo[[:space:]]+sync.*--force)"
+CONFIG_WRITE_WORD="${W}(push|send-pack|-c)${E}"
+CONFIG_FORCE='mirror|--mi?r?r?o?r?([^a-z]|$)|\.push["'"'"']?([[:space:]]+|=)["'"'"'\\$]*[+:]'
+GH_API="${W}gh[[:space:]]+api[[:space:]]"
+GH_WRITE_METHOD='(-x|--method)[[:space:]=]*["'"'"']?(delete|patch)|force[[:space:]]*[=:][[:space:]]*true'
+GH_REF_EDIT='deleteref|updateref|branches/[^[:space:]]+/rename'
+GH_BRANCH_DELETE="${W}gh[[:space:]]+(repo[[:space:]]+sync.*--force|pr[[:space:]]+(close|merge)[[:space:]].*[[:space:]](-d|--delete-branch)([[:space:]=]|$))"
 FORCE_MSG="force pushes and remote branch deletes are not allowed from an agent session."
-low="$(printf '%s' "$CMD" | tr '[:upper:]' '[:lower:]')"
+joined="${CMD//\\$'\n'/}"
+low="$(printf '%s' "$joined" | tr '[:upper:]' '[:lower:]')"
 if [[ "$low" =~ git_config_ ]]; then # key and value are separate variables (GIT_CONFIG_KEY_0, GIT_CONFIG_VALUE_0)
-  [[ "$low" =~ mirror || ( "$low" =~ \.push && "$low" =~ =[\"\'\\]*[+:] ) ]] && block "$ME" "$FORCE_MSG"
+  [[ "$low" =~ mirror || ( "$low" =~ \.push && "$low" =~ =[\"\'\\$]*[+:] ) ]] && block "$ME" "$FORCE_MSG"
 fi
+names_git=0; [[ "$joined" =~ $GIT_WORD ]] && names_git=1
 while IFS= read -r segment; do
   low="$(printf '%s' "$segment" | tr '[:upper:]' '[:lower:]')"
-  [[ "$low" =~ $GH_REF_WRITE ]] && block "$ME" "$FORCE_MSG"
-  [[ "$segment" =~ $GIT_WORD ]] || continue
+  if [[ "$low" =~ $GH_API ]]; then
+    [[ ( "$low" =~ git/refs && "$low" =~ $GH_WRITE_METHOD ) || "$low" =~ $GH_REF_EDIT ]] && block "$ME" "$FORCE_MSG"
+  fi
+  [[ "$low" =~ $GH_BRANCH_DELETE ]] && block "$ME" "$FORCE_MSG"
+  [[ $names_git -eq 1 ]] || continue
   [[ "$segment" =~ $PUSH_TAIL && "${BASH_REMATCH[3]}" =~ $PUSH_FORCE ]] && block "$ME" "$FORCE_MSG"
-  [[ "$low" =~ $CONFIG_ROUTE && ! "$low" =~ $CONFIG_READ && "$low" =~ $CONFIG_FORCE ]] && block "$ME" "$FORCE_MSG"
-done < <(printf '%s\n' "${CMD//\\$'\n'/}" | tr ';&|' '\n\n\n')
+  if [[ "$low" =~ $CONFIG_ROUTE && "$low" =~ $CONFIG_FORCE ]]; then
+    [[ "$low" =~ $CONFIG_READ && ! "$low" =~ $CONFIG_WRITE_WORD ]] || block "$ME" "$FORCE_MSG"
+  fi
+done < <(printf '%s\n' "$joined" | tr ';&|' '\n\n\n')
 
 # 3. Prisma: destructive subcommands never; migrate/db subcommands only against a local host.
 PRISMA_DESTRUCTIVE='prisma[[:space:]]+(migrate[[:space:]]+reset|db[[:space:]]+push|db[[:space:]]+execute)'
