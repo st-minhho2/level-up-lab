@@ -400,3 +400,156 @@ concurrent command that the allow rule does not cover.
 | 6   | no code change: documented in `.claude/docs/hooks.md` (commit messages quoting a wrapper call → `git commit -F` or reword)                                                        | hooks.md                                                                          |
 
 Counts now: pr-step-smoke 10 ok; hook-smoke 305 probes OK (bash 5 and /bin/bash 3.2).
+
+## Diff review (pass 2)
+
+SCOPE: tooling (`.claude/hooks/guard-bash.sh` rule 5, `scripts/pr-step.sh` title check, the two smokes, `hooks.md`); no
+`src/`. New since pass 1: 08c44bc test, c508891 review text, 0a208a1 chore (grammar, `cmp`, `(§<n>)`), 848a32b
+hooks.md, b80c8ed dispositions. Probes on clones under the session scratchpad (`rv2p`, `p2card`, `p2foreign`, `p2stub`,
+`p2title`); the worktree was not edited. Every shell probe ran in `zsh -f -c`, `zsh -c` with `extendedglob rcquotes
+kshglob magicequalsubst globsubst rcexpandparam`, and `bash -c` (3.2.57).
+
+### Commands
+
+| Command                                    | Last line                                                                                                                                                                                                               |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                | `All matched files use Prettier code style!`                                                                                                                                                                            |
+| `pnpm typecheck`                           | `> tsc --noEmit` (exit 0)                                                                                                                                                                                               |
+| `pnpm test`                                | `Tests  178 passed (178)`                                                                                                                                                                                               |
+| `pnpm test:e2e`                            | `33 passed (36.2s)`                                                                                                                                                                                                     |
+| `pnpm test:mutation`                       | exit 0 (`Done in 2 minutes and 34 seconds`; no `src/` change since pass 1's 92.63)                                                                                                                                      |
+| `scripts/ci/check-suppressions.sh`         | `OK: no new suppressions`                                                                                                                                                                                               |
+| `scripts/ci/check-config-change.sh`        | exit 1 unlabeled; `CONFIG_CHANGE_APPROVED=true` → exit 0 (PR #99 carries `config-change-approved`)                                                                                                                      |
+| `scripts/ci/check-feat-commits.sh`         | `OK: no feat commit touches tests`                                                                                                                                                                                      |
+| `scripts/ci/check-ac-coverage.sh`          | `OK: every criterion of a shipped section has a test`                                                                                                                                                                   |
+| `scripts/ci/check-spec-sections.sh`        | exit 1 on the branch: sections 17 and 18 cited by pass 1's finding [5] text, contracts only on origin/main; after a scratch merge of origin/main: `OK: sections cited: 1 … 19` (CI checks the merge ref, Loop 9 merges) |
+| `scripts/ci/check-features-map.sh`         | `OK`                                                                                                                                                                                                                    |
+| `scripts/ci/check-plan-scope.sh`           | `OK: feat/B1.23-pr-steps stays inside the approved plan of B1.23`                                                                                                                                                       |
+| `scripts/ci/check-backlog.sh`              | `OK: README matches the cards`                                                                                                                                                                                          |
+| `scripts/ci/plan-files.sh B1.23 HEAD`      | 14 rows = `git diff --name-only origin/main...HEAD` (14 files, 734+ 55-)                                                                                                                                                |
+| `scripts/verify-red.sh [--auto] B1.23`     | exit 1 `no 'test(<pkg>): B1.23 … (red)' commit` (vitest only, as in pass 1)                                                                                                                                             |
+| `scripts/pr-step-smoke.sh` (/bin/bash 3.2) | 08c44bc `9 ok, 1 FAIL` (R6, `(§n) suffix: rc=3`); 0a208a1 and HEAD `10 ok, 0 FAIL`                                                                                                                                      |
+| `scripts/hook-smoke.sh` (/bin/bash 3.2)    | worktree HEAD `305 probes OK`; 08c44bc: 3 new FAIL (`=(touch X)`, `*(e:'touch X':)`, committed foreign wrapper); 0a208a1: 0 new                                                                                         |
+
+Bash 5 full smokes: [unverified] (no bash 5 on this host). The new version-sensitive code (PR_STEP_PLAIN on 34 command
+strings, the suffix case on 7 titles) gives identical verdicts on bash 5.3.9 (postgres container) and 3.2, except the
+80-character title with a suffix, which is a locale effect, not a version one ([6]).
+
+### Pass-1 findings
+
+| #   | Closed?                      | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| --- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | yes                          | exit 2: `=(…)`, `=ls`, `~`, `~root`, `{a,b}`, `x'y'`, `'x'y`, `'a'"b"`, `"a"'b'`, `#c`, `a#b`, unquoted `é`, `"${HOME}"`, `"$(…)"`, ``"`…`"``, `"a \" b"`, `"a !! b"`, tab, double space, trailing space. exit 0 and inert in both shells (args printed by a stub, no file created): `''`, `""`, `'a*(e:touch P:)'`, `"… (b) *x ~y #z [q] {a,b} =(touch P) ^x"`, `"%(x)"`, `"a'b"`, `'a"b'`, `'é'`, `-`, `..`. The plain class excludes `=`, `~`, `{`, `,`, `*`, `#`, `^`. Unpinned parts: [3] |
+| 2   | yes, for the pass-1 triggers | committed foreign wrapper → 2; card branch's committed change, hooks from another checkout → 2. Residual in the layout CLAUDE.md also allows (session opened in the card worktree): [5]. New cost: [1]                                                                                                                                                                                                                                                                                         |
+| 3   | yes                          | drop the `ls-files` line → 1 new FAIL                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| 4   | yes                          | `-le 81` → R6 FAIL. Dropping the newline check now survives, but as an equivalent mutant: a newline is in neither the plain class nor reachable outside quotes, and inside quotes it is data                                                                                                                                                                                                                                                                                                   |
+| 5   | yes                          | `(§9)` accepted and passed verbatim to gh; refused: `(§1)(§2)`, `(§)`, `(§1) x`, `(§1) (§2)`, `a(§1)`, `(§1))`, `((§1)`, `(§ 1)`, `(§-1)`, `(§1a)`, fullwidth and Arabic-Indic digits, `§` mid-title, no summary before the suffix                                                                                                                                                                                                                                                             |
+| 6   | yes (doc)                    | hooks.md says to use `git commit -F` or reword                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+
+No chore commit touches a test file (0a208a1: guard-bash.sh, pr-step.sh; 848a32b: hooks.md). The one test change to an
+existing line (R6 '81 chars' from 99 to exactly 81 characters) tightens it. No merges in `2167759..HEAD`.
+
+Mutants (clone; killed = a smoke goes red):
+
+```
+guard rule 5  drop cmp line                          killed      drop ls-files                     killed
+              "…" class [^"$`\\!] → [^"$]            SURVIVES [3] '…' class [^'] → .*              SURVIVES [3]
+              "…" class → [^"]                       killed      plain class + = ~ { } , * ( )    killed
+              cmp → also same file as the hook's (-ef) SURVIVES [4]
+              drop newline check                     equivalent  drop git diff check               survives (load-bearing only when cwd is the hook's checkout; see [5])
+pr-step.sh    -le 80 → -le 81                        killed      drop `|| base="$title"`           survives (accepts "(§1)(§2)"; title text only, not a finding)
+              suffix [0-9]+ → .*                     survives (accepts "(§x y)"; title text only, not a finding)
+```
+
+### Findings
+
+```
+[1] KIND: plan-mismatch
+    WHERE: .claude/hooks/guard-bash.sh:93-94; backlog/work/B1.23/plan.md (Files, guard-bash row)
+    DEFECT: the approved row says "script tracked and unmodified"; the code also requires the wrapper to be
+            byte-identical to the copy in the checkout the hooks load from, a new refusal condition that depends on
+            a checkout nobody updates as part of a card.
+    TRIGGER: hooks from checkout H (same commit as HEAD), card checkout p2card on feat/B9.1-x whose committed
+            scripts/pr-step.sh differs from H's by one line (a later fix on main, or H not pulled) →
+            `scripts/pr-step.sh push` exit 2. Today's launch checkouts are both stale: the app worktree is
+            detached at 9c663dd, the main checkout at a005b41, origin/main at ec38bed.
+    WRONG BEHAVIOUR: exit 2 is a block, not a prompt, and dev-lead Loop 9 forbids the raw-command fallback, so the
+            card stalls until the lead updates the launch checkout. Every later change to pr-step.sh puts sessions
+            on either side of it in that state, and a card that changes pr-step.sh can never run its own PR steps
+            through the wrapper. The security gain is real (pass-1 [2]); the cost is not in the approved plan.
+            Fix: reword the plan row ("byte-identical to the hook checkout's copy; a mismatch blocks"), add the
+            cost to the plan's "Assumes" line, and get the lead's re-approval (a `Plan approved by` update) before
+            the PR is ready. Within the plan's intent (round-2 reason 1: never run a different wrapper), outside
+            its stated cost.
+    CONFIDENCE: confirmed
+
+[2] KIND: correctness
+    WHERE: .claude/hooks/guard-bash.sh:69-73 (comment and PR_STEP_MSG); .claude/docs/hooks.md:11
+    DEFECT: the block message, the rule comment and the hooks.md row still describe pass 1's rule ("no $ …
+            backslash", "committed and unmodified") and name neither the quoted-argument grammar nor the cmp.
+    TRIGGER: [1]'s mismatch → stderr "scripts/pr-step.sh runs only as one plain call from the top level of a
+            checkout whose wrapper is committed and unmodified …", all of which is true of p2card.
+    WRONG BEHAVIOUR: the session reports a refusal whose stated cause does not hold; the lead cannot tell from
+            the report that the launch checkout needs updating. Fix: the message names "byte-identical to
+            <own path>" and "plain words or quoted strings"; comment and hooks.md row to match.
+    CONFIDENCE: confirmed
+
+[3] KIND: coverage
+    WHERE: scripts/hook-smoke.sh (rule 5 probes); guard-bash.sh:83
+    DEFECT: no probe breaks out of a quoted string, so the two quoted-string classes can be loosened with the
+            suite green.
+    TRIGGER: mutant `"[^"$]*"` (admits backtick and backslash in "…") → hook-smoke 0 new FAIL, and
+            `scripts/pr-step.sh draft "a\" 'b" $(touch P) "' "\"` and `scripts/pr-step.sh draft "a `touch P` b"`
+            → guard exit 0, file created in zsh and bash. Mutant `'.*'` → 0 new FAIL, and
+            `scripts/pr-step.sh draft 'a' $(touch P) 'b'` → exit 0, file created in both. Real hook: exit 2 on all.
+    WRONG BEHAVIOUR: a regression in the line that is the whole of pass-1 [1]'s fix ships green. Fix: exit-2
+            probes for the three commands above (the backslash one, a backtick in "…", a substitution between
+            two single-quoted args); optionally `(§1)(§2)` refused in R6.
+    CONFIDENCE: confirmed
+
+[4] KIND: coverage
+    WHERE: scripts/hook-smoke.sh (every exit-0 rule 5 probe uses cwd = the hook's own checkout)
+    DEFECT: the layout every real card session uses (hooks from the launch checkout, cwd a different worktree
+            with the same committed wrapper) has no probe.
+    TRIGGER: mutant `cmp … && [[ "$top/scripts/pr-step.sh" -ef "$own" ]]` → hook-smoke 0 new FAIL; that mutant
+            blocks p2card with the hook from rv2p (real hook: exit 0).
+    WRONG BEHAVIOUR: a change that blocks every legitimate session ships green, and the card's own Done
+            criterion would find it. Fix: an exit-0 probe with cwd in a second checkout (clone or worktree) of the
+            same commit.
+    CONFIDENCE: confirmed
+
+[5] KIND: security (residual, not blocking)
+    WHERE: .claude/hooks/guard-bash.sh:91-94 (comment "a wrapper … on the card branch never passes")
+    DEFECT: when the session is opened in the card worktree (CLAUDE.md: "the repo root (or a worktree)"), the hook
+            and the wrapper are the same checkout, so cmp compares the file with itself.
+    TRIGGER: in p2card, commit a change to scripts/pr-step.sh, run the hook from p2card itself with cwd p2card →
+            exit 0.
+    WRONG BEHAVIOUR: pass-1 [2](b) still holds in that layout. Not fixable by this rule: no deny covers
+            `Edit(.claude/hooks/**)`, so in that layout the hook itself is just as editable. Fix: correct the
+            comment and say in hooks.md that the guarantee needs the hooks to load from a checkout other than the
+            card's.
+    CONFIDENCE: confirmed
+
+[6] KIND: correctness (not blocking)
+    WHERE: scripts/pr-step.sh:28 (`${#title} -le 80`)
+    DEFECT: `${#title}` counts bytes under the C locale, and `§` is two bytes in UTF-8.
+    TRIGGER: this session's shell has LANG empty, LC_CTYPE "C"; `scripts/pr-step.sh draft "feat(todos): B9.1
+            <57 x> (§9)"` (80 characters, 81 bytes) → rc 3 "title must be one line of at most 80 characters";
+            with LC_ALL=en_US.UTF-8 → rc 0 (bash 3.2 and 5.3 agree).
+    WRONG BEHAVIOUR: the cap is 79 characters for exactly the titles 0a208a1 set out to accept, and the message
+            says 80. Fix: subtract the suffix before counting, or document "80 bytes".
+    CONFIDENCE: confirmed
+```
+
+Not findings (checked): the matcher question from pass 1 no longer matters for rule 5: every command the grammar
+accepts was inert in both shells, so the guard blocks everything a looser matcher might approve. A foreign repo with an
+identical committed wrapper passes the guard (exit 0); the wrapper then needs a card-shaped branch and the repo's own
+remote, which is the pass-1 "repo config is trusted" boundary. Also observed: PR #99 is not a draft
+(`isDraft=false`) and its head is a2977c9; the pass-1 commits are not pushed.
+
+Verdict: back to test-writer (probes for [3] and [4]), then code-writer for [2] and [5]'s comment and [6] if taken;
+[1] needs the plan row reworded and the lead's re-approval before the PR is ready.
+
+Riskiest unfalsified: a race between the hook's `cmp` and the shell's exec of `scripts/pr-step.sh` (and between
+`find -links 1` and gh's read of `pr-body.md`): a background job started earlier could swap the file in between. I
+did not run it; it needs a concurrent command the allow rule does not cover.
