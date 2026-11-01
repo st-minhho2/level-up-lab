@@ -104,3 +104,93 @@ runs 52–93 lines, so this follows the repo's practice. The two D-21 rows in th
 the lead (round 1 note).
 
 Verdict: approved (ready for the lead's plan gate. This does not approve the build.)
+
+## Diff review (pass 1)
+
+SCOPE: all (`src/lib`, `src/actions`, `src/components`, `e2e`)
+
+Reviewed at 0333e43 against base d53f4c7 (merge-base with `main`; `main` is now a005b41, `git merge-tree` clean), §19
+(`spec/contracts/17-delete.md`), `plan.md` (approved 2026-11-01). Commits: skeleton 44db343 → red 8293598 → feat
+451418c → metrics 0333e43.
+
+### Commands (run here, last line of each)
+
+| Command                             | Result                                                                                                                                                 |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm lint`                         | `All matched files use Prettier code style!` (exit 0)                                                                                                  |
+| `pnpm typecheck`                    | `tsc --noEmit` (exit 0)                                                                                                                                |
+| `pnpm test`                         | `Tests  178 passed (178)` (27 files)                                                                                                                   |
+| `pnpm test:e2e`                     | `33 passed (41.4s)`                                                                                                                                    |
+| `pnpm test:mutation`                | `Final mutation score of 92.63 is greater than or equal to break threshold 70`; `todo-delete.ts` 100.00 (8 killed), `delete-todo.ts` 100.00 (8 killed) |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                                                                              |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                                                                      |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                                                                     |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test` (§19 still ✗ in the index, 7 criteria)                                                           |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 16 19` (plan-review cost 7 no longer reproduces)                                                                              |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                                                                                   |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B3.3-delete stays inside the approved plan of B3.3`                                                                                          |
+| `scripts/ci/check-backlog.sh`       | `OK: README matches the cards`                                                                                                                         |
+| `scripts/verify-red.sh B3.3`        | `RESULT: red for the right reason` (lib 2/2, action 4/4, button 2/2, `TodoItem` 1 new of 11; e2e skipped)                                              |
+| `git diff --stat main...HEAD`       | `20 files changed, 1149 insertions(+), 4 deletions(-)`                                                                                                 |
+
+### Checklist
+
+| Check                                                     | Result                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-19.n has a test whose assertion matches its Then | pass: 19.1 `todo-delete.test.ts` (both results, `TodoNotFoundError.id`, exact `deleteMany` args ×2, 6 other methods at 0); 19.2–19.4 `delete-todo.test.ts` (exact results, call counts and args, log-before-resolve order); 19.5 (a) and 19.6 `delete-todo-button.test.tsx` (`confirm` spy 0 calls, disabled/enabled, alert parent and `nextElementSibling`); 19.5 (b) `todo-item.test.tsx`; 19.7 `e2e/19-delete.spec.ts` |
+| no test weakened after the red commit                     | pass: `git log --first-parent --no-merges 8293598..HEAD -- '*.test.*' e2e/` empty; the `--merges --remerge-diff` form is empty (no merges)                                                                                                                                                                                                                                                                                |
+| every changed file is in `plan.md`                        | pass: the 10 Files rows, plus paperwork (`features-map.md`, `metrics.md`). `check-plan-scope.sh` OK                                                                                                                                                                                                                                                                                                                       |
+| interfaces match the section's contracts                  | pass: `deleteTodo(id: string): Promise<void>`, `deleteTodoAction(id: string): Promise<ActionResult<{ id: string }>>`, `DeleteTodoButton({ todoId }: { readonly todoId: string }): ReactNode`, `MutationActionName` + `'deleteTodoAction'` only                                                                                                                                                                            |
+| Zod at every action boundary                              | pass: `toggleTodoSchema.safeParse({ id })` before the `try` in `src/actions/delete-todo.ts:13`; a non-string or empty id never reaches the lib                                                                                                                                                                                                                                                                            |
+| Prisma only in `src/lib`, no raw SQL                      | pass: one `prisma.todo.deleteMany({ where: { id } })` in `src/lib/todo-delete.ts:8`; no `$queryRaw`/`$executeRaw`                                                                                                                                                                                                                                                                                                         |
+| migration reversible and indexed                          | n/a: no `prisma/` change                                                                                                                                                                                                                                                                                                                                                                                                  |
+| no secret, no suppression                                 | pass (`check-suppressions.sh` OK; diff read line by line)                                                                                                                                                                                                                                                                                                                                                                 |
+| features map row moved                                    | pass: F17 ✅ (`spec/features-map.md`), in the feat commit 451418c, not in a separate `docs(map)` commit as the plan's step 4 says; the map's own header asks for the same commit, so not a finding                                                                                                                                                                                                                        |
+| would a test fail if one changed line were reverted       | pass for behaviour, see probes; two placement lines are unguarded (below)                                                                                                                                                                                                                                                                                                                                                 |
+
+### Probes (on a copy of the tree, nothing edited here)
+
+1. `disabled={pending}` removed from `DeleteTodoButton` → AC-19.5 (a) fails (1 failed of 13).
+2. Success no longer clears the message (`result.ok ? error : …`) → AC-19.6 fails.
+3. `<DeleteTodoButton>` moved before the checkbox in `todo-item.tsx` (the lead's "checkbox stays the first control"
+   constraint broken) → 38/38 component tests and 33/33 e2e still pass. No test guards the placement.
+4. The `<span>` wrapper replaced by a fragment → 38/38 component tests still pass (inside the `<li>` the alert is still
+   the button's next sibling, so REQ-19.10 holds either way; the wrapper is §19's contract shape, not observable).
+5. Question 3 (is the new `todo-item.test.tsx` mock complete?): an `afterEach` asserting `deleteTodoAction` has 0 calls in
+   every test except AC-19.5 (b) → 11/11 pass; inverted to `toBe(1)` → the 10 existing tests fail, so the hook ran. No
+   existing test calls, or depends on, the delete mock; the mock exposes the module's only export.
+6. Lib and action lines: Stryker killed all 16 mutants of `todo-delete.ts` and `delete-todo.ts` (0 survived, 0 no-coverage).
+
+### Answers to the dev-lead's questions
+
+1. Delete racing a toggle or save on the same row: accepted at the plan gate (plan-review cost 4) and outside §19
+   ("deleting from two tabs at once" and optimistic UI are Out of scope; §19 only requires the delete button disabled).
+   Traced: delete first → the toggle or save finds no row (`TodoNotFoundError` → "Todo not found", no log, no
+   revalidate) and the row leaves on the delete's refresh; toggle first → it saves, then the delete removes the row.
+   No path stores a wrong state or logs a failure. Not a finding.
+2. Wrapper `<span>` and row text: the button has no text node (`aria-label` + `aria-hidden` SVG), and the alert renders
+   only after a failed delete, so idle `<li>` text is unchanged: `e2e/05,06,10,13,14,15,16` `toHaveText([...])`
+   checks pass (33/33), and no e2e button locator (`Add`, `Save`, `Edit title`, `Edit due date`, `Update due date`,
+   `Search`, …) is a substring of "Delete todo". Layout: when the §10 row alert (`ml-auto`) shows, the delete button sits after it
+   at the right edge; otherwise it follows the due-date control. §19 and §7 set no position, so not a finding.
+3. See probe 5.
+
+### Findings
+
+None blocking.
+
+Non-blocking, for the dev-lead:
+
+- The checkbox-first placement that sibling B3.1 relies on is held only by the source comment (probe 3). A
+  `test(todos): B3.3 review pass 1 -- …` hardening test (for example, the first focusable element of the `<li>` is the
+  checkbox) would guard it; §19 does not require it, so not a finding.
+- `backlog/plan/E3-todos-polish.md:32`'s `Test:` contract line names
+  `AC-19.1: deletes the todo by id with one deleteMany, resolves undefined, and rejects with TodoNotFoundError when no row was deleted`;
+  the committed title is `AC-19.1: resolves undefined for a deleted id, rejects TodoNotFoundError with id "missing" …`.
+  No CI script reads that line; it can be aligned in the closing commit.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the `<DeleteTodoButton>` position in `src/components/todo-item.tsx:107` (last child, checkbox
+first): moving it first keeps every unit, component and e2e test green, so a later edit or a B3.1 merge resolution
+could break the lead's constraint without a red test.
