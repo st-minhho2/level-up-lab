@@ -11,6 +11,11 @@ probe() { # probe <expected-exit> <hook> <json> [hook args...]
   local out rc; out="$(printf '%s' "$json" | "$H/$hook" "$@" 2>&1)"; rc=$?; n=$((n+1))
   if [[ $rc -eq $want ]]; then printf 'ok   %s exit %s  %s\n' "$hook" "$rc" "$json"; else printf 'FAIL %s exit %s (want %s)  %s\n     %s\n' "$hook" "$rc" "$want" "$json" "$out"; fail=1; fi
 }
+probe_msg() { # probe_msg <expected-exit> <text> <hook> <json>: probe, and the hook's output must hold <text>
+  local want="$1" text="$2" hook="$3" json="$4"
+  local out rc; out="$(printf '%s' "$json" | "$H/$hook" 2>&1)"; rc=$?; n=$((n+1))
+  if [[ $rc -eq $want && "$out" == *"$text"* ]]; then printf 'ok   %s exit %s  %s\n' "$hook" "$rc" "$json"; else printf 'FAIL %s exit %s (want %s, "%s")  %s\n     %s\n' "$hook" "$rc" "$want" "$text" "$json" "$out"; fail=1; fi
+}
 bash_cmd() { printf '{"tool_input":{"command":"%s"}}' "$1"; }
 read_path() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
 
@@ -58,6 +63,128 @@ probe 0 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh ready 7' "$PRW")"
 git worktree remove --force "$PRW" 2>/dev/null; rmdir "$(dirname "$PRW")" 2>/dev/null
 for c in 'scripts/pr-step.sh ready 7' 'scripts/pr-step.sh draft "feat(todos): B9.1 add the x"' \
          'git add scripts/pr-step.sh' 'cat scripts/pr-step.sh'; do probe 0 guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done
+
+echo "== guard-bash.sh: force-push and remote branch-delete spellings (B1.24)"
+# One command per line, read raw so quotes, $ and backslashes reach the hook as typed.
+while IFS= read -r c; do probe_msg 2 'force pushes' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'FORCED'
+git push origin '+main'
+git push origin "+feat/x"
+git push origin +@:feat/x
+git push origin +0a1b2c3:refs/heads/feat/x
+git push origin +$BR
+git push origin \+main
+git push origin $'+main'
+git push origin $'\x2bmain'
+git push origin {main,--force}
+git push origin {x,:feat/y}
+git push origin --{force,verbose} feat/x
+git push origin ${X:-+main}
+git push --mirror origin
+git push origin --mir
+git push origin --delete feat/x
+git push origin --del feat/x
+git push -d origin feat/x
+git push origin :feat/x
+git push origin "":feat/x
+git push --all --prune
+git push '--force' origin feat/x
+git -C . push --force origin feat/x
+git -C . push -f
+git -C "a b" push -f
+git -C a\ b push -f
+git -C $(git rev-parse --show-toplevel) push -f
+git --no-pager push -f
+git "push" -f
+"git" push origin --delete feat/x
+git -c remote.origin.mirror=true push origin
+git -c remote.origin.push=+refs/heads/*:refs/heads/* push
+git config remote.origin.mirror true
+git config remote.origin.MIRROR true
+git config remote.origin.push +refs/heads/*:refs/heads/*
+git remote add --mirror=push m url
+GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=remote.origin.mirror GIT_CONFIG_VALUE_0=true git push origin
+git send-pack --force origin refs/heads/main
+gh api -X DELETE repos/o/r/git/refs/heads/feat/x
+gh api -X delete repos/o/r/git/refs/heads/feat/x
+gh repo sync o/r --force
+git status && git push -f
+git push -u origin feat/x; git push -uf origin feat/x
+(git push -f)
+URL=$(git remote get-url origin) git push --force origin main
+git remote show origin `git push origin +main`
+\git push -f origin main
+/usr/libexec/git-core/git-push -f origin main
+git -C "$(cd ../repo && pwd)" push -f origin main
+git config remote.origin.push $'+refs/heads/*:refs/heads/*'
+git -c remote.origin.push=$'+refs/heads/*:refs/heads/*' push
+GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=remote.origin.push GIT_CONFIG_VALUE_0=+refs/heads/*:refs/heads/* git push
+git -c remote.origin.mirror=true push "$(git config --get branch.main.remote)"
+git remote add --mirr=push m url
+git clone --mirror url m
+gh api -X PATCH repos/o/r/git/refs/heads/feat/x -F force=true
+gh api repos/o/r/git/refs/heads/feat/x --method patch -f sha=abc
+gh api -X POST repos/o/r/branches/feat/x/rename -f new_name=y
+gh api graphql -f query='mutation { deleteRef(input: {refId: "x"}) { clientMutationId } }'
+gh api graphql -f query='mutation { updateRef(input: {refId: "x", oid: "y", force: true}) { clientMutationId } }'
+gh pr close 7 --delete-branch
+gh pr close 7 -d
+git config remote.origin.mirror true # config --get
+true;git push -f origin main
+echo x|git push -f origin main
+true &git push -f origin main
+git config --get x "$(git -c remote.origin.mirror=true push origin)"
+git config --get x $(git config remote.origin.mirror true)
+V=true git --config-env=remote.origin.mirror=V push origin
+GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=remote.origin.push GIT_CONFIG_VALUE_0=$'+refs/heads/*:refs/heads/*' git push
+gh api -iX DELETE repos/o/r/git/refs/heads/feat/x
+gh pr close 7 -dc bye
+gh pr close 7 "-d"
+gh -R o/r pr close 7 -d
+gh pr close -d 7
+gh pr close --delete-branch 7
+git config --get x `git config remote.origin.mirror true`
+git config --get x =(git config remote.origin.mirror true)
+V=+refs/heads/*:refs/heads/* git --config-env=remote.origin.push=V push
+gh -R o/r api -X DELETE repos/o/r/git/refs/heads/feat/x
+FORCED
+# line continuations: the second line belongs to the same command
+for c in "$(printf 'git push origin \\\n+main')" "$(printf 'git \\\npush -f')"; do
+  probe_msg 2 'force pushes' guard-bash.sh "$(pr_cmd "$c" "$PWD")"
+done
+# a heredoc inside $( ): its lines are words of the same push
+q="'"; nl=$'\n'
+for c in "git push origin \"\$(cat <<${q}X${q}${nl}+main${nl}X${nl})\"" "git push origin main \$(cat <<${q}X${q}${nl}-f${nl}X${nl})"; do
+  probe_msg 2 'force pushes' guard-bash.sh "$(pr_cmd "$c" "$PWD")"
+done
+# a plain config read on one line exempts only itself, not the lines after it
+for c in "git config --get user.name${nl}git config remote.origin.mirror true${nl}git push origin" \
+         "git config --get user.name${nl}git -c remote.origin.mirror=true push origin" \
+         "git config --get user.name${nl}git config remote.origin.push +refs/heads/*:refs/heads/*${nl}git push origin"; do
+  probe_msg 2 'force pushes' guard-bash.sh "$(pr_cmd "$c" "$PWD")"
+done
+while IFS= read -r c; do probe 0 guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'PLAIN'
+git push
+git -C . push -u origin feat/x
+git push -u origin feat/B1.24-force-push-spellings
+git push --follow-tags origin feat/x
+git push --dry-run origin feat/x
+git push origin HEAD:refs/heads/feat/x
+git push --set-upstream origin feat/fix-delete
+git commit -m "guard-bash blocks every forced-push spelling"
+git remote add origin git@github.com:o/r.git
+git config user.name "a=:b"
+git config --get remote.origin.mirror
+gh api repos/o/r/git/refs/heads/feat/x
+gh api repos/o/r/git/refs/heads/feat/B3.3-delete
+gh api repos/o/r/contents/docs/rename.md
+gh pr close 7 -c "superseded"
+git config -l | grep remote.origin.mirror
+git config --unset remote.origin.mirror
+git clone --bare url m
+git config --global --get remote.origin.mirror
+docker push -d registry.example.com/img:1
+PLAIN
+probe 0 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh push' "$PWD")"   # the wrapper's push (B1.23) still runs
 
 echo "== settings.json permissions (B1.23)"
 n=$((n+1)); if node -e '
