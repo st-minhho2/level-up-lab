@@ -66,4 +66,34 @@ SECRET_VAR='(echo|printf|printenv|env|export[[:space:]]+-p)[^;&|]*(\$\{?|[^A-Z_]
 ENV_DUMP='(^|[[:space:];&|])(printenv|env)([[:space:]]*$|[[:space:]]*[|;&>])'
 [[ "$CMD" =~ $ENV_DUMP ]] && block "$ME" "dumping the environment is not allowed (it contains DATABASE_URL and tokens)."
 
+# 5. scripts/pr-step.sh (B1.23): settings.json runs it without asking, so the shell must not change what it does. Any
+#    segment that invokes it (after VAR= prefixes, sh/bash/exec/env/command) makes the whole command subject to: one
+#    call `scripts/pr-step.sh` whose arguments are plain words or quoted strings (no $, backtick, backslash or ! in
+#    double quotes, no newline); cwd the top level of its checkout; the wrapper tracked and unmodified there and
+#    byte-identical to the one in the checkout these hooks load from.
+PR_STEP_MSG="scripts/pr-step.sh runs only as one call with plain-word or quoted arguments (no redirects, substitutions, prefixes or other commands), from the top level of a checkout whose wrapper is committed, unmodified and the same as the hooks' own."
+invokes_pr_step=0
+while IFS= read -r segment; do
+  set -f; set -- $segment; set +f
+  while [[ $# -gt 0 && ( "$1" =~ ^[A-Za-z_][A-Za-z0-9_]*= || "$1" =~ ^(sh|bash|zsh|dash|exec|env|command|nohup|time|source|\.)$ ) ]]; do shift; done
+  [[ $# -gt 0 && "$1" == *pr-step.sh ]] && invokes_pr_step=1
+done < <(printf '%s\n' "$CMD" | tr ';&|(`' '\n\n\n\n\n') # `$(` splits at its `(`
+if [[ $invokes_pr_step -eq 1 ]]; then
+  # Each argument a plain word or a quoted string: the session's shell may be zsh, where unquoted =( ), *(e:…:) and
+  # similar run code before the wrapper starts.
+  PR_STEP_PLAIN='^scripts/pr-step\.sh( ([A-Za-z0-9._-]+|'"'"'[^'"'"']*'"'"'|"[^"$`\\!]*"))*$'
+  [[ "$CMD" != *$'\n'* && "$CMD" =~ $PR_STEP_PLAIN ]] || block "$ME" "$PR_STEP_MSG"
+  cwd="$(json_field cwd)"
+  [[ -n "$cwd" && -d "$cwd" ]] || block "$ME" "$PR_STEP_MSG"
+  top="$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)" || block "$ME" "$PR_STEP_MSG"
+  [[ "$(cd -P "$cwd" && pwd -P)" == "$(cd -P "$top" && pwd -P)" ]] || block "$ME" "$PR_STEP_MSG"
+  git -C "$top" ls-files --error-unmatch scripts/pr-step.sh >/dev/null 2>&1 || block "$ME" "$PR_STEP_MSG"
+  git -C "$top" diff --quiet HEAD -- scripts/pr-step.sh 2>/dev/null || block "$ME" "$PR_STEP_MSG"
+  # The wrapper that runs must be byte-identical to the one in the checkout the hooks load from, so a wrapper committed
+  # in another repository never passes. Limit: a session opened in the card worktree compares the file with itself.
+  own="$(cd "$(dirname "$0")/../.." && pwd -P)/scripts/pr-step.sh"
+  [[ -f "$own" ]] && cmp -s "$top/scripts/pr-step.sh" "$own" \
+    || block "$ME" "scripts/pr-step.sh in $top differs from the hooks' own copy ($own): open the session from a checkout with the same wrapper."
+fi
+
 exit 0

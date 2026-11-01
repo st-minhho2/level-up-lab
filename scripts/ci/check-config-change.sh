@@ -7,7 +7,7 @@ cd "$(git rev-parse --show-toplevel)"
 . scripts/ci/lib.sh
 resolve_range
 
-PROTECTED='^(eslint\.config\.(mjs|js|cjs)|\.eslintrc.*|\.prettierrc.*|\.prettierignore|tsconfig.*\.json|lefthook\.yml|\.gitleaks\.toml|stryker\.config\.(mjs|js|json)|vitest\.config\.(ts|mts)|vitest\.setup\.ts|playwright\.config\.ts|\.github/.*|scripts/ci/.*|scripts/verify-red\.sh|scripts/next-task\.sh|scripts/card-status\.sh|\.claude/settings\.json|\.claude/(hooks|agents|skills|rules|docs)/.*)$'
+PROTECTED='^(eslint\.config\.(mjs|js|cjs)|\.eslintrc.*|\.prettierrc.*|\.prettierignore|tsconfig.*\.json|lefthook\.yml|\.gitleaks\.toml|stryker\.config\.(mjs|js|json)|vitest\.config\.(ts|mts)|vitest\.setup\.ts|playwright\.config\.ts|\.github/.*|scripts/ci/.*|scripts/verify-red\.sh|scripts/next-task\.sh|scripts/card-status\.sh|scripts/pr-step\.sh|\.claude/settings\.json|\.claude/(hooks|agents|skills|rules|docs)/.*)$'
 changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" | grep -E "$PROTECTED" || true)"
 if [[ -n "$changed" ]]; then
   if [[ "${CONFIG_CHANGE_APPROVED:-false}" == "true" ]]; then

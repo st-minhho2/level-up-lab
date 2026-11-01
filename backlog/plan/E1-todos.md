@@ -331,13 +331,15 @@ _tooling · no §_
 hand and B3.2's draft PR could not open (batch 1 PR wait median 17 min, `docs/metrics.md`)
 
 - **Spec:** none — tooling (`.claude/settings.json`, `.claude/docs/hooks.md`); no `src/` change, no section
-- **Test:** a probe in `scripts/hook-smoke.sh` — red because: `.claude/settings.json` allows none of the four PR steps,
-  while `gh pr merge` and `gh pr review` must stay denied and `guard-bash.sh` must still block a forced push
-- **Acceptance:** `permissions.allow` gains exactly `Bash(git push*)`, `Bash(gh pr create*)`, `Bash(gh pr ready*)` and
-  `Bash(gh pr edit * --add-label config-change-approved)`; the existing denies (`gh pr merge*`, `gh pr review*`,
-  `--no-verify`, `.env*` reads) stay; `guard-bash.sh` still blocks every forced-push spelling it blocks today (force
-  flags, lease flag, `+refspec`); no broader `gh` or `git` rule; a card session runs the four steps under auto mode
-  (checked on the next card PR); the PR carries `config-change-approved` (D-19)
+- **Test:** `scripts/pr-step-smoke.sh` (new) and guard and settings probes in `scripts/hook-smoke.sh` — red because: no
+  wrapper exists, `guard-bash.sh` passes a redirect or command substitution in a wrapper call, and `.claude/settings.json`
+  allows nothing, so a session's PR steps fall to auto mode's judgement
+- **Acceptance:** (plan round 3, lead's choice (B)) `scripts/pr-step.sh` runs exactly `push`, `draft "<title>"` (fixed
+  body file `backlog/work/<card>/pr-body.md`) and `ready <n> [--undo]`, on the current card branch only; `guard-bash.sh`
+  lets a wrapper call through only as one plain segment from the top level with the tracked, unmodified script;
+  `permissions.allow` is exactly `Bash(scripts/pr-step.sh *)`; the 16 deny entries stay; `scripts/pr-step.sh` is
+  protected config; dev-lead Loop 5/9 call the wrapper; the next card session runs push, draft and ready with no refusal;
+  the PR carries `config-change-approved` (D-19). Labels and the PR body edit stay outside the wrapper
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.23/`
 

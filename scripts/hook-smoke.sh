@@ -25,6 +25,52 @@ for c in 'rm -r dist' 'rm -f src/old.ts' 'git push -u origin feat/x' 'pnpm db:mi
          'DATABASE_URL=postgresql://postgres:postgres@localhost:5433/level_up_lab pnpm db:deploy' \
          'cat .env.example' 'cp .env.example .env' 'pnpm test' 'echo $PORT'; do probe 0 guard-bash.sh "$(bash_cmd "$c")"; done
 
+echo "== guard-bash.sh: scripts/pr-step.sh calls (B1.23)"
+pr_cmd() { node -e 'process.stdout.write(JSON.stringify({tool_input:{command:process.argv[1]},cwd:process.argv[2]}))' "$1" "$2"; }
+for c in 'scripts/pr-step.sh ready 7 > .claude/settings.json' 'scripts/pr-step.sh draft "$(< .env)"' \
+         'GH_REPO=x/y scripts/pr-step.sh ready 7' 'cd /tmp && scripts/pr-step.sh push' 'true && scripts/pr-step.sh push' \
+         './scripts/pr-step.sh push' 'bash scripts/pr-step.sh push'; do probe 2 guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done
+probe 2 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh push' "$PWD/scripts")"
+PRT="$(mktemp -d)"; git -C "$PRT" init -q; mkdir -p "$PRT/scripts"; printf 'echo\n' > "$PRT/scripts/pr-step.sh"
+probe 2 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh push' "$PRT")"   # untracked wrapper
+git -C "$PRT" add -A; git -C "$PRT" -c user.name=s -c user.email=s@x commit -q --no-verify -m x; printf 'echo 2\n' >> "$PRT/scripts/pr-step.sh"
+probe 2 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh push' "$PRT")"   # modified wrapper
+rm -f "$PRT/scripts/pr-step.sh"; rmdir "$PRT/scripts" 2>/dev/null; rm -rf "$PRT/.git"; rmdir "$PRT" 2>/dev/null
+# review pass 1: zsh code in unquoted arguments, a committed wrapper that is not the hook's own, an untracked copy of
+# the real wrapper in a repo with a commit, a newline
+for c in 'scripts/pr-step.sh push =(touch X)' "scripts/pr-step.sh push *(e:'touch X':)" "$(printf 'scripts/pr-step.sh push\ntouch X')"; do
+  probe 2 guard-bash.sh "$(pr_cmd "$c" "$PWD")"
+done
+PRT="$(mktemp -d)"; git -C "$PRT" init -q; mkdir -p "$PRT/scripts"; printf 'echo other\n' > "$PRT/scripts/pr-step.sh"
+git -C "$PRT" add -A; git -C "$PRT" -c user.name=s -c user.email=s@x commit -q --no-verify -m x
+probe 2 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh push' "$PRT")"   # committed, not the hook's wrapper
+cp scripts/pr-step.sh "$PRT/scripts/pr-step.sh"; git -C "$PRT" rm -q --cached scripts/pr-step.sh
+git -C "$PRT" -c user.name=s -c user.email=s@x commit -q --no-verify -m y
+probe 2 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh push' "$PRT")"   # identical copy, untracked
+rm -f "$PRT/scripts/pr-step.sh"; rmdir "$PRT/scripts" 2>/dev/null; rm -rf "$PRT/.git"; rmdir "$PRT" 2>/dev/null
+probe 0 guard-bash.sh "$(pr_cmd "scripts/pr-step.sh draft 'feat(todos): B9.1 add the x (§9)'" "$PWD")"
+# review pass 2: escapes out of a quoted argument; the real layout (hooks from one checkout, the call in another checkout
+# holding the same committed wrapper)
+for c in "scripts/pr-step.sh draft \"a\\\" 'b\" \$(touch P) \"' \"\\\"" 'scripts/pr-step.sh draft "a `touch P` b"' \
+         "scripts/pr-step.sh draft 'a' \$(touch P) 'b'"; do probe 2 guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done
+PRW="$(mktemp -d)/wt"; git worktree add -q --detach "$PRW" HEAD 2>/dev/null
+probe 0 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh ready 7' "$PRW")"
+git worktree remove --force "$PRW" 2>/dev/null; rmdir "$(dirname "$PRW")" 2>/dev/null
+for c in 'scripts/pr-step.sh ready 7' 'scripts/pr-step.sh draft "feat(todos): B9.1 add the x"' \
+         'git add scripts/pr-step.sh' 'cat scripts/pr-step.sh'; do probe 0 guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done
+
+echo "== settings.json permissions (B1.23)"
+n=$((n+1)); if node -e '
+  const p = require("./.claude/settings.json").permissions;
+  const deny = ["Read(./.env)", "Read(./.env.local)", "Read(./.env.development)", "Read(./.env.test)",
+    "Read(./.env.production)", "Read(~/.ssh/**)", "Read(~/.aws/**)", "Read(~/.kube/**)", "Edit(./.env*)",
+    "Bash(git commit --no-verify*)", "Bash(git commit * --no-verify*)", "Bash(git commit -n *)",
+    "Bash(git -c core.hooksPath=*)", "Bash(LEFTHOOK=0*)", "Bash(gh pr merge*)", "Bash(gh pr review*)"];
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  process.exit(same(p.allow, ["Bash(scripts/pr-step.sh *)"]) && same(p.deny, deny) ? 0 : 1);'; then
+  echo "ok   allow is exactly the pr-step.sh wrapper; the 16 deny entries unchanged"
+else echo "FAIL allow is not exactly [Bash(scripts/pr-step.sh *)] or deny changed"; fail=1; fi
+
 echo "== guard-read.sh"
 for f in /x/level-up-lab/.env /x/.env.production /Users/me/.ssh/id_ed25519; do probe 2 guard-read.sh "$(read_path "$f")"; done
 for f in /x/level-up-lab/.env.example /x/level-up-lab/src/lib/env.ts; do probe 0 guard-read.sh "$(read_path "$f")"; done

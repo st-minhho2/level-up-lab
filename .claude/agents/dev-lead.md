@@ -24,7 +24,7 @@ approves the plan; roles do the work; you write only `backlog/`, `docs/metrics.m
   `backlog/README.md` "Waiting on human" with the decision request, commit, report, stop. Never guess a ruling;
   never re-ask a settled D-n.
 - Never bypass hooks, never force push, never merge, never run paid or external services. Labels: add
-  `config-change-approved` right after `gh pr create` when the approved plan's Files hold a CI-protected path (D-19);
+  `config-change-approved` right after the draft PR opens when the approved plan's Files hold a CI-protected path (D-19);
   never `hotfix`, never on a change outside an approved plan.
 
 ## Loop
@@ -61,8 +61,10 @@ Commit `docs(backlog): <card> plan`.
 5. **Gate.** Print the plan and the review verdict and stop with exactly: "Plan for <card> is ready. Reply `approve`
    or list changes." Changes → revise, `Rounds` +1, back to step 4. `approve` → write the line, commit
    `docs(backlog): <card> plan approved`. `Rounds` counts the lead's rounds only; review rounds stay in `review.md`.
-   Then at once (B1.21): `git push -u origin feat/<card>-<slug>`; `gh pr create --draft` with the template (Item,
-   Plan = plan.md, Map delta and Review "pending"); label per D-19. The draft is the card's status board.
+   Then at once (B1.21, B1.23): write the template (Item, Plan = plan.md, Map delta and Review "pending") to
+   `backlog/work/<card>/pr-body.md`, then `scripts/pr-step.sh push` and `scripts/pr-step.sh draft "<title>"` (prints the
+   PR number; run each from the worktree's top level as one plain command); label per D-19 with `gh pr edit` (asked).
+   The draft is the card's status board.
 6. **Build.** Skill `new-feature-slice` → `chore`. `/tdd-loop`: dispatch `test-writer`, then run the **red gate**
    yourself (`scripts/verify-red.sh <card>` exit 0; `git diff --stat <chore>..HEAD` touches only tests and the
    card); dispatch `code-writer`, then the **green gate**
@@ -75,11 +77,12 @@ Commit `docs(backlog): <card> plan`.
    closing commit after merge; `docs/metrics.md` per-card row now.
 9. **Ready.** `git fetch origin && git merge origin/main` (never rebase, never force push). Clean merge →
    `.claude/hooks/mark-reviewed.sh` again; a conflict → back to step 6 (code-writer / test-writer resolve it) and step 7.
-   Push; fill Map delta and Review (= review.md diff section) in the draft's body; wait until a `ci` run exists for
+   `scripts/pr-step.sh push`; fill Map delta and Review (= review.md diff section) in the draft's body; wait until a `ci` run exists for
    the head SHA and is green (the app's PR monitor, or `gh pr checks <n> --watch` with a 600 s timeout). Red → back
-   through the loop, the PR stays draft. Green → `gh pr ready <n>`, then print exactly "PR for <card> is ready for the
-   lead: <url>" and stop. A sibling's merge makes it BEHIND after `gh pr ready` → `gh pr ready --undo`, merge `origin/main`, green
-   again, `gh pr ready`, then the PR line.
+   through the loop, the PR stays draft. Green → `scripts/pr-step.sh ready <n>`, then print exactly "PR for <card> is ready for the
+   lead: <url>" and stop. A sibling's merge makes it BEHIND after it is ready → `scripts/pr-step.sh ready <n> --undo`, merge
+   `origin/main`, green again, `scripts/pr-step.sh ready <n>`, then the PR line. A refused wrapper call is reported,
+   never worked around with raw `git push` / `gh pr` commands.
 
 ## Role brief template
 

@@ -15,12 +15,14 @@
 
 ## Runs without asking
 
-Routine git (`status`, `diff`, `log`, `add`, `commit`), pushes of your own `feat/*` branch, `gh pr create|view|diff|
-checks|comment`. Everything the project scripts do.
+Routine git (`status`, `diff`, `log`, `add`, `commit`), `gh pr view|diff|checks|comment`. The card's PR steps through
+`scripts/pr-step.sh` (`push`, `draft`, `ready [--undo]`; B1.23): the only command `.claude/settings.json` allows
+outright, and `guard-bash.sh` passes it only as one plain call from the worktree's top level. Everything the project
+scripts do.
 
 ## Needs a human (and the hooks say so)
 
-`git push --force` in any spelling, pushes to `main`, `gh pr merge|review`, `gh api`, the `hotfix` label, any change under
+`git push --force` in any spelling, pushes to `main`, `gh pr merge|review`, the `hotfix` label, any change under
 `.github/`, `.claude/hooks`, `.claude/settings.json`, `.claude/agents`, `.claude/skills`, `.claude/rules`,
 `.claude/docs`, `scripts/ci/`, `lefthook.yml`, `stryker.config.mjs`, `vitest.config.mts`, `playwright.config.ts`,
 `tsconfig*.json`, `eslint.config.mjs` (label `config-change-approved` on the PR: the agent adds it when the lead's
@@ -40,7 +42,7 @@ or force push a pushed branch. A card does it before it reports a PR ready (dev-
 sibling's merge leaves it BEHIND: the ruleset blocks a branch that is not up to date. A clean merge re-runs
 `mark-reviewed.sh`; a conflict goes back through the build and review steps. `scripts/worktree.sh` cuts new branches
 from a freshly fetched `origin/main` (B1.21). The PR is a draft from the plan gate until CI is green on the merged
-head; only then `gh pr ready` and the report to the lead.
+head; only then `scripts/pr-step.sh ready <n>` and the report to the lead.
 
 ## Batch review (B1.22)
 
@@ -52,7 +54,7 @@ and the desktop app notifies. What a batch costs, by the rules above:
   refused until the batch drains: an approved card stays Doing, a draft PR, until its PR is ready.
 - A ready PR is Review and frees its slot. Merging k ready PRs costs k − 1 serial CI cycles (≈ 4 min each): the
   ruleset requires an up-to-date branch, so after each merge every other ready PR is BEHIND. Its session, stopped and
-  waiting, is woken by the orchestrating session or the lead; it runs `gh pr ready --undo` (Doing again, above the WIP
+  waiting, is woken by the orchestrating session or the lead; it runs `scripts/pr-step.sh ready <n> --undo` (Doing again, above the WIP
   cap until it is ready), merges `origin/main`, waits for green CI and readies the PR again. The lead merges in any
   order.
 - `scripts/metrics/wait-time.sh` and `throughput.sh` measure what a batch rhythm does to the session wait and to cards
