@@ -60,4 +60,4 @@ CI's `verify-red.sh --auto` judges only vitest files. PR via `scripts/pr-step.sh
 #60 (merged 2026-10-30), and `change-failure-rate.sh` counts only `fix(`/revert titles, so this repair of B1.17 stays
 out of the CFR (one repair uncounted); a `fix(hooks): …` title instead would count it within the 14-day window.
 
-Plan review: approved, round 2 (r1: 3 changes requested, resolved; r2: 0 findings, 3 out of scope → follow-up) · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 (r1: 3 changes requested, resolved; r2: 0 findings, 3 out of scope → follow-up) · Plan approved by: lead (session reply "approve"), 2026-11-01 · Rounds: 1
