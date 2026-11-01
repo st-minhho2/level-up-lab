@@ -49,7 +49,9 @@ so the PR counts as planned (`.claude/rules/planning.md`) and needs no `Plan app
    "Waiting on human" row `D-<n>`, and `D-<n>` in the card's "Blocked by".
 4. Nothing else: no `spec/`, `src/`, test, `00-decisions.md`, `docs/` or `.claude/` change. A PR that touches any
    other file is not this lane and needs a plan line.
-5. Commit and PR title `docs(backlog): card B<e>.<n> <summary>`; the PR body names this lane and lists the files.
+5. Branch `docs/B<e>.<n>-card`; commit and PR title `docs(backlog): card B<e>.<n> <summary>`; the PR body, in
+   `work/<card>/filing-pr-body.md` in the same commit, names this lane and lists the files. Open it with
+   `scripts/pr-step.sh push` and `scripts/pr-step.sh open "<title>"` (B1.26).
 
 ## Closing a card (one commit, with the PR)
 
@@ -59,6 +61,10 @@ so the PR counts as planned (`.claude/rules/planning.md`) and needs no `Plan app
 3. Flip the feature's status in `spec/features-map.md` and the section's status in `spec/technical-requirements.md`.
 4. Merged but not measured → `Partial — merged <sha>, pending <what>`; the row stays.
 5. `00-decisions.md` is never rewritten.
+6. Branch `docs/B<e>.<n>-done` (`-partial` for step 4), title `docs(backlog): B<e>.<n> done` (step 4:
+   `docs(backlog): B<e>.<n> partial -- <what is pending>`); the PR body in `work/<card>/closing-pr-body.md` in the
+   same commit, never the feature PR's `pr-body.md`. Open it with `scripts/pr-step.sh push` and
+   `scripts/pr-step.sh open "<title>"` (B1.26).
 
 ## Writing here
 

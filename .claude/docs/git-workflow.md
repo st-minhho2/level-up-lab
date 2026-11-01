@@ -10,15 +10,16 @@
 4. `/review-loop` until clean; `.claude/hooks/mark-reviewed.sh`.
 5. The draft PR opened at the plan gate (dev-lead Loop 5) gets every template section (Item / Plan / Map delta /
    Review); after merging `origin/main` and green CI it becomes ready (Loop 9). Never merge; the lead does.
-6. After the merge: `scripts/card-status.sh B1.2 Done "<sha>, <tests>"` on `main` (one `docs(backlog)` commit) and
+6. After the merge: `scripts/card-status.sh B1.2 Done "<sha>, <tests>"` on `docs/B1.2-done` from `main` (one
+   `docs(backlog)` commit, the closing lane), its PR via `scripts/pr-step.sh push` and `open` (B1.26), and
    `scripts/worktree-prune.sh`.
 
 ## Runs without asking
 
 Routine git (`status`, `diff`, `log`, `add`, `commit`), `gh pr view|diff|checks|comment`. The card's PR steps through
-`scripts/pr-step.sh` (`push`, `draft`, `ready [--undo]`; B1.23): the only command `.claude/settings.json` allows
-outright, and `guard-bash.sh` passes it only as one plain call from the worktree's top level. Everything the project
-scripts do.
+`scripts/pr-step.sh` (`push`, `draft`, `ready [--undo]`; B1.23; `open` for the closing and filing lanes, B1.26): the
+only command `.claude/settings.json` allows outright, and `guard-bash.sh` passes it only as one plain call from the
+worktree's top level. Everything the project scripts do.
 
 ## Needs a human (and the hooks say so)
 

@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# Probes R1–R10 of scripts/pr-step.sh (B1.23) on a throwaway repo with a bare origin and a `gh` shim that logs every
+# Probes R1–R14 of scripts/pr-step.sh (B1.23, B1.26) on a throwaway repo with a bare origin and a `gh` shim that logs every
 # call. A refusal must be the wrapper's own: exit 3, a "pr-step:" message, and no gh call and no push.
 #   scripts/pr-step-smoke.sh
 #   R1 push runs the exact git line                    R2 main, detached refused       R3 an argument to push refused
 #   R4 draft runs the exact gh line, prints the number R5 body file missing, symlink, hard link, symlinked dir refused
 #   R6 bad title refused                               R7 ready, ready --undo exact    R8 bad <n>, other head, fork refused
 #   R9 unknown subcommand, a subdirectory refused      R10 a caller's GH_REPO never reaches gh
+#   R11 open on docs/<card>-done|-partial exact line  R12 open on docs/<card>-card exact line
+#   R13 open: wrong branch, title, body refused        R14 draft on a lane branch refused
 set -uo pipefail
 SRC="$(cd "$(dirname "$0")" && pwd)/pr-step.sh"
 TMP="$(mktemp -d)"; trap 'rm -f -- "$TMP"/bin/gh; rm -rf -- "$TMP"' EXIT
@@ -90,6 +92,66 @@ mkdir -p "$REPO/sub"; DIR="$REPO/sub" refused subdirectory ready 7 || r9=1
 # R10
 : > "$LOG"; rc="$( (cd "$REPO" && GH_REPO=evil/x GH_HOST=evil.example PATH="$TMP/bin:$PATH" "$SRC" ready 7) >/dev/null 2>&1; echo $?)"
 [[ "$rc" == 0 ]] && ! grep -qv '^GH_REPO= ' "$LOG" && ok R10 || fail "R10 rc=$rc log=$(cat "$LOG")"
+
+# R11–R14: the lane branches (B1.26). Each lane branch's one commit adds its body file, as the lane commit does.
+lane() { # lane <branch> <body file>
+  g checkout -q main && g checkout -q -b "$1" && printf 'lane body\n' > "$REPO/backlog/work/B9.1/$2" \
+    && g add "backlog/work/B9.1/$2" && g commit -q --no-verify -m lane
+}
+opens() { # opens <label> <body file> <title>: exit 0, prints 41, the exact gh line on the current branch
+  local label="$1" rel="backlog/work/B9.1/$2" title="$3" rc; : > "$LOG"; rc="$(run open "$title")"
+  local want="GH_REPO= pr create --base main --head $(git -C "$REPO" symbolic-ref --short HEAD) --title $title --body-file $rel"
+  [[ "$rc" == 0 && "$(cat "$TMP/out")" == 41 && "$(cat "$LOG")" == "$want" ]] && return 0
+  echo "     $label: rc=$rc out=$(cat "$TMP/out") err=$(head -1 "$TMP/err") log=$(cat "$LOG")"; return 1
+}
+# R11
+r11=0
+lane docs/B9.1-done closing-pr-body.md; opens done closing-pr-body.md 'docs(backlog): B9.1 done' || r11=1
+lane docs/B9.1-partial closing-pr-body.md
+opens partial closing-pr-body.md 'docs(backlog): B9.1 partial -- merged, x pending' || r11=1
+[[ $r11 -eq 0 ]] && ok R11 || fail R11
+# R12
+r12=0; lane docs/B9.1-card filing-pr-body.md
+opens card filing-pr-body.md 'docs(backlog): card B9.1 add x' || r12=1
+opens '80 chars' filing-pr-body.md "docs(backlog): card B9.1 $(printf 'x%.0s' $(seq 1 55))" || r12=1
+[[ $r12 -eq 0 ]] && ok R12 || fail R12
+# R13
+r13=0; T='docs(backlog): B9.1 done'
+g checkout -q feat/B9.1-x; refused 'open on a feature branch' open "$T" || r13=1
+g checkout -q docs/B9.1-done
+refused 'other card' open 'docs(backlog): B9.2 done' || r13=1
+refused 'done plus words' open 'docs(backlog): B9.1 done now' || r13=1
+refused 'filing title on -done' open 'docs(backlog): card B9.1 add x' || r13=1
+g checkout -q docs/B9.1-partial; refused 'partial without --' open 'docs(backlog): B9.1 partial' || r13=1
+refused 'partial, B9x1' open 'docs(backlog): B9x1 partial -- x' || r13=1
+g checkout -q docs/B9.1-card
+refused 'two lines' open "$(printf 'docs(backlog): card B9.1 a\nb')" || r13=1
+refused 'other card' open 'docs(backlog): card B9.2 add x' || r13=1
+refused '81 chars' open "docs(backlog): card B9.1 $(printf 'x%.0s' $(seq 1 56))" || r13=1
+refused 'card, B9x1' open 'docs(backlog): card B9x1 add x' || r13=1
+g checkout -q docs/B9.1-done; C="$REPO/backlog/work/B9.1/closing-pr-body.md"
+mv "$C" "$TMP/keepc.md"; refused 'body missing' open "$T" || r13=1
+ln -s "$TMP/secret.md" "$C"; refused 'body symlink' open "$T" || r13=1; rm -f "$C"
+ln "$TMP/keepc.md" "$C"; refused 'body hard link' open "$T" || r13=1; rm -f "$C"
+mv "$REPO/backlog/work/B9.1" "$TMP/realdirc"; mv "$TMP/keepc.md" "$TMP/realdirc/closing-pr-body.md"
+ln -s "$TMP/realdirc" "$REPO/backlog/work/B9.1"; refused 'body symlinked dir' open "$T" || r13=1
+rm -f "$REPO/backlog/work/B9.1"; mv "$TMP/realdirc" "$REPO/backlog/work/B9.1"
+printf 'edited\n' >> "$C"; refused 'body edited after the lane commit' open "$T" || r13=1; g checkout -- "$C"
+g update-ref -d refs/remotes/origin/main; refused 'no origin/main' open "$T" || r13=1; g fetch -q origin
+# a Partial close left its body on main; a Done branch that does not rewrite it would reuse it
+g checkout -q main && printf 'partial body\n' > "$C" && g add backlog/work/B9.1/closing-pr-body.md \
+  && g commit -q --no-verify -m partial && g push -q origin main
+g branch -q -D docs/B9.1-done && g checkout -q -b docs/B9.1-done; refused 'body unchanged since origin/main' open "$T" || r13=1
+[[ $r13 -eq 0 ]] && ok R13 || fail R13
+# R14
+r14=0
+for b in docs/B9.1-done docs/B9.1-partial docs/B9.1-card; do
+  g checkout -q "$b"; [[ -f "$REPO/backlog/work/B9.1/pr-body.md" ]] || { echo "     $b: no pr-body.md"; r14=1; }
+  refused "draft on $b" draft 'docs(backlog): B9.1 done' || r14=1
+done
+g checkout -q main && g checkout -q -b docs/B9.1-done-x; : > "$LOG"; rc="$(run draft 'docs(backlog): B9.1 done')"
+[[ "$rc" == 0 ]] && grep -q -- '--draft' "$LOG" || { echo "     draft on docs/B9.1-done-x (not a lane): rc=$rc"; r14=1; }
+[[ $r14 -eq 0 ]] && ok R14 || fail R14
 
 echo "[pr-step-smoke] $oks ok, $fails FAIL"
 [[ $fails -eq 0 ]]
