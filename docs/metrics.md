@@ -86,5 +86,6 @@ Costs seen: a duplicate decision id (D-21, fixed by #96), B3.1 reading the compl
 | B3.1  | §17         | 7               | 7 (100 %) | 92.14 (todo-overdue 100)          | 0              | fae3314                               | af3c20f |
 | B3.2  | §18         | 7               | 7 (100 %) | 91.88 (title-count.ts 100)        | 0              | d480a51                               | 4a496c9 |
 | B3.3  | §19         | 7               | 7 (100 %) | 92.63 (todo-delete 100)           | 0              | 8293598                               | 02da94e |
+| B4.2  | §21         | 7               | 7 (100 %) | 93.20 (clear-search 100)          | 0              | b5fc079                               | pending |
 
 A value below target for two consecutive measurements opens a row in `docs/mistake-log.md` and a fix in `.claude/`.
