@@ -9,7 +9,9 @@ a test in the red run is old only while its name occurs no more often than in th
 in every occurrence. No base copy, or a base run that wrote no report: nothing is old (strict, as for a new file today). `baseTitles`, `unescape`, `PLACEHOLDER` and
 `isOld` are deleted, so no prefix or escape rule remains and the carried B1.25 cases (`.each` prefix, another
 `describe`, `\u{110000}`, `%%`, a literal `%s`) are decided by what vitest reports. Cost: one more vitest run per card
-(the base's files only). Bash 3.2-safe (no arrays added, no `mapfile`). Tooling card: spec-analyst and advisor skipped.
+(the base's files only, CI's `--auto` too). Costs (plan review round 1): a red commit that renames or wraps an existing
+`describe` counts its old passing tests as new → exit 1 (fails closed; restructure in a commit without `(red)`); an
+`.each` with `%#` now matches. Bash 3.2-safe (no arrays added, no `mapfile`). Tooling card: spec-analyst and advisor skipped.
 
 ## Files
 
@@ -46,7 +48,7 @@ scripts/verify-red-smoke.sh                  # test commit: "[verify-red-smoke] 
 scripts/verify-red-smoke.sh                  # fix: "[verify-red-smoke] 14 ok, 0 FAIL"; same under /bin/bash (3.2)
 # 22 historical red commits (`git log --all`, subject test(…): B<e>.<n> … (red)), each `verify-red.sh <id> --range C^..C`
 # with origin/main's script and the fix's: same exit code for all 22 (19 exit 0, 3 e2e-only test(ui) exit 1) and
-# identical file lines (prototype: 22/22, no line differs; B4.2 b5fc079 stays red, as with B1.25)
+# identical file lines once sorted (vitest's file order varies: 8293598, fae3314); B4.2 b5fc079 stays red
 scripts/ci/check-plan-scope.sh | tail -1; scripts/ci/check-backlog.sh | tail -1   # OK; OK
 ```
 
@@ -61,4 +63,4 @@ scripts/ci/check-plan-scope.sh | tail -1; scripts/ci/check-backlog.sh | tail -1 
 No `(red)` marker on step 1 (tooling: `verify-red.sh --auto` judges vitest files only). PR: `scripts/pr-step.sh`,
 `config-change-approved` (D-19: `scripts/verify-red.sh`).
 
-Plan review: · Plan approved by: · Rounds: 1
+Plan review: approved, round 1 · Plan approved by: · Rounds: 1
