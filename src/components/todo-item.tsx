@@ -1,8 +1,9 @@
 'use client';
 
-// §7 TodoItem, with the §6 edit mode and the §10 message of a failed toggle or save.
+// §7 TodoItem, with the §6 edit mode, the §19 delete button and the §10 message of a failed toggle or save.
 import { useState, useTransition, type FormEvent, type ReactNode } from 'react';
 import { toggleTodoAction, updateTodoTitleAction } from '@/actions/todos';
+import { DeleteTodoButton } from '@/components/delete-todo-button';
 import { TodoDueDate } from '@/components/todo-due-date';
 import type { Todo } from '@/lib/todos';
 
@@ -102,6 +103,8 @@ export function TodoItem({ todo }: { readonly todo: Todo }): ReactNode {
           {error}
         </span>
       )}
+      {/* Last child: the completion checkbox stays the row's first control (§19 adds nothing before it). */}
+      <DeleteTodoButton todoId={todo.id} />
     </li>
   );
 }
