@@ -34,7 +34,7 @@ done < <(printf '%s\n' "$CMD" | tr ';&|' '\n\n\n')
 #    quotes, \ or $ (`'+main'`, `$'+main'`), any { (brace lists, ${X:-…}, also "${BRANCH}") and any $'…\…' escape.
 #    Git options before push are not parsed, so none hides it. Saved config counts, any case: git config, remote, clone
 #    or -c (or a GIT_CONFIG_* variable anywhere in the command) that sets a mirror (`--mirr=push` too) or a +/: push
-#    refspec, unless the segment only reads or unsets (--get, --unset, --list, -l) and holds no push word and no -c. So
+#    refspec, unless the whole segment is a plain `git config [--global…] --get|--unset|--list|-l …` (no comment). So
 #    does gh: api with a DELETE/PATCH method or force=true on git/refs, deleteRef, updateRef, a branch rename; repo sync
 #    --force; pr close or merge with --delete-branch. Out of reach of a text check: a flag or refspec held in a
 #    variable, an alias, a word quoted in pieces, a command built at run time, git config files written directly, other
@@ -45,8 +45,7 @@ GIT_WORD="${W}git(${E}|-push|-send-pack)"
 PUSH_TAIL="${W}(git-push|git-send-pack|push|send-pack)(${E}.*)$"
 PUSH_FORCE='[[:space:]]["'"'"'\\$]*(-[A-Za-z0-9]*[fd]|--(fo?r?c?e?|mi?r?r?o?r?|de?l?e?t?e?|pr?u?n?e?)([^A-Za-z]|$)|[+:])|\{|\$'"'"'[^'"'"']*\\'
 CONFIG_ROUTE="${W}(config|remote|clone|-c)${E}"
-CONFIG_READ='[[:space:]]config[[:space:]]+(--get|--unset|--list|-l)'
-CONFIG_WRITE_WORD="${W}(push|send-pack|-c)${E}"
+CONFIG_READ_ONLY='^[[:space:]]*git[[:space:]]+config([[:space:]]+--(global|system|local|worktree))*[[:space:]]+(--get[a-z-]*|--unset[a-z-]*|--list|-l)([[:space:]]+[^[:space:]#]+)*[[:space:]]*$'
 CONFIG_FORCE='mirror|--mi?r?r?o?r?([^a-z]|$)|\.push["'"'"']?([[:space:]]+|=)["'"'"'\\$]*[+:]'
 GH_API="${W}gh[[:space:]]+api[[:space:]]"
 GH_WRITE_METHOD='(-x|--method)[[:space:]=]*["'"'"']?(delete|patch)|force[[:space:]]*[=:][[:space:]]*true'
@@ -67,9 +66,7 @@ while IFS= read -r segment; do
   [[ "$low" =~ $GH_BRANCH_DELETE ]] && block "$ME" "$FORCE_MSG"
   [[ $names_git -eq 1 ]] || continue
   [[ "$segment" =~ $PUSH_TAIL && "${BASH_REMATCH[3]}" =~ $PUSH_FORCE ]] && block "$ME" "$FORCE_MSG"
-  if [[ "$low" =~ $CONFIG_ROUTE && "$low" =~ $CONFIG_FORCE ]]; then
-    [[ "$low" =~ $CONFIG_READ && ! "$low" =~ $CONFIG_WRITE_WORD ]] || block "$ME" "$FORCE_MSG"
-  fi
+  [[ "$low" =~ $CONFIG_ROUTE && "$low" =~ $CONFIG_FORCE && ! "$low" =~ $CONFIG_READ_ONLY ]] && block "$ME" "$FORCE_MSG"
 done < <(printf '%s\n' "$joined" | tr ';&|' '\n\n\n')
 
 # 3. Prisma: destructive subcommands never; migrate/db subcommands only against a local host.
