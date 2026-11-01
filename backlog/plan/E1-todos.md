@@ -423,3 +423,14 @@ visible text beyond its title" while §20 shows `Created YYYY-MM-DD` as `::after
   `check-spec-sections.sh` and `check-features-map.sh` stay OK
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.28/`
+
+### B1.29 · verify-red tells new tests from old ones by running the base
+
+_tooling · no §_
+**Status: Open** — B1.25 (#114) left these out of scope or carried them from review: a new passing test whose title starts with an old `.each` title's prefix (`rejects PORT=` in `src/lib/env.test.ts`) or repeats an old title in another `describe` is hidden; a `\u{…}` escape above 10FFFF in the base's source makes `unescape` throw; `%%` before a placeholder letter, or a literal `%s` in a plain title, cuts the prefix early; no probe covers `\x`, `\u` and `\t` decoding (`backlog/work/B1.25/review.md`, plan review round 2 and diff review pass 1)
+
+- **Spec:** none — tooling; no `src/` change, no section
+- **Test:** `scripts/verify-red-smoke.sh` gains probes — red because: a new passing test hidden behind an `.each` prefix or a repeated title in another `describe` exits 0 today
+- **Acceptance:** an existing test is recognised by running the base's own copy of each test file and comparing the reported titles (full name, describe path included), so no prefix rule remains; the carried escape and `%%` cases pass or fail closed with a probe each; the 22 historical red commits keep their verdicts; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.29/`
