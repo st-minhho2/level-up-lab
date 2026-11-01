@@ -38,3 +38,23 @@ describe('<RemainingCount> (§13)', () => {
     expect(paragraphs[0]).toHaveTextContent(/^2 items left$/);
   });
 });
+
+describe('<RemainingCount> (§22)', () => {
+  it('AC-22.3: renders exactly one paragraph reading "1 item left", "2 items left", "11 items left" and no "All done" for counts 1, 2, 11', () => {
+    const cases = [
+      { count: 1, label: '1 item left' },
+      { count: 2, label: '2 items left' },
+      { count: 11, label: '11 items left' },
+    ] as const;
+
+    const renders = cases.map(({ count }) => {
+      const { unmount } = render(<RemainingCount count={count} />);
+      const paragraphs = screen.getAllByRole('paragraph').map((paragraph) => paragraph.textContent);
+      const allDone = screen.queryAllByText('All done').length;
+      unmount();
+      return { paragraphs, allDone };
+    });
+
+    expect(renders).toEqual(cases.map(({ label }) => ({ paragraphs: [label], allDone: 0 })));
+  });
+});
