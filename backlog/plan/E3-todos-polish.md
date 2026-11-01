@@ -1,6 +1,6 @@
 # E3 · Todos polish: overdue marker, title counter, delete
 
-Batch 3 of parallel delivery, ruled by D-21 (2026-11-01). Each card's section and contract file are fixed there;
+Batch 3 of parallel delivery, ruled by D-22 (2026-11-01). Each card's section and contract file are fixed there;
 `spec-analyst` lands the section, the `Spec:` and `Test:` lines when `dev-lead` picks the card. Each card mounts its UI in
 a component no other card in the batch changes; no card changes `src/app/page.tsx`; package guides (`src/*/CLAUDE.md`)
 stay out of card plans.
@@ -26,7 +26,7 @@ _F16 · section 18_
 ### B3.3 · Delete a todo
 
 _F17 · section 19_
-**Status: Open** — `git grep -n -i delete src/actions src/components` → only §9's clear completed; `spec/contracts/03-todos.md` "Out of scope" lists deleting a todo, lifted by D-21
+**Status: Open** — `git grep -n -i delete src/actions src/components` → only §9's clear completed; `spec/contracts/03-todos.md` "Out of scope" lists deleting a todo, lifted by D-22
 
 - **Acceptance:** section 19 criteria, set by `spec-analyst` (contract `spec/contracts/17-delete.md`; mounts in `src/components/todo-item.tsx` only; action and lib in own modules)
 - **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
