@@ -116,3 +116,110 @@ Notes (no change required): the plan is now 61 lines against `planning.md`'s ≈
 Verification paragraph and table widths over one slice, so it does not need splitting. The skeleton stub needs
 `void count;` (B3.1 precedent, `4c7f1c6`): an unused `_count` parameter fails `@typescript-eslint/no-unused-vars`
 (probe). The `new-feature-slice` skill handles this, so the plan does not need to name it.
+
+## Diff review (pass 1)
+
+SCOPE: all (lib `src/lib/todo-count.ts`; ui `src/components/remaining-count.tsx`, `e2e/22-all-done.spec.ts`; no
+`src/actions` change). Reviewed at `9afcfc0` against `origin/main` (`38d4b4c`, the merge base). Local `main`
+(`a005b41`) is stale: `git diff --stat main...HEAD` lists 74 files from batches already merged. Against `origin/main`
+it lists 15 files, and the card's own commits (`5a9bf61..HEAD`) change 8.
+
+### Commands (run by the reviewer, last line of each)
+
+| Command                             | Last line                                                                                                                                                |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!` (eslint: 0 errors, 1 warning, `todo-form.tsx:23`, not in this diff)                                         |
+| `pnpm typecheck`                    | `tsc --noEmit` (no output, exit 0)                                                                                                                       |
+| `pnpm test`                         | `Tests  193 passed (193)`                                                                                                                                |
+| `pnpm test:e2e`                     | `39 passed (47.4s)`                                                                                                                                      |
+| `pnpm test:mutation`                | `Final mutation score of 93.05 is greater than or equal to break threshold 70` (`todo-count.ts` 100.00, 12 killed, 0 survived)                           |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                                                                                |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                                                                        |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                                                                       |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test` (§22 is ✗ so it is skipped; on the probe copy with §22 set to ✅: `§22  criteria=7 covered=7`, OK) |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 19 22`                                                                                                                          |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                                                                                     |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B4.3-all-done stays inside the approved plan of B4.3`                                                                                          |
+| `scripts/verify-red.sh B4.3`        | `RESULT: red for the right reason` (base `6db7487` pin; 1 new red in each unit file; e2e skipped)                                                        |
+| `scripts/next-task.sh --check B4.3` | `B4.3: no overlap with any Doing or Review card`                                                                                                         |
+| `pnpm build`                        | not run                                                                                                                                                  |
+
+### Checklist
+
+| Check                                                       | Result                                                                                                                                                                                                                                                                                                                        |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-22.n has a test whose assertion matches its Then   | pass, with one exception: AC-22.6's Then cannot be met as written (spec gap G1 below). 22.1 `todo-count.test.ts`; 22.2 and 22.3 `remaining-count.test.tsx`; 22.4 to 22.7 `e2e/22-all-done.spec.ts`. Each Then clause maps to an assertion (counts via `toHaveCount`/`toHaveLength`, exact text, tag name, the 4 named roles). |
+| no test weakened after the red commit                       | pass: `git log --first-parent --no-merges acf989d..HEAD -- '*.test.*' e2e/` is empty, and `--merges --remerge-diff` over the same range is empty. The pin commit `6db7487` comes before the red commit and only adds AC-22.3.                                                                                                 |
+| every changed file is in `plan.md`                          | pass: 5 planned files + paperwork (`features-map.md`, `metrics.md`, `pr-body.md`); `check-plan-scope.sh` OK                                                                                                                                                                                                                   |
+| interfaces match §22 Function contracts                     | pass: `allDoneMessage(count: number): string \| undefined` is exact. `RemainingCount` props are unchanged. `page.tsx` is unchanged and still passes `countRemaining(todos)` (stored todos). The text is a module-private const, so `todo-count.ts` has one new export.                                                        |
+| Zod at every action boundary / Prisma only in lib / raw SQL | n/a: no action, no Prisma, no SQL in the diff                                                                                                                                                                                                                                                                                 |
+| migration reversible and indexed                            | n/a: no migration                                                                                                                                                                                                                                                                                                             |
+| no secret, no suppression                                   | pass (`check-suppressions.sh`; no key material in the diff)                                                                                                                                                                                                                                                                   |
+| features map row moved                                      | pass: F20 ✗ in the skeleton `6c8c270` → ✅ in `f8607f0`. The §22 index row stays ✗ until the closing PR, as planned                                                                                                                                                                                                           |
+| `Lead approves spec` ticked by a human only                 | pass: ticked in `5a9bf61` "plan approved" (the lead's gate, D-7), not by an agent role                                                                                                                                                                                                                                        |
+| Server/Client boundary                                      | pass: `remaining-count.tsx` has no `'use client'`, no state and no events. `todo-count.ts` stays free of `server-only`                                                                                                                                                                                                        |
+| would a test fail if one changed line were reverted         | pass (probes below)                                                                                                                                                                                                                                                                                                           |
+
+### Probes (on a copy in the scratchpad; the copy was restored after each probe and the tree was never edited)
+
+Component, `vitest run src/components/remaining-count.test.tsx`:
+
+| Mutation of `remaining-count.tsx`                          | Result                                             |
+| ---------------------------------------------------------- | -------------------------------------------------- |
+| span rendered at every count                               | `1 failed \| 4 passed`: AC-22.3 fails              |
+| span only at count 1 / only at 2 / only at 11 (three runs) | AC-22.3 fails in each run (`1 failed \| 4 passed`) |
+| message as `<p>` at 0                                      | AC-13.2 (0) and AC-22.2 fail                       |
+| message replaces the §13 `<p>` at 0                        | AC-13.2 (0) and AC-22.2 fail                       |
+| `<span role="alert">` / `<li>` / two spans                 | AC-22.2 fails in each run                          |
+| `<span role="status">`                                     | `5 passed`: survives (spec gap G2)                 |
+
+Caller's question (2): AC-22.3 (pinned green, never seen red) fails at each of counts 1, 2 and 11 when the span is
+rendered there, so it is a working test.
+
+e2e, `playwright test e2e/22-all-done.spec.ts` on the copy (the copy's own `pnpm dev`, the same compose schema):
+
+| Mutation                                                                                             | Result                                                                                              |
+| ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| span at every count (`-g AC-22.7`)                                                                   | AC-22.7 fails at `:157:47` (part (b), `0 "All done"`: expected 0, received 1) after part (a) passes |
+| page decides "All done" from `shown`, not `todos` (label still from `todos`; component span removed) | AC-22.4, 22.5, 22.6 pass. AC-22.7 fails at `:157:47` (part (b))                                     |
+| `clear-completed-button.tsx` calls `window.location.reload()` after the action (`-g AC-22.6`)        | `1 passed`: survives (G1)                                                                           |
+| test copy: `expect(navigations()).toBe(0)` added right after `page.reload()`                         | fails, `Expected: 0 Received: 1` (G1)                                                               |
+
+Caller's question (3): part (b) of AC-22.7 does run and catches the realistic regression, where "All done" is judged
+from the filtered view (REQ-22.7). It fails on its own assertion (line 157), not on part (a).
+
+### Findings
+
+None blocking.
+
+### Spec gaps (for the lead or `/spec-trace`; not a defect in this diff, and no change to the tests or code is asked)
+
+- **G1, AC-22.6 wording (caller's question 1).** The Then asks for "0 document navigations during the first four
+  steps", but the When lists five steps and the fourth is the reload. The reload is itself a document navigation:
+  the probe shows `navigations()` = 1 right after `page.reload()`. So the literal Then cannot be met. The test
+  enforces the only reading that can be met, 0 navigations across check, uncheck and "Mark all complete"
+  (`e2e/22-all-done.spec.ts:113`). That matches the AC as far as the AC can be measured. The cost: REQ-22.6 says
+  "cleared (§9) … without a full reload", but no AC measures that clause. The probe shows that a "Clear completed"
+  ending in `window.location.reload()` passes AC-22.6, and no other e2e watches navigations for §9
+  (`grep -n navigat e2e/` finds the watcher only in `13-` and `22-`). Today the risk is low:
+  `clear-completed-button.tsx` is a `type="button"` with a transition-wrapped Server Action and no form, and this
+  card does not touch it. Suggested amendment (a `docs(spec)` commit under a D-n): "0 document navigations during
+  the check, the uncheck, 'Mark all complete' and 'Clear completed' (the reload excepted)".
+- **G2, AC-22.2 and the contract.** The Function contract says the sibling element "has no role", and Out of scope
+  excludes `role="status"`. AC-22.2's Then lists only `listitem`, `button`, `link` and `alert`, so a
+  `<span role="status">` passes every test (probe). The code ships a bare `<span>`, so nothing is wrong today. The
+  AC is narrower than the contract.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the "Clear completed" half of REQ-22.6 ("without a full reload"). No test anywhere measures
+it, because AC-22.6 limits the navigation check to steps that include the reload (G1). The code path is unchanged
+by this card.
+
+### Dispositions (dev-lead, pass 1)
+
+| Pass | #   | Finding (file:line)                                                                      | Source   | Kind     | Disposition  | Justification                                                                                                     |
+| ---- | --- | ---------------------------------------------------------------------------------------- | -------- | -------- | ------------ | ----------------------------------------------------------------------------------------------------------------- |
+| 1    | G1  | `spec/contracts/20-all-done.md` AC-22.6: "first four steps" include the reload itself    | reviewer | spec gap | out of scope | the test checks the only satisfiable reading; rewording is a `docs(spec)` change under a D-n (follow-up for lead) |
+| 1    | G2  | `spec/contracts/20-all-done.md` AC-22.2: "has no role" not measured beyond 4 named roles | reviewer | spec gap | out of scope | shipped `<span>` has no role; closing it needs an AC change under a D-n (follow-up for lead)                      |
+| 1    | —   | own pass: invariants, plan scope, map, revert probe of `=== 0` and the `<span>`          | dev-lead | check    | no change    | AC-22.1 fails on `!== 0`/`true`; AC-22.2, 22.4–22.7 fail without the span; files within plan + paperwork          |
