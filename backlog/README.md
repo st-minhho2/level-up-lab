@@ -78,9 +78,9 @@ at most 3 cards Doing (B1.18).
 | 20   | B1.20 | Plan rows with `[ ]` match their own path in the plan-scope hook and guard | —                      | Open   | ~~B1.17~~  | Lead  | S [estimate] |
 | 31   | B1.23 | Card sessions run their own PR steps: push, open, label, mark ready        | —                      | Open   | —          | Lead  | S [estimate] |
 | 32   | B1.24 | guard-bash blocks every forced-push and branch-delete spelling             | —                      | Open   | —          | Lead  | S [estimate] |
-| 33   | B4.1  | Show each todo's creation date                                             | new, section 20 (D-24) | Open   | —          | Lead  | S [estimate] |
+| 33   | B4.1  | Show the creation date of each todo                                        | new, section 20 (D-24) | Open   | —          | Lead  | S [estimate] |
 | 34   | B4.2  | Clear the search with one link                                             | new, section 21 (D-24) | Open   | —          | Lead  | S [estimate] |
-| 35   | B4.3  | Say "all done" when every todo is completed                                | new, section 22 (D-24) | Open   | —          | Lead  | S [estimate] |
+| 35   | B4.3  | Say all done when every todo is completed                                  | new, section 22 (D-24) | Open   | —          | Lead  | S [estimate] |
 
 ## Waiting on human
 
