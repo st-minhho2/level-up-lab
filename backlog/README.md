@@ -60,7 +60,7 @@ flowchart TD
   S28["28 · overdue marker<br/>B3.1"]
   S29["29 · title counter<br/>B3.2"]
   S30["30 · delete a todo<br/>B3.3"]
-  S31["31 · sessions mark PR ready<br/>B1.23"]
+  S31["31 · sessions run their PR steps<br/>B1.23"]
 ```
 
 ## Remaining
@@ -74,7 +74,7 @@ at most 3 cards Doing (B1.18).
 | 28   | B3.1  | Mark overdue todos                                                         | new, section 17 (D-21) | Open   | —          | Lead  | S [estimate] |
 | 29   | B3.2  | Show a character counter while typing a title                              | new, section 18 (D-21) | Open   | —          | Lead  | S [estimate] |
 | 30   | B3.3  | Delete a todo                                                              | new, section 19 (D-21) | Open   | —          | Lead  | S [estimate] |
-| 31   | B1.23 | Card sessions may mark their own PR ready for review                       | —                      | Open   | —          | Lead  | S [estimate] |
+| 31   | B1.23 | Card sessions run their own PR steps: push, open, label, mark ready        | —                      | Open   | —          | Lead  | S [estimate] |
 
 ## Waiting on human
 
