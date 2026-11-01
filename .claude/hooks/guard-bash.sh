@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # PreToolUse hook for Bash. Exit 2 + reason on stderr blocks the command and shows the agent why.
-# Blocks: rm -rf in any flag spelling, force pushes, destructive Prisma commands, Prisma migrations against a
-# non-local DATABASE_URL, reads of .env*/keys/credentials, printing secret-looking variables or the whole env.
+# Blocks: rm -rf in any flag spelling, force pushes and remote branch deletes, destructive Prisma commands, Prisma
+# migrations against a non-local DATABASE_URL, reads of .env*/keys/credentials, printing secret-looking variables or
+# the whole env.
 set -uo pipefail
 . "$(dirname "$0")/lib.sh"
 CMD="$(json_field tool_input.command)"
@@ -25,9 +26,37 @@ while IFS= read -r segment; do
   [[ $recursive -eq 1 && $force -eq 1 ]] && block "$ME" "rm -rf is not allowed. Delete named files, or ask the human to remove the directory."
 done < <(printf '%s\n' "$CMD" | tr ';&|' '\n\n\n')
 
-# 2. git push --force / -f / --force-with-lease / +refspec
-FORCE_PUSH='git[[:space:]]+push([[:space:]]+[^;&|]*)?([[:space:]]-[a-zA-Z]*f|[[:space:]]--force|[[:space:]]\+[A-Za-z])'
-[[ "$CMD" =~ $FORCE_PUSH ]] && block "$ME" "force pushes are not allowed from an agent session."
+# 2. Anything that overwrites or deletes a remote branch (B1.24), per command segment after joining `\`-newline
+#    continuations. In a segment that names git (quoted, in $( ) or backticks, or as a path), the words after its first
+#    push or send-pack word block on: -f or -d in a short-option cluster, --force*, --mirror, --delete, --prune (and any
+#    prefix git accepts for them, `--mir`), a refspec starting with + or : (`+@:x`, `+$BR`, `:feat/x`), each optionally
+#    behind quotes, \ or $ (`'+main'`, `$'+main'`), any { (brace lists, ${X:-…}) and any $'…\…' escape. Git options
+#    before push are not parsed, so none hides it. Saved config counts, any case: a git config, git remote or -c (or a
+#    GIT_CONFIG_* variable anywhere in the command) that sets a mirror or a +/: push refspec, unless it only reads or
+#    unsets (--get, --unset, --list); so does gh deleting, renaming or force-updating a ref, or `gh repo sync --force`.
+#    Out of reach of a text check: a flag or refspec held in a variable, an alias, a word quoted in pieces, a command
+#    built at run time, git config files written directly, other HTTP clients (curl) calling the GitHub API.
+W='(^|[[:space:]"'"'"'(`/=])'
+E='(["'"'"'[:space:]`)]|$)'
+GIT_WORD="${W}git${E}"
+PUSH_TAIL="${W}(push|send-pack)(${E}.*)$"
+PUSH_FORCE='[[:space:]]["'"'"'\\$]*(-[A-Za-z0-9]*[fd]|--(fo?r?c?e?|mi?r?r?o?r?|de?l?e?t?e?|pr?u?n?e?)([^A-Za-z]|$)|[+:])|\{|\$'"'"'[^'"'"']*\\'
+CONFIG_ROUTE="${W}(config|remote|-c)${E}"
+CONFIG_READ='[[:space:]]config[[:space:]]+(--get|--unset|--list|-l)'
+CONFIG_FORCE='mirror|\.push["'"'"']?([[:space:]]+|=)["'"'"'\\]*[+:]'
+GH_REF_WRITE="${W}gh[[:space:]]+(api[[:space:]].*(git/refs.*(delete|patch|force)|(delete|patch|force).*git/refs|deleteref|updateref|/rename)|repo[[:space:]]+sync.*--force)"
+FORCE_MSG="force pushes and remote branch deletes are not allowed from an agent session."
+low="$(printf '%s' "$CMD" | tr '[:upper:]' '[:lower:]')"
+if [[ "$low" =~ git_config_ ]]; then # key and value are separate variables (GIT_CONFIG_KEY_0, GIT_CONFIG_VALUE_0)
+  [[ "$low" =~ mirror || ( "$low" =~ \.push && "$low" =~ =[\"\'\\]*[+:] ) ]] && block "$ME" "$FORCE_MSG"
+fi
+while IFS= read -r segment; do
+  low="$(printf '%s' "$segment" | tr '[:upper:]' '[:lower:]')"
+  [[ "$low" =~ $GH_REF_WRITE ]] && block "$ME" "$FORCE_MSG"
+  [[ "$segment" =~ $GIT_WORD ]] || continue
+  [[ "$segment" =~ $PUSH_TAIL && "${BASH_REMATCH[3]}" =~ $PUSH_FORCE ]] && block "$ME" "$FORCE_MSG"
+  [[ "$low" =~ $CONFIG_ROUTE && ! "$low" =~ $CONFIG_READ && "$low" =~ $CONFIG_FORCE ]] && block "$ME" "$FORCE_MSG"
+done < <(printf '%s\n' "${CMD//\\$'\n'/}" | tr ';&|' '\n\n\n')
 
 # 3. Prisma: destructive subcommands never; migrate/db subcommands only against a local host.
 PRISMA_DESTRUCTIVE='prisma[[:space:]]+(migrate[[:space:]]+reset|db[[:space:]]+push|db[[:space:]]+execute)'
