@@ -107,8 +107,27 @@ function baseTitles(rel) {
   try { src = execFileSync('git', ['-C', repoRoot, 'show', `${baseSha}:${rel}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }); } catch { return new Set(); }
   const titles = new Set();
   const re = /\b(?:it|test)(?:\.each\([^)]*\))?\(\s*(['"`])((?:\\.|(?!\1).)*)\1/g;
-  let m; while ((m = re.exec(src))) titles.add(m[2]);
+  let m; while ((m = re.exec(src))) titles.add(unescape(m[2]));
   return titles;
+}
+// The title as vitest reports it: JS single-character escapes decoded (B1.25). `${…}` stays as written, so such a
+// title never matches and counts as new (the gate stays strict).
+function unescape(raw) {
+  const named = { n: '\n', t: '\t', r: '\r', b: '\b', f: '\f', v: '\v', 0: '\0' };
+  return raw.replace(/\\(u\{[0-9a-fA-F]+\}|u[0-9a-fA-F]{4}|x[0-9a-fA-F]{2}|[\s\S])/g, (_, e) => {
+    if (e.length > 1 && e[0] === 'u') return String.fromCodePoint(parseInt(e.replace(/[u{}]/g, ''), 16));
+    if (e.length > 1 && e[0] === 'x') return String.fromCharCode(parseInt(e.slice(1), 16));
+    return named[e] ?? e;
+  });
+}
+// Old titles match exactly; one holding a placeholder (`.each`) matches every title that starts with its text before
+// the first placeholder.
+const PLACEHOLDER = /%[sdifjo]/;
+function isOld(title, old) {
+  return [...old].some((o) => {
+    const at = o.search(PLACEHOLDER);
+    return at < 0 ? title === o : title.startsWith(o.slice(0, at));
+  });
 }
 const bad = new RegExp(pattern);
 const problems = [];
@@ -116,7 +135,7 @@ for (const file of report.testResults ?? []) {
   const rel = require('path').relative(scratch, file.name);
   const ran = file.assertionResults ?? [];
   const old = baseTitles(rel);
-  const isNew = (t) => ![...old].some((title) => t.title === title || t.title.startsWith(title.replace(/%[sdifjo]/g, '')));
+  const isNew = (t) => !isOld(t.title, old);
   const fresh = ran.filter(isNew);
   const passed = fresh.filter((t) => t.status === 'passed');
   const failed = fresh.filter((t) => t.status === 'failed');
