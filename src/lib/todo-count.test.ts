@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countRemaining, remainingLabel } from './todo-count';
+import { allDoneMessage, countRemaining, remainingLabel } from './todo-count';
 
 interface CountedTodo {
   readonly title: string;
@@ -96,5 +96,15 @@ describe('remainingLabel (§13)', () => {
     const label = remainingLabel(count);
 
     expect(label).toBe('11 items left');
+  });
+});
+
+describe('allDoneMessage (§22)', () => {
+  it('AC-22.1: returns "All done" for 0 and undefined for 1, 2 and 11', () => {
+    const counts = [0, 1, 2, 11];
+
+    const messages = counts.map((count) => allDoneMessage(count));
+
+    expect(messages).toEqual(['All done', undefined, undefined, undefined]);
   });
 });
