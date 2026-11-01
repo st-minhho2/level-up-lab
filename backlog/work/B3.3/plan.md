@@ -43,9 +43,9 @@ export function DeleteTodoButton({ todoId }: { readonly todoId: string }): React
 
 ## Verification
 
-Red (`test(todos): B3.3 … (red)`): `scripts/verify-red.sh B3.3` exit 0, ≈ 11 new unit tests failing on an assertion or
-`NotImplementedError` (lib 2, action 5, button 2, `TodoItem` 2); `pnpm test:e2e e2e/19-delete.spec.ts` → 1 failed,
-recorded in the commit body. Green: `pnpm lint && pnpm typecheck` clean · `pnpm test` 169 → ≈ 180 passed ·
+Red (`test(todos): B3.3 … (red)`): `scripts/verify-red.sh B3.3` exit 0, ≈ 10 new unit tests failing on an assertion or
+`NotImplementedError` (lib 2, action 5, button 2, `TodoItem` 1); `pnpm test:e2e e2e/19-delete.spec.ts` → 1 failed,
+recorded in the commit body. Green: `pnpm lint && pnpm typecheck` clean · `pnpm test` 169 → ≈ 179 passed ·
 `pnpm test:e2e` all green (+1) · `pnpm test:mutation` ≥ 70 (target ≥ 85; hot spots in `advice.md`) · `pnpm build` ok ·
 `scripts/ci/check-plan-scope.sh` OK. Counts are the test-writer's target; a different count is stated in the red commit.
 
@@ -59,4 +59,4 @@ recorded in the commit body. Green: `pnpm lint && pnpm typecheck` clean · `pnpm
 | 4    | dev-lead            | F17 ✅                                     | `docs(map): F17 … [B3.3]`      |
 | 5    | reviewer (diff)     | `review.md` diff section                   | `docs(backlog): B3.3 review …` |
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: round 1 changes requested (1 reason: spec box unticked 520d4d1; counts aligned) · Plan approved by: · Rounds: 1
