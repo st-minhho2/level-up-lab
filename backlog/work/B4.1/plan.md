@@ -63,4 +63,4 @@ test-writer's target; a different count is stated in the red commit.
 | 4    | dev-lead            | F18 ✅                                     | `docs(map): F18 … [B4.1]`      |
 | 5    | reviewer (diff)     | `review.md` diff section                   | `docs(backlog): B4.1 review …` |
 
-Plan review: round 1 changes requested (1 reason, applied 5f7d200) · round 2 approved (e2d5ee4) · Plan approved by: · Rounds: 1
+Plan review: round 1 changes requested (1 reason, applied 5f7d200) · round 2 approved (e2d5ee4) · Plan approved by: lead, 2026-11-01 (option A; guide drift accepted) · Rounds: 1
