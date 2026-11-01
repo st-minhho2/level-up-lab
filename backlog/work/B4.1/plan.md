@@ -18,12 +18,20 @@ No dependency, no env key, no migration, no CI-protected path (no `config-change
 | `e2e/20-created-date.spec.ts`               | Add (red): AC-20.6 C, B, A in a `Pacific/Kiritimati` browser, tick/rename/due date/reload, `::after`    | 20.6             |
 
 Paperwork (exempt): `spec/features-map.md` F18 row ✗ in the skeleton, ✅ in `docs(map)`; §20 index row stays ✗ until
-the closing PR; `docs/metrics.md` per-card row. Package guides (`src/*/CLAUDE.md`) left out per D-24 (orchestrator's
-docs PR after the batch; drift listed in `advice.md`). `todo-item.test.tsx` is not touched (§20 test note).
+the closing PR; `docs/metrics.md` per-card row. `todo-item.test.tsx` is not touched (§20 test note). Package guides
+(`src/*/CLAUDE.md`) stay out of the Files: D-24 had them updated before the batch (#106, c0d4593), and no ruling or card
+covers an update after it. After merge `src/components/CLAUDE.md` still says "A row adds no visible text beyond its
+title" and `src/lib/CLAUDE.md` has no `todo-created.ts` row: the lead names an owner for a post-batch `docs(guides)`
+PR or accepts the drift (gate item 3).
 
 Skeleton: `createdDayOf`, `createdLabel` throw `NotImplementedError`; `CREATED_PREFIX` exported as `'Created '`
-(a constant, per §20); `todo-item.tsx` not changed in the skeleton (a throwing call would turn existing `TodoItem`
-tests red for the wrong reason), so AC-20.3–20.5 fail on an assertion (no `time` element).
+(a constant, per §20), so no test asserts it alone (it would be green at red): AC-20.2 asserts it in the same test as
+`createdLabel`. `todo-item.tsx` not changed in the skeleton (a throwing call would turn existing `TodoItem` tests red
+for the wrong reason), so AC-20.3–20.5 fail on an assertion (no `time` element). The card's `Test:` line red reason is
+reworded to the skeleton's `NotImplementedError` (not a missing module).
+
+Gate items for the lead: 1. option A (recommended), B or C; 2. §20 as written (UTC day, `Created YYYY-MM-DD`, no time
+of day; ticks the §20 box); 3. the package-guide drift above.
 
 ## Interfaces touched
 
