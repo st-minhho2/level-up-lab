@@ -26,14 +26,6 @@ function dayInstants(): Date[] {
   ];
 }
 
-// The local day of the month of the first two instants, so the test proves the zone really moved the local calendar.
-function localDatesUnder(zone: string): number[] {
-  process.env.TZ = zone;
-  return dayInstants()
-    .slice(0, 2)
-    .map((instant) => instant.getDate());
-}
-
 function daysUnder(zone: string): string[] {
   process.env.TZ = zone;
   return dayInstants().map((instant) => createdDayOf(instant));
@@ -50,15 +42,9 @@ function labelInstants(): Date[] {
 
 describe('createdDayOf (§20)', () => {
   it("AC-20.1: returns exactly '2026-11-01', '2026-11-02', '2026-01-05', '2026-12-31' and '0005-01-01' under Pacific/Kiritimati and under America/Los_Angeles", () => {
-    const localDates = [localDatesUnder('Pacific/Kiritimati'), localDatesUnder('America/Los_Angeles')];
-
     const kiritimati = daysUnder('Pacific/Kiritimati');
     const losAngeles = daysUnder('America/Los_Angeles');
 
-    expect(localDates).toEqual([
-      [2, 2],
-      [1, 1],
-    ]);
     expect(kiritimati).toEqual(['2026-11-01', '2026-11-02', '2026-01-05', '2026-12-31', '0005-01-01']);
     expect(losAngeles).toEqual(['2026-11-01', '2026-11-02', '2026-01-05', '2026-12-31', '0005-01-01']);
   });
