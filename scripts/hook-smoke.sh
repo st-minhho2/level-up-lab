@@ -53,6 +53,16 @@ cp scripts/pr-step.sh "$PRT/scripts/pr-step.sh"; git -C "$PRT" rm -q --cached sc
 git -C "$PRT" -c user.name=s -c user.email=s@x commit -q --no-verify -m y
 probe 2 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh push' "$PRT")"   # identical copy, untracked
 rm -f "$PRT/scripts/pr-step.sh"; rmdir "$PRT/scripts" 2>/dev/null; rm -rf "$PRT/.git"; rmdir "$PRT" 2>/dev/null
+probe 0 guard-bash.sh "$(pr_cmd "scripts/pr-step.sh draft 'feat(todos): B9.1 add the x (§9)'" "$PWD")"
+# review pass 2: escapes out of a quoted argument; the real layout (hooks from one checkout, the call in another checkout
+# holding the same committed wrapper)
+for c in "scripts/pr-step.sh draft \"a\\\" 'b\" \$(touch P) \"' \"\\\"" 'scripts/pr-step.sh draft "a `touch P` b"' \
+         "scripts/pr-step.sh draft 'a' \$(touch P) 'b'"; do probe 2 guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done
+PRW="$(mktemp -d)/wt"; git worktree add -q --detach "$PRW" HEAD 2>/dev/null
+probe 0 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh ready 7' "$PRW")"
+git worktree remove --force "$PRW" 2>/dev/null; rmdir "$(dirname "$PRW")" 2>/dev/null
+for c in 'scripts/pr-step.sh ready 7' 'scripts/pr-step.sh draft "feat(todos): B9.1 add the x"' \
+         'git add scripts/pr-step.sh' 'cat scripts/pr-step.sh'; do probe 0 guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done
 
 echo "== guard-bash.sh: force-push and remote branch-delete spellings (B1.24)"
 # One command per line, read raw so quotes, $ and backslashes reach the hook as typed.
@@ -102,6 +112,22 @@ git push -u origin feat/x; git push -uf origin feat/x
 (git push -f)
 URL=$(git remote get-url origin) git push --force origin main
 git remote show origin `git push origin +main`
+\git push -f origin main
+/usr/libexec/git-core/git-push -f origin main
+git -C "$(cd ../repo && pwd)" push -f origin main
+git config remote.origin.push $'+refs/heads/*:refs/heads/*'
+git -c remote.origin.push=$'+refs/heads/*:refs/heads/*' push
+GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=remote.origin.push GIT_CONFIG_VALUE_0=+refs/heads/*:refs/heads/* git push
+git -c remote.origin.mirror=true push "$(git config --get branch.main.remote)"
+git remote add --mirr=push m url
+git clone --mirror url m
+gh api -X PATCH repos/o/r/git/refs/heads/feat/x -F force=true
+gh api repos/o/r/git/refs/heads/feat/x --method patch -f sha=abc
+gh api -X POST repos/o/r/branches/feat/x/rename -f new_name=y
+gh api graphql -f query='mutation { deleteRef(input: {refId: "x"}) { clientMutationId } }'
+gh api graphql -f query='mutation { updateRef(input: {refId: "x", oid: "y", force: true}) { clientMutationId } }'
+gh pr close 7 --delete-branch
+gh pr close 7 -d
 FORCED
 # line continuations: the second line belongs to the same command
 for c in "$(printf 'git push origin \\\n+main')" "$(printf 'git \\\npush -f')"; do
@@ -120,18 +146,14 @@ git remote add origin git@github.com:o/r.git
 git config user.name "a=:b"
 git config --get remote.origin.mirror
 gh api repos/o/r/git/refs/heads/feat/x
+gh api repos/o/r/git/refs/heads/feat/B3.3-delete
+gh api repos/o/r/contents/docs/rename.md
+gh pr close 7 -c "superseded"
+git config -l | grep remote.origin.mirror
+git config --unset remote.origin.mirror
+git clone --bare url m
 PLAIN
 probe 0 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh push' "$PWD")"   # the wrapper's push (B1.23) still runs
-probe 0 guard-bash.sh "$(pr_cmd "scripts/pr-step.sh draft 'feat(todos): B9.1 add the x (§9)'" "$PWD")"
-# review pass 2: escapes out of a quoted argument; the real layout (hooks from one checkout, the call in another checkout
-# holding the same committed wrapper)
-for c in "scripts/pr-step.sh draft \"a\\\" 'b\" \$(touch P) \"' \"\\\"" 'scripts/pr-step.sh draft "a `touch P` b"' \
-         "scripts/pr-step.sh draft 'a' \$(touch P) 'b'"; do probe 2 guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done
-PRW="$(mktemp -d)/wt"; git worktree add -q --detach "$PRW" HEAD 2>/dev/null
-probe 0 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh ready 7' "$PRW")"
-git worktree remove --force "$PRW" 2>/dev/null; rmdir "$(dirname "$PRW")" 2>/dev/null
-for c in 'scripts/pr-step.sh ready 7' 'scripts/pr-step.sh draft "feat(todos): B9.1 add the x"' \
-         'git add scripts/pr-step.sh' 'cat scripts/pr-step.sh'; do probe 0 guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done
 
 echo "== settings.json permissions (B1.23)"
 n=$((n+1)); if node -e '
