@@ -4,7 +4,7 @@ Approach: A from `advice.md` — one `draft` state, `onChange` writes it, a ref 
 `useLayoutEffect` re-reads the box after every commit (React 19 resets the form at the end of the mutation phase, before
 layout effects), so the counter follows the reset with no change event (REQ-18.6, 18.7). No fallback without the lead:
 B (`onReset` → `setDraft(kept)`) or `onReset` + `queueMicrotask` would not read the box after the reset (§18 Function
-contracts), so switching is a plan change that needs re-approval and a §18 ruling. One phase, one lead approval (D-21): no `src/app/page.tsx`, no
+contracts), so switching is a plan change that needs re-approval and a §18 ruling. One phase, one lead approval (D-22): no `src/app/page.tsx`, no
 sibling component, no `src/lib/todos.ts`, `src/actions/todos.ts`, `src/lib/logger.ts`, no `src/*/CLAUDE.md`. Analysis
 Q1–Q4 as proposed (trimmed count, no-event value out of scope, number only above 200, "used"). Approving ticks §18's
 `Lead approves spec` box. No migration, no dependency, no env key, no CI-protected path (no `config-change-approved`).
@@ -20,7 +20,7 @@ Q1–Q4 as proposed (trimmed count, no-event value out of scope, number only abo
 | `e2e/18-title-counter.spec.ts`      | Add (red): AC-18.7 `0`, `8`, `200` (+ `y` refused), `195`, add → `0`, reload → `0`; `aria-describedby`             | 18.7          |
 
 Paperwork (exempt): `spec/features-map.md` F16 row ✗ in the skeleton, ✅ in `docs(map)`; §18 index row stays ✗ until
-the closing PR; `docs/metrics.md` per-card row. Expected trivial conflict on the §17/§19 index rows when siblings merge.
+the closing PR; `docs/metrics.md` per-card row. Expected trivial conflict on the section 17/19 index rows when siblings merge.
 
 Skeleton stubs: `titleCharacterCount` and `titleCounterText` throw `NotImplementedError`; `todo-form.tsx` unchanged
 (the component tests fail on a missing counter element, an assertion, not an import).

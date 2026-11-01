@@ -1,7 +1,7 @@
 # B3.2 advice: character counter on the new-todo box (§18)
 
 Mode: advice, `advisor`. Read: card B3.2, `spec/contracts/16-title-counter.md`, `analysis.md`, rules, `src/lib/todo-schema.ts`,
-`src/components/todo-form.tsx` and its test, D-21, react-dom 19.1.0 source (commit-phase order). Nothing was run
+`src/components/todo-form.tsx` and its test, D-22, react-dom 19.1.0 source (commit-phase order). Nothing was run
 [unverified]: the reset analysis below comes from reading `node_modules/react-dom/cjs/react-dom-client.development.js`.
 
 ## Approaches
@@ -34,7 +34,7 @@ commit. So an `onReset` handler sees the OLD box value; a layout effect sees the
   need a reasoned disable comment; `grep` found no such rule configured, but run `pnpm lint` first); relies on
   TodoForm re-rendering in the reset commit (it does: `pending` and `state` come from the same transition) so the
   layout effect runs; this is the one assumption the red/green AC-18.4 to AC-18.6 tests prove.
-- Fits rules: ts-style (client component only for state/events), invariant 3 (no mutation path touched), D-21 (one UI file).
+- Fits rules: ts-style (client component only for state/events), invariant 3 (no mutation path touched), D-22 (one UI file).
 
 ### B (alternative): `onReset` computes the post-reset value from `kept`
 
@@ -57,7 +57,7 @@ value (contradicts REQ-18.2 and §5).
 ## Recommendation
 
 Approach A. Counter state is the existing `draft`, re-read from the box through a ref after each `onChange` and each
-commit. One plan approval; no second phase (D-21).
+commit. One plan approval; no second phase (D-22).
 
 ## Impact
 
@@ -69,9 +69,9 @@ commit. One plan approval; no second phase (D-21).
 | `src/components/todo-form.test.tsx` | Change     | add 4 `it('AC-18.n: …')`; `vi.hoisted` keys unchanged (no new key needed); no existing test edited                      | AC-18.3, AC-18.4, AC-18.5, AC-18.6 |
 | `e2e/18-title-counter.spec.ts`      | Add        | one test, `beforeEach` resets rows like `e2e/05-todos.spec.ts`                                                          | AC-18.7                            |
 | `spec/features-map.md`              | Change     | F16 row (`src/lib/title-count.ts`, `src/components/todo-form.tsx`), lead's `docs(map)` commit                           | n/a                                |
-| `spec/technical-requirements.md`    | Change     | §18 row `✗` to `✅` at close; expect a trivial merge conflict with the §17/§19 rows of B3.1/B3.3                        | n/a                                |
+| `spec/technical-requirements.md`    | Change     | §18 row `✗` to `✅` at close; expect a trivial merge conflict with the section 17/19 rows of B3.1/B3.3                  | n/a                                |
 
-Not listed, per D-21: `src/app/page.tsx`, `todo-due-date.tsx`, `todo-item.tsx`, `todos.ts`, `actions/todos.ts`,
+Not listed, per D-22: `src/app/page.tsx`, `todo-due-date.tsx`, `todo-item.tsx`, `todos.ts`, `actions/todos.ts`,
 `logger.ts`, any `src/*/CLAUDE.md` (the orchestrating docs PR adds the `title-count.ts` and `todo-form.tsx` rows).
 
 Client component `src/components/todo-form.tsx`, markup per approach:
@@ -172,12 +172,12 @@ Escalate:    none
 ```
 
 ```
-Question:    May the plan list `spec/features-map.md` and `spec/technical-requirements.md` under D-21?
+Question:    May the plan list `spec/features-map.md` and `spec/technical-requirements.md` under D-22?
 Class:       P0 no conflict
 Sources:     backlog/00-decisions.md:47 "Card plans leave out the package guides (`src/*/CLAUDE.md`), so `next-task.sh --check` stays clean"
              backlog/work/B3.2/analysis.md:63 "The lead adds F16 to `spec/features-map.md`"
 Conflict:    none
-Verdict:     D-21 excludes the package guides, not the map or the index. The map row is the lead's `docs(map)` commit and the
+Verdict:     D-22 excludes the package guides, not the map or the index. The map row is the lead's `docs(map)` commit and the
              index flip happens at close; both may be named in the plan, with the merge-conflict note.
 Next action: list both under Files with owner "lead".
 Must not:    Add a `src/lib/CLAUDE.md` or `src/components/CLAUDE.md` row from this card.

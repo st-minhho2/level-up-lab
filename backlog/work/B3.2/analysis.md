@@ -1,6 +1,6 @@
 # B3.2 analysis
 
-Section: §18 Todos: a character counter on the new-todo box, `spec/contracts/16-title-counter.md` (new, D-21). 9 REQ,
+Section: §18 Todos: a character counter on the new-todo box, `spec/contracts/16-title-counter.md` (new, D-22). 9 REQ,
 7 AC. Written by `spec-analyst`; saved by `dev-lead` because the role's Write tool refused this one file.
 
 ## Completeness
@@ -16,7 +16,7 @@ Section: §18 Todos: a character counter on the new-todo box, `spec/contracts/16
 | Out of scope stated                  | pass   | graphemes, normalization, a "left" figure, colours, thresholds, live region, truncation, other boxes, values that arrive with no event, schema/actions/messages |
 | Unchanged behavior with proof titles | pass   | 12 rows, titles from `grep` in this worktree                                                                                                                    |
 | Dependencies done                    | pass   | none; §5 and §10 are on this branch                                                                                                                             |
-| No settled D-n contradicted          | pass   | D-5 is the counted value and limit; D-21 followed: UI in `src/components/todo-form.tsx` only, logic in `src/lib/title-count.ts`                                 |
+| No settled D-n contradicted          | pass   | D-5 is the counted value and limit; D-22 followed: UI in `src/components/todo-form.tsx` only, logic in `src/lib/title-count.ts`                                 |
 
 What is counted: `value.trim().length`, UTF-16 code units, the number the §5 schema (`z.string().trim()`, max 200)
 judges. Emoji 2, `'İ'` 1, `'e'` + U+0301 2; no grapheme grouping, no normalization. Text `<used> / 200`, 200 imported
@@ -52,8 +52,8 @@ region would announce up to 200 updates while typing). The component test assert
    the oracle. If none works in jsdom, the lead hears at the green step.
 6. **Index, map, e2e name.** E2e file `e2e/18-title-counter.spec.ts`. The lead adds F16 to `spec/features-map.md`
    (`src/lib/title-count.ts`, `src/components/todo-form.tsx`) in the `docs(map)` commit. Package `CLAUDE.md` rows wait
-   for the orchestrator's docs PR (D-21). Expect a trivial merge conflict in `spec/technical-requirements.md` with the
-   §17 and §19 rows from the sibling cards.
+   for the orchestrator's docs PR (D-22). Expect a trivial merge conflict in `spec/technical-requirements.md` with the
+   section 17 and 19 rows from the sibling cards.
 7. **Approval box** left unticked; a human ticks it.
 8. **Where the tests go.** AC-18.1 and AC-18.2 in `src/lib/title-count.test.ts`; AC-18.3 to AC-18.6 in the existing
    `src/components/todo-form.test.tsx` (add keys to `vi.hoisted`, never remove one); AC-18.7 in
