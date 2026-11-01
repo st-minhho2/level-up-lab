@@ -375,6 +375,27 @@ red commit b5fc079 (two AC-16.5 titles); a copy with `m[2].replace(/\\(.)/g, '$1
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.25/`
 
+### B1.26 · pr-step opens a card closing PR
+
+_tooling · no §_
+**Status: Open** — `scripts/pr-step.sh:41` reads the `draft` body only from `backlog/work/<card>/pr-body.md`, and
+`draft` opens only drafts. After a card's feature PR merges, that file on `main` holds the feature PR's body, and the
+closing lane (`backlog/CLAUDE.md` "Closing a card") may not touch it, so B4.1's closing PR #113 (branch
+`docs/B4.1-done`) was opened with a plain `gh pr create` outside the wrapper. The filing lane lists no work-folder file
+either, so a filing PR has the same gap
+
+- **Spec:** none — tooling (`scripts/pr-step.sh`, `scripts/pr-step-smoke.sh`, `.claude/agents/dev-lead.md`); no `src/`
+  change, no section
+- **Test:** new probes in `scripts/pr-step-smoke.sh` — red because: on a `docs/<card>-done` branch whose
+  `pr-body.md` holds the feature PR's body, `draft` opens the PR with that body, and no step opens a closing PR from a
+  body file the closing lane may write
+- **Acceptance:** a closing PR (and a filing PR) opens through the wrapper from a body file that is neither the feature
+  PR's `pr-body.md` nor outside its lane's checklist (design set by the plan); `push`, `draft` and `ready` on a card's
+  feature branch are unchanged; pr-step-smoke R1–R10 stay green; the PR carries `config-change-approved` (D-19:
+  `scripts/pr-step.sh`)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.26/`
+
 ### B1.27 · next-task reads board titles with quote characters
 
 _tooling · no §_

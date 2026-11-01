@@ -21,7 +21,9 @@ _F18 · section 20_
 _F19 · section 21_
 **Status: Open** — `git grep -n -i clear src/components/todo-search-form.tsx` → no match; `spec/contracts/14-search.md` "Out of scope" lists "a 'clear search' link", lifted by D-24
 
-- **Acceptance:** section 21 criteria, set by `spec-analyst` (contract `spec/contracts/19-clear-search.md`; mounts in `src/components/todo-search-form.tsx` only)
+- **Spec:** §21 — unchanged (section written from `work/B4.2/analysis.md`; contract `spec/contracts/19-clear-search.md`; §16 out-of-scope line dropped in the same commit)
+- **Test:** `src/lib/clear-search.test.ts::AC-21.1: clearSearchHref gives / for all, /?filter=active for active and /?filter=completed for completed, never a q, and CLEAR_SEARCH_LABEL is 'Clear search'` — red because: `src/lib/clear-search.ts` does not exist, `clearSearchHref` and `CLEAR_SEARCH_LABEL` are not exported
+- **Acceptance:** AC-21.1–AC-21.7 (mounts in `src/components/todo-search-form.tsx` only; logic in `src/lib/clear-search.ts`)
 - **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B4.2/`
 

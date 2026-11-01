@@ -1,5 +1,7 @@
-// §16 TodoSearchForm: a native GET form, no state or events, so no 'use client'.
+// §16 TodoSearchForm, extended by §21: a native GET form and a link, no state or events, so no 'use client'.
+import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { CLEAR_SEARCH_LABEL, clearSearchHref, isSearchInEffect } from '@/lib/clear-search';
 import type { TodoFilter } from '@/lib/todo-filter';
 import { SEARCH_QUERY_MAX_LENGTH } from '@/lib/todo-search';
 
@@ -26,6 +28,15 @@ export function TodoSearchForm({ filter, query }: { readonly filter: TodoFilter;
       <button type="submit" className="rounded border border-zinc-300 px-4 py-2 dark:border-zinc-700">
         Search
       </button>
+      {/* REQ-21.1, REQ-21.2, REQ-21.5: an anchor (GET, works without JavaScript) only while a search is in effect. */}
+      {isSearchInEffect(query) && (
+        <Link
+          href={clearSearchHref(filter)}
+          className="self-center text-sm text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-400"
+        >
+          {CLEAR_SEARCH_LABEL}
+        </Link>
+      )}
     </form>
   );
 }
