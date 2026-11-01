@@ -1,9 +1,9 @@
 # B3.1 plan — Mark overdue todos (§17)
 
 Approach: A from `advice.md` — §17's contract one to one; "completed" read from the row's checkbox in the DOM, so
-`src/components/todo-item.tsx` stays B3.3's (D-21). One phase, one lead approval, no `src/app/page.tsx`. No
+`src/components/todo-item.tsx` stays B3.3's (D-22). One phase, one lead approval, no `src/app/page.tsx`. No
 dependency, no env key, no migration, no CI-protected path (no `config-change-approved`). Approving ticks §17's
-`Lead approves spec` box. **Ruling asked in the same reply:** D-22 (`decision-request.md`): §15's Out of scope line 86
+`Lead approves spec` box. **Ruling asked in the same reply:** D-23 (`decision-request.md`): §15's Out of scope line 86
 excludes "an overdue … highlight or any comparison with today's date"; recommended option 1 = one `docs(spec): §15`
 line rewritten to "a due-soon highlight", before the red commit. Option 2: no §15 change; `spec-analyst` adds one
 sentence to §17 naming the lifted line. Option 3: the card closes unbuilt and this plan is void.
@@ -18,9 +18,9 @@ sentence to §17 naming the lifted line. Option 3: the card closes unbuilt and t
 | `src/components/todo-due-date-overdue.test.tsx` | Add (red): 4 `it` — AC-17.3 (a)–(d), AC-17.4, AC-17.5 (`renderToString` ×2 + `hydrateRoot`), AC-17.6; mocks `@/actions/todos` only, fakes `Date` only                                                                                                                                                                                                                                                                                       | 17.3–17.6     |
 | `e2e/17-overdue.spec.ts`                        | Add (red): 1 test — AC-17.7 rows E, D, C, B, A from the browser's local day; tick, untick, set today, reload                                                                                                                                                                                                                                                                                                                                | 17.7          |
 | `spec/features-map.md`                          | F15 row (§17): ✗ in the skeleton, ✅ in `docs(map)`                                                                                                                                                                                                                                                                                                                                                                                         | paperwork     |
-| `spec/contracts/13-due-date.md`                 | Only under D-22 option 1: Out of scope line 86 phrase → "a due-soon highlight"                                                                                                                                                                                                                                                                                                                                                              | D-22          |
+| `spec/contracts/13-due-date.md`                 | Only under D-23 option 1: Out of scope line 86 phrase → "a due-soon highlight"                                                                                                                                                                                                                                                                                                                                                              | D-23          |
 
-Not touched (D-21): `src/app/page.tsx`, `src/components/todo-form.tsx`, `src/components/todo-item.tsx`,
+Not touched (D-22): `src/app/page.tsx`, `src/components/todo-form.tsx`, `src/components/todo-item.tsx`,
 `src/lib/todos.ts`, `src/actions/todos.ts`, `src/lib/logger.ts`, `src/*/CLAUDE.md` (orchestrator after the batch),
 `src/components/todo-due-date.test.tsx` (§15 tests stay as they are; they assert no whole-row text, so stay green
 after 2026-11-05). Cost at the gate: the component relies on "first checkbox of the nearest `li`" (B3.3 must keep it;
@@ -58,7 +58,7 @@ e2e/17-overdue.spec.ts` → 1 failed, in the red commit body. Green: `pnpm lint`
 
 | Step | Role / skill                | Produces                                   | Commit                         |
 | ---- | --------------------------- | ------------------------------------------ | ------------------------------ |
-| 0a   | this session (lead's words) | D-22 row in `00-decisions.md`, first       | `docs(backlog): D-22 …`        |
+| 0a   | this session (lead's words) | D-23 row in `00-decisions.md`, first       | `docs(backlog): D-23 …`        |
 | 0b   | spec-analyst                | §15 line 86 (option 1) or §17 sentence (2) | `docs(spec): §15 …` / `§17 …`  |
 | 1    | `new-feature-slice`         | `todo-overdue.ts` stubs, F15 ✗             | `chore(todos): B3.1 skeleton`  |
 | 2    | test-writer                 | 2 unit/component files + `e2e/17`, all red | `test(todos): B3.1 … (red)`    |
@@ -66,4 +66,4 @@ e2e/17-overdue.spec.ts` → 1 failed, in the red commit body. Green: `pnpm lint`
 | 4    | dev-lead                    | F15 ✅                                     | `docs(map): F15 … [B3.1]`      |
 | 5    | reviewer (diff)             | `review.md` diff section                   | `docs(backlog): B3.1 review …` |
 
-Plan review: round 1 changes requested (5 reasons, applied 3ab42f7) · round 2 approved, 0 findings · Plan approved by: lead, 2026-11-01 (with D-22 option 1) · Rounds: 1
+Plan review: round 1 changes requested (5 reasons, applied 3ab42f7) · round 2 approved, 0 findings · Plan approved by: lead, 2026-11-01 (with D-23 option 1; the reply named it D-22 before #96 renumbered the batch-3 rule) · Rounds: 1
