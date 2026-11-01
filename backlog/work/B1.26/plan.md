@@ -1,14 +1,14 @@
 # B1.26 plan — pr-step opens a card closing PR (tooling)
 
-Round 1. A new wrapper step `open "<title>"` for the two lane branches only, with its own committed body file per lane,
-read with `draft`'s three checks; `draft` refuses on a lane branch (today it opens the PR with the feature PR's body).
-Body committed in the lane's one commit, so the reviewer sees it in the diff and `check-plan-scope.sh` passes it as
-paperwork (`backlog/*`). Lane PRs open ready (#113, #115, #117 were never drafts). No `guard-bash.sh` change: rule 5 and
+Round 2 (plan review round 1: 2 reasons — 1 → `-partial` branches added; 2 → exact verification lines). A new wrapper
+step `open "<title>"` for the lane branches only (`docs/<card>-done`, `-partial` as #105, `-card`), body from a committed
+per-lane file read with `draft`'s three checks; `draft` refuses on those branches (today it opens with the feature PR's
+body). The body lands in the lane's one commit: the reviewer sees it, `check-plan-scope.sh` passes it as paperwork
+(`backlog/*`). Lane PRs open ready (#105, #113, #115, #117 were never drafts). No `guard-bash.sh` change: rule 5 and
 `allow: Bash(scripts/pr-step.sh *)` take any step. Tooling card: spec-analyst and advisor skipped.
-Assumes (B1.23 review, pass 2 [1]): rule 5 blocks the wrapper while the card worktree's `scripts/pr-step.sh` differs
-from the session checkout's, so after the `fix` commit this card's `push` and `ready` are blocked (exit 2): reported,
-never worked around; the lead pushes / readies or says how. The live check (closing PR via `open`) needs the session
-checkout at the merged `origin/main` first.
+Assumes (B1.23 review, pass 2 [1]): rule 5 blocks the wrapper while the card worktree's `scripts/pr-step.sh` differs from
+the session checkout's, so after the `fix` commit this card's `push` and `ready` are blocked (exit 2): reported, never
+worked around; the lead pushes / readies or says how. The live check needs the session checkout at the merged main.
 
 ## Files
 
@@ -28,32 +28,35 @@ checkout at the merged `origin/main` first.
 ## Interfaces touched
 
 ```bash
-scripts/pr-step.sh open "<title>"   # gh pr create --base main --head <branch> --title <title> --body-file <rel>; prints the PR number
-#   branch docs/<card>-done (closing): title exactly "docs(backlog): <card> done"; rel backlog/work/<card>/closing-pr-body.md
-#   branch docs/<card>-card (filing):  title ^docs\(backlog\): card <card> [ -~]+$, one line, <= 80; rel backlog/work/<card>/filing-pr-body.md
-#   any other branch: refused. Body: regular file, not a symlink, one link, resolved dir = $top/backlog/work/<card>
-scripts/pr-step.sh draft "<title>"  # unchanged on feat|fix|chore|test|docs card branches; refused (exit 3) on docs/<card>-done|-card
-scripts/pr-step.sh push | ready <n> [--undo]   # unchanged (push and ready already accept lane branches)
+scripts/pr-step.sh open "<title>"  # gh pr create --base main --head <branch> --title <title> --body-file <rel>; prints the PR number
+#  docs/<card>-done    title exactly "docs(backlog): <card> done"                 rel backlog/work/<card>/closing-pr-body.md
+#  docs/<card>-partial title ^docs\(backlog\): <card> partial -- [ -~]+$          rel backlog/work/<card>/closing-pr-body.md
+#  docs/<card>-card    title ^docs\(backlog\): card <card> [ -~]+$                 rel backlog/work/<card>/filing-pr-body.md
+#  titles one line, <= 80; other branches refused; body regular, not a symlink, one link, resolved dir = $top/backlog/work/<card>
+scripts/pr-step.sh draft "<title>"  # unchanged on card branches; refused (exit 3) on docs/<card>-done|-partial|-card
+scripts/pr-step.sh push | ready <n> [--undo]   # unchanged (both already accept lane branches)
 ```
 
-Probes (throwaway repo, `gh` shim log): R11 `open 'docs(backlog): B9.1 done'` on `docs/B9.1-done` → exit 0, prints 41,
-log exactly `pr create --base main --head docs/B9.1-done --title docs(backlog): B9.1 done --body-file
-backlog/work/B9.1/closing-pr-body.md` · R12 `open 'docs(backlog): card B9.1 add x'` on `docs/B9.1-card` → same with
-`filing-pr-body.md` · R13 refused (exit 3, `pr-step:`, no gh call): `open` on `feat/B9.1-x`; closing title `B9.2 done`
-/ `B9.1 done now`; filing title two lines / other card / 81 chars; body missing, symlink, hard link, symlinked dir ·
-R14 `draft 'docs(backlog): B9.1 done'` on `docs/B9.1-done` and `docs/B9.1-card` with `pr-body.md` present → refused.
+Probes (throwaway repo, `gh` shim log): R11 `open 'docs(backlog): B9.1 done'` on `docs/B9.1-done` and `open
+'docs(backlog): B9.1 partial -- merged, x pending'` on `docs/B9.1-partial` → exit 0, prints 41, log exactly `pr create
+--base main --head <branch> --title <title> --body-file backlog/work/B9.1/closing-pr-body.md` · R12 `open
+'docs(backlog): card B9.1 add x'` on `docs/B9.1-card` → same with `filing-pr-body.md` · R13 refused (exit 3, `pr-step:`,
+no gh call): `open` on `feat/B9.1-x`; titles `B9.2 done`, `B9.1 done now`, `B9.1 partial` (no `--`), filing two
+lines / other card / 81 chars; body missing, symlink, hard link, symlinked dir · R14 `draft` on each lane branch with
+`pr-body.md` present → refused.
 
 ## Verification (in the card worktree)
 
 ```bash
-scripts/pr-step-smoke.sh   # test commit: "[pr-step-smoke] 11 ok, 3 FAIL" (R11 R12 R14; R13 refused as unknown step)
-                           # fix: "[pr-step-smoke] 14 ok, 0 FAIL" (bash 5 and /bin/bash 3.2)
-scripts/hook-smoke.sh | tail -1                                         # unchanged, 0 FAIL
+scripts/pr-step-smoke.sh                                 # test commit: "[pr-step-smoke] 11 ok, 3 FAIL" (R11 R12 R14; R13 refused as unknown step)
+scripts/pr-step-smoke.sh                                 # fix: "[pr-step-smoke] 14 ok, 0 FAIL" (bash 5)
+PATH="/bin:$PATH" /bin/bash scripts/pr-step-smoke.sh     # fix: "[pr-step-smoke] 14 ok, 0 FAIL" (wrapper and probes on bash 3.2)
+scripts/hook-smoke.sh | tail -1                          # "hook-smoke: 309 probes OK" (count as on origin/main)
 scripts/ci/check-plan-scope.sh | tail -1; scripts/ci/check-backlog.sh | tail -1   # OK; OK
 ```
 
-Live check after the merge: B1.26's closing PR opens with `scripts/pr-step.sh push` then `scripts/pr-step.sh open
-"docs(backlog): B1.26 done"`, body in `backlog/work/B1.26/closing-pr-body.md`, no prompt, no refusal.
+Live check after the merge: `scripts/pr-step.sh push`, then `scripts/pr-step.sh open "docs(backlog): B1.26 done"` (or
+`partial -- …`) on `docs/B1.26-done`, body `backlog/work/B1.26/closing-pr-body.md`: no prompt, no refusal.
 
 Steps: `test(scripts): B1.26 …` (no `(red)` marker: tooling) → `fix(scripts): B1.26 …` (+ the doc rows above) →
 reviewer diff → `config-change-approved` (D-19: `scripts/pr-step.sh`, `.claude/agents`, `.claude/skills`, `.claude/docs`).
