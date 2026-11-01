@@ -78,10 +78,23 @@ Plan review: approved, round 2 · Plan approved by: lead (session reply "approve
 
 ## Map delta
 
-pending (tooling: no `spec/features-map.md` row)
+None: tooling, no `spec/features-map.md` row.
 
 ## Review
 
-pending
+`/review-loop`: passes 2/3, clean at pass 2 (`backlog/work/B1.26/review.md`, "Diff review (round 1)" and "(round 2)").
+
+| Pass | #   | Finding                                                                | Disposition | Evidence                                                                     |
+| ---- | --- | ---------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------- |
+| 1    | 1   | `dev-lead.md` gave only the `done` title for a `-partial` branch       | fix now     | ba87a93                                                                      |
+| 1    | 2   | `open` sent a body edited in the worktree after the lane commit        | fix now     | red db5e9b8 (`13 ok, 1 FAIL`) → ba87a93 (`14 ok, 0 FAIL`); `draft` unchanged |
+| 1    | —   | unpinned edges: missing origin/main, `B9x1` titles, `docs/B9.1-done-x` | fix now     | pinned in db5e9b8                                                            |
+| 2    | —   | none: ready for PR                                                     | —           | —                                                                            |
+
+Gates: `[pr-step-smoke] 14 ok, 0 FAIL` (bash on PATH and `/bin/bash` 3.2; `11 ok, 3 FAIL` at the test commit cbaa667),
+`hook-smoke: 309 probes OK`, `Tests 202 passed (202)`, `43 passed` e2e, mutation 93.40 (no `src/` change),
+check-plan-scope / check-backlog / check-feat-commits OK. Riskiest unfalsified: `[ -~]` as a bracket range under a
+glibc UTF-8 locale (not runnable on macOS). Plan "Assumes" did not occur: rule 5 compared the wrapper with the card
+worktree's own copy, so every `pr-step.sh` call after the fix commit ran.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
