@@ -1,6 +1,6 @@
 # B3.3 analysis
 
-Section: §19 Todos: delete a todo, `spec/contracts/17-delete.md` (new, D-21). 11 REQ, 7 AC.
+Section: §19 Todos: delete a todo, `spec/contracts/17-delete.md` (new, D-22). 11 REQ, 7 AC.
 
 ## Completeness
 
@@ -15,7 +15,7 @@ Section: §19 Todos: delete a todo, `spec/contracts/17-delete.md` (new, D-21). 1
 | Out of scope stated                  | pass   | confirmation, undo, soft delete, bulk selection, count message, optimistic UI, stale-row removal after "Todo not found", two tabs, layout outside the row                                              |
 | Unchanged behavior with proof titles | pass   | 12 rows, titles copied from `grep` on `src/` and `e2e/`                                                                                                                                                |
 | Dependencies done                    | pass   | none; §5, §6, §9, §10, §11, §14, §15 are on this branch                                                                                                                                                |
-| No settled D-n contradicted          | pass   | D-21 followed (placement, own modules, §5 sentence lifted in the same commit)                                                                                                                          |
+| No settled D-n contradicted          | pass   | D-22 followed (placement, own modules, §5 sentence lifted in the same commit)                                                                                                                          |
 
 Limits and texts come from existing sections: `Todo id is required` and `Todo not found` (§5), `Could not save, try
 again` (§10), log shape (§11), order `createdAt desc` (§5). New text pinned here, not invented limits: button name
@@ -38,12 +38,12 @@ again` (§10), log shape (§11), order `createdAt desc` (§5). New text pinned h
 4. **The error message is rendered by `DeleteTodoButton`, not `TodoItem`.** Proposed: the button owns its state and
    alert inside the `<li>` (REQ-19.10), so `todo-item.tsx` changes by one line and keeps its single §10 alert.
    Consequence: a row shows two alerts only if a toggle and a delete both fail. Otherwise: `TodoItem` hosts the state
-   or takes an `onError` callback, a bigger change to the one file D-21 lets this card edit.
+   or takes an `onError` callback, a bigger change to the one file D-22 lets this card edit.
 5. **Delete is available while a row is in edit mode** (REQ-19.3); the draft is lost with the row. Why: one rule, no
    coupling to `TodoItem` state. Otherwise: hide or disable it while editing, one more REQ and AC case.
 6. **The index jumps from §16 to §19** until B3.1 and B3.2 add their rows. All three PRs add one row after §16, so the
    conflict is a one-line, order-only resolution. Proposed: the orchestrator resolves it at merge.
-7. **§9's Out of scope still says "Deleting a single todo".** It describes §9's own scope and D-21 lifts only §5's
+7. **§9's Out of scope still says "Deleting a single todo".** It describes §9's own scope and D-22 lifts only §5's
    line. Proposed: leave §9 as is.
 8. **The lib module imports `TodoNotFoundError` from `@/lib/todos`** (reuses the §5 class without editing that file),
    so the lib test mocks `@/lib/prisma` only. If the class moves later, one import line changes.

@@ -2,7 +2,7 @@
 
 Approach: A from `advice.md` — §19's function contracts one to one: own lib and action modules, `DeleteTodoButton`
 (`onClick` + `useTransition`, as `CompleteAllButton`), one line in `todo-item.tsx`. One phase, one lead approval
-(D-21): `src/app/page.tsx` is not touched, so `e2e/19-delete.spec.ts` lands red with the unit tests. Analysis Q1–Q8 as
+(D-22): `src/app/page.tsx` is not touched, so `e2e/19-delete.spec.ts` lands red with the unit tests. Analysis Q1–Q8 as
 proposed: no confirmation, missing id keeps the row with "Todo not found", the button owns its alert, delete shown in
 edit mode too. No dependency, no env key, no migration, no CI-protected path (no `config-change-approved`).
 
@@ -22,7 +22,7 @@ edit mode too. No dependency, no env key, no migration, no CI-protected path (no
 | `e2e/19-delete.spec.ts`                      | Add (red): AC-19.7 C, B, A → delete B, reload → delete C, A, reload → "No todos yet"         | 19.7             |
 
 Paperwork (exempt): `spec/features-map.md` F17 row ✗ in the skeleton, ✅ in `docs(map)`; §19 index row stays ✗ until
-the closing PR; `docs/metrics.md` per-card row. Package guides (`src/*/CLAUDE.md`) left out per D-21 (orchestrator).
+the closing PR; `docs/metrics.md` per-card row. Package guides (`src/*/CLAUDE.md`) left out per D-22 (orchestrator).
 
 Skeleton (advice): `deleteTodo`, `deleteTodoAction` return `Promise.reject(new NotImplementedError(…))`,
 `DeleteTodoButton` throws `NotImplementedError` on render; `todo-item.tsx` not mounted in the skeleton (a throwing stub
