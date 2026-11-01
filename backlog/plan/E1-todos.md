@@ -404,12 +404,7 @@ _tooling · no §_
 ### B1.28 · Package guides name the batch 4 modules
 
 _tooling · no §_
-**Status: Open** — the guides stop at §19 after batch 4 merged §20–§22 (D-24 had them updated before the batch, #106,
-and the lead accepted the drift at B4.1's plan gate): `src/components/CLAUDE.md:5` still says "A row (`<li>`) adds no
-visible text beyond its title" while §20 shows `Created YYYY-MM-DD` as `::after` content of an empty `<time>` in
-`todo-item.tsx` (the row's text content is still its title); `src/lib/CLAUDE.md` has no row for `todo-created.ts`
-(§20) or `clear-search.ts` (§21), its `todo-count.ts` row names §13 only (§22 adds "all done"), and both headings read
-"§3–§19" / "§12–§19"
+**Status: Done** — 7350037 (#130), card Test 2 lines (`src/lib/CLAUDE.md:22`, `:23`; red at 33e7f7d: no match, exit 1), check-spec-sections and check-features-map OK; no code (vitest 202, e2e 43, mutation 93.40 % unchanged)
 
 - **Spec:** none — documentation (`src/components/CLAUDE.md`, `src/lib/CLAUDE.md`); no `src/` code change, no section
 - **Test:** `git grep -n -e todo-created -e clear-search src/lib/CLAUDE.md` — red because: no match today
@@ -419,7 +414,7 @@ visible text beyond its title" while §20 shows `Created YYYY-MM-DD` as `::after
   `todo-search-form.tsx` and the §22 message in `remaining-count.tsx`; both headings cite the sections up to §22;
   `check-spec-sections.sh` and `check-features-map.sh` stay OK
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.28/`
+- **Work:** `work/B1.28/` (plan, review: plan review 2 rounds, lead rounds 1; diff review 1 of 3 passes, 0 findings)
 
 ### B1.29 · verify-red tells new tests from old ones by running the base
 
@@ -442,3 +437,19 @@ _tooling · no §_
 - **Acceptance:** `guard-bash.sh` splits a command into shell words (quotes and escapes honoured, no evaluation) before it matches push, delete and force spellings; every B1.24 probe keeps its verdict; the three cases above get the right verdict; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.30/`
+
+### B1.31 · Root and src guides cite the sections their packages implement
+
+_tooling · no §_
+**Status: Open** — B1.28's plan and diff review (#130, D-25 follow-up) left the overview tables behind the package
+guides: `CLAUDE.md` Map row `src/lib/` cites §3–§6 and `src/components/` §7 while `src/lib/CLAUDE.md` reads §3–§22
+and `src/components/CLAUDE.md` §7, §10, §12–§22; `src/CLAUDE.md` package table cites `lib/` §3, §4, §5, §6,
+`components/` §7 and `actions/` §5, §6, §7
+
+- **Spec:** none — documentation (`CLAUDE.md`, `src/CLAUDE.md`); no `src/` code change, no section
+- **Test:** `git grep -n -e '§3–§6' -e '§3, §4, §5, §6' CLAUDE.md src/CLAUDE.md` — red because: 2 matches today
+- **Acceptance:** the `CLAUDE.md` Map and the `src/CLAUDE.md` package table cite, per package, the sections its
+  package guide and module headers name (`src/app`, `src/actions`, `src/lib`, `src/components`); the Test command
+  has no match; `check-spec-sections.sh` and `check-features-map.sh` stay OK
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.31/`
