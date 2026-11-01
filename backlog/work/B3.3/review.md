@@ -92,9 +92,9 @@ hydration; a stale row keeps "Todo not found"; the other row controls stay enabl
 block still lists 4 action names; `todo-item.test.tsx` changes in the red commit. There is one new cost:
 
 7. **This branch fails `scripts/ci/check-spec-sections.sh` (`.github/workflows/ci.yml:134`) unless B3.1 and B3.2 merge
-   first.** Trigger: at 3ac4d76 the script prints `::error::§17 is cited but has no heading in spec/contracts/` and the
-   same error for §18, exit 1. The cause is `backlog/work/B3.3/advice.md:164` ("`spec/technical-requirements.md` (§17/§18/§19
-   rows)"). The `# §17` and `# §18` headings exist only on `feat/B3.1-overdue` and `feat/B3.2-title-counter`. At `main`
+   first.** Trigger: at 3ac4d76 the script prints `::error::section 17 is cited but has no heading in spec/contracts/` and the
+   same error for section 18, exit 1. The cause is `backlog/work/B3.3/advice.md:164` ("`spec/technical-requirements.md` (section 17, 18, §19
+   rows)"). The `# section 17` and `# section 18` headings exist only on `feat/B3.1-overdue` and `feat/B3.2-title-counter`. At `main`
    (d53f4c7) the script reports OK. So either B3.3 merges after both sibling PRs, or the dev-lead rewords that line
    (for example "the B3.1/B3.2 index rows") in a `docs(backlog)` commit before the PR. The plan's Files and code are not affected.
    If the script is still red at diff review, it becomes a finding there.

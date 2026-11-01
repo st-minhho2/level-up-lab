@@ -161,7 +161,7 @@ list gains `deleteTodoAction`), `src/components/CLAUDE.md` one line for `delete-
   (3) REQ-19.10 "keeps the todo listed" has no unit AC beyond "no revalidate"; AC-19.7 covers it end to end.
 - `backlog/00-decisions.md` has two rulings numbered D-21 (line 41, the §16 length rule; line 47, batch 3). Citing by
   line here; the human should renumber one (see Doc drift in the questions below).
-- Merge friction: `spec/features-map.md` (F15/F16/F17 rows) and `spec/technical-requirements.md` (§17/§18/§19 rows)
+- Merge friction: `spec/features-map.md` (F15/F16/F17 rows) and `spec/technical-requirements.md` (section 17, 18, §19 rows)
   conflict trivially with B3.1 and B3.2; resolve in the second PR, rows in numeric order.
 - Dependencies: none proposed.
 

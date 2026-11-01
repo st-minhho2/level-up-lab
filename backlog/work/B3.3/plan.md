@@ -59,4 +59,4 @@ recorded in the commit body. Green: `pnpm lint && pnpm typecheck` clean · `pnpm
 | 4    | dev-lead            | F17 ✅                                     | `docs(map): F17 … [B3.3]`      |
 | 5    | reviewer (diff)     | `review.md` diff section                   | `docs(backlog): B3.3 review …` |
 
-Plan review: round 1 changes requested (1 reason: spec box unticked 520d4d1; counts aligned) · Plan approved by: · Rounds: 1
+Plan review: round 1 changes requested (1 reason, applied 520d4d1, 3ac4d76) · round 2 approved (8a5b60e; cost 7 fixed by rewording the section 17 and 18 citations) · Plan approved by: · Rounds: 1
