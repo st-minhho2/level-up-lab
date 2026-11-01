@@ -669,3 +669,10 @@ Verdict: ready for PR. Pass-4 findings 1 and 2 are closed; nothing else moved.
 Riskiest unfalsified: unchanged from pass 4 and dispositioned out of scope (§16 silent): back/forward served from the
 Next.js router cache may restore the old RSC payload with the old key and keep text typed but not submitted; traced,
 not probed.
+
+### Dispositions (pass 5, dev-lead)
+
+| Pass | #   | Finding                                                       | Source   | Kind | Disposition      | Justification                                                                           |
+| ---- | --- | ------------------------------------------------------------- | -------- | ---- | ---------------- | --------------------------------------------------------------------------------------- |
+| 5    | N   | plan's `e2e/16` row names only the first REQ-16.2 case (note) | reviewer | docs | no change needed | the two review-pass cases (`:203`, `:219`) are named in the PR body's Review section    |
+| 5    | R   | back/forward from the router cache (riskiest, traced)         | reviewer | gap  | out of scope     | as pass 4 R: §16 is silent on history navigation; a §16 question for the lead if wanted |
