@@ -13,3 +13,12 @@ _F18 · section 20_
 - **Acceptance:** section 20 criteria, set by `spec-analyst` (contract `spec/contracts/18-created-date.md`; mounts in `src/components/todo-item.tsx` only)
 - **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B4.1/`
+
+### B4.2 · Clear the search with one link
+
+_F19 · section 21_
+**Status: Open** — `git grep -n -i clear src/components/todo-search-form.tsx` → no match; `spec/contracts/14-search.md` "Out of scope" lists "a 'clear search' link", lifted by D-24
+
+- **Acceptance:** section 21 criteria, set by `spec-analyst` (contract `spec/contracts/19-clear-search.md`; mounts in `src/components/todo-search-form.tsx` only)
+- **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B4.2/`
