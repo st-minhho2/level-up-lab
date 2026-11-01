@@ -7,11 +7,11 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open  | Total  |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ----- | ------ |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 21     | 1       | 4     | 26     |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 21     | 1       | 5     | 27     |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0     | 5      |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0     | 3      |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 0     | 3      |
-| **Total**        |                                                      | **32** | **1**   | **4** | **37** |
+| **Total**        |                                                      | **32** | **1**   | **5** | **38** |
 
 ## Execution order
 
@@ -68,6 +68,7 @@ flowchart TD
   S35["35 · all done<br/>~~B4.3~~"]
   S36["36 · verify-red escaped titles<br/>B1.25"]
   S37["37 · pr-step closing PR<br/>B1.26"]
+  S38["38 · next-task quoted titles<br/>B1.27"]
 ```
 
 ## Remaining
@@ -82,6 +83,7 @@ at most 3 cards Doing (B1.18).
 | 32   | B1.24 | guard-bash blocks every forced-push and branch-delete spelling             | —      | Open    | —          | Lead  | S [estimate] |
 | 36   | B1.25 | verify-red reads escaped quotes in existing test titles                    | —      | Open    | —          | Lead  | S [estimate] |
 | 37   | B1.26 | pr-step opens a card closing PR                                            | —      | Open    | —          | Lead  | S [estimate] |
+| 38   | B1.27 | next-task reads board titles with quote characters                         | —      | Open    | —          | Lead  | S [estimate] |
 
 ## Waiting on human
 
