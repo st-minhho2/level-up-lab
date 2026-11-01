@@ -68,12 +68,21 @@ None: tooling card, no feature row.
 
 ## Review
 
-pending
+`/review-loop`: pass 1 of 3, verdict ready for PR (reviewer diff review), 2 findings, 0 blocking. Suites at 4fd76ce:
+vitest `Tests 202 passed (202)` · playwright `43 passed` · stryker `93.40` (≥ 70) · next-task-smoke `21 ok, 5 FAIL` at
+969614b → `26 ok, 0 FAIL` at HEAD. Full text: `backlog/work/B1.27/review.md` "Diff review (pass 1)".
+
+| Pass | #   | Finding                                                                     | Kind        | Disposition      | Justification                                                                                                                |
+| ---- | --- | --------------------------------------------------------------------------- | ----------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| 1    | 1   | `scripts/next-task.sh:77` a tab inside a cell is kept and adds a TSV column | correctness | no change needed | next-task reads only `origin/main`; a table cell with a tab fails `prettier --check` (exit 1), run in pre-commit and CI lint |
+| 1    | 2   | W22/W23 substring match passed with the title trim deleted                  | coverage    | fix now          | 20448af matches `<id>   <title> ` in the `--list` row; trim deleted → `24 ok, 2 FAIL`                                        |
+
+Riskiest unfalsified: no probe puts a quote character in a non-title cell (Spec §, Blocked by, Owner); traced, no failure.
 
 ## Checklist
 
 - [x] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
-- [ ] Red commit precedes the fix commit.
+- [x] Red commit (969614b) precedes the fix commit (4fd76ce); the fix touches no test.
 - [x] Every `AC-§.n` of the section is a test title — n/a, tooling.
 - [x] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected path `scripts/next-task.sh` → label `config-change-approved`.
 - [x] Migrations — n/a.
