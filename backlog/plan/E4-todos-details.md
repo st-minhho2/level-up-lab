@@ -10,7 +10,9 @@ its UI in a component no other card in the batch changes; no card changes `src/a
 _F18 · section 20_
 **Status: Open** — `git grep -n -i createdAt src/components` (tests aside) → no match: `src/components/todo-item.tsx` renders the title, checkbox, due date and delete button, not when the todo was created
 
-- **Acceptance:** section 20 criteria, set by `spec-analyst` (contract `spec/contracts/18-created-date.md`; mounts in `src/components/todo-item.tsx` only)
+- **Spec:** §20 — unchanged (section written from `work/B4.1/analysis.md`; contract `spec/contracts/18-created-date.md`)
+- **Test:** `src/lib/todo-created.test.ts::AC-20.1: writes the UTC creation day as YYYY-MM-DD under Pacific/Kiritimati and America/Los_Angeles` — red because: `src/lib/todo-created.ts` does not exist, `createdDayOf` is not exported
+- **Acceptance:** AC-20.1 to AC-20.6 (contract `spec/contracts/18-created-date.md`; mounts in `src/components/todo-item.tsx` only)
 - **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B4.1/`
 
