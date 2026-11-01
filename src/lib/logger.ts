@@ -8,7 +8,8 @@ export type MutationActionName =
   | 'updateTodoTitleAction'
   | 'clearCompletedTodosAction'
   | 'completeAllTodosAction'
-  | 'setTodoDueDateAction';
+  | 'setTodoDueDateAction'
+  | 'deleteTodoAction';
 
 const LOG_MESSAGE_MAX_LENGTH = 500;
 const LOG_STACK_MAX_LENGTH = 2000;
