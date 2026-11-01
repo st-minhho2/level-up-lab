@@ -87,3 +87,92 @@ Verdict: changes requested
 
 Riskiest unfalsified: whether a title whose escaped form collides with a different real title occurs in this repo's
 existing tests. I traced the `\n` → `n` case but did not scan all `src/**/*.test.ts*` titles.
+
+## Plan review (round 2)
+
+Plan reviewed at e237aa3 (34fd1ea plus a formatting fix of the V6 line). How I probed it: I made a copy of
+`verify-red.sh` with the planned rule. It decodes `\'` `\"` `` \` `` `\\` `\n` `\t` `\r` `\b` `\f` `\v` `\0` `\xHH`
+`\uHHHH` `\u{…}` and line continuation. It matches exactly, and uses a prefix cut at the first `%[sdifjo]` only when
+the old title has one. I ran it and HEAD's script side by side from a detached scratch worktree with linked
+node_modules. The fixtures were plumbing commits (`hash-object`/`update-index`/`write-tree`/`commit-tree`, a
+temporary `GIT_INDEX_FILE`, no hook ran) on `src/lib/vr-probe.test.ts`.
+
+**Round-1 reasons**
+
+| #   | Round 1                       | Now                                                                                                                                                                           |
+| --- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | prefix hole (P1)              | closed: exact match unless the title has a placeholder. V4 with the fix: exit 1, `2 ran (1 new), 0 new failed, 1 new passed`, GREEN names only `AC-0.1: query is trimmed`     |
+| 2   | V3 cannot detect a broken fix | closed: V3 asserts `(1 new), 0 new failed, 1 new passed` and only the new title. HEAD `2 ran (2 new) … 2 new passed`; fix `2 ran (1 new) … 1 new passed`, names only `AC-0.9` |
+| 3   | undecoded escapes             | closed: full decode planned, `${…}` named as out of scope. Probe `'café \x41 \u{1F600} tab\there'` + new failing: HEAD exit 1, fix exit 0                                     |
+| 4   | smoke mechanics               | closed: plumbing commits, working-copy script with the scratch as cwd, `trap EXIT`, `.ts` fixture under `src/lib`                                                             |
+| 5   | verification not concrete     | closed: real ranges, smoke final lines at both commits, both bashes                                                                                                           |
+| 6   | subjects and footer           | closed: `test(scripts): B1.25 …` without `(red)`, `fix(scripts)` (as in B1.22), footer line present                                                                           |
+
+**V1–V6 as stated (confirmed).** HEAD / fix exit codes: V1 1/0, V2 1/0, V3 1/1 (the summary differs), V4 1/1 (HEAD
+`2 ran (0 new) … -> no new test executed`, fix `(1 new) … 1 new passed`), V5 1/0 (HEAD's GREEN names `a`), V6 0/0. At
+the test commit that gives `1 ok, 5 FAIL` with V6 ok, and with the fix `6 ok, 0 FAIL`, as the plan says. V4 is red at
+HEAD only because the summary line is asserted, which the plan does state.
+
+**The new rule against existing titles (confirmed).** Vitest's `assertionResults[].title` is the test's own name.
+`fullName` adds the describe path, and the script compares `t.title`, so describe nesting does not change a title.
+I ran all 30 test files at HEAD (193 tests) with the JSON reporter and compared each reported title with its own
+source:
+
+- **Planned rule:** 0 counted new.
+- **HEAD rule:** 6 counted new. Three are escaped titles: `todo-search.test.ts` AC-16.3 and `todo-search-form.test.tsx`
+  AC-16.5 ×2. The other three come from the repo's only `.each`, `env.test.ts:59` `'rejects PORT=%s (%s)'`. HEAD strips
+  every placeholder, so the prefix `rejects PORT= ()` matches none of its three rows.
+- **Not in the repo:** no `$name` object `.each`, no tagged-template table, no `%%`, no `${…}` title, no concatenated
+  title, no `.for` or `.concurrent`.
+
+Every historical red commit (22, `C^..C`): every file reached the same verdict under both rules except B4.2's
+b5fc079. Three e2e-only `test(ui)` commits exit 1 under both rules ("touch no *.test.ts(x)"). Plan commands:
+`B4.2 --range 0118ee5..b5fc079` gives HEAD exit 1 `4 ran (4 new), 2 new failed, 2 new passed -> GREEN before
+implementation: AC-16.5 …` and fix `4 ran (2 new), 2 new failed, 0 new passed` "RESULT: red for the right reason".
+`B4.1 --range e91dbd6..a5475db` reports "red for the right reason" under both, with the same two file lines.
+
+| Check                                                                | Result                                                                                                                                                         |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file belongs to the card (tooling, no § / map row)             | pass: `scripts/verify-red.sh`, `scripts/verify-red-smoke.sh`, `scripts/CLAUDE.md` row, work files                                                              |
+| interfaces follow `ts-style.md`; mutations in actions; Prisma in lib | pass: n/a (no `src/`); arguments, output format and exit codes unchanged                                                                                       |
+| follows `advice.md` or states the deviation                          | pass: advisor skipped and stated (tooling); lead's choice A for B4.2                                                                                           |
+| ≤ 7 criteria, every Then measurable                                  | pass: card's 4 Acceptance items, each mapped to V1–V6 with exit code and summary line. Reason 1 below is a cost of the "new passing still fails" item to state |
+| verification lists exact commands with expected numbers              | pass: smoke lines at both commits, both B4 ranges, plan-scope/backlog checks                                                                                   |
+| work breakdown with convention subjects                              | pass: `test(scripts)` (no `(red)`, CI `--auto` safe) → `fix(scripts)` → reviewer → `pr-step.sh` draft with `config-change-approved`                            |
+| `Lead approves spec` box                                             | pass: n/a (no section); `Plan approved by:` empty, left for the lead                                                                                           |
+| no settled D-n contradicted                                          | pass: D-19 label planned                                                                                                                                       |
+| `scripts/next-task.sh --check B1.25`                                 | pass: "[next-task] B1.25: no overlap with any Doing or Review card"                                                                                            |
+| one screen                                                           | pass: 46 lines, concrete                                                                                                                                       |
+
+Verdict: approved (ready for the lead's gate; the three reasons below are carryable, none blocking)
+
+1. **Carryable, a cost to state: a mid-title placeholder now hides a new passing test in a file the repo has
+   (confirmed).**
+   - **Cause:** with "cut at the first placeholder", `env.test.ts:59` `'rejects PORT=%s (%s)'` becomes the prefix
+     `rejects PORT=`.
+   - **Trigger:** keep that `.each` and add a new passing `it('rejects PORT=-1 (negative)')` next to a new failing test.
+   - **Result:** HEAD exits 1 with `4 ran (4 new), 1 new failed, 3 new passed -> GREEN …`. The planned rule exits 0
+     with `4 ran (1 new), 1 new failed, 0 new passed`, so the new passing test gets through.
+   - **Why HEAD caught it:** only by accident. HEAD fails every red commit that extends `env.test.ts`, because it also
+     counts the old rows as new.
+   - **Trailing placeholder:** the same hole existed at HEAD (old `'AC-0.2: %s'` + new passing `'AC-0.2: anything'` +
+     new failing gives exit 0 under both rules).
+   - **No source rule closes this fully.** An anchored template (`^rejects PORT=.*? \(.*?\)$`) still matches
+     `rejects PORT=-1 (negative)`. Only running the base's own copy of the file and diffing reported titles would.
+   - **Ask:** one line in the plan's out-of-scope sentence (".each titles match by the text before the first
+     placeholder; a new title that starts with it counts as old"), or a follow-up card. Either way the lead approves
+     knowing about it.
+2. **Carryable: a second fail-open, pre-existing and unchanged (confirmed).** The base's titles form one set with no
+   describe path. An old `describe('A') › it('AC-0.6: same title')` hides a new passing
+   `describe('B') › it('AC-0.6: same title')`: exit 0 under both rules. AC titles are unique by convention, so this is
+   only worth adding to the same out-of-scope line.
+3. **Carryable: name the placeholder set and harden V4.**
+   - **Set:** "`%s`-style" should name a set. HEAD uses `%[sdifjo]`. `%#`, `%$`, `%O`, `%c`, `%%` and `$name` titles
+     count as new, which fails closed (probed `%#`, `$name`, `%%`: exit 1 under both). None of them occurs in the
+     repo.
+   - **V4:** add a new failing test to V4, the P2 shape. Then its exit code flips as well as its summary (probed: HEAD
+     exit 0 `3 ran (1 new), 1 new failed, 0 new passed`; fix exit 1, GREEN names `AC-0.1: query is trimmed`), and the
+     test-commit line stays `1 ok, 5 FAIL`.
+
+Riskiest unfalsified: whether the real smoke's `trap EXIT` cleanup and both bashes (5 and `/bin/bash` 3.2) behave as
+planned. I emulated the probes with my own harness, not the planned `verify-red-smoke.sh`, which does not exist yet.

@@ -3,9 +3,9 @@
 Round 2 (plan review round 1: 6 reasons). In `scripts/verify-red.sh`'s embedded node: `baseTitles` decodes JS
 single-character escapes in each title read from the base (`\'` `\"` `` \` `` `\\` `\n` `\t` `\r` `\b` `\f` `\v`
 `\0` `\xHH` `\uHHHH` `\u{H…}`), so it equals the title vitest reports; and `isNew` matches an old title exactly, using a
-prefix only for an old title with a `%s`-style placeholder (`.each`), cut at its first placeholder. Exact matching
+prefix only for an old title with a placeholder from `%[sdifjo]` (`.each`), cut at its first placeholder. Exact matching
 closes the prefix hole round 1 found (an old `AC-0.1: query` hid a new passing `AC-0.1: query is trimmed`, at HEAD
-too). Out of scope: template literals with `${…}` (still counted new, so the gate stays strict). Lead's choice A for
+too). Out of scope (filed after, plan review round 2): template literals with `${…}` and `%#`/`$name`/`%%` titles (counted new, so the gate stays strict); a new passing test whose title starts with an old `.each` title's prefix (`rejects PORT=` from `env.test.ts`), or repeats an old title in another `describe` — both pass today too (HEAD catches the first only by accident); closing them needs running the base's copy of the file and diffing reported titles. Lead's choice A for
 B4.2's red gate. Tooling card: spec-analyst and advisor skipped.
 
 ## Files
@@ -29,7 +29,7 @@ run with the scratch worktree as cwd); the fixture is `src/lib/vr-probe.test.ts`
 the summary line (`N ran (k new), f new failed, p new passed`), and V3/V4 that only the new title is named.
 V1 old `'… \'\' …'` + new failing → exit 0 · V2 old `"… \" …"` and `` `… \` …` `` + new failing → exit 0 · V3 old
 escaped title + new passing → exit 1, `(1 new), 0 new failed, 1 new passed` · V4 old `'AC-0.1: query'` + new passing
-`'AC-0.1: query is trimmed'` → exit 1 · V5 old `'a\nb'` + new failing → exit 0 · V6 old `it.each(...)('AC-0.2: %s')` kept plus a new failing test → exit 0 (the placeholder prefix still matches).
+`'AC-0.1: query is trimmed'` + a new failing test → exit 1 (HEAD exits 0) · V5 old `'a\nb'` + new failing → exit 0 · V6 old `it.each(...)('AC-0.2: %s')` kept plus a new failing test → exit 0 (the placeholder prefix still matches).
 
 ## Verification (in the card worktree)
 
@@ -43,4 +43,4 @@ scripts/ci/check-plan-scope.sh | tail -1; scripts/ci/check-backlog.sh | tail -1 
 Steps: `test(scripts): B1.25 …` (no `(red)` marker: CI's `verify-red.sh --auto` judges only vitest files) →
 `fix(scripts)` → reviewer diff → draft via `scripts/pr-step.sh`, `config-change-approved` (D-19: `scripts/verify-red.sh`).
 
-Plan review: changes requested, round 1 (6 reasons applied above) · Plan approved by: · Rounds: 1
+Plan review: changes requested, round 1 (6 reasons applied above) · Plan review round 2: approved, 3 carryable reasons applied above · Plan approved by: · Rounds: 1
