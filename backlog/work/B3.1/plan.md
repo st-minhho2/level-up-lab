@@ -66,4 +66,4 @@ e2e/17-overdue.spec.ts` → 1 failed, in the red commit body. Green: `pnpm lint`
 | 4    | dev-lead                    | F15 ✅                                     | `docs(map): F15 … [B3.1]`      |
 | 5    | reviewer (diff)             | `review.md` diff section                   | `docs(backlog): B3.1 review …` |
 
-Plan review: round 1 changes requested (5 reasons, applied in this revision) · Plan approved by: · Rounds: 1
+Plan review: round 1 changes requested (5 reasons, applied 3ab42f7) · round 2 approved, 0 findings · Plan approved by: · Rounds: 1

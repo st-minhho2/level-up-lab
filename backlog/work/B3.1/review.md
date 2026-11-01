@@ -91,3 +91,80 @@ Notes (not blocking):
   the plan says.
 
 Riskiest unfalsified: the tick-time single frame of `Overdue` beside a checked box (reason 5), not probed in a browser.
+
+## Plan review (round 2)
+
+SCOPE: all (`src/lib`, `src/components`, `e2e`; no `src/actions`, no `prisma/`)
+
+Reviewed at `3ab42f7`: `plan.md` (69 lines), the `56a89af..3ab42f7` diff, `decision-request.md`, `spec/contracts/15-overdue.md`,
+`spec/contracts/13-due-date.md:84-86`, `spec/CLAUDE.md`, D-7, D-21 (`00-decisions.md:47`), `src/components/todo-item.tsx`,
+`src/components/todo-due-date.tsx`, `e2e/15-due-date.spec.ts`, `next.config.ts` (no React Compiler, so `TodoDueDate`
+re-renders whenever `TodoItem` does), `package.json` (`react` / `react-dom` 19.1.0).
+
+Ran here: `scripts/next-task.sh --check B3.1` → `[next-task] B3.1: no overlap with any Doing or Review card` (exit 0);
+`check-spec-sections.sh` → `OK: sections cited: 1 … 17`; `check-features-map.sh` → `OK`; `check-ac-coverage.sh` →
+`§17: ✗, no tests expected yet (7 criteria)` then `OK`; `check-backlog.sh` → `OK`; `plan-files.sh --any B3.1` → the 7
+Files paths (the widened table still parses); `check-plan-scope.sh` → `OK … changes only paperwork`; `playwright test
+--list` → `Total: 32 tests in 10 files`.
+
+Probes on a copy (`git archive HEAD` under the session scratchpad, `node_modules` linked, never the tree), with the
+plan's green step built as written: `todo-overdue.ts` per §17's contract; in `todo-due-date.tsx` a wrapper ref, `today`
+and `completed` state, a named `readRow()` (`setToday((current) => current ?? todayOf(new Date()))`, then the first
+checkbox of `closest('li')`) called from a dependency-less `useLayoutEffect`, `{`Due ${dueDate}`}` and the `Overdue`
+span after it:
+
+- `eslint` on the two implementation files → 0 problems; `tsc --noEmit` → clean (reason 2 resolved for `useLayoutEffect`).
+- `vitest run` → `Tests  174 passed (174)` = the 169 baseline (all 36 §15/§7 component tests unchanged and green with
+  the one-text-node span) + 5 probes:
+  AC-17.3 (a) shape → 1 `Overdue`, `Due 2026-10-31` once; AC-17.4 sequence (checked → unchecked → checked) → `[0, 1, 0]`,
+  no update loop; AC-17.5 → the two `renderToString` strings identical, `Due 2026-10-31` occurs once (no `<!-- -->`),
+  0 `Overdue`, `hydrateRoot` `onRecoverableError` 0 calls, `console.error` 0 calls, after effects text
+  `Due 2026-10-31Overdue`; AC-17.6 midnight → 0, still 0 after the same-props re-render at `2026-11-02 00:00:01`, 1 in
+  the fresh render; `<TodoItem>` re-rendered from `completed: false` to `true` → row text `ADue 2026-10-31` and the box
+  checked after the same synchronous commit.
+- `renderToString` in the `unit` (node) project → `console.error` 0 calls, `process.stderr.write` 0 calls: React 19.1
+  does not warn on `useLayoutEffect` in a server render.
+
+Round 1 reasons:
+
+1. Resolved: step 0a is "this session (lead's words) → D-22 row, first", step 0b `spec-analyst` lands the spec line
+   after it; option 2 and option 3 consequences are stated (Approach paragraph).
+2. Resolved: `useLayoutEffect`, no deps, named function; 0 lint warnings measured (above).
+3. Resolved: the `todo-due-date.tsx` row names `Due <date>` as one text node; measured, AC-17.5's string holds and §15's
+   tests stay green.
+4. Resolved: 2 + 4 `it`s → `verify-red.sh` 6 red, 169 green; `pnpm test` 169 → 175; `pnpm test:e2e` 32 → 33; lint 0
+   warnings. 169 and 32 re-measured.
+5. Resolved: the layout effect runs in the same commit that sets the controlled checkbox from the RSC refresh, and its
+   `setCompleted` re-renders synchronously before the browser can paint (traced; jsdom confirms the order; no browser
+   frame capture).
+
+| Check                                                                                  | Result                                                                                                                                                                                                                 |
+| -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                         | pass: unchanged from round 1; `plan-files.sh` lists the same 7 paths                                                                                                                                                   |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | pass: signatures copy §17 exactly; no action, no Prisma, no schema; `todo-overdue.ts` pure                                                                                                                             |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass: Approach A; `useLayoutEffect` is the advice's allowed variant, named in the Files row                                                                                                                            |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass: AC-17.1 to AC-17.7, exact strings and counts; AC-17.5's string measure now matches the planned markup (probe)                                                                                                    |
+| verification lists exact commands with expected numbers                                | pass: 6 red / 169 green, 169 → 175, 32 → 33, lint 0 warnings (main 0), mutation ≥ 70 with `todo-overdue.ts` target 100                                                                                                 |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | pass: 0a `docs(backlog): D-22 …` → 0b `docs(spec): §15 …` / `§17 …` → `chore(todos): B3.1 skeleton` → `test(todos): B3.1 … (red)` → `feat(todos): B3.1 …` → `docs(map): F15 … [B3.1]` → `docs(backlog): B3.1 review …` |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by you | pass: `spec/contracts/15-overdue.md:5` `- [ ] Lead approves spec (lead, <date>)`, unticked; ticked by the gate's `approve`; untouched here                                                                             |
+| no settled D-n contradicted                                                            | pass: D-21 batch 3 (only `todo-due-date.tsx` in `src/components`), D-19 (no protected path), D-7; the §15 collision stays escalated as D-22                                                                            |
+| `scripts/next-task.sh --check B3.1` on the committed plan says no overlap              | pass: `[next-task] B3.1: no overlap with any Doing or Review card` (exit 0, at `3ab42f7`)                                                                                                                              |
+
+Verdict: approved (ready for the lead's gate, not for build)
+
+Costs the lead approves with (stated, not blocking):
+
+- Option 2 only: `approve` ticks §17's box, then step 0b adds a sentence to §17, so the ticked text gains one sentence
+  the lead has not read; and `spec/CLAUDE.md` ("no history, no D-n citations in the text") limits how it may be worded.
+  Option 1 (recommended) has neither cost: §17 is unchanged after the tick.
+- The no-deps layout effect re-reads the row after every render of every row (a DOM query per row per render) and
+  silences `exhaustive-deps` by indirection; the green step should carry the "why" comment (both setters bail out on
+  equal values, so it settles in one pass), which the Files row does not mention.
+- The marker never appears without JavaScript, and a row depends on "first checkbox of the nearest `li`" (B3.3 must
+  keep it; re-run `e2e/17` after B3.3 merges), as the plan already states.
+
+Notes (not blocking): the plan is 69 lines against `planning.md`'s ≈ 40 (as in round 1, the width is the Files table);
+`00-decisions.md` still has two `D-21` rows (`:41`, `:47`), so D-22's text may want "D-21 (batch 3)".
+
+Riskiest unfalsified: no browser frame capture shows that ticking an overdue row never paints `Overdue` beside a
+checked box; it rests on React flushing layout-effect updates before paint in a transition commit (traced, jsdom only).
