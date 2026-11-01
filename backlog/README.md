@@ -7,11 +7,11 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open  | Total  |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ----- | ------ |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 25     | 1       | 4     | 30     |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 26     | 1       | 4     | 31     |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0     | 5      |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0     | 3      |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 0     | 3      |
-| **Total**        |                                                      | **36** | **1**   | **4** | **41** |
+| **Total**        |                                                      | **37** | **1**   | **4** | **42** |
 
 ## Execution order
 
@@ -69,9 +69,10 @@ flowchart TD
   S36["36 · verify-red escaped titles<br/>~~B1.25~~"]
   S37["37 · pr-step closing PR<br/>~~B1.26~~"]
   S38["38 · next-task quoted titles<br/>~~B1.27~~"]
-  S39["39 · guides name batch 4 modules<br/>B1.28"]
+  S39["39 · guides name batch 4 modules<br/>~~B1.28~~"]
   S40["40 · verify-red base run<br/>B1.29"]
   S41["41 · guard-bash shell words<br/>B1.30"]
+  S42["42 · root guides cite sections<br/>B1.31"]
 ```
 
 ## Remaining
@@ -83,9 +84,9 @@ at most 3 cards Doing (B1.18).
 | ---- | ----- | -------------------------------------------------------------------------- | ------ | ------- | ---------- | ----- | ------------ |
 | 20   | B1.20 | Plan rows with `[ ]` match their own path in the plan-scope hook and guard | —      | Open    | ~~B1.17~~  | Lead  | S [estimate] |
 | 31   | B1.23 | Card sessions run their own PR steps: push, open, label, mark ready        | —      | Partial | —          | Lead  | S [estimate] |
-| 39   | B1.28 | Package guides name the batch 4 modules                                    | —      | Open    | —          | Lead  | S [estimate] |
 | 40   | B1.29 | verify-red tells new tests from old ones by running the base               | —      | Open    | —          | Lead  | S [estimate] |
 | 41   | B1.30 | guard-bash reads shell words before matching a push                        | —      | Open    | —          | Lead  | S [estimate] |
+| 42   | B1.31 | Root and src guides cite the sections their packages implement             | —      | Open    | —          | Lead  | S [estimate] |
 
 ## Waiting on human
 
