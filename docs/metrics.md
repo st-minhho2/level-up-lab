@@ -30,11 +30,12 @@ means the situation to measure has not happened yet.
 
 Each batch re-measured with `scripts/metrics/*.sh <its cards>` once its last card closes (D-18 targets).
 
-| Batch | Cards                | Sessions | Throughput (≥ 6.56)                                                                            | Median lead time (≤ 70 min) | CFR (≤ 6.7 %) | Plan-gate wait      | PR wait (upper bound)                         | Uncaught deviations (0) | Measured   |
-| ----- | -------------------- | -------- | ---------------------------------------------------------------------------------------------- | --------------------------- | ------------- | ------------------- | --------------------------------------------- | ----------------------- | ---------- |
-| 1     | B2.1–B2.3 (#78–#80)  | 3        | 6.5 (2026-10-31: 7 cards, 8.6 h; the day also holds B1.21, B1.22) — below                      | 40 (34, 40, 127)            | 0/3           | median 4 (3, 31, 4) | median 17 (1, 17, 100); upper 111 — up from 1 | 0/3                     | 2026-10-31 |
-| 2     | B2.4–B2.5 (#86, #85) | 2        | 7.2 (10-31: 8 cards, 10.05 h; 11-01: 1 card, 0 h) — passes as written; 6.4 without the 0-h day | 321 (42, 600) — fails       | 0/2           | median 1 (1, 2)     | median 0 (0, 1); upper 356 (44, 668)          | 0/2                     | 2026-11-01 |
-| E2    | B2.1–B2.5            | —        | 7.2 (same days)                                                                                | 42 (34, 40, 127, 42, 600)   | 0/5           | median 3            | median 1; upper 111                           | 0/5                     | 2026-11-01 |
+| Batch | Cards                     | Sessions | Throughput (≥ 6.56)                                                                                                                                      | Median lead time (≤ 70 min) | CFR (≤ 6.7 %) | Plan-gate wait      | PR wait (upper bound)                         | Uncaught deviations (0) | Measured   |
+| ----- | ------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- | ------------- | ------------------- | --------------------------------------------- | ----------------------- | ---------- |
+| 1     | B2.1–B2.3 (#78–#80)       | 3        | 6.5 (2026-10-31: 7 cards, 8.6 h; the day also holds B1.21, B1.22) — below                                                                                | 40 (34, 40, 127)            | 0/3           | median 4 (3, 31, 4) | median 17 (1, 17, 100); upper 111 — up from 1 | 0/3                     | 2026-10-31 |
+| 2     | B2.4–B2.5 (#86, #85)      | 2        | 7.2 (10-31: 8 cards, 10.05 h; 11-01: 1 card, 0 h) — passes as written; 6.4 without the 0-h day                                                           | 321 (42, 600) — fails       | 0/2           | median 1 (1, 2)     | median 0 (0, 1); upper 356 (44, 668)          | 0/2                     | 2026-11-01 |
+| E2    | B2.1–B2.5                 | —        | 7.2 (same days)                                                                                                                                          | 42 (34, 40, 127, 42, 600)   | 0/5           | median 3            | median 1; upper 111                           | 0/5                     | 2026-11-01 |
+| 3     | B3.1–B3.3 (#95, #94, #93) | 3        | 26.7 as written (11-01: 4 cards incl. B2.5, 1.2 h from the first approval); 15.7 for the 3 B3 cards from the E3 filing merge (09:12) — passes either way | 57 (65, 57, 38)             | 0/3           | median 2 (0, 5, 2)  | median 5 (11, 5, 5); upper 57                 | 0/3                     | 2026-11-01 |
 
 Batch 1 notes: B2.2 and B2.3 each waited for `src/app/page.tsx` (D-20 (a)): phase B after the previous holder merged,
 a second lead approval each; B2.3's 127-min lead time and 100-min PR wait are that queue. `gh pr ready` was refused by
@@ -45,6 +46,12 @@ Batch 2 notes: B2.4 put its mount in `todo-item.tsx`, so it needed no second app
 three waits in a row: a D-n ruling on REQ-16.5 found in diff review, its phase B behind B2.4's merge (the page was free;
 it waited for the guides), and the night before the lead merged #85 at 07:12. The 11-01 day adds one card and 0 h
 (no approval that day, one merge), which lifts throughput from 6.4 to 7.2.
+
+Batch 3 notes (D-22: each card mounts in a component only it changes; no `page.tsx`, no phase B): one lead approval
+per card, lead time 38–65 min, PR wait 5–11 min. The throughput span starts at the day's first plan approval, so the
+spec, advice and plan work before it is not counted; the 26.7 is the rule as written, 15.7 the conservative reading.
+Costs seen: a duplicate decision id (D-21, fixed by #96), B3.1 reading the completed state from the DOM to avoid
+`todo-item.tsx`, and `git push` / `gh pr create` / `gh pr ready` refused under auto mode (B1.23).
 
 ## Per card
 
