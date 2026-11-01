@@ -32,8 +32,8 @@ case $? in
   4) block "plan-scope.sh" "$branch has no $PLAN at its approval commit." ;;
   *) block "plan-scope.sh" "could not read the Files of $PLAN on $branch." ;;
 esac
-listed=0
-while IFS= read -r p; do [[ -n "$p" && "$REL" == $p ]] && listed=1; done <<< "$pats"
+listed=0 # literal first: a row with [ ] (src/app/[id]/page.tsx) never glob-matches itself
+while IFS= read -r p; do [[ -n "$p" && ( "$REL" == "$p" || "$REL" == $p ) ]] && listed=1; done <<< "$pats"
 [[ $listed -eq 1 ]] || block "plan-scope.sh" "'$REL' is not in the Files table of $PLAN as approved. Stop: dev-lead revises the plan and the lead approves it again."
 case "$REL" in *.test.ts | *.test.tsx | e2e/*)
   [[ "$(json_field agent_type)" == test-writer ]] \
