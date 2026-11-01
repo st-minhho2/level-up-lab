@@ -81,6 +81,12 @@ None (tooling, no feature row).
 
 ## Review
 
-pending
+`/review-loop`: passes 1/3. Diff review pass 1 (reviewer): ready for PR, 1 finding — step 6 of the header left out
+the count rule (V13) → fix now, comment only (30a6d6d). Reviewer's runs: vitest `202 passed`, playwright `43 passed`,
+mutation `93.40` (≥ 70); smoke at the test commit `8 ok, 6 FAIL`, at the fix `14 ok, 0 FAIL` (bash 5 and /bin/bash
+3.2); the 22 historical red commits keep their exit codes (19 × 0, 3 e2e-only × 1) and sorted file lines.
+check-plan-scope / check-backlog / check-feat-commits OK. Riskiest unfalsified: the base run uses the checkout's
+`node_modules` against an older base; a base file that no longer loads makes old tests new → exit 1 (fails closed;
+none of the 22 hits it). Full text: `backlog/work/B1.29/review.md`.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
