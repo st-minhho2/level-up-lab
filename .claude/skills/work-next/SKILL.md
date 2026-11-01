@@ -29,7 +29,7 @@ Nothing under `src/`, `prisma/`, `e2e/` changes before `plan.md` carries `Plan a
 
 ## Exit
 
-Report after dev-lead Loop 9 (merged `origin/main`, CI green, `gh pr ready`) with the line "PR for <card> is ready for
+Report after dev-lead Loop 9 (merged `origin/main`, CI green, `scripts/pr-step.sh ready <n>`) with the line "PR for <card> is ready for
 the lead: <url>": PR link, verification numbers (tests, e2e, mutation %), rounds (plan, review), one "Waiting on you" list.
 Merging is the lead's; add `config-change-approved` at PR creation when the approved plan changes a protected path
 (D-19). After the merge: `scripts/card-status.sh <card> Done "<sha>, <tests>"` on

@@ -66,4 +66,26 @@ SECRET_VAR='(echo|printf|printenv|env|export[[:space:]]+-p)[^;&|]*(\$\{?|[^A-Z_]
 ENV_DUMP='(^|[[:space:];&|])(printenv|env)([[:space:]]*$|[[:space:]]*[|;&>])'
 [[ "$CMD" =~ $ENV_DUMP ]] && block "$ME" "dumping the environment is not allowed (it contains DATABASE_URL and tokens)."
 
+# 5. scripts/pr-step.sh (B1.23): settings.json runs it without asking, so the shell must not change what it does. Any
+#    segment that invokes it (after VAR= prefixes, sh/bash/exec/env/command) makes the whole command subject to: one
+#    plain call `scripts/pr-step.sh …` with no $, backtick, <, >, ;, &, |, backslash or newline; cwd the top level of
+#    its checkout; the wrapper tracked and unmodified there.
+PR_STEP_MSG="scripts/pr-step.sh runs only as one plain call from the top level of a checkout whose wrapper is committed and unmodified (no redirects, substitutions, prefixes or other commands)."
+invokes_pr_step=0
+while IFS= read -r segment; do
+  set -f; set -- $segment; set +f
+  while [[ $# -gt 0 && ( "$1" =~ ^[A-Za-z_][A-Za-z0-9_]*= || "$1" =~ ^(sh|bash|zsh|dash|exec|env|command|nohup|time|source|\.)$ ) ]]; do shift; done
+  [[ $# -gt 0 && "$1" == *pr-step.sh ]] && invokes_pr_step=1
+done < <(printf '%s\n' "$CMD" | tr ';&|(`' '\n\n\n\n\n') # `$(` splits at its `(`
+if [[ $invokes_pr_step -eq 1 ]]; then
+  PR_STEP_PLAIN='^scripts/pr-step\.sh( [^$`<>;&|\\]*)?$'
+  [[ "$CMD" != *$'\n'* && "$CMD" =~ $PR_STEP_PLAIN ]] || block "$ME" "$PR_STEP_MSG"
+  cwd="$(json_field cwd)"
+  [[ -n "$cwd" && -d "$cwd" ]] || block "$ME" "$PR_STEP_MSG"
+  top="$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)" || block "$ME" "$PR_STEP_MSG"
+  [[ "$(cd -P "$cwd" && pwd -P)" == "$(cd -P "$top" && pwd -P)" ]] || block "$ME" "$PR_STEP_MSG"
+  git -C "$top" ls-files --error-unmatch scripts/pr-step.sh >/dev/null 2>&1 || block "$ME" "$PR_STEP_MSG"
+  git -C "$top" diff --quiet HEAD -- scripts/pr-step.sh 2>/dev/null || block "$ME" "$PR_STEP_MSG"
+fi
+
 exit 0
