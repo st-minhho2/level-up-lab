@@ -204,3 +204,60 @@ Verdict: ready for PR
 
 Riskiest unfalsified: the date's rendering and screen-reader exposure in Firefox and WebKit (the e2e and every probe
 ran Chromium only), and AC-20.1's zone proof outside the `forks` pool.
+
+## Diff review (pass 2)
+
+Merge review of `f0cf151` (origin/main `bac26da`, B4.3 #109, §22) into `feat/B4.1-created-date`, on top of pass 1
+(`34e99c8`, ready, 0 findings). Scope: ui + lib. `git diff origin/main...HEAD` and `git diff origin/main HEAD` both
+give 15 files, +1231/−2: the merge lost nothing from main and added nothing beyond B4.1 (no evil merge).
+
+### Command results (run by the reviewer, last line of each)
+
+| Command                                   | Last line                                                                                                                  |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                               | `✖ 1 problem (0 errors, 1 warning)` (pre-existing `todo-form.tsx:23`), Prettier clean                                      |
+| `pnpm typecheck`                          | `tsc --noEmit`, exit 0                                                                                                     |
+| `pnpm test`                               | `Tests  198 passed (198)` (195 + 3 §22)                                                                                    |
+| `pnpm test:e2e`                           | `40 passed (46.3s)` (36 + 4 §22)                                                                                           |
+| `pnpm test:mutation`                      | `Final mutation score of 93.16 is greater than or equal to break threshold 70`; `todo-created.ts` 100, `todo-count.ts` 100 |
+| `check-suppressions.sh`                   | `OK: no new suppressions` (range `bac26dafc4..HEAD`)                                                                       |
+| `check-config-change.sh`                  | `OK: no protected config changed`                                                                                          |
+| `check-feat-commits.sh`                   | `OK: no feat commit touches tests`                                                                                         |
+| `check-ac-coverage.sh`                    | `OK: every criterion of a shipped section has a test` (§20 and §22 both `✗` in the index; §20 checked by hand in pass 1)   |
+| `check-spec-sections.sh`                  | `OK: sections cited: 1 … 20 22`                                                                                            |
+| `check-features-map.sh` · `check-backlog` | `OK` · `OK: README matches the cards`                                                                                      |
+| `check-plan-scope.sh`                     | `OK: feat/B4.1-created-date stays inside the approved plan of B4.1`                                                        |
+| `verify-red.sh B4.1`                      | `RESULT: red for the right reason` (lib 2/2, component 3/3 new failed; e2e skipped)                                        |
+
+### Checklist
+
+| Check                                       | Result                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| merge resolution (3 conflicts)              | pass: `--remerge-diff` shows each conflict resolved by deleting only the markers and keeping both sides verbatim, in id order: `docs/metrics.md` B4.1 then B4.3, `spec/features-map.md` F18 then F20, `spec/technical-requirements.md` §20 `✗` then §22 `✗`. No `src/`, `e2e/` or test file conflicted |
+| no test weakened after the red commit       | pass: `--no-merges a5475db..HEAD` → only `d9e2a8c` (explained in pass 1); `--merges --remerge-diff a5475db..HEAD -- '*.test.*' e2e/` → 0 lines                                                                                                                                                         |
+| every changed file is in `plan.md`          | pass: the 5 Files + planned paperwork; `check-plan-scope.sh` OK against `origin/main`                                                                                                                                                                                                                  |
+| §22 vs §20: shared files                    | none: §22 changes `todo-count.ts` and `remaining-count.tsx` (rendered by `page.tsx` outside the `<ul>`); §20 changes `todo-item.tsx` and adds `todo-created.ts`. §22's contract lists `todo-item.tsx` as unchanged by §22, which B4.3 honours                                                          |
+| §22 vs §20: remaining count                 | pass: §20 adds no data and no prop; `countRemaining` reads `completed` only. AC-22.4–22.7 green with the `<time>` in every row                                                                                                                                                                         |
+| §22 vs §20: row text                        | pass, probed on a copy (scratchpad): with the date rendered as `<time>` children (option B), e2e AC-20.6 and AC-22.7 fail (`"ACreated 2025-12-31"` ≠ `"A"`); AC-22.4–22.6 still pass. So §22 adds a second e2e guard on §20's "row text stays its title", and the shipped `::after` keeps both green   |
+| §22 vs §20: "All done" exact-text matches   | pass: the `::after` text is not DOM text, so `getByText('All done', { exact: true })` and `listitem.filter({ hasText })` cannot match a row's date; the §22 `<span>` has no role, the `<time>` is inside each `<li>`                                                                                   |
+| Zod · Prisma only in `src/lib` · no raw SQL | n/a (unchanged since pass 1; the merge brought no action, query or schema)                                                                                                                                                                                                                             |
+| no secret, no suppression                   | pass                                                                                                                                                                                                                                                                                                   |
+| features map row moved                      | pass: F18 `✅`, §20 index row `✗` until the closing PR (plan)                                                                                                                                                                                                                                          |
+
+### Findings
+
+No blocking finding.
+
+Non-blocking notes:
+
+1. `backlog/work/B4.1/pr-body.md` still quotes pass-1 counts (195 unit, 36 e2e, mutation 93.07); after the merge the
+   branch measures 198, 40 and 93.16. Refresh the PR body's numbers before opening the PR. The `docs/metrics.md` B4.1
+   row (93.07) records the card's own measurement and can stay.
+2. `e2e/22` seeds `createdAt` with local-time `new Date(2026, 0, n)`; on a UTC+7 host that is 2025-12-31 UTC, so a §20
+   row there reads `Created 2025-12-31`. That is §20 behaving as specified (UTC day), not a defect, and no §22 test
+   reads the date.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: unchanged from pass 1, the date's `::after` rendering and screen-reader exposure in Firefox and
+WebKit (every e2e and probe ran Chromium only), and AC-20.1's zone proof outside Vitest's `forks` pool.
