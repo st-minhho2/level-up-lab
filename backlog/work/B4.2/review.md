@@ -167,3 +167,14 @@ Riskiest unfalsified: the client-router path under `pnpm build && pnpm start` (C
 prefetches in production. A cached RSC payload for `/` from before a mutation on `/?q=milk` could show stale rows
 after "Clear search". Next 15's dynamic `staleTimes` default is 0 and the page is `force-dynamic`, so I expect a
 refetch. I ran e2e only against `pnpm dev`, which does not prefetch.
+
+### Dispositions (pass 1, dev-lead)
+
+| Pass | #      | Finding (file:line)                                                                                    | Source   | Kind     | Disposition      | Justification                                                                                                                                                                   |
+| ---- | ------ | ------------------------------------------------------------------------------------------------------ | -------- | -------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | —      | reviewer: 0 findings                                                                                   | reviewer | —        | —                | ready for PR                                                                                                                                                                    |
+| 1    | note 1 | AC-21.5 proves the empty box only for an untouched input; a `key` of `{filter}` alone would pass it    | reviewer | coverage | out of scope     | code is right (typed `eggs` → empty, probed); a criterion for typed text needs a §21 change through §8; proposed follow-up card for the lead, not filed by this card            |
+| 1    | note 2 | at 375 px the link adds 2 px horizontal scroll; at 320 px it sits off screen (form has no `flex-wrap`) | reviewer | layout   | out of scope     | no section governs layout (§7 none, §21 out of scope); the 320 px overflow exists without the link; proposed follow-up card for the lead (wrap the search form), not filed here |
+| 1    | own    | rules as questions: no action, no Prisma, no file outside the plan, no test weakened, F19 moved        | dev-lead | —        | no change needed | `check-plan-scope.sh` OK; 0 removed test lines; `git log b5fc079..HEAD -- '*.test.*' e2e/` empty; reverting any changed line fails a test (7 probes above)                      |
+
+Passes: 1/3. Gate cleared with `.claude/hooks/mark-reviewed.sh` after this table.
