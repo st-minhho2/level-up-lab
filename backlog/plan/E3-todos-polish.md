@@ -19,6 +19,8 @@ _F15 · section 17_
 _F16 · section 18_
 **Status: Open** — `src/components/todo-form.tsx:36` sets `maxLength={200}` (D-5) with no visible count of characters used or left
 
+- **Spec:** §18 — unchanged (section written from `work/B3.2/analysis.md`; contract `spec/contracts/16-title-counter.md`)
+- **Test:** `src/lib/title-count.test.ts::AC-18.1: counts the trimmed value in UTF-16 code units: 0 for '' and '   ', 8 for 'Buy milk', 200 for 5 spaces + 200 x + 5 spaces, 201 for 201 x, 2 for an emoji` — red because: `src/lib/title-count.ts` does not exist, `titleCharacterCount` is not exported
 - **Acceptance:** section 18 criteria, set by `spec-analyst` (contract `spec/contracts/16-title-counter.md`; mounts in `src/components/todo-form.tsx` only)
 - **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B3.2/`
