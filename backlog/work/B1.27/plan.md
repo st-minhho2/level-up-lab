@@ -27,7 +27,7 @@ trim() { local s="$1"; s="${s#"${s%%[![:space:]]*}"}"; printf '%s' "${s%"${s##*[
 Smoke mechanics: W1–W21 untouched (their fixture keeps plain titles: one bad title would fail them all). A second repo
 `$TMP/q` with bare origin `$TMP/q.git`, the same `gh` shim; cards in `backlog/plan/E8-quotes.md`, all eligible.
 W22 rows `B8.1 say "all done"` (step 1) and `B8.2 back\slash path` (step 2) → `--list` exit 0 and prints both titles
-as written (HEAD: exit 0, prints `say all done`, `backslash path`) · then push rows `B8.3 todo's date` and
+as written, matched with `grep -F` (HEAD: exit 0, prints `say all done`, `backslash path`) · then push rows `B8.3 todo's date` and
 `B8.4 a lone " quote` · W23 `--list` exit 0, all four titles as written, no `xargs` in the output · W24 pick → exit 0,
 `B8.1 backlog/plan/E8-quotes.md` · W25 `--claim B8.3` → exit 0, `B8.3 may start` · W26 worktree on `feat/B8.4-q` with a
 plan listing `src/lib/q.ts`, `--check B8.4` → exit 0, `no overlap`. W23–W26 at HEAD: exit 1, `xargs: unterminated quote`.
@@ -52,4 +52,4 @@ scripts/ci/check-plan-scope.sh | tail -1; scripts/ci/check-backlog.sh | tail -1 
 No `(red)` marker on step 1: CI's `verify-red.sh --auto` judges only vitest files. PR via `scripts/pr-step.sh`, label
 `config-change-approved` (D-19: `scripts/next-task.sh`).
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: approved, round 1 (4 costs in review.md: inner spaces kept, `grep -F` titles, W26 crash-only, header W22–W26) · Plan approved by: · Rounds: 1
