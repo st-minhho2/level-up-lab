@@ -64,14 +64,17 @@ export function TodoSearchForm({ filter, query }: { readonly filter: TodoFilter;
 todo, and no action takes a query. `src/lib/todo-filter.ts` and `src/components/todo-filter-nav.tsx` do not change:
 the filter links still point to `/`, `/?filter=active`, `/?filter=completed` (§12 REQ-12.6), so following one drops `q`.
 
+`TodoSearchForm` also renders the "Clear search" link of §21 while a search is active; the markup above is otherwise
+unchanged.
+
 ## Out of scope
 
 Highlighting the matched text, search as you type or any debounce, searching anything but the title (a due date,
 section 15, is not searched), several words, fuzzy matching, regular expressions, wildcards, accent folding,
-locale-aware case folding, a search in the database query, client-side navigation for the form (`next/form`), a
-"clear search" link, keeping the search when a filter link is followed (that needs a change to §12 REQ-12.6), counts
-of matches, limiting the remaining count, "Clear completed" or "Mark all complete" to the todos shown, remembering the
-search outside the address (cookie, local storage), keyboard shortcuts, any ordering other than creation time newest
+locale-aware case folding, a search in the database query, client-side navigation for the form (`next/form`),
+keeping the search when a filter link is followed (that needs a change to §12 REQ-12.6), counts of matches,
+limiting the remaining count, "Clear completed" or "Mark all complete" to the todos shown, remembering the search
+outside the address (cookie, local storage), keyboard shortcuts, any ordering other than creation time newest
 first (§1).
 
 ## Unchanged behavior
