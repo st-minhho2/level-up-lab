@@ -322,3 +322,20 @@ throughput.sh`, `wait-time.sh` and `plan-deviations.sh` do not exist, so no card
   `git` + `gh` only
 - **Tier:** quick · **Depends on:** ~~B1.21~~ · **Owner:** Lead · **Size:** M [estimate]
 - **Work:** `work/B1.22/` — plan (rounds 2/2, cap; lead chose X literal, Y (a), Z bypass counter, length accepted), review (diff passes 3/3, 10 findings fixed; lead rulings (a) on pass-1 [4], no approval counts from #60, and on pass-2 [1], a selection picks whole days); squash `11f50ff` (#74)
+
+### B1.23 · Card sessions may mark their own PR ready for review
+
+_tooling · no §_
+**Status: Open** — `.claude/settings.json` `permissions.allow` is empty and `deny` holds only `Bash(gh pr merge*)` and
+`Bash(gh pr review*)`; under auto mode `gh pr ready <n>` (B1.21 Loop 9) was refused in the B2.1 session on #78, so the lead
+readied #78, #79, #80 by hand and PR wait grew (batch 1 median 17 min, `docs/metrics.md`)
+
+- **Spec:** none — tooling (`.claude/settings.json`, `.claude/docs/hooks.md` or the permissions note it keeps); no `src/`
+  change, no section
+- **Test:** a probe in `scripts/hook-smoke.sh` — red because: `.claude/settings.json` allows no `gh pr ready` rule, while
+  `gh pr merge` and `gh pr review` must stay denied
+- **Acceptance:** `permissions.allow` gains exactly `Bash(gh pr ready*)` (covers `--undo`); the `gh pr merge*` and
+  `gh pr review*` denies stay; no broader `gh` rule; a card session runs `gh pr ready` under auto mode (checked on the
+  next ready PR); the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.23/`
