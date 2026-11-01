@@ -26,8 +26,10 @@ case "${1:-}" in
     [[ $# -eq 2 ]] || refuse 'draft takes one argument: "<title>"'
     title="$2"
     [[ "$title" != *$'\n'* && ${#title} -le 80 ]] || refuse "title must be one line of at most 80 characters"
-    [[ "$title" =~ ^(feat|fix|chore|test|docs)\([a-z]+\):\ ${card//./\\.}\ [\ -~]+$ ]] \
-      || refuse "title must read '<type>(<pkg>): $card <summary>' in printable ASCII"
+    base="$title" # the PR convention may end the title in " (§<n>)", the only non-ASCII allowed
+    case "$title" in *" (§"*")") base="${title% (§*}"; [[ "${title#"$base"}" =~ ^\ \(§[0-9]+\)$ ]] || base="$title" ;; esac
+    [[ "$base" =~ ^(feat|fix|chore|test|docs)\([a-z]+\):\ ${card//./\\.}\ [\ -~]+$ ]] \
+      || refuse "title must read '<type>(<pkg>): $card <summary>[ (§<n>)]', the summary in printable ASCII"
     rel="backlog/work/$card/pr-body.md"; body="$top/$rel"
     [[ -f "$body" && ! -L "$body" ]] || refuse "$rel must be a regular file, not a symlink"
     [[ -n "$(find "$body" -maxdepth 0 -links 1)" ]] || refuse "$rel must have exactly one link"

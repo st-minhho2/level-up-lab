@@ -78,7 +78,9 @@ while IFS= read -r segment; do
   [[ $# -gt 0 && "$1" == *pr-step.sh ]] && invokes_pr_step=1
 done < <(printf '%s\n' "$CMD" | tr ';&|(`' '\n\n\n\n\n') # `$(` splits at its `(`
 if [[ $invokes_pr_step -eq 1 ]]; then
-  PR_STEP_PLAIN='^scripts/pr-step\.sh( [^$`<>;&|\\]*)?$'
+  # Each argument a plain word or a quoted string: the session's shell may be zsh, where unquoted =( ), *(e:…:) and
+  # similar run code before the wrapper starts.
+  PR_STEP_PLAIN='^scripts/pr-step\.sh( ([A-Za-z0-9._-]+|'"'"'[^'"'"']*'"'"'|"[^"$`\\!]*"))*$'
   [[ "$CMD" != *$'\n'* && "$CMD" =~ $PR_STEP_PLAIN ]] || block "$ME" "$PR_STEP_MSG"
   cwd="$(json_field cwd)"
   [[ -n "$cwd" && -d "$cwd" ]] || block "$ME" "$PR_STEP_MSG"
@@ -86,6 +88,10 @@ if [[ $invokes_pr_step -eq 1 ]]; then
   [[ "$(cd -P "$cwd" && pwd -P)" == "$(cd -P "$top" && pwd -P)" ]] || block "$ME" "$PR_STEP_MSG"
   git -C "$top" ls-files --error-unmatch scripts/pr-step.sh >/dev/null 2>&1 || block "$ME" "$PR_STEP_MSG"
   git -C "$top" diff --quiet HEAD -- scripts/pr-step.sh 2>/dev/null || block "$ME" "$PR_STEP_MSG"
+  # The wrapper that runs must be byte-identical to the one beside this hook (the session's own checkout), so a
+  # wrapper committed in another repository or on the card branch never passes.
+  own="$(cd "$(dirname "$0")/../.." && pwd -P)/scripts/pr-step.sh"
+  [[ -f "$own" ]] && cmp -s "$top/scripts/pr-step.sh" "$own" || block "$ME" "$PR_STEP_MSG"
 fi
 
 exit 0
