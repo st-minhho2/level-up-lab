@@ -24,6 +24,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §17 | [contracts/15-overdue.md](contracts/15-overdue.md)                     | Todos: mark overdue                                                    | ✅     |
 | §18 | [contracts/16-title-counter.md](contracts/16-title-counter.md)         | Todos: a character counter on the new-todo box                         | ✅     |
 | §19 | [contracts/17-delete.md](contracts/17-delete.md)                       | Todos: delete a todo                                                   | ✅     |
+| §20 | [contracts/18-created-date.md](contracts/18-created-date.md)           | Todos: show the creation date                                          | ✗      |
 | §22 | [contracts/20-all-done.md](contracts/20-all-done.md)                   | Todos: say "all done"                                                  | ✗      |
 
 Reading order: §1 → §2 → the section your backlog card names → [features-map.md](features-map.md).
