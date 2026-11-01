@@ -213,3 +213,61 @@ Verdict: ready for PR
 Riskiest unfalsified: the counter after a real failed save in a browser. AC-18.5 runs only in jsdom, and `e2e/18`
 covers just the success reset. A Chromium form failure (§10 DB rejection) with the counter reading the kept title is
 unexercised. The same is true of `[state, pending]` under e2e, if the lead picks it.
+
+## Diff review (round 2)
+
+SCOPE: all, limited to the merge `b143af0` (origin/main `02da94e`, B3.3 #93, into the branch). The earlier merge
+`1c5f378` (#92, #96) touches only `backlog/`. Read: `git show --remerge-diff b143af0`, every B3.3 file that a §18 path
+or test could reach (`todo-item.tsx`, `delete-todo-button.tsx`, `logger.ts`, `03-todos.md`, `e2e/19-delete.spec.ts`),
+`page.tsx`, `todo-form.tsx`, `e2e/18`, `playwright.config.ts`. No probe on a copy was needed. Every question here is
+answered by the merge's own diff or by running the suites.
+
+### Commands (last line of each, run by the reviewer on `b143af0`)
+
+| Command                             | Result                                                                                                                         |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm lint`                         | exit 0; `✖ 1 problem (0 errors, 1 warning)`, the same `todo-form.tsx:23` warning the lead kept                                 |
+| `pnpm typecheck`                    | `tsc --noEmit`, no output, exit 0                                                                                              |
+| `pnpm test`                         | `Tests  184 passed (184)` (175 + B3.3's 9: lib 2, action 4, button 2, todo-item 1)                                             |
+| `pnpm test:e2e`                     | `34 passed (37.8s)` (33 + `e2e/19` 1)                                                                                          |
+| `pnpm test:mutation`                | `Final mutation score of 92.68 is greater than or equal to break threshold 70`; `title-count.ts` 100.00 (2/2)                  |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions` (range `02da94e936..HEAD`)                                                                           |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                                              |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                                             |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test` (§18, §19 still ✗, so the script skips them; §18 covered 7/7 in round 1) |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 16 18 19`                                                                                             |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                                                           |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B3.2-title-counter stays inside the approved plan of B3.2`                                                           |
+| `scripts/ci/check-backlog.sh`       | `OK: README matches the cards`                                                                                                 |
+| `scripts/verify-red.sh B3.2`        | `RESULT: red for the right reason` (lib 2 new failed, component 4 new failed)                                                  |
+| `git diff --stat main...HEAD`       | 30 files, +2227 −9; `git diff --stat 02da94e b143af0` gives 14 files, all B3.2's own                                           |
+
+### Checklist (merge only)
+
+| Check                                      | Result                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| conflict resolutions correct               | pass: the 3 conflicts (`docs/metrics.md`, `spec/features-map.md`, `spec/technical-requirements.md`) each keep both one-line rows, B3.2's then B3.3's, in section order (§18/F16 before §19/F17). No row was edited. No marker left.                                                                                                                                                                         |
+| merge is a pure union                      | pass: `git diff 02da94e b143af0` touches only the 14 B3.2 paths. Every B3.3 file equals main's. `todo-item.tsx`, `logger.ts`, `03-todos.md` diff 0 lines from main                                                                                                                                                                                                                                          |
+| no test weakened after red                 | pass: `git log --first-parent --no-merges d480a51..HEAD -- '*.test.*' e2e/` empty. `--merges --remerge-diff` output 0 lines (no test or e2e file conflicted)                                                                                                                                                                                                                                                |
+| B3.3 interacts with the counter            | none found: `DeleteTodoButton` renders no `<form>`, no id, no text (icon, `aria-label`). Its `role="alert"` sits in the `<li>`, outside the new-todo `<form>` that AC-18.3/18.5 scope to. `e2e/18`'s `counter()` filters `form` by the "New todo" box. Its `listitem` `toHaveText(['Walk the dog'])` holds because the button adds no text (REQ-19.3). `todo-form.tsx` and `page.tsx` are untouched by B3.3 |
+| e2e shared database                        | pass: `workers: 1`, `fullyParallel: false`, and `e2e/18` and `e2e/19` each `deleteMany` in `beforeEach`. `e2e/19` cannot remove `e2e/18`'s rows mid-test                                                                                                                                                                                                                                                    |
+| §18 still matches its contract after merge | pass: `03-todos.md`'s only change is the §5 out-of-scope line (`deleting a todo (§19)`). §18 cites §5 for `TITLE_MAX_LENGTH` and the messages, and neither changed                                                                                                                                                                                                                                          |
+| every changed file in `plan.md`            | pass: the B3.3 paths arrive from `main` through the merge and are not this branch's diff once rebased onto `main`. `check-plan-scope.sh` OK                                                                                                                                                                                                                                                                 |
+| branch current with `main`                 | pass: `origin/main` (`02da94e`) is an ancestor of `HEAD`. Round 1 note 4 (D-22 citations) now resolves                                                                                                                                                                                                                                                                                                      |
+
+### Findings
+
+None blocking.
+
+### Notes (not blocking)
+
+1. The lint warning at `todo-form.tsx:23` is unchanged by the merge (the lead kept it). The PR body should still name it.
+2. Round 1 note 3 (F16 went ✅ in the `feat` commit, not `docs(map)`) still applies to the PR body.
+3. The §18 index row is still ✗, and so is §19, which already merged on `main`. That matches the plan ("stays ✗ until the
+   closing PR"). Flipping both is the closing lane's job, not this PR's.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: unchanged from round 1. No browser test drives a failed save (§10 DB rejection) and then checks
+that the counter reads the kept title. AC-18.5 runs only in jsdom. B3.3 adds a second failing-mutation path in the same
+page (a row's delete alert), but that path shares no state with `TodoForm`.
