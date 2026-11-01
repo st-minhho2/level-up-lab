@@ -76,7 +76,7 @@ it waited for the guides), and the night before the lead merged #85 at 07:12. Th
 | B2.3  | §14         | 6               | 6 (100 %) | 90.67 (complete-all 100)          | 0              | a18a9a9, 05f5fe6                      | b3339e0 |
 | B2.4  | §15         | 7               | 7 (100 %) | 91.13 (due-date 95.00)            | 0              | 2822ab9                               | 315b97e |
 | B2.5  | §16         | 7               | 7 (100 %) | 91.82 (todo-search 100)           | 0              | b70450c, 8bfc8e4                      | 827e4fe |
-| B3.1  | §17         | 7               | 7 (100 %) | 92.14 (todo-overdue 100)          | 0              | fae3314                               | 4bda829 |
+| B3.1  | §17         | 7               | 7 (100 %) | 92.14 (todo-overdue 100)          | 0              | fae3314                               | af3c20f |
 | B3.2  | §18         | 7               | 7 (100 %) | 91.88 (title-count.ts 100)        | 0              | d480a51                               | 4a496c9 |
 | B3.3  | §19         | 7               | 7 (100 %) | 92.63 (todo-delete 100)           | 0              | 8293598                               | 02da94e |
 
