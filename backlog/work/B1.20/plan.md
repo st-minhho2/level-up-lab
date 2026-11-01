@@ -45,11 +45,11 @@ scripts/ci/check-plan-scope.sh | tail -1; scripts/ci/check-backlog.sh | tail -1 
 
 ## Work breakdown
 
-| Step | Role / skill | Produces                          | Commit                                                           |
-| ---- | ------------ | --------------------------------- | ---------------------------------------------------------------- |
-| 1    | main session | L1–L6 probes, 8 FAIL              | `test(hooks): B1.20 plan-scope probes for bracketed plan rows`   |
-| 2    | main session | literal-then-glob in both, 440 ok | `fix(hooks): B1.20 plan-scope matches bracketed paths literally` |
-| 3    | reviewer     | diff review in `review.md`        | `docs(backlog): B1.20 review`                                    |
+| Step | Role / skill | Produces                                           | Commit                                                           |
+| ---- | ------------ | -------------------------------------------------- | ---------------------------------------------------------------- |
+| 1    | main session | L1–L6 probes, 8 FAIL                               | `test(hooks): B1.20 plan-scope probes for bracketed plan rows`   |
+| 2    | main session | literal-then-glob in both + `hooks.md` row, 440 ok | `fix(hooks): B1.20 plan-scope matches bracketed paths literally` |
+| 3    | reviewer     | diff review in `review.md`                         | `docs(backlog): B1.20 review`                                    |
 
 Steps 1–2 run in the lead's main session acting as dev-lead via `/work-next` (no `agent_type`; the `dev-lead`
 subagent's path-guard refuses these files), as B1.24 and B1.27 did. No skeleton step (no § function; hook-smoke has no
@@ -60,4 +60,4 @@ CI's `verify-red.sh --auto` judges only vitest files. PR via `scripts/pr-step.sh
 #60 (merged 2026-10-30), and `change-failure-rate.sh` counts only `fix(`/revert titles, so this repair of B1.17 stays
 out of the CFR (one repair uncounted); a `fix(hooks): …` title instead would count it within the 14-day window.
 
-Plan review: round 2 pending (r1: 3 changes requested, addressed) · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 (r1: 3 changes requested, resolved; r2: 0 findings, 3 out of scope → follow-up) · Plan approved by: · Rounds: 1
