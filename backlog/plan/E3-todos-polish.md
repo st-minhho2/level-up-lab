@@ -10,7 +10,9 @@ stay out of card plans.
 _F15 · section 17_
 **Status: Open** — `git grep -n -i overdue src/` → no match; `src/components/todo-due-date.tsx` (§15) shows the date the same way whether it has passed or not
 
-- **Acceptance:** section 17 criteria, set by `spec-analyst` (contract `spec/contracts/15-overdue.md`; mounts in `src/components/todo-due-date.tsx` only)
+- **Spec:** §17 — unchanged (section written from `work/B3.1/analysis.md`; contract `spec/contracts/15-overdue.md`)
+- **Test:** `src/lib/todo-overdue.test.ts::AC-17.2: marks a due date strictly before today as overdue unless the todo is completed` — red because: `src/lib/todo-overdue.ts` does not exist, `isOverdue` and `OVERDUE_LABEL` are not exported
+- **Acceptance:** AC-17.1 to AC-17.7 (contract `spec/contracts/15-overdue.md`; mounts in `src/components/todo-due-date.tsx` only)
 - **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B3.1/`
 
