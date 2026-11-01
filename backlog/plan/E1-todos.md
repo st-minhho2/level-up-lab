@@ -326,9 +326,7 @@ throughput.sh`, `wait-time.sh` and `plan-deviations.sh` do not exist, so no card
 ### B1.23 · Card sessions run their own PR steps: push, open, label, mark ready
 
 _tooling · no §_
-**Status: Open** — `.claude/settings.json` `permissions.allow` is empty; under auto mode the B2.1 session's `gh pr ready 78`
-(B1.21 Loop 9) and the B3.2 session's `git push` and `gh pr create` were refused, so the lead readied #78, #79, #80 by
-hand and B3.2's draft PR could not open (batch 1 PR wait median 17 min, `docs/metrics.md`)
+**Status: Partial** — merged 97fb986 (#99); pending the live check: batch 4's card sessions (from a checkout at or after 97fb986) run `scripts/pr-step.sh push`, `draft` and `ready` with no refusal. pr-step-smoke 10 of 10 and hook-smoke 309 on bash 3.2 and 5.2 (red 2167759: 0 ok, 10 FAIL); no src/ change, mutation 92.95 on CI
 
 - **Spec:** none — tooling (`.claude/settings.json`, `.claude/docs/hooks.md`); no `src/` change, no section
 - **Test:** `scripts/pr-step-smoke.sh` (new) and guard and settings probes in `scripts/hook-smoke.sh` — red because: no
@@ -341,7 +339,7 @@ hand and B3.2's draft PR could not open (batch 1 PR wait median 17 min, `docs/me
   protected config; dev-lead Loop 5/9 call the wrapper; the next card session runs push, draft and ready with no refusal;
   the PR carries `config-change-approved` (D-19). Labels and the PR body edit stay outside the wrapper
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.23/`
+- **Work:** `work/B1.23/` — plan (review rounds 2/2, cap; lead chose (B), then approved round 2 with the guard-bash row and its cost), review (diff passes 3/3; 12 findings fixed, pass-3 [1] carried: a suffixed-title length probe); squash `97fb986` (#99)
 
 ### B1.24 · guard-bash blocks every forced-push and branch-delete spelling
 
@@ -359,3 +357,20 @@ feat/x` and `scripts/pr-step.sh push` (B1.23) still exit 0; the existing force-p
   `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.24/`
+
+### B1.25 · verify-red reads escaped quotes in existing test titles
+
+_tooling · no §_
+**Status: Open** — `scripts/verify-red.sh` `baseTitles` keeps the escapes of a quoted test title it reads from source
+(`titles.add(m[2])`), so a title written `'… query \'\' …'` at the base never equals vitest's `… query '' …`; the
+existing test counts as new and passing, and the script reports "GREEN before implementation" (exit 1). Seen on B4.2's
+red commit b5fc079 (two AC-16.5 titles); a copy with `m[2].replace(/\\(.)/g, '$1')` reports red for the right reason
+
+- **Spec:** none — tooling (`scripts/verify-red.sh`, a new smoke); no `src/` change, no section
+- **Test:** `scripts/verify-red-smoke.sh` (new) on a throwaway worktree — red because: a base test whose title has an
+  escaped quote, kept unchanged next to a new failing test, makes `verify-red.sh` exit 1 ("GREEN before implementation")
+- **Acceptance:** an existing title with escaped quotes (single, double, backtick) is recognised as old; a new failing
+  test still makes the card red; a new passing test still fails the gate; the PR carries `config-change-approved`
+  (D-19: `scripts/verify-red.sh`)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.25/`

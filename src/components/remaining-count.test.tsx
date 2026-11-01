@@ -38,3 +38,40 @@ describe('<RemainingCount> (§13)', () => {
     expect(paragraphs[0]).toHaveTextContent(/^2 items left$/);
   });
 });
+
+describe('<RemainingCount> (§22)', () => {
+  it('AC-22.2: renders one paragraph reading "0 items left" and exactly one "All done" that is not a paragraph, list item, button, link or alert for a count of 0', () => {
+    const count = 0;
+
+    renderCount(count);
+
+    const paragraphs = screen.getAllByRole('paragraph');
+    expect(paragraphs).toHaveLength(1);
+    expect(paragraphs[0]).toHaveTextContent(/^0 items left$/);
+    const allDone = screen.queryAllByText('All done');
+    expect(allDone).toHaveLength(1);
+    expect(allDone[0]?.tagName).not.toBe('P');
+    expect(screen.queryAllByRole('listitem')).toHaveLength(0);
+    expect(screen.queryAllByRole('button')).toHaveLength(0);
+    expect(screen.queryAllByRole('link')).toHaveLength(0);
+    expect(screen.queryAllByRole('alert')).toHaveLength(0);
+  });
+
+  it('AC-22.3: renders exactly one paragraph reading "1 item left", "2 items left", "11 items left" and no "All done" for counts 1, 2, 11', () => {
+    const cases = [
+      { count: 1, label: '1 item left' },
+      { count: 2, label: '2 items left' },
+      { count: 11, label: '11 items left' },
+    ] as const;
+
+    const renders = cases.map(({ count }) => {
+      const { unmount } = render(<RemainingCount count={count} />);
+      const paragraphs = screen.getAllByRole('paragraph').map((paragraph) => paragraph.textContent);
+      const allDone = screen.queryAllByText('All done').length;
+      unmount();
+      return { paragraphs, allDone };
+    });
+
+    expect(renders).toEqual(cases.map(({ label }) => ({ paragraphs: [label], allDone: 0 })));
+  });
+});
