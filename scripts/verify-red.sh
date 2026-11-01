@@ -14,8 +14,8 @@
 #      (passed or failed; not todo or skipped) are the old ones, each named by its describe path and title (B1.29)
 #   5. copy the test files from the LAST test commit on top, run vitest with the JSON reporter again
 #   6. PASS only if: every file loaded (no import/compile error), at least one NEW test ran, zero NEW tests passed
-#      (a test is new when the base's run did not run its describe path and title in that file), and no failure
-#      message looks like an import, syntax or transform error. Pre-existing tests in an extended file may pass.
+#      (new: its describe path and title ran at the base in that file fewer times than the red run reports it), and
+#      no failure message looks like an import, syntax or transform error. Pre-existing tests may pass.
 # Exit 0 = correctly red. Exit 1 = green, wrong reason, or nothing to verify for an explicit id.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
