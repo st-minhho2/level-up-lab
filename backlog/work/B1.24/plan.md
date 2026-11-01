@@ -61,4 +61,4 @@ Steps: `test(scripts): B1.24 …` (probes only; no `(red)` marker: CI's `verify-
 (D-19: `.claude/hooks/guard-bash.sh`, `.claude/docs/hooks.md`). Commit messages quoting a spelling go through
 `git commit -F <file>`; the PR body is `pr-body.md`.
 
-Plan review: changes requested, round 2 (round-3 revision not re-reviewed: cap) · Plan approved by: · Rounds: 1
+Plan review: changes requested, round 2 (round-3 revision not re-reviewed: cap) · Plan approved by: lead (session reply "approve", round 3 as written), 2026-11-01 · Rounds: 1
