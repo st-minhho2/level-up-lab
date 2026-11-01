@@ -104,3 +104,81 @@ done'` on `docs/B9.1-partial`) would pin the per-branch rule. Length 64 lines ag
    from 61; the lead's call, as for B1.23.
 
 Verdict: approved
+
+## Diff review (round 1)
+
+Range `origin/main...HEAD` (test `cbaa667`, fix `7eae2bb`), 10 files, all in the plan's Files table.
+
+### Commands (last line each)
+
+| Command                                                | Result                                                                                                                                                                                                 |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm lint`                                            | `All matched files use Prettier code style!` (0 errors)                                                                                                                                                |
+| `pnpm typecheck`                                       | `tsc --noEmit`, no output (0 errors)                                                                                                                                                                   |
+| `pnpm test`                                            | `Tests  202 passed (202)`                                                                                                                                                                              |
+| `pnpm test:e2e`                                        | `43 passed (1.0m)`                                                                                                                                                                                     |
+| `pnpm test:mutation`                                   | `Final mutation score of 93.40 is greater than or equal to break threshold 70` (no `src/` change)                                                                                                      |
+| `scripts/pr-step-smoke.sh`                             | `[pr-step-smoke] 14 ok, 0 FAIL`                                                                                                                                                                        |
+| `PATH="/bin:$PATH" /bin/bash scripts/pr-step-smoke.sh` | `[pr-step-smoke] 14 ok, 0 FAIL` (bash 3.2.57; no bash 5 on this machine, as round 2 noted)                                                                                                             |
+| smoke at `cbaa667` (test commit tree)                  | `[pr-step-smoke] 11 ok, 3 FAIL` (R11 R12 R14), as planned                                                                                                                                              |
+| `scripts/hook-smoke.sh`                                | `hook-smoke: 309 probes OK`                                                                                                                                                                            |
+| `check-suppressions.sh`                                | `OK: no new suppressions`                                                                                                                                                                              |
+| `check-config-change.sh`                               | exit 1: `.claude/agents/dev-lead.md`, `.claude/docs/git-workflow.md`, `.claude/skills/work-next/SKILL.md`, `scripts/pr-step.sh` without `config-change-approved` (expected: D-19 label at PR creation) |
+| `check-feat-commits.sh`                                | `OK: no feat commit touches tests`                                                                                                                                                                     |
+| `check-ac-coverage.sh`                                 | `OK: every criterion of a shipped section has a test`                                                                                                                                                  |
+| `check-spec-sections.sh`                               | `OK: sections cited: 1 … 22`                                                                                                                                                                           |
+| `check-features-map.sh`                                | `OK`                                                                                                                                                                                                   |
+| `check-plan-scope.sh`                                  | `OK: feat/B1.26-pr-step-closing stays inside the approved plan of B1.26`                                                                                                                               |
+| `check-backlog.sh`                                     | `OK: README matches the cards`                                                                                                                                                                         |
+| `verify-red.sh B1.26`                                  | `no 'test(<pkg>): B1.26 … (red)' commit` (explained: the plan's Steps state "no `(red)` marker: tooling"; red shown by the smoke run at `cbaa667` above)                                               |
+
+### Checklist
+
+| Check                                                                             | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Acceptance: closing and filing PRs open through the wrapper from a lane body file | pass: R11 (`-done`, `-partial`), R12 (`-card`) exact gh lines                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Acceptance: `push`, `draft`, `ready` on a feature branch unchanged                | pass: R1–R10 green; `draft`'s body checks moved into `body_file` verbatim                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| No test weakened after the test commit                                            | pass: `git log --first-parent --no-merges cbaa667..HEAD -- '*.test.*' e2e/ scripts/pr-step-smoke.sh` empty; no merges                                                                                                                                                                                                                                                                                                                                                                                              |
+| Every changed file in `plan.md`                                                   | pass: 10 of 10                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Interfaces match the plan                                                         | pass: `open "<title>"`, per-lane titles, body path, `git diff --quiet origin/main...HEAD -- <rel>` exit 1, `draft` refused on lanes                                                                                                                                                                                                                                                                                                                                                                                |
+| Each R13 refusal fails for its own reason                                         | pass: instrumented copy prints the message per probe; each of the 13 hits its intended check (lane, title, length, newline, regular file, link, dir, freshness)                                                                                                                                                                                                                                                                                                                                                    |
+| Revert probes (copy, smoke re-run)                                                | freshness check removed → R13 FAIL · `draft` lane refusal removed → R14 FAIL · length check removed or `-le 81` → R13 FAIL · `open` lane guard removed → R13 FAIL · `body_file` removed from `open` → R13 FAIL · `-card` body swapped to closing → R12 FAIL. Survivors: `changed -eq 1` → `-ne 0` (no missing-`origin/main` probe), `c="$card"` unescaped dot (no `B9x1` title probe), lane regex without `$` (no `docs/B9.1-done-x` probe), `open`'s newline check removed (the anchored regex refuses it anyway) |
+| No secret, no suppression, no `src/`/`prisma/` change                             | pass                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Lane docs vs `backlog/CLAUDE.md` Filing step 4 "nothing else"                     | pass: step 4 forbids `spec/`, `src/`, tests, `00-decisions.md`, `docs/`, `.claude/`; step 5 adds `work/<card>/filing-pr-body.md` to the checklist itself, `check-plan-scope.sh` treats `backlog/*` as paperwork                                                                                                                                                                                                                                                                                                    |
+| Title length under a non-UTF-8 locale                                             | pass: titles are printable ASCII by regex or exact match; `[[ "é✓" =~ ^[\ -~]+$ ]]` → no match under `en_US.UTF-8` and `C` (bash 3.2, macOS libc); glibc range behaviour `[unverified]`                                                                                                                                                                                                                                                                                                                            |
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: .claude/agents/dev-lead.md:86-87
+    DEFECT: the after-merge instruction names `docs/<card>-done` "(or `-partial`)" but gives only the title
+            `docs(backlog): <card> done`, which `open` refuses on a `-partial` branch.
+    TRIGGER: dev-lead closes a merged-but-unmeasured card on `docs/B9.1-partial` and runs, as written,
+             `scripts/pr-step.sh open "docs(backlog): B9.1 done"`.
+    WRONG BEHAVIOUR: exit 3 "title must read 'docs(backlog): B9.1 partial -- <what is pending>'"; by the same
+             paragraph a refusal is reported, never worked around, so the Partial closing PR stalls for the lead
+             instead of opening (backlog/CLAUDE.md Closing step 6 has the right title; the agent brief does not).
+    CONFIDENCE: confirmed (ran it on a throwaway repo: rc=3 with that message)
+
+[2] KIND: correctness (non-blocking: matches the approved interface)
+    WHERE: scripts/pr-step.sh:76-77
+    DEFECT: the freshness check compares commits only, so a body edited in the worktree after the lane commit is
+            sent as the PR body while the committed body the reviewer read stays different.
+    TRIGGER: on `docs/B9.1-partial` with `closing-pr-body.md` committed, overwrite it uncommitted, run
+             `open 'docs(backlog): B9.1 partial -- x'`.
+    WRONG BEHAVIOUR: exit 0, PR opened with the uncommitted text; the plan's "the body lands in the lane's one
+             commit: the reviewer sees it" no longer holds. `git diff --quiet HEAD -- "$rel"` (exit 0 required)
+             would close it; `draft` has the same gap today.
+    CONFIDENCE: confirmed (ran it: rc=0, PR number printed)
+```
+
+Also observed, not findings: with `refs/remotes/origin/main` missing, `open` refuses (rc 3, fail-closed) but says
+"unchanged since origin/main", which misnames the cause. The four survivors above are unpinned edges, none
+reachable by a lane title the docs prescribe.
+
+Verdict: back to code-writer ([1]: give the `-partial` title in `dev-lead.md`, or point at Closing step 6 for it;
+[2] is the lead's call, not required for this round).
+
+Riskiest unfalsified: `[ -~]` as a bracket range under a glibc UTF-8 locale (a Linux session host) could admit non-ASCII
+into `-partial`/`-card` titles, where `${#title}` then counts characters; not runnable on this machine.
