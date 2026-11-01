@@ -603,3 +603,69 @@ after typing) is traced to restore the cached payload with the old key and the t
 | 4    | 1   | `todo-search-form.tsx:13-15` and the plan row claim "every soft navigation" | reviewer | plan-mismatch | fix now      | lead option A ("Chọn A", 2026-11-01): wording becomes "each change of filter or query" (plan here, comment by code-writer) |
 | 4    | 2   | query half of the key untested (`key={filter}` passes e2e/16)               | reviewer | coverage      | fix now      | test-writer adds one unprefixed REQ-16.2 case: `/?q=milk`, type `bread`, click "All" → box is empty                        |
 | 4    | R   | back/forward from the router cache may keep typed text (riskiest, traced)   | reviewer | spec gap      | out of scope | §16 is silent on history navigation; reported to the lead as a possible §16 question                                       |
+
+## Diff review (pass 5)
+
+Reviewed at `eba91bb` (since pass 4 `433bc48`: dispositions and plan wording `592802e`, disposition row `2726c21`,
+e2e case `38eaa45`, comment `eba91bb`). Scope: ui, limited by the lead's option A (`592802e`) to pass-4 findings 1
+and 2 and what their fixes touch. Pass 5 is past the 3-pass cap; it exists only by that decision.
+
+Run here (last line of each):
+
+| Command                              | Result                                                                                                   |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                          | `All matched files use Prettier code style!` (exit 0)                                                    |
+| `pnpm typecheck`                     | `tsc --noEmit` (exit 0)                                                                                  |
+| `pnpm test`                          | `Tests  169 passed (169)`                                                                                |
+| `pnpm test:e2e`                      | `32 passed (33.0s)`                                                                                      |
+| `pnpm test:mutation`                 | `Final mutation score of 91.82 is greater than or equal to break threshold 70`; `todo-search.ts` 100.00  |
+| `scripts/ci/check-suppressions.sh`   | `OK: no new suppressions`                                                                                |
+| `scripts/ci/check-config-change.sh`  | `OK: no protected config changed`                                                                        |
+| `scripts/ci/check-feat-commits.sh`   | `OK: no feat commit touches tests`                                                                       |
+| `scripts/ci/check-ac-coverage.sh`    | `OK: every criterion of a shipped section has a test`                                                    |
+| `scripts/ci/check-spec-sections.sh`  | `OK: sections cited: 1 … 16`                                                                             |
+| `scripts/ci/check-features-map.sh`   | `OK`                                                                                                     |
+| `scripts/ci/check-plan-scope.sh`     | `OK: feat/B2.5-search stays inside the approved plan of B2.5`                                            |
+| `scripts/next-task.sh --check B2.5`  | `B2.5: no overlap with any Doing or Review card`                                                         |
+| `scripts/verify-red.sh B2.5`         | `RESULT: red for the right reason` (lib 8/8, component 2/2; `38eaa45` is not a `(red)` commit)           |
+| `git diff --stat origin/main...HEAD` | `19 files changed, 1745 insertions(+), 6 deletions(-)` (+115 since pass 4: the pass-4 section and below) |
+
+What moved since the code pass 4 reviewed (`60e0853..HEAD`): 4 files. `src/components/todo-search-form.tsx` 3/3
+lines, comment only (line 17, the key, unchanged); `e2e/16-search.spec.ts` +16/-0;
+`plan.md` one Files row's wording (word diff: "every soft navigation (filter link or search)" → "each change of
+filter or query (a filter link or a search)"; the other rows differ only by Prettier's column width) and two lines
+of decision history; `review.md` the pass-4 dispositions. No `src/lib`, `src/actions`, `src/app`, Prisma or config
+change.
+
+Probe (APFS clone of the worktree in the scratchpad, never the tree; e2e/16 only):
+
+- P14, `key={filter}` (query half dropped) → e2e/16 `1 failed, 6 passed`; the failure is exactly the new test
+  (`:219`, `Expected: ""`, `Received: "bread"`), after its address (`/`) and list (`[D, C, B, A]`) assertions
+  passed. Under the shipped key all 7 pass (the full run above). `key={query}` is still held by `:203` (P10).
+
+### Checklist
+
+| Check                                                   | Result                                                                                                                                                 |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| pass-4 finding 1 (wording) closed                       | pass: comment 13-15 and the plan row both say "each change of filter or query"; P12's same-address link is no longer claimed; NUL sentence matches P13 |
+| pass-4 finding 2 (coverage) closed                      | pass: `e2e/16:219` is Q5 verbatim and fails under `key={filter}` (P14)                                                                                 |
+| no test weakened after the red commit                   | pass: `8bfc8e4..HEAD -- '*.test.*' e2e/` lists `da858e3` and `38eaa45`, both `test(ui)`, `38eaa45` +16/-0; `--merges --remerge-diff`: empty            |
+| every changed file is in `plan.md`                      | pass: both files are Files rows; `check-plan-scope` OK                                                                                                 |
+| interfaces match the section's contracts                | pass: `TodoSearchForm({ filter, query })` unchanged                                                                                                    |
+| Zod · Prisma only in `src/lib` · no raw SQL · migration | n/a: no action, lib, Prisma or migration change since pass 3                                                                                           |
+| no secret, no suppression                               | pass                                                                                                                                                   |
+| features map row moved                                  | pass: unchanged since pass 3 (F14 ✅)                                                                                                                  |
+| would a test fail if one changed line were reverted     | pass: both halves of the key now held (filter half by `:203`, P10; query half by `:219`, P14); `eba91bb` is comment-only, nothing to hold              |
+
+Note (not a finding): the plan's `e2e/16` row still enumerates only the first REQ-16.2 case; the pass-3 (`:203`) and
+pass-4 (`:219`) cases are in a listed file and named in the dispositions. The PR body's Plan section can list them.
+
+### Findings
+
+None.
+
+Verdict: ready for PR. Pass-4 findings 1 and 2 are closed; nothing else moved.
+
+Riskiest unfalsified: unchanged from pass 4 and dispositioned out of scope (§16 silent): back/forward served from the
+Next.js router cache may restore the old RSC payload with the old key and keep text typed but not submitted; traced,
+not probed.
