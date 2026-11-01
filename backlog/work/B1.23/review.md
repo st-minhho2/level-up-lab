@@ -595,7 +595,7 @@ append it. New since pass 2: ca4b3ee test, a33add4 review text, 38e6728 chore, c
 | 3   | yes        | pass-2 mutants `"[^"$]*"` and `'.*'` now fail 2 and 1 probes; dropping `$` from the "…" class is killed; dropping `!` is equivalent (no history expansion non-interactively) |
 | 4   | yes        | the `-ef` layout mutant fails the second-worktree probe; dropping `cmp` is killed                                                                                            |
 | 5   | yes (text) | comment and hooks.md state the limit                                                                                                                                         |
-| 6   | yes        | 80 accepted, 81 refused for plain, `(§9)`, `(§10)`, `(§1234)` titles in C and UTF-8 on 3.2; same on 5.3.9                                                                    |
+| 6   | yes        | 80 accepted, 81 refused for plain, `(§9)`, `(§10)` and a four-digit section-mark suffix in C and UTF-8 on 3.2; same on 5.3.9                                                 |
 
 ca4b3ee is red at 0a208a1 (`9 ok, 1 FAIL`, R6) and green at 38e6728. No chore commit touches a smoke. The merge is
 clean (`--remerge-diff` empty); main changed nothing under `.claude/` or `scripts/`.
