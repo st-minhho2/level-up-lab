@@ -34,8 +34,8 @@ done < <(printf '%s\n' "$CMD" | tr ';&|' '\n\n\n')
 #    quotes, \ or $ (`'+main'`, `$'+main'`), any { (brace lists, ${X:-…}, also "${BRANCH}") and any $'…\…' escape.
 #    Git options before push are not parsed, so none hides it. Saved config counts, any case: git config, remote, clone,
 #    -c or --config-env (or a GIT_CONFIG_* variable anywhere in the command) that sets a mirror (`--mirr=push` too) or a
-#    +/: push refspec, unless the whole segment is a plain `git config [--global…] --get|--unset|--list|-l …` with no
-#    comment or substitution. So does gh (global flags may come first): api with a DELETE/PATCH method (`-iX DELETE`) or
+#    +/: push refspec, unless the whole segment is one line of plain `git config [--global…] --get|--unset|--list|-l …`
+#    with no comment or substitution. So does gh (global flags may come first): api with a DELETE/PATCH method (`-iX DELETE`) or
 #    force=true on git/refs, deleteRef, updateRef, a branch rename; repo sync --force; pr close or merge with -d (in a
 #    cluster or quoted) or --delete-branch. Out of reach of a text check: a flag or refspec held in a variable, words
 #    joined by ${IFS} or another expansion, an alias, a word quoted in pieces, a command built at run time, a ; & or |
@@ -60,7 +60,9 @@ if [[ "$low" =~ git_config_ ]]; then # key and value are separate variables (GIT
   [[ "$low" =~ mirror || ( "$low" =~ \.push && "$low" =~ =[\"\'\\$]*[+:] ) ]] && block "$ME" "$FORCE_MSG"
 fi
 names_git=0; [[ "$joined" =~ $GIT_WORD ]] && names_git=1
+US=$'\037' # marks the command's own newlines inside a segment
 while IFS= read -r segment; do
+  multiline=0; [[ "$segment" == *"$US"* ]] && multiline=1; segment="${segment//$US/ }"
   low="$(printf '%s' "$segment" | tr '[:upper:]' '[:lower:]')"
   if [[ "$low" =~ $GH_API ]]; then
     [[ ( "$low" =~ git/refs && "$low" =~ $GH_WRITE_METHOD ) || "$low" =~ $GH_REF_EDIT ]] && block "$ME" "$FORCE_MSG"
@@ -68,8 +70,10 @@ while IFS= read -r segment; do
   [[ "$low" =~ $GH_BRANCH_DELETE ]] && block "$ME" "$FORCE_MSG"
   [[ $names_git -eq 1 ]] || continue
   [[ "$segment" =~ $PUSH_TAIL && "${BASH_REMATCH[3]}" =~ $PUSH_FORCE ]] && block "$ME" "$FORCE_MSG"
-  [[ "$low" =~ $CONFIG_ROUTE && "$low" =~ $CONFIG_FORCE && ! "$low" =~ $CONFIG_READ_ONLY ]] && block "$ME" "$FORCE_MSG"
-done < <(printf '%s\n' "${joined//$'\n'/ }" | tr ';&|' '\n\n\n') # a newline may sit in $( ) or a heredoc of the push
+  if [[ "$low" =~ $CONFIG_ROUTE && "$low" =~ $CONFIG_FORCE ]]; then
+    [[ $multiline -eq 0 && "$low" =~ $CONFIG_READ_ONLY ]] || block "$ME" "$FORCE_MSG"
+  fi
+done < <(printf '%s\n' "${joined//$'\n'/$US}" | tr ';&|' '\n\n\n') # a newline may sit in $( ) or a heredoc of the push
 
 # 3. Prisma: destructive subcommands never; migrate/db subcommands only against a local host.
 PRISMA_DESTRUCTIVE='prisma[[:space:]]+(migrate[[:space:]]+reset|db[[:space:]]+push|db[[:space:]]+execute)'
