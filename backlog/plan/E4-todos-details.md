@@ -28,6 +28,8 @@ _F19 · section 21_
 _F20 · section 22_
 **Status: Open** — `src/lib/todo-count.ts:8` returns only `N item(s) left`; `git grep -n -i "all done" src/` → no match
 
-- **Acceptance:** section 22 criteria, set by `spec-analyst` (contract `spec/contracts/20-all-done.md`; mounts in `src/components/remaining-count.tsx` only)
+- **Spec:** §22 — unchanged (section written from `work/B4.3/analysis.md`; contract `spec/contracts/20-all-done.md`)
+- **Test:** `src/lib/todo-count.test.ts::AC-22.1: returns "All done" for 0 and undefined for 1, 2 and 11` — red because: `allDoneMessage` is not exported from `src/lib/todo-count.ts`
+- **Acceptance:** AC-22.1 to AC-22.7 (contract `spec/contracts/20-all-done.md`; mounts in `src/components/remaining-count.tsx` only)
 - **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B4.3/`
