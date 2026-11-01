@@ -729,3 +729,115 @@ it in zsh against a remote. It is covered only by the general "a command built a
 
 hook-smoke: 413 probes OK. Earlier reviewer lists re-run: only the stated misses remain (curl, `${IFS}`, stated false
 positives); the real-newline case now blocks. These fixes are not re-reviewed (3/3 passes used); the lead decides.
+
+## Diff review (pass 4, granted by the lead for the three pass-3 fixes only)
+
+Scope: 3030d1c (`test`, +11 −0 in hook-smoke.sh), b23234e (`fix`: guard-bash.sh, hooks.md), the merge 7f983bd of
+origin/main 88bd951, and the PR-body commits up to 1840fc7. No other area was opened. Hook verdicts come from copies of
+three hook versions run through their real JSON input: HEAD (1840fc7, byte-identical to the tree), p3 (41ad3c7, the
+hook pass 3 reviewed) and origin/main (88bd951, the same hook as the merge base). Real git 2.39.5 used a scratch bare
+remote with `main`=two and `feat/x`=two, and a clone reset to one. `⏎` is a real newline.
+
+### Command results (last line of each)
+
+| Command                       | Result                                                                                      |
+| ----------------------------- | ------------------------------------------------------------------------------------------- |
+| `pnpm lint`                   | `All matched files use Prettier code style!`                                                |
+| `pnpm typecheck`              | `tsc --noEmit`, exit 0                                                                      |
+| `pnpm test`                   | `Tests  202 passed (202)`                                                                   |
+| `pnpm test:e2e`               | `43 passed (50.2s)`                                                                         |
+| `pnpm test:mutation`          | `Final mutation score of 93.40 is greater than or equal to break threshold 70`              |
+| `check-suppressions.sh`       | `OK: no new suppressions`                                                                   |
+| `check-config-change.sh`      | lists `.claude/hooks/guard-bash.sh`: expected until the PR carries the D-19 label           |
+| `check-feat-commits.sh`       | `OK: no feat commit touches tests`                                                          |
+| `check-ac-coverage.sh`        | `OK: every criterion of a shipped section has a test`                                       |
+| `check-spec-sections.sh`      | `OK: sections cited: 1 … 22`                                                                |
+| `check-features-map.sh`       | `OK`                                                                                        |
+| `check-plan-scope.sh`         | `OK: feat/B1.24-force-push-spellings stays inside the approved plan of B1.24`               |
+| `check-backlog.sh`            | `OK: README matches the cards`                                                              |
+| `verify-red.sh B1.24`         | `no 'test(<pkg>): B1.24 … (red)' commit` (as before; the plan explains it)                  |
+| `next-task.sh --check B1.24`  | `B1.24: no overlap with any Doing or Review card`                                           |
+| `scripts/hook-smoke.sh`       | `hook-smoke: 413 probes OK` (0 FAIL)                                                        |
+| `git diff --stat origin/main` | 6 files: hooks.md, guard-bash.sh, hook-smoke.sh, B1.24 plan.md, pr-body.md, review.md       |
+| bash 5 vs bash 3.2            | not run this pass: no bash 5 on session's PATH (`which -a bash` → `/bin/bash`) [unverified] |
+
+### Do the three pass-3 fixes close their findings?
+
+| Pass-3 # | Re-run                                                                                                                                                                                                                                                  | Closed?                    |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| 1        | 3 heredoc triggers + `git push origin⏎+main`, ``git push origin `cat <<X⏎+main⏎X⏎` ``, `$(printf '%s'⏎'-f')`: HEAD 2 on all 6 (p3 0 on all 6). Real git: all 3 triggers still force main / delete feat/x when run, so the block matters                 | yes                        |
+| 2        | `gh pr close -d 7`, `--delete-branch 7`, `merge -d 7`, `"-d" 7`, `-cd 7`, tab, newline before `-d`: HEAD 2 on all 7 (p3 and origin/main 0). Controls `gh pr close 7`, `… 7 -c bye`, `gh pr closed -d 7`, `gh pr view 7 --json closed`: 0                | yes                        |
+| 4        | the four pass-3 mutant verdicts: HEAD 2 on all 4. Mutants on a copy: removing the backtick, the `(`, the `config-env…\.push` alternative or `(.*[[:space:]])?` in GH_API now fails 1 smoke probe each; reverting fix 1 fails 2, reverting fix 2 fails 2 | yes, 6 of 6 mutants killed |
+| 3 / 5    | `-o "a;b" -f` and `--jq '.a \| .b' -X DELETE` exit 0 (stated out of reach); `--get-regexp '^remote\..*\.mirror$'` exits 2 (stated false positive). The code matches the comment; the hooks.md row does not render, see [2]                              | code yes, doc no           |
+
+**Regression lists.** 258 distinct earlier commands (`p3/all.jsonl` = rounds 1–2 `$TMPDIR/b124probe`, passes 1–2
+scratchpad lists incl. `p2/`, plus `p3/new.jsonl`, `p3/z.jsonl`) on HEAD / p3 / origin/main. HEAD differs from p3 on
+9 commands, all 0 → 2 (the heredoc, real-newline, quoted-newline `-o` and gh flag-first forms). No command goes 2 → 0
+against p3. Against origin/main the only 0-where-2 is `xgit push -f` (stated, not git). The earlier lists hold no
+multi-line config command, so they could not see [1].
+
+### Checklist
+
+- Every changed file in `plan.md` (6 of 6); input JSON and exit codes unchanged: **pass**.
+- No test weakened: `git log --first-parent --no-merges 3030d1c^..HEAD -- '*.test.*' e2e/ scripts/hook-smoke.sh` lists
+  only 3030d1c (+11 −0). The `--remerge-diff` of 7f983bd touches no test or smoke file: **pass**.
+- No secret, no suppression; Zod, Prisma, SQL, migration, features map: n/a: **pass**.
+- Revert probes: 6 of 6 mutants killed: **pass**.
+- The fix keeps every config-route block the plan lists: **fail**, see [1].
+- The comment and hooks.md match the code: **fail** for hooks.md, see [2]. The rule comment matches.
+- pr-body.md counts: 104 new probes (413 − 309) match the smoke. Line 64 still copies the plan's "369 probes OK",
+  which is the approved plan text, not a finding.
+
+### Findings
+
+```
+[1] KIND: correctness (regression introduced by b23234e; the pass-3 hook blocked it, origin/main has no config rule)
+    WHERE: .claude/hooks/guard-bash.sh:72 (`"${joined//$'\n'/ }"` joins every line into one segment) with :49
+           (CONFIG_READ_ONLY anchored ^…$ over the whole segment) and :71 (`! "$low" =~ $CONFIG_READ_ONLY`)
+    DEFECT: a plain config read on one line now exempts every later line of the same Bash call from the config check,
+            because the joined segment still reads as "git config --get" followed by plain words.
+    TRIGGER: `git config --get user.name⏎git config remote.origin.mirror true⏎git push origin`;
+             `git config --get user.name⏎git -c remote.origin.mirror=true push origin`;
+             `git config --get user.name⏎git config remote.origin.push +refs/heads/*:refs/heads/*⏎git push origin`;
+             also `git config --get user.name⏎git config remote.origin.mirror true` and
+             `git config --list⏎git remote add --mirror=push m ../r.git`
+    WRONG BEHAVIOUR: HEAD exits 0 on all 5; p3 (41ad3c7) exits 2 on all 5; origin/main exits 0. Real git on the scratch
+             remote: the first two mirror-pushed (main two → one, feat/x gone from refs/heads), the third forced main
+             two → one ("forced update"). The approved plan says a config that sets a mirror or a +/: push refspec
+             blocks "unless it only reads"; the comment says "unless the whole segment is a plain git config … --get";
+             neither names a multi-line call as out of reach. The same lines joined by `;` or `&&` still block.
+             Controls exit 0 on all three hooks: `git config --get user.name⏎git push -u origin feat/x`, a two-line
+             pair of `--get` reads, `git add -A⏎git commit -m x⏎git push -u origin feat/x`.
+    CONFIDENCE: confirmed (three hook versions; real git on a bare remote)
+```
+
+```
+[2] KIND: plan-mismatch (doc corrupted by the pass-3 doc edit)
+    WHERE: .claude/docs/hooks.md:11 (guard-bash row), written in b23234e
+    DEFECT: the new text "`;` `&` `|`" and "`;`/`&`/`|`", "`.a | .b`" put unescaped `|` inside the table cell, so the
+            row has 6 cells under a 3-column header; prettier (PostToolUse) re-parsed it that way and rewrote the text.
+    TRIGGER: render or parse hooks.md as GFM. Prettier's own parse: cell 3 is 568 characters and ends at
+             "segments split on `;` `&` `"; the header's third column is exactly 568 wide; cells 4–6 (1,631 characters)
+             fall outside the header. In the raw text, `GIT_CONFIG_*` became `GIT_CONFIG__`, the example
+             `'^remote\..*\.mirror$'` became `'^remote\.._\.mirror$'`, and spaces around about 20 code spans were removed
+             ("naming git,`-f`/`-d`", "`--prune`or").
+    WRONG BEHAVIOUR: GFM drops cells beyond the header count, so the rendered row stops after "split on ; &". Every
+             rule after it disappears from the doc: all of B1.24's blocks, its false positives and out-of-reach list
+             (incl. the pass-3 [3] and [5] lines this fix added), and the older Prisma, secret-read and pr-step rules
+             that origin/main's row shows. The raw source misstates two names. Pass 3 asked for these doc lines; as
+             rendered, they are not there.
+    CONFIDENCE: confirmed (prettier parse of the committed file; 7 pipes in the row against 4 at 41ad3c7). GitHub's
+             render was not viewed.
+```
+
+Not findings, checked: newlines joined into one segment add false positives where a later line holds a `-d`/`-f`/`+`/`:`
+word after a push (`git push -u origin x⏎gh pr create -d`). origin/main's `[^;&|]*` crossed newlines too, and the row's
+false-positive line ("a `+`/`:`/`-d` word after any push word") covers them.
+
+Verdict: back to test-writer for [1] (a red smoke probe: a `--get` line followed by a line that sets the mirror), then
+code-writer (for example: evaluate CONFIG_READ_ONLY per original line, or refuse the exemption when the segment held a
+newline). [2] goes to dev-lead: escape each `|` in the row as `\|` and restore `GIT_CONFIG_*`, `.*` and the spaces. The
+pass cap is already extended, so the lead decides whether to fix or to accept [1] in writing as out of reach.
+
+Riskiest unfalsified: bash 5 verdicts for the newline join (`${joined//$'\n'/ }`) were not re-run this pass. No bash 5
+is on PATH, and pass 3's 354-command parity check predates b23234e.
