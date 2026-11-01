@@ -10,14 +10,16 @@ stay out of card plans.
 _F15 · section 17_
 **Status: Open** — `git grep -n -i overdue src/` → no match; `src/components/todo-due-date.tsx` (§15) shows the date the same way whether it has passed or not
 
-- **Acceptance:** section 17 criteria, set by `spec-analyst` (contract `spec/contracts/15-overdue.md`; mounts in `src/components/todo-due-date.tsx` only)
+- **Spec:** §17 — unchanged (section written from `work/B3.1/analysis.md`; contract `spec/contracts/15-overdue.md`)
+- **Test:** `src/lib/todo-overdue.test.ts::AC-17.2: marks a due date strictly before today as overdue unless the todo is completed` — red because: `src/lib/todo-overdue.ts` does not exist, `isOverdue` and `OVERDUE_LABEL` are not exported
+- **Acceptance:** AC-17.1 to AC-17.7 (contract `spec/contracts/15-overdue.md`; mounts in `src/components/todo-due-date.tsx` only)
 - **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B3.1/`
 
 ### B3.2 · Show a character counter while typing a title
 
 _F16 · section 18_
-**Status: Open** — `src/components/todo-form.tsx:36` sets `maxLength={200}` (D-5) with no visible count of characters used or left
+**Status: Done** — 4a496c9 (#94), 7 AC-18.n tests green (unit 184, e2e 34), mutation 92.68
 
 - **Spec:** §18 — unchanged (section written from `work/B3.2/analysis.md`; contract `spec/contracts/16-title-counter.md`)
 - **Test:** `src/lib/title-count.test.ts::AC-18.1: counts the trimmed value in UTF-16 code units: 0 for '' and '   ', 8 for 'Buy milk', 200 for 5 spaces + 200 x + 5 spaces, 201 for 201 x, 2 for an emoji` — red because: `src/lib/title-count.ts` does not exist, `titleCharacterCount` is not exported
