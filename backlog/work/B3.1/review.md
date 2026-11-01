@@ -249,3 +249,66 @@ Verdict: ready for PR
 Riskiest unfalsified: the `useLayoutEffect` no-flash property and "wrapper is a direct child of the `li`" are guarded
 only by this review's probes, not by a committed test; B3.3 (which owns `todo-item.tsx`) can break either silently
 except through AC-17.7's end-state counts.
+
+## Diff review (round 2)
+
+Range since round 1: `9908d4a..5c547f9` (merge d43e2b5 D-22 renumber, merge 3d13b83 B3.3 #93, test 5c547f9 semgrep
+rewrite of e2e/17's row-text helper). Base for the diff: `origin/main` (c839ed9); local `main` is stale (a005b41), so
+`git diff --stat main...HEAD` lists B3.3's files too. All commands run by the reviewer in the worktree; probes on a
+copy under `$TMPDIR`; nothing in the tree edited but this file.
+
+| Command                              | Last line                                                                                                 |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                          | `All matched files use Prettier code style!`                                                              |
+| `pnpm typecheck`                     | `tsc --noEmit` clean                                                                                      |
+| `pnpm test`                          | `Tests  184 passed (184)`                                                                                 |
+| `pnpm test:e2e`                      | `34 passed (37.9s)`                                                                                       |
+| `pnpm test:mutation`                 | `Final mutation score of 92.91 is greater than or equal to break threshold 70` (`todo-overdue.ts` 100.00) |
+| `scripts/ci/check-suppressions.sh`   | `OK: no new suppressions`                                                                                 |
+| `scripts/ci/check-config-change.sh`  | `OK: no protected config changed`                                                                         |
+| `scripts/ci/check-feat-commits.sh`   | `OK: no feat commit touches tests`                                                                        |
+| `scripts/ci/check-ac-coverage.sh`    | `OK: every criterion of a shipped section has a test`                                                     |
+| `scripts/ci/check-spec-sections.sh`  | `OK: sections cited: 1 … 17 19`                                                                           |
+| `scripts/ci/check-features-map.sh`   | `OK`                                                                                                      |
+| `scripts/ci/check-plan-scope.sh`     | `OK: feat/B3.1-overdue stays inside the approved plan of B3.1`                                            |
+| `scripts/verify-red.sh B3.1`         | `RESULT: red for the right reason` (2 + 4 new failed, 0 new passed; e2e skipped)                          |
+| `git diff --stat origin/main...HEAD` | `17 files changed, 1267 insertions(+), 8 deletions(-)`                                                    |
+| semgrep                              | not run: not installed locally, and no CI run exists for 5c547f9 (see "Before merge")                     |
+
+Checklist:
+
+- e2e rewrite not weaker than the regex (5c547f9): pass.
+  - String level: the old `^\s*<t>\s*Due <day>\s*(Overdue\s*)?$` and `readsAs` compared on 2 550 244 inputs (all
+    ≤ 4-token strings over title/`Due`/day/day-prefix/`Overdue`/`Overdu`/space/`\n`/NBSP/ZWSP/BOM/`x`, plus 2 × 10⁶
+    random edits of each expected text, for E, B, A-overdue, A-not-overdue): 0 disagreements. `\s` and `trim()` cover
+    the same 25 code units (checked over U+0000–U+FFFF). Playwright 1.64.1 does not normalise text for a RegExp
+    expectation (`ExpectedTextMatcher.matches` normalises only strings), so neither side saw collapsed whitespace.
+  - Mapping: a row that fails keeps its raw text; `readsAs(describeRow(r), r)` is true for every expected row, so raw
+    text equal to the description cannot slip through as a pass. 5 rows enforced by `toHaveCount(5)` and array length.
+  - Text source differs: old `toHaveText` used Playwright's `elementText` (counts `input[type=button|submit|reset]`
+    values and shadow-root text, skips `script`/`style`); new uses `textContent` (the reverse). An input the old
+    rejects and the new accepts exists only for a row holding `<input type="button" value="Overdue">` or shadow DOM;
+    `TodoItem`, `TodoDueDate`, `DeleteTodoButton` render neither (`<button>` + icon `svg` only). Not a finding.
+  - Sensitivity probe: stray `x` after `Due <day>` in every open dated row (marker counts unchanged) → AC-17.7 fails
+    in `expectRows` with `"DDue 2026-11-02x"`, `"ADue 2026-10-31xOverdue"` in the diff.
+- no test weakened after red: `--no-merges fae3314..HEAD` lists only 5c547f9 (a `test(...)` review-pass commit,
+  explained above); `--merges --remerge-diff` on tests/e2e is empty for both merges. Conflict resolutions touch only
+  `00-decisions.md` (D-22 from main + D-23 kept), `docs/metrics.md`, `spec/features-map.md`,
+  `spec/technical-requirements.md` (both rows kept each time); read in full, no content lost.
+- AC-17.7 against B3.3's row: holds. `TodoDueDate`'s wrapper is still a direct child of the `li`; the `li`'s first
+  checkbox is still the completion box (B3.3 appends `DeleteTodoButton` as the last child, a `<button>` with an icon,
+  no checkbox, no text), so `rowIsCompleted` and the row texts are unchanged; e2e 17 and 19 both green in one run.
+- every changed file in `plan.md`, interfaces, Prisma/Zod/SQL/migration, secrets, map row: unchanged since round 1.
+
+Findings: none blocking.
+
+Before merge (not code findings; for dev-lead): PR #95 is `CONFLICTING` / `DIRTY` against `origin/main` c839ed9
+(`docs(backlog): B3.3 done (#97)`): `docs/metrics.md` and `spec/technical-requirements.md` conflict
+(`git merge-tree`). GitHub starts no `pull_request` run on a conflicting PR, so no CI run exists for 5c547f9 (runs
+listed only for 0eccb34 and d43e2b5); semgrep's clearance of the rewrite is unverified until the branch merges
+origin/main again and CI runs. That merge needs this check repeated (`--remerge-diff` on tests).
+
+Verdict: ready for PR
+
+Riskiest unfalsified: semgrep on 5c547f9 has not run anywhere; the rewrite holds no `RegExp(` call, but whether the
+CI ruleset flags anything else in e2e/17 is unknown until CI runs after the conflict merge.
