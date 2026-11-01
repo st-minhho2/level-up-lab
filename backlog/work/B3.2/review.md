@@ -111,3 +111,105 @@ Notes (not blocking, for the lead):
 
 Riskiest unfalsified: approach A's layout effect running in the same commit as React 19.1.0's `form.reset()` (read in
 react-dom source in round 1, not run); AC-18.4 to AC-18.6 are the first execution of that assumption.
+
+## Diff review (round 1)
+
+SCOPE: all (`src/lib`, `src/components`, `e2e`; no `src/actions`, no `prisma/`)
+
+Range `main...HEAD` (merge-base d53f4c7; the branch is 2 commits behind `origin/main`, #92 and #96). Read: §18, `plan.md`,
+`advice.md`, every changed file, the red commit body. Probes ran on a copy (scratchpad `probe/`), never on the tree.
+
+### Commands (last line of each, run by the reviewer)
+
+| Command                             | Result                                                                                                         |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | exit 0; `✖ 1 problem (0 errors, 1 warning)` (react-hooks/exhaustive-deps, `todo-form.tsx:23`); prettier OK     |
+| `pnpm typecheck`                    | `tsc --noEmit`, no output, exit 0                                                                              |
+| `pnpm test`                         | `Tests  175 passed (175)`                                                                                      |
+| `pnpm test:e2e`                     | `33 passed (1.3m)`                                                                                             |
+| `pnpm test:mutation`                | `Final mutation score of 91.88 is greater than or equal to break threshold 70`; `title-count.ts` 100.00 (2/2)  |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                                      |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                              |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                             |
+| `scripts/ci/check-ac-coverage.sh`   | `OK` (§18 is ✗ in the index, so the script skips it; coverage checked by hand below: 7/7)                      |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 16 18`                                                                                |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                                           |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B3.2-title-counter stays inside the approved plan of B3.2`                                           |
+| `scripts/verify-red.sh B3.2`        | `RESULT: red for the right reason` (component 4 new failed, lib 2 new failed; e2e skipped, body says 1 failed) |
+| `git diff --stat main...HEAD`       | 14 files, +875 −5 (code: `title-count.ts` +11, `todo-form.tsx` +25 −5)                                         |
+
+### Checklist
+
+| Check                                         | Result                                                                                                                                                                                                                          |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-18.n has a test matching its Then    | pass: AC-18.1 (12 values, `'é'` is bytes `65 cc 81`, `'İ'` is `c4 b0`), AC-18.2 (5 texts, 4 schema rows, agreement), AC-18.3 (a)–(e), AC-18.4 (a)(b), AC-18.5 (a)(b)(c), AC-18.6 (fail and success renders), AC-18.7 every step |
+| no test weakened after red                    | pass: `git log --first-parent --no-merges d480a51..HEAD -- '*.test.*' e2e/` empty; `--merges --remerge-diff` empty (no merges)                                                                                                  |
+| every changed file in `plan.md`               | pass: 5 Files rows + exempt paperwork (`spec/features-map.md`, `docs/metrics.md`, backlog, spec docs commits)                                                                                                                   |
+| interfaces match §18 Function contracts       | pass: both signatures exact; `TITLE_MAX_LENGTH` imported (one 200); `<p id="new-todo-count">`, no role, no `aria-live`; `aria-describedby` `'new-todo-error new-todo-count'` / `'new-todo-count'`; `TodoForm(): ReactNode`      |
+| Zod at every action boundary                  | n/a: no action touched                                                                                                                                                                                                          |
+| Prisma only in `src/lib`, no raw SQL          | pass: none added; `title-count.ts` imports only `todo-schema.ts` → `zod` (client-safe)                                                                                                                                          |
+| migration                                     | n/a                                                                                                                                                                                                                             |
+| no secret, no suppression                     | pass                                                                                                                                                                                                                            |
+| features map row moved                        | pass: F16 ✗ in b4b372f, ✅ in 506a8bb (see note 3)                                                                                                                                                                              |
+| would a test fail if a changed line reverted? | pass for every §18 line (probe table); the pre-existing `onSubmit` seed is now covered by nothing (note 2)                                                                                                                      |
+
+Probes (`todo-form.tsx` variant → `vitest run src/components/todo-form.test.tsx`):
+
+| Variant                                                        | Result                                                                                                 |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| layout effect removed                                          | 3 fail: AC-18.4, AC-18.5, AC-18.6                                                                      |
+| layout effect with `[]`                                        | 3 fail: AC-18.4, AC-18.5, AC-18.6                                                                      |
+| `useEffect` instead of `useLayoutEffect`                       | 2 fail: AC-10.5 (existing), AC-18.5                                                                    |
+| `onChange` writer removed                                      | 3 fail: AC-18.3, AC-18.6, pending-typing                                                               |
+| `aria-describedby` order swapped / counter id dropped on error | 1 fail each: AC-18.5                                                                                   |
+| layout effect with `[state, pending]` or `[state]`             | 10 pass; `eslint` on the file exit 0, 0 warnings                                                       |
+| `onSubmit` seed removed                                        | 10 pass                                                                                                |
+| `kept` = draft after any failure (title error too)             | 10 pass (pre-existing gap, see Q3)                                                                     |
+| SSR: `renderToString(<TodoForm />)`                            | `<p id="new-todo-count" …>0 / 200</p>`, box `aria-describedby="new-todo-count"` (REQ-18.3 server half) |
+
+### Findings
+
+None blocking.
+
+### Answers to the code-writer's questions
+
+1. **Lint warning.** It is not a CI failure (`"lint": "eslint . && prettier --check ."`, no `--max-warnings`, exit 0)
+   and not a suppression. The "infinite chain" it warns of does not happen: `setDraft` with an equal string bails out,
+   and the 175 unit + 33 e2e tests terminate. But it is the repo's only lint warning, and the round-1 plan review said
+   approach A needed no suppression without naming this warning, so the lead approved without seeing it. A dependency
+   list `[state, pending]` clears it (probe: eslint 0 warnings, 10/10 component tests) and is still approach A (ref +
+   layout effect reading the box, one `draft`; not B's `onReset`/`kept`). React resets the form only in the commit that
+   settles the action transition, and that commit always flips `pending`, so "read after every form reset" (§18
+   Function contracts) still holds. It does change the plan's literal words "no-dependency `useLayoutEffect` … after
+   every commit", so it is the lead's call (keep the warning, or amend the Approach line and change the effect in a
+   new `feat`/`fix` commit), not a reviewer finding. Not tested: `[state, pending]` against `pnpm test:e2e`.
+2. **Read on mount.** No conflict. §18 Out of scope lists "a value that reaches the box … typed before the page is
+   interactive … until the next input event or form reset": not required, not forbidden. REQ-18.3's server HTML is still
+   `0 / 200` (SSR probe), and counting the real value sooner matches the Intent ("right at every moment the box holds
+   text"). No AC asserts either way.
+3. **Draft/kept after a title error.** No §10 behavior change. `kept` is unchanged (`draft` only when
+   `fieldErrors.form` is set). After a title error the box resets to `''` and the effect now sets `draft` to `''`;
+   before, `draft` kept the submitted text, but it was read only after a `form` failure, which needs a submit, and
+   `onSubmit` re-seeds `draft` on every submit. So the old value was never visible. The 6 existing component tests
+   and `e2e/10` pass. Separately (pre-existing on `main`, not this card): no test pins the box being empty after a title
+   error. The `kept`-on-any-failure probe passes 10/10, and §18 leaves the box content after a title error to §5.
+
+### Notes (not blocking)
+
+1. The lint warning (Q1) needs a lead decision before the PR, or the PR body names it.
+2. `onSubmit` seeding (`todo-form.tsx:32-35`, pre-existing) is now redundant: the submit commit flips `pending`, and the
+   layout effect reads the box in that commit. The comment "Three writers keep the draft equal" counts it as a
+   writer that no test can tell apart. Not dead in intent, but uncovered. Remove it later only with a test.
+3. Work breakdown said F16 goes ✅ in `docs(map)`. It went ✅ in the `feat` commit 506a8bb (with `docs/metrics.md`), and
+   the `docs(map)` commit a203032 touches only `docs/metrics.md`. Both are exempt paperwork and the guards pass, but the
+   PR body should say so.
+4. f0eeb23 and 7c7f413 cite D-22, which exists only on `origin/main` (#96). On this branch `00-decisions.md` still has
+   the two `D-21` rows. The citations resolve once the branch takes `main`.
+5. `title-count.test.ts:17` comment says "Escapes, not literals", but `'İ'` and `'é'` are literal characters. The
+   bytes are right. If an editor normalizes `'é'` to NFC, the test fails loudly rather than lying.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the counter after a real failed save in a browser. AC-18.5 runs only in jsdom, and `e2e/18`
+covers just the success reset. A Chromium form failure (§10 DB rejection) with the counter reading the kept title is
+unexercised. The same is true of `[state, pending]` under e2e, if the lead picks it.
