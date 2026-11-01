@@ -17,7 +17,7 @@ _F15 · section 17_
 ### B3.2 · Show a character counter while typing a title
 
 _F16 · section 18_
-**Status: Open** — `src/components/todo-form.tsx:36` sets `maxLength={200}` (D-5) with no visible count of characters used or left
+**Status: Done** — 4a496c9 (#94), 7 AC-18.n tests green (unit 184, e2e 34), mutation 92.68
 
 - **Spec:** §18 — unchanged (section written from `work/B3.2/analysis.md`; contract `spec/contracts/16-title-counter.md`)
 - **Test:** `src/lib/title-count.test.ts::AC-18.1: counts the trimmed value in UTF-16 code units: 0 for '' and '   ', 8 for 'Buy milk', 200 for 5 spaces + 200 x + 5 spaces, 201 for 201 x, 2 for an emoji` — red because: `src/lib/title-count.ts` does not exist, `titleCharacterCount` is not exported
