@@ -77,23 +77,54 @@ async function submitDueDate(page: Page, index: number, value: string): Promise<
   await row.getByRole('button', { name: 'Update due date' }).click();
 }
 
-function escaped(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+interface RowText {
+  readonly title: string;
+  readonly day?: string;
+  readonly overdue?: boolean;
+}
+
+// True when `text` is, in order: the title, then `Due <day>` (one literal space), then `Overdue` only when `overdue`,
+// with only whitespace (possibly none) around and between the parts and nothing else. Plain string checks, so no
+// RegExp is built from the day (semgrep detect-non-literal-regexp).
+function readsAs(text: string, row: RowText): boolean {
+  const parts = [row.title, ...(row.day === undefined ? [] : [`Due ${row.day}`]), ...(row.overdue ? ['Overdue'] : [])];
+  let rest = text;
+  for (const part of parts) {
+    rest = rest.trimStart();
+    if (!rest.startsWith(part)) return false;
+    rest = rest.slice(part.length);
+  }
+  return rest.trim() === '';
+}
+
+function describeRow(row: RowText): string {
+  return [row.title, row.day === undefined ? '' : `Due ${row.day}`, row.overdue ? 'Overdue' : '']
+    .filter(Boolean)
+    .join(' ');
 }
 
 // "the list reads [E, D, C, B, A] (5 rows, same order) and B's checkbox stays checked; B's row text reads `B` followed
 // by `Due <yesterday>` with no `Overdue`"; A's row reads `A`, `Due <aDue>` and `Overdue` exactly when `aOverdue`.
 async function expectRows(page: Page, days: Days, aDue: string, aOverdue: boolean): Promise<void> {
-  const due = (title: string, day: string, overdue = false): RegExp =>
-    new RegExp(`^\\s*${title}\\s*Due ${escaped(day)}\\s*${overdue ? 'Overdue\\s*' : ''}$`);
+  const expected: readonly RowText[] = [
+    { title: 'E' },
+    { title: 'D', day: days.tomorrow },
+    { title: 'C', day: days.today },
+    { title: 'B', day: days.yesterday },
+    { title: 'A', day: aDue, overdue: aOverdue },
+  ];
   await expect(page.getByRole('listitem')).toHaveCount(5);
-  await expect(page.getByRole('listitem')).toHaveText([
-    /^\s*E\s*$/,
-    due('D', days.tomorrow),
-    due('C', days.today),
-    due('B', days.yesterday),
-    due('A', aDue, aOverdue),
-  ]);
+  // Each row that reads as expected maps to its description; one that does not keeps its raw text, so a failure diff
+  // shows the actual row.
+  await expect
+    .poll(async () => {
+      const texts = await page.getByRole('listitem').allTextContents();
+      return texts.map((text, index) => {
+        const row = expected[index];
+        return row !== undefined && readsAs(text, row) ? describeRow(row) : text;
+      });
+    })
+    .toEqual(expected.map(describeRow));
   await expect(page.getByRole('checkbox', { name: 'B', exact: true })).toBeChecked();
 }
 
