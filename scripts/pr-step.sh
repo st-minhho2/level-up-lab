@@ -74,7 +74,10 @@ case "${1:-}" in
     esac
     [[ ${#title} -le 80 ]] || refuse "title must be at most 80 characters"
     rel="backlog/work/$card/$rel-pr-body.md"; body_file "$rel"
-    # A Partial close leaves its body on main; a later lane commit that does not rewrite it would reuse a stale body.
+    # The body is the one the lane commit holds (what the reviewer read), and that commit wrote it: a Partial close
+    # leaves its body on main, and a later lane commit that does not rewrite it would reuse a stale body.
+    git diff --quiet HEAD -- "$rel" 2>/dev/null || refuse "$rel has uncommitted changes: commit it with the lane"
+    git rev-parse --verify --quiet origin/main >/dev/null || refuse "no origin/main to compare $rel with: git fetch origin"
     changed=0; git diff --quiet origin/main...HEAD -- "$rel" 2>/dev/null || changed=$?
     [[ $changed -eq 1 ]] || refuse "$rel must be written in this branch's lane commit (unchanged since origin/main)"
     url="$(gh pr create --base main --head "$branch" --title "$title" --body-file "$rel")"

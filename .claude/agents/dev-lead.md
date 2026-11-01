@@ -84,7 +84,8 @@ Commit `docs(backlog): <card> plan`.
    `origin/main`, green again, `scripts/pr-step.sh ready <n>`, then the PR line. A refused wrapper call is reported,
    never worked around with raw `git push` / `gh pr` commands. After the lead merges: the closing lane
    (`backlog/CLAUDE.md`) on `docs/<card>-done` (or `-partial`), then `scripts/pr-step.sh push` and
-   `scripts/pr-step.sh open "docs(backlog): <card> done"` (B1.26), never `draft`.
+   `scripts/pr-step.sh open "docs(backlog): <card> done"` (B1.26), never `draft`; on `-partial` the title is
+   `"docs(backlog): <card> partial -- <what is pending>"`.
 
 ## Role brief template
 
