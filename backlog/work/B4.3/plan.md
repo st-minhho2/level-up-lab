@@ -58,4 +58,4 @@ stated in the red commit.
 | 4    | dev-lead            | F20 ✅                                 | `docs(map): F20 … [B4.3]`         |
 | 5    | reviewer (diff)     | `review.md` diff section               | `docs(backlog): B4.3 review …`    |
 
-Plan review: approved, round 2 (round 1: 2 reasons applied 359efed) · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 (round 1: 2 reasons applied 359efed) · Plan approved by: lead, 2026-11-01 · Rounds: 1
