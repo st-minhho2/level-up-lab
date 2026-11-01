@@ -77,11 +77,11 @@ Plan review: round 1 changes requested (1 reason, applied 5f7d200) · round 2 ap
 
 ## Map delta
 
-F18 · §20 · ✗ → ✅ — `createdDayOf`, `createdLabel` in `src/lib/todo-created.ts`, one empty `<time>` in `src/components/todo-item.tsx`; evidence: `pnpm test` → 195 passed (190 + 5), `pnpm test:e2e` → 36 passed (35 + 1), mutation 93.07 (todo-created.ts 100, 5 killed).
+F18 · §20 · ✗ → ✅ — `createdDayOf`, `createdLabel` in `src/lib/todo-created.ts`, one empty `<time>` in `src/components/todo-item.tsx`; evidence (card): `pnpm test` → 195 passed (190 + 5), `pnpm test:e2e` → 36 passed (35 + 1), mutation 93.07 (todo-created.ts 100, 5 killed).
 
 ## Review
 
-`/review-loop`: pass 1/3, 0 findings, ready for PR. Dispositions of the 4 non-blocking notes:
+`/review-loop`: passes 2/3, 0 findings, ready for PR. Pass 1 (34e99c8) on the card; pass 2 (103769f) on the merge of B4.3 (#109, f0cf151: 3 paperwork conflicts, both rows kept, no test or `src/` conflict). After the merge: `Tests  198 passed (198)` · `40 passed (46.3s)` · `Final mutation score of 93.16 is greater than or equal to break threshold 70` (todo-created.ts 100). Pass 2 notes: the pass-1 counts below predate the merge (no change needed); `e2e/22` seeds runner-local `createdAt`, so its rows may show the neighbouring UTC day, which is §20 as specified and read by no §22 test (no change needed). Dispositions of the pass-1 notes:
 
 | Pass | #   | Finding                                                                                        | Source   | Disposition      | Justification                                                                                                                                       |
 | ---- | --- | ---------------------------------------------------------------------------------------------- | -------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
