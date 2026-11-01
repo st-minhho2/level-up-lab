@@ -6,3 +6,5 @@ names are the contract the tests assert: "New todo" text box, "Add" button, a ch
 `todo-filter-nav.tsx` (§12) is link-only (`next/link`, no state or events), so it has no `'use client'` and no `<ul>`.
 `remaining-count.tsx` (§13) is a Server Component (no state, no events), so it has no `'use client'`.
 `complete-all-button.tsx` (§14) is `'use client'` (state, events) like `clear-completed-button.tsx`.
+`todo-due-date.tsx` (§15) is `'use client'` (state, events): the due-date text and edit control inside a `TodoItem` row.
+`todo-search-form.tsx` (§16) is a Server Component, a native GET form (no state, no events), so it has no `'use client'`.
