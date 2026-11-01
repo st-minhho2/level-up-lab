@@ -1,4 +1,4 @@
-# src/components — client components (§7)
+# src/components — UI components, client and server (§7, §10, §12–§19)
 
 `'use client'` only because of state or events. Props are plain data (`Todo`), never a Prisma model. Accessible
 names are the contract the tests assert: "New todo" text box, "Add" button, a checkbox named by the todo's title,
