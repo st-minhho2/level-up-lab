@@ -7,10 +7,10 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic            | File                                               | Done   | Partial | Open  | Total  |
 | --------------- | -------------------------------------------------- | ------ | ------- | ----- | ------ |
-| E1 Todos        | [plan/E1-todos.md](plan/E1-todos.md)               | 21     | 0       | 3     | 24     |
+| E1 Todos        | [plan/E1-todos.md](plan/E1-todos.md)               | 21     | 1       | 2     | 24     |
 | E2 Todos plus   | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)     | 5      | 0       | 0     | 5      |
 | E3 Todos polish | [plan/E3-todos-polish.md](plan/E3-todos-polish.md) | 3      | 0       | 0     | 3      |
-| **Total**       |                                                    | **29** | **0**   | **3** | **32** |
+| **Total**       |                                                    | **29** | **1**   | **2** | **32** |
 
 ## Execution order
 
@@ -69,11 +69,11 @@ flowchart TD
 Board state (To do · Doing · Review · Closing) is derived, not typed: `scripts/next-task.sh --list` (BOARD column),
 at most 3 cards Doing (B1.18).
 
-| Step | ID    | Title                                                                      | Spec § | Status | Blocked by | Owner | Size         |
-| ---- | ----- | -------------------------------------------------------------------------- | ------ | ------ | ---------- | ----- | ------------ |
-| 20   | B1.20 | Plan rows with `[ ]` match their own path in the plan-scope hook and guard | —      | Open   | ~~B1.17~~  | Lead  | S [estimate] |
-| 31   | B1.23 | Card sessions run their own PR steps: push, open, label, mark ready        | —      | Open   | —          | Lead  | S [estimate] |
-| 32   | B1.24 | guard-bash blocks every forced-push and branch-delete spelling             | —      | Open   | —          | Lead  | S [estimate] |
+| Step | ID    | Title                                                                      | Spec § | Status  | Blocked by | Owner | Size         |
+| ---- | ----- | -------------------------------------------------------------------------- | ------ | ------- | ---------- | ----- | ------------ |
+| 20   | B1.20 | Plan rows with `[ ]` match their own path in the plan-scope hook and guard | —      | Open    | ~~B1.17~~  | Lead  | S [estimate] |
+| 31   | B1.23 | Card sessions run their own PR steps: push, open, label, mark ready        | —      | Partial | —          | Lead  | S [estimate] |
+| 32   | B1.24 | guard-bash blocks every forced-push and branch-delete spelling             | —      | Open    | —          | Lead  | S [estimate] |
 
 ## Waiting on human
 

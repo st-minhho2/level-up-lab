@@ -566,3 +566,53 @@ did not run it; it needs a concurrent command the allow rule does not cover.
 | 6   | fix now: title length counts characters in any locale                                                                                                                                  | ca4b3ee red at 0a208a1, green at 38e6728 |
 
 Counts now: pr-step-smoke 10 ok; hook-smoke 309 probes OK (bash 5 and /bin/bash 3.2).
+
+## Diff review (pass 3)
+
+HEAD bf33cc9 (PR #99 merged during this pass as squash 97fb986, same tree; `git diff --stat bf33cc9 97fb986` empty).
+Written by dev-lead from the reviewer's report: the card worktree was pruned after the merge, before the reviewer could
+append it. New since pass 2: ca4b3ee test, a33add4 review text, 38e6728 chore, ce3ae76 plan round 2 and dispositions,
+7b89914 lead approval, bf33cc9 merge of origin/main.
+
+### Commands
+
+| Command                                      | Last line                                                                                                  |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `pnpm lint` / `pnpm typecheck` / `pnpm test` | Prettier clean / exit 0 / `Tests 190 passed (190)`                                                         |
+| `pnpm test:e2e` / `pnpm test:mutation`       | CI on bf33cc9: `35 passed (45.9s)` / `Final mutation score of 92.95 …` (not run locally: worktree removed) |
+| `scripts/ci/check-*.sh`                      | all OK; `check-config-change` needs the label, which #99 carries                                           |
+| `scripts/ci/plan-files.sh B1.23 HEAD`        | 14 rows = the 14 files of `git diff --name-only origin/main...HEAD`                                        |
+| `scripts/pr-step-smoke.sh`                   | /bin/bash 3.2 and bash 5.2: `10 ok, 0 FAIL`                                                                |
+| `scripts/hook-smoke.sh`                      | /bin/bash 3.2: `309 probes OK`; all 24 rule-5 probes ok on 3.2 and 5.2 clones                              |
+| CI on bf33cc9                                | lint, typecheck, test, e2e, mutation, guards, semgrep, claude-review: pass                                 |
+
+### Pass-2 findings
+
+| #   | Closed?    | Evidence                                                                                                                                                                     |
+| --- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | yes        | plan round 2 rewords the guard-bash row and states the cost; re-approved in 7b89914                                                                                          |
+| 2   | yes        | comment, `PR_STEP_MSG` and hooks.md state the grammar and the same-as-the-hooks condition; the mismatch message names both paths                                             |
+| 3   | yes        | pass-2 mutants `"[^"$]*"` and `'.*'` now fail 2 and 1 probes; dropping `$` from the "…" class is killed; dropping `!` is equivalent (no history expansion non-interactively) |
+| 4   | yes        | the `-ef` layout mutant fails the second-worktree probe; dropping `cmp` is killed                                                                                            |
+| 5   | yes (text) | comment and hooks.md state the limit                                                                                                                                         |
+| 6   | yes        | 80 accepted, 81 refused for plain, `(§9)`, `(§10)`, `(§1234)` titles in C and UTF-8 on 3.2; same on 5.3.9                                                                    |
+
+ca4b3ee is red at 0a208a1 (`9 ok, 1 FAIL`, R6) and green at 38e6728. No chore commit touches a smoke. The merge is
+clean (`--remerge-diff` empty); main changed nothing under `.claude/` or `scripts/`.
+
+### Findings
+
+```
+[1] KIND: coverage (not blocking; carried)
+    WHERE: scripts/pr-step-smoke.sh R6; scripts/pr-step.sh (chars=… + 4 + ${#digits})
+    DEFECT: no probe checks the 80-character cap for a title with the " (§<n>)" suffix; mutants `+ 4 → + 3`, dropping
+            `+ ${#digits}` or the suffix addition survive.
+    TRIGGER: under any of them, `draft "feat(todos): B9.1 <58 x> (§9)"` (81 characters) is accepted.
+    WRONG BEHAVIOUR: a regression could let a suffixed title run past 80 characters; the guard and the gh call are
+            untouched. Fix: R6 refuses that title, and the same with `(§10)`.
+    CONFIDENCE: confirmed
+```
+
+Verdict: ready for PR (already merged at the reviewed tree). [1] carried. Riskiest unfalsified: the time gap between
+the hook's `cmp` and the shell running the wrapper, and between `find -links 1` and gh reading the body file.
+Before the Done check: the next card session must start from a checkout at or after 97fb986.
