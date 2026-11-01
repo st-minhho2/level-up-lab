@@ -21,6 +21,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §14 | [contracts/12-complete-all.md](contracts/12-complete-all.md)           | Todos: mark all complete                                               | ✅     |
 | §15 | [contracts/13-due-date.md](contracts/13-due-date.md)                   | Todos: an optional due date                                            | ✅     |
 | §16 | [contracts/14-search.md](contracts/14-search.md)                       | Todos: search by title                                                 | ✅     |
+| §18 | [contracts/16-title-counter.md](contracts/16-title-counter.md)         | Todos: a character counter on the new-todo box                         | ✗      |
 
 Reading order: §1 → §2 → the section your backlog card names → [features-map.md](features-map.md).
 
