@@ -11,6 +11,11 @@ probe() { # probe <expected-exit> <hook> <json> [hook args...]
   local out rc; out="$(printf '%s' "$json" | "$H/$hook" "$@" 2>&1)"; rc=$?; n=$((n+1))
   if [[ $rc -eq $want ]]; then printf 'ok   %s exit %s  %s\n' "$hook" "$rc" "$json"; else printf 'FAIL %s exit %s (want %s)  %s\n     %s\n' "$hook" "$rc" "$want" "$json" "$out"; fail=1; fi
 }
+probe_msg() { # probe_msg <expected-exit> <text> <hook> <json>: probe, and the hook's output must hold <text>
+  local want="$1" text="$2" hook="$3" json="$4"
+  local out rc; out="$(printf '%s' "$json" | "$H/$hook" 2>&1)"; rc=$?; n=$((n+1))
+  if [[ $rc -eq $want && "$out" == *"$text"* ]]; then printf 'ok   %s exit %s  %s\n' "$hook" "$rc" "$json"; else printf 'FAIL %s exit %s (want %s, "%s")  %s\n     %s\n' "$hook" "$rc" "$want" "$text" "$json" "$out"; fail=1; fi
+}
 bash_cmd() { printf '{"tool_input":{"command":"%s"}}' "$1"; }
 read_path() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
 
@@ -48,6 +53,75 @@ cp scripts/pr-step.sh "$PRT/scripts/pr-step.sh"; git -C "$PRT" rm -q --cached sc
 git -C "$PRT" -c user.name=s -c user.email=s@x commit -q --no-verify -m y
 probe 2 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh push' "$PRT")"   # identical copy, untracked
 rm -f "$PRT/scripts/pr-step.sh"; rmdir "$PRT/scripts" 2>/dev/null; rm -rf "$PRT/.git"; rmdir "$PRT" 2>/dev/null
+
+echo "== guard-bash.sh: force-push and remote branch-delete spellings (B1.24)"
+# One command per line, read raw so quotes, $ and backslashes reach the hook as typed.
+while IFS= read -r c; do probe_msg 2 'force pushes' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'FORCED'
+git push origin '+main'
+git push origin "+feat/x"
+git push origin +@:feat/x
+git push origin +0a1b2c3:refs/heads/feat/x
+git push origin +$BR
+git push origin \+main
+git push origin $'+main'
+git push origin $'\x2bmain'
+git push origin {main,--force}
+git push origin {x,:feat/y}
+git push origin --{force,verbose} feat/x
+git push origin ${X:-+main}
+git push --mirror origin
+git push origin --mir
+git push origin --delete feat/x
+git push origin --del feat/x
+git push -d origin feat/x
+git push origin :feat/x
+git push origin "":feat/x
+git push --all --prune
+git push '--force' origin feat/x
+git -C . push --force origin feat/x
+git -C . push -f
+git -C "a b" push -f
+git -C a\ b push -f
+git -C $(git rev-parse --show-toplevel) push -f
+git --no-pager push -f
+git "push" -f
+"git" push origin --delete feat/x
+git -c remote.origin.mirror=true push origin
+git -c remote.origin.push=+refs/heads/*:refs/heads/* push
+git config remote.origin.mirror true
+git config remote.origin.MIRROR true
+git config remote.origin.push +refs/heads/*:refs/heads/*
+git remote add --mirror=push m url
+GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=remote.origin.mirror GIT_CONFIG_VALUE_0=true git push origin
+git send-pack --force origin refs/heads/main
+gh api -X DELETE repos/o/r/git/refs/heads/feat/x
+gh api -X delete repos/o/r/git/refs/heads/feat/x
+gh repo sync o/r --force
+git status && git push -f
+git push -u origin feat/x; git push -uf origin feat/x
+(git push -f)
+URL=$(git remote get-url origin) git push --force origin main
+git remote show origin `git push origin +main`
+FORCED
+# line continuations: the second line belongs to the same command
+for c in "$(printf 'git push origin \\\n+main')" "$(printf 'git \\\npush -f')"; do
+  probe_msg 2 'force pushes' guard-bash.sh "$(pr_cmd "$c" "$PWD")"
+done
+while IFS= read -r c; do probe 0 guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'PLAIN'
+git push
+git -C . push -u origin feat/x
+git push -u origin feat/B1.24-force-push-spellings
+git push --follow-tags origin feat/x
+git push --dry-run origin feat/x
+git push origin HEAD:refs/heads/feat/x
+git push --set-upstream origin feat/fix-delete
+git commit -m "guard-bash blocks every forced-push spelling"
+git remote add origin git@github.com:o/r.git
+git config user.name "a=:b"
+git config --get remote.origin.mirror
+gh api repos/o/r/git/refs/heads/feat/x
+PLAIN
+probe 0 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh push' "$PWD")"   # the wrapper's push (B1.23) still runs
 probe 0 guard-bash.sh "$(pr_cmd "scripts/pr-step.sh draft 'feat(todos): B9.1 add the x (§9)'" "$PWD")"
 # review pass 2: escapes out of a quoted argument; the real layout (hooks from one checkout, the call in another checkout
 # holding the same committed wrapper)
