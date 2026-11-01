@@ -225,3 +225,165 @@ the read-only `gh pr checks`/`view`.
 Riskiest unfalsified: whether Claude Code's matcher auto-approves `scripts/pr-step.sh …` when the argument holds
 `$(…)`, a redirection or a `VAR=` prefix. I could not run it; reason 1 makes the answer irrelevant by blocking those
 shapes in `guard-bash.sh` before the matcher is consulted.
+
+## Diff review (pass 1)
+
+SCOPE: tooling (`scripts/pr-step.sh`, `.claude/hooks/guard-bash.sh` rule 5, `.claude/settings.json` allow, docs); no
+`src/`, no section. Range `origin/main...a2977c9` (local `main` is stale; `origin/main...HEAD` is the PR's diff):
+test 2167759, chore a2977c9. Probes on clones under the session scratchpad (`rv1`, `rv2`, `rv3`, `foreign1`,
+`untr1`, `zsh1`, `ttl1`); the worktree was not edited.
+
+### Commands
+
+| Command                                         | Last line                                                                                                 |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                     | `All matched files use Prettier code style!`                                                              |
+| `pnpm typecheck`                                | `> tsc --noEmit` (exit 0)                                                                                 |
+| `pnpm test`                                     | `Tests  178 passed (178)`                                                                                 |
+| `pnpm test:e2e`                                 | `33 passed (40.8s)`                                                                                       |
+| `pnpm test:mutation`                            | `Final mutation score of 92.63 is greater than or equal to break threshold 70`                            |
+| `scripts/ci/check-suppressions.sh`              | `OK: no new suppressions`                                                                                 |
+| `scripts/ci/check-config-change.sh`             | exit 1 unlabeled (8 protected paths); `CONFIG_CHANGE_APPROVED=true` → exit 0 (PR #99 carries the label)   |
+| `scripts/ci/check-feat-commits.sh`              | `OK: no feat commit touches tests`                                                                        |
+| `scripts/ci/check-ac-coverage.sh`               | `OK: every criterion of a shipped section has a test`                                                     |
+| `scripts/ci/check-spec-sections.sh`             | `OK: sections cited: 1 … 16 19`                                                                           |
+| `scripts/ci/check-features-map.sh`              | `OK`                                                                                                      |
+| `scripts/ci/check-plan-scope.sh`                | `OK: feat/B1.23-pr-steps stays inside the approved plan of B1.23`                                         |
+| `scripts/ci/check-backlog.sh`                   | `OK: README matches the cards`                                                                            |
+| `scripts/ci/plan-files.sh B1.23 HEAD`           | the 14 Files rows, exit 0; `git diff --stat origin/main...HEAD` = the same 14 paths                       |
+| `scripts/verify-red.sh B1.23`                   | exit 1 `no 'test(<pkg>): B1.23 … (red)' commit` (vitest only; `--auto`, as CI runs it: nothing to verify) |
+| `scripts/pr-step-smoke.sh` (`/bin/bash` 3.2.57) | a2977c9 `10 ok, 0 FAIL`; 2167759 `0 ok, 10 FAIL` (rc 127, script missing)                                 |
+| `scripts/hook-smoke.sh`                         | a2977c9 `299 probes OK`; 2167759 11 FAIL (10 guard-bash pr-step probes + S1)                              |
+
+No bash 5 on this machine. The two version-sensitive expressions (`${card//./\\.}` in the title regex, `[\ -~]` on a
+non-ASCII title) give the same result on bash 5.3.9 (postgres container) as on 3.2: `B1x23` refused, `é` refused.
+
+### Checklist
+
+| Check                                                    | Result                                                                                                                                                                 |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every card criterion has a probe whose assertion matches | pass, except the gaps in [3] and [4]                                                                                                                                   |
+| no test weakened after the red commit                    | pass: `git log --first-parent --no-merges 2167759..HEAD -- scripts/*-smoke.sh '*.test.*' e2e/` is empty; no merges                                                     |
+| red for the right reason                                 | pass: pr-step-smoke rc 127 on every R (plan's stated reason: no script); hook-smoke the 10 new exit-2 probes + S1                                                      |
+| every changed file is in `plan.md`                       | pass: 14/14                                                                                                                                                            |
+| interfaces match the plan                                | pass: three steps, exit 3 + `pr-step:`, title ≤ 80 ASCII with card id, fixed body file, `isCrossRepository`                                                            |
+| no secret, no suppression, no raw SQL, no `src/`         | pass                                                                                                                                                                   |
+| docs consistent with code                                | pass: no role or skill still tells a session to run raw `git push` / `gh pr create` / `gh pr ready`; but see [5]                                                       |
+| plan numbers                                             | deviation, acceptable: hook-smoke 299 (plan 291) and 11 red (plan 7), more probes than planned; the commit body states them; the PR body should quote the real numbers |
+| would a test fail if one changed line were reverted?     | mostly: see mutants                                                                                                                                                    |
+
+Mutants (one line each, on a clone; killed = the suite goes red):
+
+```
+pr-step.sh  drop -links 1 check        killed (R5)     drop symlinked-dir check   killed (R5)
+            drop isCrossRepository     killed (R8)     drop cwd == top            killed (R9)
+            drop unset GH_REPO         killed (R10)    drop push argc check       killed (R3)
+            ready: any 3rd word        killed (R8)     -le 80 → -le 90 / -le 79   SURVIVES [4]
+            drop GIT_CONFIG_* loop     survives (defence in depth, no env reaches it; not a finding)
+            drop title newline test    equivalent ([\ -~] already excludes \n)
+guard rule5 drop ls-files check        SURVIVES [3]    drop git diff check        killed
+            drop cwd == top            killed          drop newline check         SURVIVES [4]
+            drop bash from prefixes    killed          PLAIN regex → .*           killed (7)
+            drop -d "$cwd"             survives (minor)  drop ( ` from tr split   survives (only affects commands the allow rule never matches)
+```
+
+### Findings
+
+```
+[1] KIND: security
+    WHERE: .claude/hooks/guard-bash.sh:81 (PR_STEP_PLAIN)
+    DEFECT: rule 5 assumes bash grammar, but the session's Bash tool runs zsh 5.9 (SHELL=/bin/zsh, ZSH_VERSION=5.9 in
+            this session), and zsh runs code from unquoted characters the regex allows: `=(…)` process substitution and
+            glob qualifiers `*(e:'…':)`.
+    TRIGGER: `scripts/pr-step.sh push =(gh pr merge 99 --admin)` or `scripts/pr-step.sh push *(e:'touch X':)`, cwd the
+            worktree top. guard-bash.sh → exit 0 for both. In zsh -c on a stub: `=(touch PWNED1)` and
+            `*(e:'touch PWNED2':)` both created their file before the script ran.
+    WRONG BEHAVIOUR: the one command settings.json allows outright runs an arbitrary second command, the thing rule 5
+            exists to stop ("the shell must not change what it does"). Whether the matcher auto-approves this exact
+            string is the round-1/2 assumption; the guard half is confirmed.
+            Fix shape: a quote-aware argument grammar, e.g.
+            ^scripts/pr-step\.sh( ([A-Za-z0-9._-]+|'[^']*'|"[^"$`\\!]*"))*$ (bare safe words or quoted strings;
+            the title's `(`/`)` stay inside quotes, where neither shell expands them); red probes for `=(`, `*(e:…:)`,
+            `{a,b}`, `~`.
+    CONFIDENCE: confirmed (guard and zsh run); plausible (matcher auto-approval)
+
+[2] KIND: security
+    WHERE: .claude/hooks/guard-bash.sh:85-88
+    DEFECT: "tracked and unmodified" is checked against HEAD of whatever repository the cwd is in, so any committed
+            `scripts/pr-step.sh` passes, whatever it contains.
+    TRIGGER: (a) `git init` in the scratchpad, write `scripts/pr-step.sh` = `gh pr merge 99 --admin`, `git add -A`,
+            `git commit`, cd there, `scripts/pr-step.sh push` → guard exit 0 (foreign1). (b) on the card branch append a
+            line to `scripts/pr-step.sh`, `git commit -am x`, `scripts/pr-step.sh push` → guard exit 0 (rv1, commit
+            c164aa9). Both need only routine commands (write, add, commit, cd), none of them protected at commit time;
+            check-config-change.sh only fires at PR time, after the code ran.
+    WRONG BEHAVIOUR: round-2 reason 1's "run a different scripts/pr-step.sh" (the `cd <scratchpad>` and in-worktree
+            edit cases) is still open; the allow rule runs unreviewed code. (My round-2 fix proposed this check; it is
+            insufficient.) Fix shape: compare the cwd's wrapper byte for byte with the hook checkout's own copy
+            (`cmp -s "$top/scripts/pr-step.sh" "$(dirname "$0")/../../scripts/pr-step.sh"`, the launch directory the
+            session does not edit), optionally plus same `git rev-parse --git-common-dir`. This rewords the plan's
+            guard-bash Files row, so it needs the lead's re-approval (or the lead accepts the risk in writing).
+    CONFIDENCE: confirmed (guard run on both repos)
+
+[3] KIND: coverage
+    WHERE: scripts/hook-smoke.sh (untracked-wrapper probe, $PRT)
+    DEFECT: the "untracked wrapper" probe uses a repo with no commit, so `git diff --quiet HEAD` fails on the missing
+            HEAD and blocks it; the `ls-files --error-unmatch` line is never what blocks.
+    TRIGGER: delete guard-bash.sh:87 (ls-files) → hook-smoke has no new FAIL; then a repo with one commit and an
+            untracked `scripts/pr-step.sh` (untr1) → real hook exit 2, mutant exit 0.
+    WRONG BEHAVIOUR: G5's untracked half passes for the wrong reason; the check can be dropped with the suite green.
+            Fix: commit something in $PRT before the untracked probe.
+    CONFIDENCE: confirmed
+
+[4] KIND: coverage
+    WHERE: scripts/hook-smoke.sh (no newline probe); scripts/pr-step-smoke.sh R6 ('81 chars' label)
+    DEFECT: two stated limits are unpinned: rule 5's newline check, and the title's 80-character cap (the '81 chars'
+            probe sends 18 + 81 = 99 characters, nothing tests 80 accepted).
+    TRIGGER: drop `"$CMD" != *$'\n'* &&` → hook-smoke green, and `scripts/pr-step.sh push<LF>touch X` → exit 0
+            (real: exit 2). `-le 80` → `-le 90` or `-le 79` → pr-step-smoke 10 ok. Real wrapper: 80 chars rc 0,
+            81 chars rc 3 (ttl1), so the code is right; only the probes miss it.
+    WRONG BEHAVIOUR: a regression on either limit ships green. Fix: a newline probe (exit 2); R6 at exactly 81, R4 or
+            a new line at exactly 80.
+    CONFIDENCE: confirmed
+
+[5] KIND: correctness
+    WHERE: scripts/pr-step.sh:29; .claude/agents/dev-lead.md:65 (Loop 5)
+    DEFECT: the title must be printable ASCII, but 2 of the last 3 feature PR titles carry `§`
+            (`feat(todos): B3.2 title character counter (§18)` #94, `… B3.1 mark overdue todos (§17)` #95), and Loop 5
+            does not say so.
+    TRIGGER: `scripts/pr-step.sh draft 'feat(todos): B3.2 title character counter (§18)'` on `feat/B3.2-counter` → rc 3
+            "title must read … in printable ASCII"; the same title with `s18` → rc 0.
+    WRONG BEHAVIOUR: the card's own Done criterion ("the next card session runs draft with no refusal") is likely to
+            fail on the first try, and Loop 9's "a refused wrapper call is reported" may stop the session. Not
+            blocking; fix: one clause in Loop 5 ("ASCII only: write `section 18`, not `§18`") or allow `§` explicitly.
+    CONFIDENCE: confirmed
+
+[6] KIND: correctness
+    WHERE: .claude/hooks/guard-bash.sh:75-79 (segment split on backtick and `;`)
+    DEFECT: the detector splits on characters inside quotes, so a commit message that names the wrapper is treated as
+            a call.
+    TRIGGER: the standard commit form `git commit -m "$(cat <<'EOF' … `scripts/pr-step.sh push` ran without a prompt …
+            EOF)"` → exit 2; `git commit -m "wrapper; scripts/pr-step.sh push is the only step"` → exit 2.
+            (Unquoted backticks inside "…" are real substitutions and are rightly blocked.)
+    WRONG BEHAVIOUR: a false positive on paperwork, likely in this card's own closing commit. Not blocking; the
+            session can rephrase. Note in hooks.md, or narrow detection to commands that start with
+            `scripts/pr-step.sh` (the only shape the allow rule matches).
+    CONFIDENCE: confirmed
+```
+
+Not findings (checked): argv cannot change the push target (fixed `HEAD:refs/heads/<branch>`, branch regex), the draft
+base/head/body, or the PR readied (digits, headRefName = branch, isCrossRepository = false; R8 kills each);
+`scripts//`, `scripts/./`, a leading space, a tab, `#`, `$'…'`, `${…}`, `2>`, `&>`, `>|`, `<<<`, `<(` and quoted
+`;`/`|` are all exit 2; `cat`, `sed -n`, `git add|diff|log`, `grep`, `shellcheck`, `bash -n`, `prettier` on the file
+are exit 0. Env the wrapper does not scrub (`GIT_COMMON_DIR`, `GIT_SSH_COMMAND`, `BASH_ENV`, `GH_CONFIG_DIR`,
+`GH_TOKEN`) cannot be set through an allowed call (prefixes blocked, env does not persist between Bash calls). The
+repo's own `.git/config` (`remote.origin.url`/`pushurl`, `url.*.insteadOf`, `core.sshCommand`, `core.hooksPath`) is
+trusted; changing it is a separate command that follows the session's mode. `gh pr` is a builtin, no alias can
+shadow it.
+
+Verdict: back to test-writer (red probes for [1]–[4], then code-writer for [1] and [2]; [2]'s fix rewords the
+plan's guard-bash row, so the lead re-approves or accepts the risk; [5] and [6] are carryable).
+
+Riskiest unfalsified: whether Claude Code's matcher auto-approves `scripts/pr-step.sh push =(…)` (zsh syntax a bash
+parser reads as `=` and a subshell) and the TOCTOU on `pr-body.md` (a background job swapping it for a hard link to
+`.env` between the `find -links 1` check and gh's read); I could not run the matcher, and the race needs a
+concurrent command that the allow rule does not cover.
