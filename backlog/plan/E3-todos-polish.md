@@ -8,7 +8,7 @@ stay out of card plans.
 ### B3.1 · Mark overdue todos
 
 _F15 · section 17_
-**Status: Open** — `git grep -n -i overdue src/` → no match; `src/components/todo-due-date.tsx` (§15) shows the date the same way whether it has passed or not
+**Status: Done** — af3c20f (#95), 7 AC-17.n tests green (unit 190, e2e 35), mutation 92.14 (todo-overdue.ts 100)
 
 - **Spec:** §17 — unchanged (section written from `work/B3.1/analysis.md`; contract `spec/contracts/15-overdue.md`)
 - **Test:** `src/lib/todo-overdue.test.ts::AC-17.2: marks a due date strictly before today as overdue unless the todo is completed` — red because: `src/lib/todo-overdue.ts` does not exist, `isOverdue` and `OVERDUE_LABEL` are not exported
