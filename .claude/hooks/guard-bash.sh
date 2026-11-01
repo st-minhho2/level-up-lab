@@ -32,25 +32,26 @@ done < <(printf '%s\n' "$CMD" | tr ';&|' '\n\n\n')
 #    send-pack word block on: -f or -d in a short-option cluster, --force*, --mirror, --delete, --prune (and any prefix
 #    git accepts for them, `--mir`), a refspec starting with + or : (`+@:x`, `+$BR`, `:feat/x`), each optionally behind
 #    quotes, \ or $ (`'+main'`, `$'+main'`), any { (brace lists, ${X:-…}, also "${BRANCH}") and any $'…\…' escape.
-#    Git options before push are not parsed, so none hides it. Saved config counts, any case: git config, remote, clone
-#    or -c (or a GIT_CONFIG_* variable anywhere in the command) that sets a mirror (`--mirr=push` too) or a +/: push
-#    refspec, unless the whole segment is a plain `git config [--global…] --get|--unset|--list|-l …` (no comment). So
-#    does gh: api with a DELETE/PATCH method or force=true on git/refs, deleteRef, updateRef, a branch rename; repo sync
-#    --force; pr close or merge with --delete-branch. Out of reach of a text check: a flag or refspec held in a
-#    variable, an alias, a word quoted in pieces, a command built at run time, git config files written directly, other
-#    HTTP clients (curl) calling the GitHub API.
-W='(^|[[:space:]"'"'"'(`/=\\])'
+#    Git options before push are not parsed, so none hides it. Saved config counts, any case: git config, remote, clone,
+#    -c or --config-env (or a GIT_CONFIG_* variable anywhere in the command) that sets a mirror (`--mirr=push` too) or a
+#    +/: push refspec, unless the whole segment is a plain `git config [--global…] --get|--unset|--list|-l …` with no
+#    comment or substitution. So does gh (global flags may come first): api with a DELETE/PATCH method (`-iX DELETE`) or
+#    force=true on git/refs, deleteRef, updateRef, a branch rename; repo sync --force; pr close or merge with -d (in a
+#    cluster or quoted) or --delete-branch. Out of reach of a text check: a flag or refspec held in a variable, words
+#    joined by ${IFS} or another expansion, an alias, a word quoted in pieces, a command built at run time, git config
+#    files written directly, other HTTP clients (curl) calling the GitHub API.
+W='(^|[[:space:];&|"'"'"'(`/=\\])'
 E='(["'"'"'[:space:]`)]|$)'
 GIT_WORD="${W}git(${E}|-push|-send-pack)"
 PUSH_TAIL="${W}(git-push|git-send-pack|push|send-pack)(${E}.*)$"
 PUSH_FORCE='[[:space:]]["'"'"'\\$]*(-[A-Za-z0-9]*[fd]|--(fo?r?c?e?|mi?r?r?o?r?|de?l?e?t?e?|pr?u?n?e?)([^A-Za-z]|$)|[+:])|\{|\$'"'"'[^'"'"']*\\'
-CONFIG_ROUTE="${W}(config|remote|clone|-c)${E}"
-CONFIG_READ_ONLY='^[[:space:]]*git[[:space:]]+config([[:space:]]+--(global|system|local|worktree))*[[:space:]]+(--get[a-z-]*|--unset[a-z-]*|--list|-l)([[:space:]]+[^[:space:]#]+)*[[:space:]]*$'
-CONFIG_FORCE='mirror|--mi?r?r?o?r?([^a-z]|$)|\.push["'"'"']?([[:space:]]+|=)["'"'"'\\$]*[+:]'
-GH_API="${W}gh[[:space:]]+api[[:space:]]"
-GH_WRITE_METHOD='(-x|--method)[[:space:]=]*["'"'"']?(delete|patch)|force[[:space:]]*[=:][[:space:]]*true'
+CONFIG_ROUTE="${W}(config|remote|clone|-c|--config-env)(${E}|=)"
+CONFIG_READ_ONLY='^[[:space:]]*git[[:space:]]+config([[:space:]]+--(global|system|local|worktree))*[[:space:]]+(--get[a-z-]*|--unset[a-z-]*|--list|-l)([[:space:]]+[^[:space:]#$`(]+)*[[:space:]]*$'
+CONFIG_FORCE='mirror|--mi?r?r?o?r?([^a-z]|$)|\.push["'"'"']?([[:space:]]+|=)["'"'"'\\$]*[+:]|config-env[= ][^[:space:]]*\.push'
+GH_API="${W}gh[[:space:]](.*[[:space:]])?api[[:space:]]"
+GH_WRITE_METHOD='(-[a-z]*x|--method)[[:space:]=]*["'"'"']?(delete|patch)|force[[:space:]]*[=:][[:space:]]*true'
 GH_REF_EDIT='deleteref|updateref|branches/[^[:space:]]+/rename'
-GH_BRANCH_DELETE="${W}gh[[:space:]]+(repo[[:space:]]+sync.*--force|pr[[:space:]]+(close|merge)[[:space:]].*[[:space:]](-d|--delete-branch)([[:space:]=]|$))"
+GH_BRANCH_DELETE="${W}gh[[:space:]](.*[[:space:]])?(repo[[:space:]]+sync.*--force|pr[[:space:]]+(close|merge)[[:space:]].*[[:space:]][\"']?(-[a-z]*d|--delete-branch))"
 FORCE_MSG="force pushes and remote branch deletes are not allowed from an agent session."
 joined="${CMD//\\$'\n'/}"
 low="$(printf '%s' "$joined" | tr '[:upper:]' '[:lower:]')"
