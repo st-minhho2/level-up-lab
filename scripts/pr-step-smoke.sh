@@ -64,7 +64,11 @@ r6=0
 refused 'two lines' draft "$(printf 'feat(todos): B9.1 a\nb')" || r6=1
 refused 'no card' draft 'feat(todos): add the x' || r6=1
 refused 'other card' draft 'feat(todos): B9.2 add the x' || r6=1
-refused '81 chars' draft "feat(todos): B9.1 $(printf 'x%.0s' $(seq 1 81))" || r6=1
+refused '81 chars' draft "feat(todos): B9.1 $(printf 'x%.0s' $(seq 1 63))" || r6=1
+refused 'section mark mid-title' draft 'feat(todos): B9.1 add § x' || r6=1
+: > "$LOG"; rc="$(run draft "feat(todos): B9.1 $(printf 'x%.0s' $(seq 1 62))")"; [[ "$rc" == 0 ]] || { echo "     80 chars: rc=$rc"; r6=1; }
+: > "$LOG"; rc="$(run draft 'feat(todos): B9.1 add the x (§9)')"
+grep -qF -- '--title feat(todos): B9.1 add the x (§9) ' "$LOG" && [[ "$rc" == 0 ]] || { echo "     (§n) suffix: rc=$rc"; r6=1; }
 [[ $r6 -eq 0 ]] && ok R6 || fail R6
 # R7
 : > "$LOG"; a="$(run ready 7)"; b="$(run ready 7 --undo)"

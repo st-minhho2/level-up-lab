@@ -36,6 +36,19 @@ probe 2 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh push' "$PRT")"   # untracked
 git -C "$PRT" add -A; git -C "$PRT" -c user.name=s -c user.email=s@x commit -q --no-verify -m x; printf 'echo 2\n' >> "$PRT/scripts/pr-step.sh"
 probe 2 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh push' "$PRT")"   # modified wrapper
 rm -f "$PRT/scripts/pr-step.sh"; rmdir "$PRT/scripts" 2>/dev/null; rm -rf "$PRT/.git"; rmdir "$PRT" 2>/dev/null
+# review pass 1: zsh code in unquoted arguments, a committed wrapper that is not the hook's own, an untracked copy of
+# the real wrapper in a repo with a commit, a newline
+for c in 'scripts/pr-step.sh push =(touch X)' "scripts/pr-step.sh push *(e:'touch X':)" "$(printf 'scripts/pr-step.sh push\ntouch X')"; do
+  probe 2 guard-bash.sh "$(pr_cmd "$c" "$PWD")"
+done
+PRT="$(mktemp -d)"; git -C "$PRT" init -q; mkdir -p "$PRT/scripts"; printf 'echo other\n' > "$PRT/scripts/pr-step.sh"
+git -C "$PRT" add -A; git -C "$PRT" -c user.name=s -c user.email=s@x commit -q --no-verify -m x
+probe 2 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh push' "$PRT")"   # committed, not the hook's wrapper
+cp scripts/pr-step.sh "$PRT/scripts/pr-step.sh"; git -C "$PRT" rm -q --cached scripts/pr-step.sh
+git -C "$PRT" -c user.name=s -c user.email=s@x commit -q --no-verify -m y
+probe 2 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh push' "$PRT")"   # identical copy, untracked
+rm -f "$PRT/scripts/pr-step.sh"; rmdir "$PRT/scripts" 2>/dev/null; rm -rf "$PRT/.git"; rmdir "$PRT" 2>/dev/null
+probe 0 guard-bash.sh "$(pr_cmd "scripts/pr-step.sh draft 'feat(todos): B9.1 add the x (§9)'" "$PWD")"
 for c in 'scripts/pr-step.sh ready 7' 'scripts/pr-step.sh draft "feat(todos): B9.1 add the x"' \
          'git add scripts/pr-step.sh' 'cat scripts/pr-step.sh'; do probe 0 guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done
 
