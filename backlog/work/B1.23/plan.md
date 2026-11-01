@@ -54,4 +54,4 @@ an updated checkout, and a card that changes the wrapper runs its own PR steps b
 refusal (recorded in the closing PR); a refusal leaves the card Partial. Steps: `test(scripts)` → `chore(scripts)` →
 reviewer diff → draft PR, `config-change-approved` (D-19).
 
-Plan review: changes requested, round 2 (cap); lead chose (B) at the gate · Plan approved by: lead (session reply "approve, chấp nhận độ dài"), 2026-11-01 · Rounds: 2 (round 2: the guard-bash row and cost above, from diff review pass 2 finding 1)
+Plan review: changes requested, round 2 (cap); lead chose (B) at the gate · Plan approved by: lead (session reply "approve, chấp nhận độ dài"), 2026-11-01 · Round 2 approved by: lead (session reply "approve"), 2026-11-01 · Rounds: 2 (round 2: the guard-bash row and cost above, from diff review pass 2 finding 1)
