@@ -2,8 +2,9 @@
 
 Approach: A from `advice.md` — one `draft` state, `onChange` writes it, a ref on the box plus a no-dependency
 `useLayoutEffect` re-reads the box after every commit (React 19 resets the form at the end of the mutation phase, before
-layout effects), so the counter follows the reset with no change event (REQ-18.6, 18.7). Fallback B (`onReset` →
-`setDraft(kept)`) stays inside the same two files. One phase, one lead approval (D-21): no `src/app/page.tsx`, no
+layout effects), so the counter follows the reset with no change event (REQ-18.6, 18.7). No fallback without the lead:
+B (`onReset` → `setDraft(kept)`) or `onReset` + `queueMicrotask` would not read the box after the reset (§18 Function
+contracts), so switching is a plan change that needs re-approval and a §18 ruling. One phase, one lead approval (D-21): no `src/app/page.tsx`, no
 sibling component, no `src/lib/todos.ts`, `src/actions/todos.ts`, `src/lib/logger.ts`, no `src/*/CLAUDE.md`. Analysis
 Q1–Q4 as proposed (trimmed count, no-event value out of scope, number only above 200, "used"). Approving ticks §18's
 `Lead approves spec` box. No migration, no dependency, no env key, no CI-protected path (no `config-change-approved`).
@@ -37,10 +38,10 @@ export function titleCounterText(value: string): string; // `${titleCharacterCou
 
 ## Verification
 
-Red (`test(todos): B3.2 … (red)`): `scripts/verify-red.sh B3.2` exit 0, about 6 new unit/component tests failing on
+Red (`test(todos): B3.2 … (red)`): `scripts/verify-red.sh B3.2` exit 0, 6 new unit/component tests failing on
 an assertion or `NotImplementedError` (`title-count.test.ts` 2, `todo-form.test.tsx` +4);
 `pnpm test:e2e e2e/18-title-counter.spec.ts` → 1 failed, recorded in the red commit body. Green: `pnpm lint &&
-pnpm typecheck` clean · `pnpm test` 169 → ~175 passed, the 6 existing `todo-form.test.tsx` tests unchanged and green ·
+pnpm typecheck` clean · `pnpm test` 169 → 175 passed, the 6 existing `todo-form.test.tsx` tests unchanged and green ·
 `pnpm test:e2e` 32 → 33 passed (`05`, `10` unchanged) · `pnpm test:mutation` ≥ 70, `title-count.ts` 100 (hot spots
 in `advice.md`) · `pnpm build` ok · `scripts/ci/check-plan-scope.sh` OK. Counts are the test-writer's target; a
 different count is stated in the red commit.
