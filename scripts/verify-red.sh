@@ -10,10 +10,12 @@
 #   2. collect the *.test.ts / *.test.tsx files they touch (e2e/*.spec.ts needs a server: listed, skipped)
 #   3. check out the parent of the FIRST test commit into a scratch worktree (that is "the base": the code as it
 #      was before the red tests landed, skeleton included, so imports resolve and failures are about behavior)
-#   4. copy the test files from the LAST test commit on top, run vitest with the JSON reporter
-#   5. PASS only if: every file loaded (no import/compile error), at least one NEW test ran, zero NEW tests passed
-#      (a test is new when its title is absent from the base's copy of the file), and no failure message looks like
-#      an import, syntax or transform error. Pre-existing tests in an extended file may pass.
+#   4. run the base's own copy of those files (the ones it has) with vitest's JSON reporter: the tests that ran there
+#      (passed or failed; not todo or skipped) are the old ones, each named by its describe path and title (B1.29)
+#   5. copy the test files from the LAST test commit on top, run vitest with the JSON reporter again
+#   6. PASS only if: every file loaded (no import/compile error), at least one NEW test ran, zero NEW tests passed
+#      (new: its describe path and title ran at the base in that file fewer times than the red run reports it), and
+#      no failure message looks like an import, syntax or transform error. Pre-existing tests may pass.
 # Exit 0 = correctly red. Exit 1 = green, wrong reason, or nothing to verify for an explicit id.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
@@ -25,7 +27,7 @@ while [[ $# -gt 0 ]]; do
     --auto) AUTO=1 ;;
     --keep) KEEP=1 ;;
     --range) RANGE="$2"; shift ;;
-    -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,18p' "$0"; exit 0 ;;
     *) FEATS+=("$1") ;;
   esac
   shift
@@ -77,7 +79,15 @@ verify_feat() {
   rmdir "$scratch"
   git worktree add --quiet --detach "$scratch" "$base"
   ln -s "$ROOT/node_modules" "$scratch/node_modules"
-  local f present=""
+  local f present="" atbase=""
+  for f in $files; do
+    if [[ -f "$scratch/$f" ]]; then atbase="$atbase $f"; fi
+  done
+  local basereport="$scratch/.verify-red-base.json"
+  if [[ -n "$atbase" ]]; then
+    # shellcheck disable=SC2086
+    (cd "$scratch" && VITEST_CACHE_DIR="$scratch/.cache" pnpm exec vitest run --reporter=json --outputFile="$basereport" $atbase >/dev/null 2>&1) || true
+  fi
   for f in $files; do
     if git cat-file -e "$last:$f" 2>/dev/null; then
       mkdir -p "$scratch/$(dirname "$f")"
@@ -96,46 +106,35 @@ verify_feat() {
     echo "::error::vitest produced no report (config or install problem)"
     verdict=1
   else
-    node - "$report" "$IMPORT_ERROR" "$scratch" "$base" "$ROOT" <<'NODE' || verdict=1
-const [reportPath, pattern, scratchArg, baseSha, repoRoot] = process.argv.slice(2);
+    node - "$report" "$IMPORT_ERROR" "$scratch" "$basereport" <<'NODE' || verdict=1
+const [reportPath, pattern, scratchArg, basePath] = process.argv.slice(2);
+const fs = require('fs');
+const path = require('path');
 const report = require(reportPath);
-const scratch = require('fs').realpathSync(scratchArg);
-const { execFileSync } = require('child_process');
-// titles the base already had in this file: a passing one of those is not "green before implementation"
-function baseTitles(rel) {
-  let src = '';
-  try { src = execFileSync('git', ['-C', repoRoot, 'show', `${baseSha}:${rel}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }); } catch { return new Set(); }
-  const titles = new Set();
-  const re = /\b(?:it|test)(?:\.each\([^)]*\))?\(\s*(['"`])((?:\\.|(?!\1).)*)\1/g;
-  let m; while ((m = re.exec(src))) titles.add(unescape(m[2]));
-  return titles;
-}
-// The title as vitest reports it: JS single-character escapes decoded (B1.25). `${…}` stays as written, so such a
-// title never matches and counts as new (the gate stays strict).
-function unescape(raw) {
-  const named = { n: '\n', t: '\t', r: '\r', b: '\b', f: '\f', v: '\v', 0: '\0' };
-  return raw.replace(/\\(u\{[0-9a-fA-F]+\}|u[0-9a-fA-F]{4}|x[0-9a-fA-F]{2}|[\s\S])/g, (_, e) => {
-    if (e.length > 1 && e[0] === 'u') return String.fromCodePoint(parseInt(e.replace(/[u{}]/g, ''), 16));
-    if (e.length > 1 && e[0] === 'x') return String.fromCharCode(parseInt(e.slice(1), 16));
-    return named[e] ?? e;
-  });
-}
-// Old titles match exactly; one holding a placeholder (`.each`) matches every title that starts with its text before
-// the first placeholder.
-const PLACEHOLDER = /%[sdifjo]/;
-function isOld(title, old) {
-  return [...old].some((o) => {
-    const at = o.search(PLACEHOLDER);
-    return at < 0 ? title === o : title.startsWith(o.slice(0, at));
-  });
+const scratch = fs.realpathSync(scratchArg);
+// A test is named by its describe path and title, as vitest reports it.
+const key = (t) => JSON.stringify([...(t.ancestorTitles ?? []), t.title]);
+// How often the base's run ran each name (passed or failed), per file: a skeleton's `it.todo` or a skipped test is
+// not old. No base report (new files only, or the base run failed): nothing is old, so every test counts as new.
+const oldNames = new Map();
+const baseReport = fs.existsSync(basePath) ? require(basePath) : {};
+for (const file of baseReport.testResults ?? []) {
+  const names = new Map();
+  for (const t of file.assertionResults ?? []) {
+    if (t.status === 'passed' || t.status === 'failed') names.set(key(t), (names.get(key(t)) ?? 0) + 1);
+  }
+  oldNames.set(path.relative(scratch, file.name), names);
 }
 const bad = new RegExp(pattern);
 const problems = [];
 for (const file of report.testResults ?? []) {
-  const rel = require('path').relative(scratch, file.name);
+  const rel = path.relative(scratch, file.name);
   const ran = file.assertionResults ?? [];
-  const old = baseTitles(rel);
-  const isNew = (t) => !isOld(t.title, old);
+  const old = oldNames.get(rel) ?? new Map();
+  const seen = new Map();
+  for (const t of ran) seen.set(key(t), (seen.get(key(t)) ?? 0) + 1);
+  // a name reported more often than at the base is new in every occurrence (strict)
+  const isNew = (t) => (old.get(key(t)) ?? 0) < seen.get(key(t));
   const fresh = ran.filter(isNew);
   const passed = fresh.filter((t) => t.status === 'passed');
   const failed = fresh.filter((t) => t.status === 'failed');
