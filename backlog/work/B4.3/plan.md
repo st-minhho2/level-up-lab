@@ -1,4 +1,4 @@
-# B4.3 plan — Say "all done" when every todo is completed (§22)
+# B4.3 plan — Say all done when every todo is completed (§22)
 
 Approach: A from `advice.md` — `allDoneMessage(count)` in `src/lib/todo-count.ts`; `RemainingCount` returns a fragment:
 the §13 `<p>` unchanged plus, at count 0, one bare `<span>` (no class, no role) reading "All done". Markup for counts
