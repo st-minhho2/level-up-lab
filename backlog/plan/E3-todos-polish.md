@@ -22,3 +22,12 @@ _F16 · section 18_
 - **Acceptance:** section 18 criteria, set by `spec-analyst` (contract `spec/contracts/16-title-counter.md`; mounts in `src/components/todo-form.tsx` only)
 - **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B3.2/`
+
+### B3.3 · Delete a todo
+
+_F17 · section 19_
+**Status: Open** — `git grep -n -i delete src/actions src/components` → only §9's clear completed; `spec/contracts/03-todos.md` "Out of scope" lists deleting a todo, lifted by D-21
+
+- **Acceptance:** section 19 criteria, set by `spec-analyst` (contract `spec/contracts/17-delete.md`; mounts in `src/components/todo-item.tsx` only; action and lib in own modules)
+- **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B3.3/`
