@@ -395,3 +395,22 @@ either, so a filing PR has the same gap
   `scripts/pr-step.sh`)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.26/`
+
+### B1.27 · next-task reads board titles with quote characters
+
+_tooling · no §_
+**Status: Open** — `scripts/next-task.sh:73-75` trims every README "Remaining" cell with `echo "$x" | xargs`, and
+`xargs` parses quotes: a lone `'` or `"` in any title (`echo "x | Show each todo's date" | xargs` → `xargs: unterminated
+quote`) makes every mode exit 1 for every card, and a paired `"…"` is silently stripped from the title. Seen when #104
+filed B4.1 ("todo's") and B4.3 (`Say "all done" …`): `--claim B4.1` and `--claim B4.3` exited 1 until #107 reworded both
+titles without quote characters; the script is unchanged
+
+- **Spec:** none — tooling (`scripts/next-task.sh`, `scripts/next-task-smoke.sh`); no `src/` change, no section
+- **Test:** a new probe in `scripts/next-task-smoke.sh` — red because: a "Remaining" row whose title holds `'` (and
+  one holding `"…"`) makes `scripts/next-task.sh --list` exit 1 with `xargs: unterminated quote` instead of printing
+  the board with the title unchanged
+- **Acceptance:** pick, `--claim`, `--check` and `--list` work with a lone `'`, a lone `"`, a paired `"…"` and a
+  backslash in any title, and `--list` prints the title as written; next-task-smoke W1–W21 stay green; the PR carries
+  `config-change-approved` (D-19: `scripts/next-task.sh`)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.27/`
