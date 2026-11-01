@@ -56,4 +56,4 @@ are the test-writer's target; a different count is stated in the red commit.
 | 4    | dev-lead            | F19 ✅                                    | `docs(map): F19 … [B4.2]`      |
 | 5    | reviewer (diff)     | `review.md` diff section                  | `docs(backlog): B4.2 review …` |
 
-Plan review: approved, round 1 (b62fb0f; 0 findings, 5 costs listed for the lead) · Plan approved by: · Rounds: 1
+Plan review: approved, round 1 (b62fb0f; 0 findings, 5 costs listed for the lead) · Plan approved by: lead, 2026-11-01 · Rounds: 1
