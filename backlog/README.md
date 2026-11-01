@@ -5,11 +5,12 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 ## Status summary
 
-| Epic          | File                                           | Done   | Partial | Open  | Total  |
-| ------------- | ---------------------------------------------- | ------ | ------- | ----- | ------ |
-| E1 Todos      | [plan/E1-todos.md](plan/E1-todos.md)           | 21     | 0       | 1     | 22     |
-| E2 Todos plus | [plan/E2-todos-plus.md](plan/E2-todos-plus.md) | 5      | 0       | 0     | 5      |
-| **Total**     |                                                | **26** | **0**   | **1** | **27** |
+| Epic            | File                                               | Done   | Partial | Open  | Total  |
+| --------------- | -------------------------------------------------- | ------ | ------- | ----- | ------ |
+| E1 Todos        | [plan/E1-todos.md](plan/E1-todos.md)               | 21     | 0       | 1     | 22     |
+| E2 Todos plus   | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)     | 5      | 0       | 0     | 5      |
+| E3 Todos polish | [plan/E3-todos-polish.md](plan/E3-todos-polish.md) | 0      | 0       | 1     | 1      |
+| **Total**       |                                                    | **26** | **0**   | **2** | **28** |
 
 ## Execution order
 
@@ -56,6 +57,7 @@ flowchart TD
   S25["25 · mark all complete<br/>~~B2.3~~"]
   S26["26 · due date (migration)<br/>~~B2.4~~"]
   S27["27 · search by title<br/>~~B2.5~~"]
+  S28["28 · overdue marker<br/>B3.1"]
 ```
 
 ## Remaining
@@ -63,9 +65,10 @@ flowchart TD
 Board state (To do · Doing · Review · Closing) is derived, not typed: `scripts/next-task.sh --list` (BOARD column),
 at most 3 cards Doing (B1.18).
 
-| Step | ID    | Title                                                                      | Spec § | Status | Blocked by | Owner | Size         |
-| ---- | ----- | -------------------------------------------------------------------------- | ------ | ------ | ---------- | ----- | ------------ |
-| 20   | B1.20 | Plan rows with `[ ]` match their own path in the plan-scope hook and guard | —      | Open   | ~~B1.17~~  | Lead  | S [estimate] |
+| Step | ID    | Title                                                                      | Spec §                 | Status | Blocked by | Owner | Size         |
+| ---- | ----- | -------------------------------------------------------------------------- | ---------------------- | ------ | ---------- | ----- | ------------ |
+| 20   | B1.20 | Plan rows with `[ ]` match their own path in the plan-scope hook and guard | —                      | Open   | ~~B1.17~~  | Lead  | S [estimate] |
+| 28   | B3.1  | Mark overdue todos                                                         | new, section 17 (D-21) | Open   | —          | Lead  | S [estimate] |
 
 ## Waiting on human
 
