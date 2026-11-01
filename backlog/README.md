@@ -10,8 +10,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 21     | 1       | 4     | 26     |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0     | 5      |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0     | 3      |
-| E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 2      | 0       | 1     | 3      |
-| **Total**        |                                                      | **31** | **1**   | **5** | **37** |
+| E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 0     | 3      |
+| **Total**        |                                                      | **32** | **1**   | **4** | **37** |
 
 ## Execution order
 
@@ -64,7 +64,7 @@ flowchart TD
   S31["31 · sessions run their PR steps<br/>B1.23"]
   S32["32 · guard-bash every forced push<br/>B1.24"]
   S33["33 · created date<br/>~~B4.1~~"]
-  S34["34 · clear search<br/>B4.2"]
+  S34["34 · clear search<br/>~~B4.2~~"]
   S35["35 · all done<br/>~~B4.3~~"]
   S36["36 · verify-red escaped titles<br/>B1.25"]
   S37["37 · pr-step closing PR<br/>B1.26"]
@@ -75,14 +75,13 @@ flowchart TD
 Board state (To do · Doing · Review · Closing) is derived, not typed: `scripts/next-task.sh --list` (BOARD column),
 at most 3 cards Doing (B1.18).
 
-| Step | ID    | Title                                                                      | Spec §                 | Status  | Blocked by | Owner | Size         |
-| ---- | ----- | -------------------------------------------------------------------------- | ---------------------- | ------- | ---------- | ----- | ------------ |
-| 20   | B1.20 | Plan rows with `[ ]` match their own path in the plan-scope hook and guard | —                      | Open    | ~~B1.17~~  | Lead  | S [estimate] |
-| 31   | B1.23 | Card sessions run their own PR steps: push, open, label, mark ready        | —                      | Partial | —          | Lead  | S [estimate] |
-| 32   | B1.24 | guard-bash blocks every forced-push and branch-delete spelling             | —                      | Open    | —          | Lead  | S [estimate] |
-| 34   | B4.2  | Clear the search with one link                                             | new, section 21 (D-24) | Open    | —          | Lead  | S [estimate] |
-| 36   | B1.25 | verify-red reads escaped quotes in existing test titles                    | —                      | Open    | —          | Lead  | S [estimate] |
-| 37   | B1.26 | pr-step opens a card closing PR                                            | —                      | Open    | —          | Lead  | S [estimate] |
+| Step | ID    | Title                                                                      | Spec § | Status  | Blocked by | Owner | Size         |
+| ---- | ----- | -------------------------------------------------------------------------- | ------ | ------- | ---------- | ----- | ------------ |
+| 20   | B1.20 | Plan rows with `[ ]` match their own path in the plan-scope hook and guard | —      | Open    | ~~B1.17~~  | Lead  | S [estimate] |
+| 31   | B1.23 | Card sessions run their own PR steps: push, open, label, mark ready        | —      | Partial | —          | Lead  | S [estimate] |
+| 32   | B1.24 | guard-bash blocks every forced-push and branch-delete spelling             | —      | Open    | —          | Lead  | S [estimate] |
+| 36   | B1.25 | verify-red reads escaped quotes in existing test titles                    | —      | Open    | —          | Lead  | S [estimate] |
+| 37   | B1.26 | pr-step opens a card closing PR                                            | —      | Open    | —          | Lead  | S [estimate] |
 
 ## Waiting on human
 
