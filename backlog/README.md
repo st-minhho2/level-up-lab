@@ -8,8 +8,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | Epic          | File                                           | Done   | Partial | Open  | Total  |
 | ------------- | ---------------------------------------------- | ------ | ------- | ----- | ------ |
 | E1 Todos      | [plan/E1-todos.md](plan/E1-todos.md)           | 21     | 0       | 1     | 22     |
-| E2 Todos plus | [plan/E2-todos-plus.md](plan/E2-todos-plus.md) | 4      | 0       | 1     | 5      |
-| **Total**     |                                                | **25** | **0**   | **2** | **27** |
+| E2 Todos plus | [plan/E2-todos-plus.md](plan/E2-todos-plus.md) | 5      | 0       | 0     | 5      |
+| **Total**     |                                                | **26** | **0**   | **1** | **27** |
 
 ## Execution order
 
@@ -55,7 +55,7 @@ flowchart TD
   S24["24 · remaining count<br/>~~B2.2~~"]
   S25["25 · mark all complete<br/>~~B2.3~~"]
   S26["26 · due date (migration)<br/>~~B2.4~~"]
-  S27["27 · search by title<br/>B2.5"]
+  S27["27 · search by title<br/>~~B2.5~~"]
 ```
 
 ## Remaining
@@ -63,10 +63,9 @@ flowchart TD
 Board state (To do · Doing · Review · Closing) is derived, not typed: `scripts/next-task.sh --list` (BOARD column),
 at most 3 cards Doing (B1.18).
 
-| Step | ID    | Title                                                                      | Spec §                 | Status | Blocked by | Owner | Size         |
-| ---- | ----- | -------------------------------------------------------------------------- | ---------------------- | ------ | ---------- | ----- | ------------ |
-| 20   | B1.20 | Plan rows with `[ ]` match their own path in the plan-scope hook and guard | —                      | Open   | ~~B1.17~~  | Lead  | S [estimate] |
-| 27   | B2.5  | Search todos by title                                                      | new, section 16 (D-20) | Open   | —          | Lead  | S [estimate] |
+| Step | ID    | Title                                                                      | Spec § | Status | Blocked by | Owner | Size         |
+| ---- | ----- | -------------------------------------------------------------------------- | ------ | ------ | ---------- | ----- | ------------ |
+| 20   | B1.20 | Plan rows with `[ ]` match their own path in the plan-scope hook and guard | —      | Open   | ~~B1.17~~  | Lead  | S [estimate] |
 
 ## Waiting on human
 
