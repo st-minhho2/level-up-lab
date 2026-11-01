@@ -182,3 +182,71 @@ Verdict: back to code-writer ([1]: give the `-partial` title in `dev-lead.md`, o
 
 Riskiest unfalsified: `[ -~]` as a bracket range under a glibc UTF-8 locale (a Linux session host) could admit non-ASCII
 into `-partial`/`-card` titles, where `${#title}` then counts characters; not runnable on this machine.
+
+## Diff review (round 2)
+
+Range `origin/main...HEAD`; since round 1 (`0f5897b`): test `db5e9b8` (smoke +6 lines, 0 deleted), fix `ba87a93`
+(`scripts/pr-step.sh` +4/-1, `.claude/agents/dev-lead.md` +2/-1). 10 files, all in the plan's Files table.
+
+### Commands (last line each)
+
+| Command                                                | Result                                                                                                             |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `pnpm lint`                                            | `All matched files use Prettier code style!`                                                                       |
+| `pnpm typecheck`                                       | `tsc --noEmit`, no output (0 errors)                                                                               |
+| `pnpm test`                                            | `Tests  202 passed (202)`                                                                                          |
+| `pnpm test:e2e`                                        | `43 passed (59.6s)`                                                                                                |
+| `pnpm test:mutation`                                   | `Final mutation score of 93.40 is greater than or equal to break threshold 70` (no `src/` change)                  |
+| `scripts/pr-step-smoke.sh`                             | `[pr-step-smoke] 14 ok, 0 FAIL`                                                                                    |
+| `PATH="/bin:$PATH" /bin/bash scripts/pr-step-smoke.sh` | `[pr-step-smoke] 14 ok, 0 FAIL`                                                                                    |
+| smoke + wrapper at `db5e9b8` (test commit tree)        | `[pr-step-smoke] 13 ok, 1 FAIL` (R13: `body edited after the lane commit: rc=0`, gh called), the commit's red      |
+| `scripts/hook-smoke.sh`                                | `hook-smoke: 309 probes OK`                                                                                        |
+| `check-suppressions.sh`                                | `OK: no new suppressions`                                                                                          |
+| `check-config-change.sh`                               | exit 1, same 4 files as round 1 (expected: D-19 `config-change-approved` label at PR creation)                     |
+| `check-feat-commits.sh`                                | `OK: no feat commit touches tests`                                                                                 |
+| `check-ac-coverage.sh`                                 | `OK: every criterion of a shipped section has a test`                                                              |
+| `check-spec-sections.sh`                               | `OK: sections cited: 1 … 22`                                                                                       |
+| `check-features-map.sh`                                | `OK`                                                                                                               |
+| `check-plan-scope.sh`                                  | `OK: feat/B1.26-pr-step-closing stays inside the approved plan of B1.26`                                           |
+| `check-backlog.sh`                                     | `OK: README matches the cards`                                                                                     |
+| `verify-red.sh B1.26`                                  | `no 'test(<pkg>): B1.26 … (red)' commit` (as round 1: tooling card, no `(red)` marker by plan; red shown by smoke) |
+
+### Round 1 findings
+
+| Finding                               | Status                                                                                                                                                                                                             |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [1] `-partial` title in `dev-lead.md` | closed: `dev-lead.md:87-88` gives `"docs(backlog): <card> partial -- <what is pending>"`, the same as `backlog/CLAUDE.md` Closing step 6 and the wrapper's `partial` regex                                         |
+| [2] uncommitted body sent             | closed for `open`: `pr-step.sh:79` `git diff --quiet HEAD -- "$rel"` refuses a worktree or staged edit; red at `db5e9b8` and green now. `draft` is unchanged on purpose (the card's Acceptance keeps it unchanged) |
+
+### Checklist
+
+| Check                                                 | Result                                                                                                                                                                                                                                                                                                                                                                    |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No test weakened after the test commits               | pass: `git log --first-parent --no-merges cbaa667..HEAD -- '*.test.*' e2e/ scripts/pr-step-smoke.sh` lists only `db5e9b8` (a `test(...)` commit, 6 insertions, 0 deletions); no merges                                                                                                                                                                                    |
+| Fix commit touches no test                            | pass: `ba87a93` changes `scripts/pr-step.sh` and `.claude/agents/dev-lead.md` only                                                                                                                                                                                                                                                                                        |
+| Each new probe fails for its own reason               | pass: an instrumented copy prints the refusals `partial, B9x1` / `card, B9x1` → the lane's title message; `body edited after the lane commit` → `has uncommitted changes`; `no origin/main` → `no origin/main to compare`; `body unchanged since origin/main` still → `must be written in this branch's lane commit`. R14 `docs/B9.1-done-x` → draft opens with `--draft` |
+| Revert probes (copy, smoke re-run)                    | uncommitted check removed → R13 FAIL · narrowed to `--cached` → R13 FAIL · `c="$card"` (unescaped dot) → R13 FAIL (both B9x1 probes) · lane regex without `$` → R14 FAIL · rev-parse check and `-eq 1`→`-ne 0` together → R13 FAIL (`no origin/main: rc=0`)                                                                                                               |
+| Revert survivors                                      | rev-parse line removed alone → 14 ok (the `-eq 1` check still refuses, only the message changes; `refused` asserts rc, prefix and no gh call, not the text) · `-eq 1`→`-ne 0` alone → 14 ok (the rev-parse check now handles the one exit-128 case the smoke builds). Defense in depth with fail-closed results, not findings                                             |
+| Every changed file in `plan.md`                       | pass: 10 of 10                                                                                                                                                                                                                                                                                                                                                            |
+| Interfaces match the plan                             | pass: `open "<title>"` signature, titles, body paths unchanged; the uncommitted-body refusal is a new exit-3 case the plan's Interfaces block does not list (the fix of round 1 [2], which named this check); the PR's Review section carries it                                                                                                                          |
+| No secret, no suppression, no `src/`/`prisma/` change | pass                                                                                                                                                                                                                                                                                                                                                                      |
+
+### Findings
+
+None blocking. Observed, not a finding: `git update-index --skip-worktree <body>` hides a later edit from
+`git diff --quiet HEAD` (throwaway repo: rc 0 with the flag, rc 1 without it). Getting there takes a separate git
+command used as a workaround, which `dev-lead.md` forbids, so no prescribed path reaches it.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: as in round 1, `[ -~]` as a bracket range under a glibc UTF-8 locale (a Linux session host)
+could admit non-ASCII into `-partial`/`-card` titles, where `${#title}` counts characters; not runnable on this machine.
+
+### Dispositions (dev-lead)
+
+| Pass | #   | Finding                                                            | Source   | Kind        | Disposition | Evidence                                                                                             |
+| ---- | --- | ------------------------------------------------------------------ | -------- | ----------- | ----------- | ---------------------------------------------------------------------------------------------------- |
+| 1    | 1   | `dev-lead.md:86-87` gives only the `done` title for `-partial`     | reviewer | correctness | fix now     | ba87a93: the `-partial` title, as Closing step 6 and the wrapper regex                               |
+| 1    | 2   | `pr-step.sh:76-77` sends a body edited after the lane commit       | reviewer | correctness | fix now     | red db5e9b8 (`13 ok, 1 FAIL`) → ba87a93 `14 ok, 0 FAIL`; `open` only, `draft` unchanged (Acceptance) |
+| 1    | —   | round-1 survivors: missing origin/main, `B9x1`, `docs/B9.1-done-x` | reviewer | coverage    | fix now     | pinned in db5e9b8; round 2 revert probes turn each red                                               |
+| 2    | —   | none                                                               | reviewer | —           | —           | `ready for PR`, passes 2/3                                                                           |
