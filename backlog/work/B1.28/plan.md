@@ -1,7 +1,6 @@
 # B1.28 plan — package guides name the batch 4 modules (no §)
 
-Round 2 (plan review round 1: 4 reasons — 1 writer = orchestrating session as #106; 2 row sentence qualified for due
-dates; 3 one count per pattern, one fact per line; 4 review-gate step). Documentation only, two guides; source =
+Documentation only, two guides (review rounds in `review.md`); source =
 `spec/contracts/18-created-date.md` (§20), `19-clear-search.md` (§21), `20-all-done.md` (§22) and
 `spec/features-map.md` F18–F20. No code, no test file, no section change; spec-analyst and advisor skipped.
 
@@ -15,16 +14,16 @@ dates; 3 one count per pattern, one fact per line; 4 review-gate step). Document
 | `backlog/work/B1.28/review.md`  | plan and diff reviews                                                                                                                                                                                                                        | —                 |
 | `backlog/work/B1.28/pr-body.md` | PR body                                                                                                                                                                                                                                      | —                 |
 
-`src/components/CLAUDE.md`, one fact per line, none hard-wrapped: L1 "Without a due date a row (`<li>`) adds no text
-content beyond its title (AC-5.1, AC-20.3 compare whole-row text); §15 `Due <date>` and §17 `Overdue` are the only
-additions." L2 `todo-item.tsx` (§20) renders one empty `<time>`; `Created YYYY-MM-DD` is its `::after` content
+`src/components/CLAUDE.md`, one fact per line, none hard-wrapped: L1 "In its idle state (view mode, no error message)
+a row (`<li>`) without a due date adds no text content beyond its title (AC-5.1, AC-20.3 compare whole-row text);
+§15 `Due <date>` and §17 `Overdue` are the only idle additions." L2 `todo-item.tsx` (§20) renders one empty `<time>`; `Created YYYY-MM-DD` is its `::after` content
 (`data-created`), visible but not text content. L3 `todo-search-form.tsx` stays a Server Component; §21 adds the
 "Clear search" link (`next/link`) while a search is in effect. L4 `remaining-count.tsx` stays a Server Component; §22
 adds "All done" (`allDoneMessage`) beside the count `<p>`.
 
 ## Interfaces touched
 
-None. The guides quote the 8 existing `^export` lines of `todo-created.ts`, `clear-search.ts`, `todo-count.ts`.
+None. The guides quote the 9 existing `^export` lines (3 per file) of `todo-created.ts`, `clear-search.ts`, `todo-count.ts`.
 
 ## Verification (card worktree)
 
@@ -42,6 +41,7 @@ scripts/ci/check-plan-scope.sh | tail -1; scripts/ci/check-backlog.sh | tail -1 
 
 | Step | Role / skill                                                    | Produces                            | Commit                                                   |
 | ---- | --------------------------------------------------------------- | ----------------------------------- | -------------------------------------------------------- |
+| 0    | dev-lead at the gate (Loop 5)                                   | `pr-body.md`, draft PR              | `docs(backlog): B1.28 plan approved`                     |
 | 1    | orchestrating session (dev-lead's guide blocks `src/`, as #106) | both guides edited                  | `docs(src): B1.28 package guides name sections 20 to 22` |
 | 2    | `/review-loop`: reviewer (diff), ≤ 3 passes                     | diff review in `review.md`          | `docs(backlog): B1.28 review`                            |
 | 3    | `.claude/hooks/mark-reviewed.sh`                                | Stop gate cleared (lint, tsc, test) | —                                                        |
@@ -50,4 +50,4 @@ Red/green: the Test command's "before" is the red; no `test(...)` commit (no tes
 `config-change-approved` label. Out of scope (D-25 follow-up): stale § ranges in root `CLAUDE.md` Map (`src/lib/`
 §3–§6) and `src/CLAUDE.md` package table (`lib/` §3–§6, `components/` §7).
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: round 2 changes requested (2 reasons, both applied as worded; ≤ 2 rounds reached → lead decides) · Plan approved by: · Rounds: 1

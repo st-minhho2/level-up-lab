@@ -59,3 +59,58 @@ is correctly kept as a follow-up under D-25; `src/actions/CLAUDE.md` needs no ch
 
 Riskiest unfalsified: whether the §21 line keeps `todo-search-form.tsx` described as a Server Component (§21 contract:
 "still no 'use client'"); the Acceptance does not ask for it and the plan does not say.
+
+## Plan review (round 2)
+
+SCOPE: lib, ui (documentation only: `src/lib/CLAUDE.md`, `src/components/CLAUDE.md`; no code, no §)
+
+Plan reviewed at `d267183 docs(backlog): B1.28 plan round 2 after plan review round 1`. Round 1 reasons: 1 resolved
+(step 1 = orchestrating session, as #106); 3 resolved (`git grep -c` per pattern, "one fact per line, none
+hard-wrapped"; `Server Component; §2` → 2 matches L3 + L4 only, the §13 and §16 lines use "is a Server Component"
+without a semicolon); 4 resolved (step 3 `mark-reviewed.sh`, lint/tsc/test expected lines); 2 only partly resolved, see
+reason 1. Round 1's riskiest unfalsified is closed: L3 keeps `todo-search-form.tsx` a Server Component, matching its
+header and §21.
+
+| Check                                                                             | Result                                                                                                                         |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| every file in the plan belongs to the section's features (map)                    | pass: two guides plus `work/B1.28/` paperwork; module names match F18–F20                                                      |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass: no interface touched; the export count is wrong (reason 2)                                                               |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: no `advice.md`; advisor skipped and stated                                                                               |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | fail: reason 1 (the L1 sentence states a rule that is false in edit mode and with an error message)                            |
+| verification lists exact commands with expected numbers                           | pass: one count per pattern; `pnpm test` → `Tests  202 passed (202)` reproduced on `d267183`                                   |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: skeleton/test/map steps are a stated deviation for a no-§ docs card; step 1 writer can write `src/`; review gate present |
+| `Lead approves spec` box, ticked only by a human                                  | pass (n/a): no section; `Plan approved by:` is empty                                                                           |
+| no settled D-n contradicted                                                       | pass: D-22/D-24 catch-up as #106; D-25 out-of-scope note kept                                                                  |
+| `scripts/next-task.sh --check B1.28` on the committed plan                        | pass: `[next-task] B1.28: no overlap with any Doing or Review card` (exit 0)                                                   |
+
+Baselines run on `d267183`: `[check-spec-sections] OK: sections cited: 1 2 … 22`; `[check-features-map] OK`;
+`[check-plan-scope] OK: docs/B1.28-package-guides changes only paperwork (B1.28 has no approved plan)`;
+`[check-backlog] OK: README matches the cards`; `git grep -n -e todo-created -e clear-search src/lib/CLAUDE.md` → no
+output, exit 1 (the red holds); `pnpm test` → `Tests  202 passed (202)`; prettier on `plan.md` → clean.
+
+Verdict: changes requested
+
+1. **L1 says the due-date texts are the only additions, but edit mode and error messages add text too.** This wording
+   came from my own round 1 suggestion, so the mistake is mine to fix. TRIGGER (a): `toggleTodoAction` resolves
+   `{ ok: false, fieldErrors: { form: [MUTATION_FAILED_MESSAGE] } }`. `todo-item.tsx:112-114` renders the `role="alert"`
+   `<span>` inside the `<li>`, so the row's text is the title plus that message. The same happens with the alerts at
+   `todo-due-date.tsx:111` and `delete-todo-button.tsx:41`. TRIGGER (b): the person clicks "Edit title".
+   `todo-item.tsx:62-64` (sr-only `Edit title` label) and `:79` (`Save`) put text into the `<li>`, and so does
+   `todo-due-date.tsx:68-69` (`Due date`) in its edit mode. The spec already limits the rule to one state:
+   `04-edit-title.md:49` says the row "adds no text content in its idle state", and AC-20.3 asserts the text "in view
+   mode" only. A guide that leaves this out tells the next writer that an inline error inside the row breaks AC-5.1.
+   Fix: keep the Acceptance phrase and give the state, e.g. "In its idle state (view mode, no error message) a row
+   (`<li>`) adds no text content beyond its title (AC-5.1, AC-20.3); §15 `Due <date>` and §17 `Overdue` are the only
+   idle additions." This is the same line and the same grep (`no text content beyond its title` → 1), so it does not
+   widen the card under D-25.
+2. **"the 8 existing `^export` lines" is 9.** `grep -n '^export' src/lib/todo-created.ts src/lib/clear-search.ts src/lib/todo-count.ts`
+   prints 9 lines: 3 in `todo-created.ts`, 3 in `clear-search.ts`, and 3 in `todo-count.ts` (`countRemaining`,
+   `remainingLabel`, `allDoneMessage`). Round 1 repeated the 8 without checking it. This is a one-word fix in
+   "Interfaces touched", and the number goes into the PR body as written.
+
+Non-blocking: the plan is 53 lines against the ≈ 40-line screen in `planning.md` (round 1's was 43). You can delete the
+round-2 recap (lines 3–5) because `review.md` already holds it. `pr-body.md` is in Files but no step produces it. It
+belongs to the PR step, so name it there or leave it as in earlier cards.
+
+Riskiest unfalsified: whether the final L1–L4 text survives prettier with each fact on one unwrapped line. If a line is
+hard-wrapped, the plan's `git grep -c` counts drop to 0 for that phrase, and only the diff review can show it.
