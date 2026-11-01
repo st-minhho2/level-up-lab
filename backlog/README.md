@@ -7,11 +7,11 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open  | Total  |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ----- | ------ |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 24     | 1       | 4     | 29     |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 24     | 1       | 5     | 30     |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0     | 5      |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0     | 3      |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 0     | 3      |
-| **Total**        |                                                      | **35** | **1**   | **4** | **40** |
+| **Total**        |                                                      | **35** | **1**   | **5** | **41** |
 
 ## Execution order
 
@@ -71,6 +71,7 @@ flowchart TD
   S38["38 · next-task quoted titles<br/>~~B1.27~~"]
   S39["39 · guides name batch 4 modules<br/>B1.28"]
   S40["40 · verify-red base run<br/>B1.29"]
+  S41["41 · guard-bash shell words<br/>B1.30"]
 ```
 
 ## Remaining
@@ -85,6 +86,7 @@ at most 3 cards Doing (B1.18).
 | 32   | B1.24 | guard-bash blocks every forced-push and branch-delete spelling             | —      | Open    | —          | Lead  | S [estimate] |
 | 39   | B1.28 | Package guides name the batch 4 modules                                    | —      | Open    | —          | Lead  | S [estimate] |
 | 40   | B1.29 | verify-red tells new tests from old ones by running the base               | —      | Open    | —          | Lead  | S [estimate] |
+| 41   | B1.30 | guard-bash reads shell words before matching a push                        | —      | Open    | —          | Lead  | S [estimate] |
 
 ## Waiting on human
 
