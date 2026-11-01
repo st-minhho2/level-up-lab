@@ -95,3 +95,92 @@ Notes (not reasons):
 Out of scope → follow-up (D-25), unchanged from r1: the stale `scripts/CLAUDE.md` hook-smoke row ("C1–C5"); CI does not
 run `hook-smoke.sh` (`grep -l hook-smoke .github/workflows/*` → none); the card's "human-only" label wording predates
 D-19.
+
+## Diff review (pass 1)
+
+SCOPE: tooling (no §; the card's Acceptance in `backlog/plan/E1-todos.md` ### B1.20 is the contract). The range is
+`origin/main...HEAD` (merge-base `33e7f7d`). The local `main` ref is stale, so `main...HEAD` lists 119 files. The card
+itself changes 7: the 4 plan files plus `plan.md`, `review.md` and `pr-body.md`.
+
+### Commands (last line of each, run at `fb75fc0`)
+
+| Command                                        | Result                                                                                                                                                                                                                                                                    |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                    | exit 0. 1 warning, already on main: `src/components/todo-form.tsx:23` react-hooks/exhaustive-deps (not a card file). "All matched files use Prettier code style!"                                                                                                         |
+| `pnpm typecheck`                               | exit 0                                                                                                                                                                                                                                                                    |
+| `pnpm test`                                    | `Tests 202 passed (202)` (33 files)                                                                                                                                                                                                                                       |
+| `pnpm test:e2e`                                | `43 passed (1.2m)`                                                                                                                                                                                                                                                        |
+| `pnpm test:mutation`                           | `Final mutation score of 93.40 is greater than or equal to break threshold 70`                                                                                                                                                                                            |
+| `scripts/ci/check-suppressions.sh`             | `OK: no new suppressions`                                                                                                                                                                                                                                                 |
+| `scripts/ci/check-config-change.sh`            | exit 1 locally, as expected. It lists `.claude/docs/hooks.md`, `.claude/hooks/plan-scope.sh` and `scripts/ci/check-plan-scope.sh`. Draft PR #132 already carries `config-change-approved` (D-19)                                                                          |
+| `scripts/ci/check-feat-commits.sh`             | `OK: no feat commit touches tests`                                                                                                                                                                                                                                        |
+| `scripts/ci/check-ac-coverage.sh`              | `OK: every criterion of a shipped section has a test`                                                                                                                                                                                                                     |
+| `scripts/ci/check-spec-sections.sh`            | `OK: sections cited: 1 … 22`                                                                                                                                                                                                                                              |
+| `scripts/ci/check-features-map.sh`             | `OK`                                                                                                                                                                                                                                                                      |
+| `scripts/ci/check-plan-scope.sh`               | `OK: chore/B1.20-plan-scope-literal stays inside the approved plan of B1.20`                                                                                                                                                                                              |
+| `scripts/ci/check-backlog.sh`                  | `OK: README matches the cards`                                                                                                                                                                                                                                            |
+| `scripts/verify-red.sh B1.20`                  | exit 1 (`no 'test(<pkg>): B1.20 … (red)' commit`), as the plan says. verify-red judges only vitest files, and the probe commit carries no `(red)` marker                                                                                                                  |
+| `/bin/bash scripts/hook-smoke.sh` at `fb75fc0` | `hook-smoke: 440 probes OK` (in the card worktree)                                                                                                                                                                                                                        |
+| `/bin/bash scripts/hook-smoke.sh` at `f83e5da` | 8 FAIL, exactly L1 and L5 × 4 layouts (scratch clone). A 9th FAIL there, `require-review.sh spoke on a clean tree`, comes from the clone: its `origin/main` is the stale local `main`. That probe also fails at `fb75fc0` in the same clone, and it is ok in the worktree |
+| `bash -n` on the 3 scripts                     | silent                                                                                                                                                                                                                                                                    |
+
+### Checklist
+
+- Every Acceptance clause is tested:
+  - "both compare literally before as a glob, in every layout": L1 (hook) and L5 (guard) × 4 layouts.
+  - "every existing probe still passes": 416 + 24 = 440 ok.
+  - The label is on PR #132.
+- No test was weakened after the red commit. `git log --first-parent --no-merges f83e5da..HEAD -- scripts/hook-smoke.sh '*.test.*' e2e/` is empty, and there are no merges.
+- The diff matches the plan. `git diff 5c656bc..HEAD` touches exactly the 4 code and doc files in the Files table. The interfaces (stdin JSON, exit codes 0/2 and 0/1, guard output) are unchanged, and `plan-files.sh` is untouched.
+- Not applicable: Zod, Prisma, SQL, migrations and the features map (tooling, no `src/`). No secret and no suppression.
+- Reverting a changed line makes a probe fail. Mutants were run on a scratch clone:
+  - Restore only `plan-scope.sh:36` → L1 FAILs × 4.
+  - Make both scripts literal-only (drop the glob) → L3, L4 and L5 FAIL × 4.
+  - Revert both lines (= `f83e5da`) → L1 and L5 FAIL × 4.
+  - The `hooks.md` row has no probe (it is documentation).
+- The `hooks.md` row has 4 `|` both before and after the change (3 cells). `prettier --check` passes.
+
+### Caller's questions
+
+1. **Can the literal comparison widen the allowed set beyond the token itself?** No. `"$REL" == "$p"` is string
+   equality, so it adds at most one path: the token's own text. Probed under `/bin/bash` 3.2:
+   - `src/x?.ts` matches `src/x?.ts`, and `src/a\b.ts` matches `src/a\b.ts`, through the literal comparison.
+   - `src/xy.ts` and `src/ab.ts` match too, but through the glob comparison, which is unchanged since #60.
+   - `*` already matches everything as a glob.
+
+   Under bash 5 (CI) `[[ == ]]` treats the right side as extglob, but that affects only the glob comparison, not
+   string equality.
+
+2. **Does L4–L6 in `.` and `.claude/worktrees/n` prove the right thing?** Yes:
+   - In `.`, the nested worktrees sit untracked inside `$LC`. Each step stages only `src/app/...` explicitly, so
+     `git diff merge-base..HEAD` holds only the card's files. If a gitlink had been committed, L4 would be exit 1,
+     not 0. So L4 = 0 also proves that no stray gitlink was committed.
+   - The worktrees were cut from `feat/B9.10-main` before the loop, so `.`'s commits never reach them.
+   - In `n` and `n/.worktrees/b`, `check-plan-scope.sh` takes `--show-toplevel` of its own worktree.
+   - For L1/L3, a wrongly resolved TOP (the root instead of `n`) would give REL `.claude/worktrees/n/src/…`, which
+     is not listed. L1 and L3 would then fail, so they discriminate the layout.
+   - L2 = 2 and L6 = 1 are the not-listed refusals. In the same layout, the only difference from the passing L1 and
+     L5 is the path.
+3. **Does the `hooks.md` row still render as 3 cells?** Yes: 4 pipes, prettier clean (above).
+
+### Findings
+
+None blocking.
+
+Out of scope → follow-up (D-25), not reasons. All were on main before this card, and this card does not widen them:
+
+- The glob comparison still over-matches Next.js route segments. Probed with `/bin/bash` 3.2:
+  - The token `src/app/[...slug]/page.tsx` also allows `src/app/./page.tsx` and `src/app/s/page.tsx`.
+  - The token `src/app/[id]/page.tsx` also allows `src/app/i/page.tsx` (the plan's stated cost).
+  - A `*` in a token matches across `/`.
+
+  The `hooks.md` row says "then as a glob" but does not name this cost.
+
+- CI runs neither `hook-smoke.sh` nor any bash 5 run of the L probes. This is the same as the r1/r2 note.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the glob half of the comparison under CI's bash 5 extglob semantics for a token holding
+`@(`/`!(`/`+(` (no bash 5 here, and CI does not run hook-smoke). The change does not touch it, and the literal half
+does not depend on it. Also, PR #132's head is still `5c656bc`: the test and fix commits are not pushed yet, so the CI
+run of `check-plan-scope.sh` on them has not happened.
