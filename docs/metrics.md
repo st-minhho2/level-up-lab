@@ -77,5 +77,6 @@ it waited for the guides), and the night before the lead merged #85 at 07:12. Th
 | B2.4  | §15         | 7               | 7 (100 %) | 91.13 (due-date 95.00)            | 0              | 2822ab9                               | 315b97e |
 | B2.5  | §16         | 7               | 7 (100 %) | 91.82 (todo-search 100)           | 0              | b70450c, 8bfc8e4                      | 827e4fe |
 | B3.1  | §17         | 7               | 7 (100 %) | 92.14 (todo-overdue 100)          | 0              | fae3314                               | 4bda829 |
+| B3.3  | §19         | 7               | 7 (100 %) | 92.63 (todo-delete 100)           | 0              | 8293598                               | 451418c |
 
 A value below target for two consecutive measurements opens a row in `docs/mistake-log.md` and a fix in `.claude/`.

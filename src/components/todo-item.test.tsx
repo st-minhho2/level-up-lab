@@ -9,6 +9,11 @@ const actions = vi.hoisted(() => ({
   updateTodoTitleAction: vi.fn(),
 }));
 vi.mock('@/actions/todos', () => actions);
+// §19: TodoItem renders DeleteTodoButton, which imports this module; mocked at the boundary like '@/actions/todos'.
+const deleteActions = vi.hoisted(() => ({
+  deleteTodoAction: vi.fn(),
+}));
+vi.mock('@/actions/delete-todo', () => deleteActions);
 
 function todo(completed: boolean) {
   return { id: 'todo-9', title: 'Walk the dog', completed, createdAt: new Date(2026, 0, 1) };
@@ -16,6 +21,11 @@ function todo(completed: boolean) {
 
 function mistyped() {
   return { id: 'todo-9', title: 'Buy mik', completed: false, createdAt: new Date(2026, 0, 1) };
+}
+
+// §19 AC-19.5 (b): the open todo "Walk the dog" with id todo-1.
+function walkTheDog() {
+  return { id: 'todo-1', title: 'Walk the dog', completed: false, createdAt: new Date(2026, 0, 1) };
 }
 
 // §10: the one failure result a mutation can report besides its own field errors.
@@ -172,5 +182,27 @@ describe('<TodoItem> when a mutation fails (§10)', () => {
 
     expect(actions.updateTodoTitleAction).toHaveBeenCalledTimes(2);
     await waitFor(() => expect(within(row).queryAllByRole('alert')).toHaveLength(0));
+  });
+});
+
+describe('<TodoItem> delete button (§19)', () => {
+  it('AC-19.5: (b) holds exactly 1 button "Delete todo" in view mode and exactly 1 in edit mode, adds no text to the row, and a click in view mode calls deleteTodoAction once with ("todo-1")', async () => {
+    deleteActions.deleteTodoAction.mockResolvedValue({ ok: true, data: { id: 'todo-1' } });
+    const user = userEvent.setup();
+    render(<TodoItem todo={walkTheDog()} />);
+    const row = screen.getByRole('listitem');
+    expect(within(row).getAllByRole('button', { name: 'Delete todo' })).toHaveLength(1);
+    // Icon only: the idle row text is still exactly the title (e2e AC-5.1 compares each <li>'s whole text).
+    expect(row).toHaveTextContent(/^Walk the dog$/);
+
+    await user.click(within(row).getByRole('button', { name: 'Delete todo' }));
+
+    expect(deleteActions.deleteTodoAction).toHaveBeenCalledTimes(1);
+    expect(deleteActions.deleteTodoAction.mock.calls[0]).toEqual(['todo-1']);
+
+    await user.click(within(row).getByRole('button', { name: 'Edit title' }));
+
+    expect(within(row).getByRole('textbox', { name: 'Edit title' })).toBeInTheDocument();
+    expect(within(row).getAllByRole('button', { name: 'Delete todo' })).toHaveLength(1);
   });
 });

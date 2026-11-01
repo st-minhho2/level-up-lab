@@ -22,6 +22,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §15 | [contracts/13-due-date.md](contracts/13-due-date.md)                   | Todos: an optional due date                                            | ✅     |
 | §16 | [contracts/14-search.md](contracts/14-search.md)                       | Todos: search by title                                                 | ✅     |
 | §17 | [contracts/15-overdue.md](contracts/15-overdue.md)                     | Todos: mark overdue                                                    | ✗      |
+| §19 | [contracts/17-delete.md](contracts/17-delete.md)                       | Todos: delete a todo                                                   | ✗      |
 
 Reading order: §1 → §2 → the section your backlog card names → [features-map.md](features-map.md).
 
