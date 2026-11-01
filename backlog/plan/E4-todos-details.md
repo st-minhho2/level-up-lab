@@ -28,7 +28,7 @@ _F19 · section 21_
 ### B4.3 · Say all done when every todo is completed
 
 _F20 · section 22_
-**Status: Open** — `src/lib/todo-count.ts:8` returns only `N item(s) left`; `git grep -n -i "all done" src/` → no match
+**Status: Done** — bac26da (#109), 193 unit + 39 e2e green (AC-22.1 to AC-22.7), mutation 93.05 (todo-count.ts 100)
 
 - **Spec:** §22 — unchanged (section written from `work/B4.3/analysis.md`; contract `spec/contracts/20-all-done.md`)
 - **Test:** `src/lib/todo-count.test.ts::AC-22.1: returns "All done" for 0 and undefined for 1, 2 and 11` — red because: `allDoneMessage` is not exported from `src/lib/todo-count.ts`
