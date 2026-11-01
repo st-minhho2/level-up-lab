@@ -3,7 +3,7 @@
 B1.24 — guard-bash blocks every forced-push and branch-delete spelling (tooling, no spec section)
 
 - spec: none — tooling card; the card's Acceptance (`backlog/plan/E1-todos.md` ### B1.24) is the contract
-- test: 104 new probes in `scripts/hook-smoke.sh` (81 exit-2 with the force-push message, 23 exit-0) — red before (a9eff38: 41 FAIL; review passes 1–3 added 12 + 2, 10 and 4 red probes), green after: `hook-smoke: 413 probes OK` (baseline 309)
+- test: 104 new probes in `scripts/hook-smoke.sh` (83 exit-2 with the force-push message, 21 exit-0) — red before (a9eff38: 41 FAIL; review passes 1–3 added 12 + 2, 10 and 4 red probes), green after: `hook-smoke: 413 probes OK` (baseline 309)
 - acceptance: every listed spelling exits 2 with the force-push message; plain push, `push -u origin feat/x` and `scripts/pr-step.sh push` exit 0; existing force-push probes stay; label `config-change-approved` (D-19)
 
 ## Plan
