@@ -399,3 +399,13 @@ character in F7's body, red), then code-writer for finding 2. This will be pass 
 
 Riskiest unfalsified: the tier column against the real `scripts/agent/tier.sh` (B1.44, not built). The map assumes
 `tier.sh <plan.md>` exits 0 and prints the word on line 1. Only the stub has run.
+
+### Dispositions (pass 2, dev-lead)
+
+| Pass | #   | Finding (file:line)                                           | Source   | Kind        | Disposition                  | Justification                                                                                                               |
+| ---- | --- | ------------------------------------------------------------- | -------- | ----------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| 2    | 1   | `feature-map.sh:76` state and `:42` `-cards` reverts survive  | reviewer | coverage    | fix now                      | 6b3cec9 F19 (draft → doing, ready → review) and F5 `docs/B9.1-B9.3-cards`; hand mutants: state 1 FAIL, `-cards` 5 FAIL      |
+| 2    | 2   | `--json` passes C0 controls raw (ESC, SOH) → JSON.parse fails | reviewer | correctness | fix now                      | 6b3cec9 F7 CRLF body with ESC and SOH (pre-fix script: F7 FAIL only); 78009c3 folds `[[:cntrl:]]`; 20 probes OK on bash 3.2 |
+| 2    | n1  | dropping `--first-parent` survives                            | reviewer | coverage    | fix now                      | 6b3cec9 + dated fixture: F20 (approval only on a merged side branch); revert → 2 FAIL                                       |
+| 2    | n2  | a prefix `## Evidence` match survives                         | reviewer | coverage    | fix now                      | 6b3cec9 F4 body with `## Evidence notes`; revert → 1 FAIL                                                                   |
+| 2    | n3  | an unfilled `<green>/<total>` renders badly in markdown       | reviewer | process     | out of scope → follow-up (b) | the runner / dev-lead fills Evidence (follow-up (b)); input: a body left as the template                                    |
