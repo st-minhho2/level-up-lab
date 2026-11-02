@@ -7,11 +7,11 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open   | Total  |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ------ | ------ |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 36     | 0       | 18     | 54     |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 36     | 0       | 21     | 57     |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0      | 5      |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3      |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4      |
-| **Total**        |                                                      | **47** | **0**   | **19** | **66** |
+| **Total**        |                                                      | **47** | **0**   | **22** | **69** |
 
 ## Execution order
 
@@ -97,6 +97,9 @@ flowchart TD
   S64["64 · dev-lead fills pr evidence<br/>B1.52"]
   S65["65 · CI runs feature-map probes<br/>B1.53"]
   S66["66 · feature map card field and folds<br/>B1.54"]
+  S67["67 · agent-ready plan gate<br/>B1.55"]
+  S68["68 · gate resume on the issue<br/>B1.56"]
+  S69["69 · unattended and no-rework metrics<br/>B1.57"]
 ```
 
 ## Remaining
@@ -125,6 +128,9 @@ at most 3 cards Doing (B1.18).
 | 64   | B1.52 | dev-lead fills the PR Evidence section after CI is green                                              | —      | Open   | ~~B1.45~~                       | Lead  | S [estimate] |
 | 65   | B1.53 | CI runs the feature-map probes                                                                        | —      | Open   | ~~B1.45~~                       | Lead  | S [estimate] |
 | 66   | B1.54 | The feature map reads the issue form's card field, warns when it truncates, and folds before it trims | —      | Open   | ~~B1.45~~                       | Lead  | S [estimate] |
+| 67   | B1.55 | dev-lead carries an agent-ready card past a reviewed low or medium plan                               | —      | Open   | B1.44                           | Lead  | S [estimate] |
+| 68   | B1.56 | A high-tier gate stop resumes when the lead approves on the issue                                     | —      | Open   | B1.44, B1.55                    | Lead  | S [estimate] |
+| 69   | B1.57 | Scripts measure unattended runs and PRs merged with no rework                                         | —      | Open   | B1.44                           | Lead  | S [estimate] |
 
 ## Waiting on human
 
