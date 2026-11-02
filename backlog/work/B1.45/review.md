@@ -167,3 +167,108 @@ Reviewed `e55dea1 docs(backlog): B1.45 plan round 2` (73 lines). Contract: the c
 Riskiest unfalsified: cost 2, the map ranking a PR by a head-of-branch plan.md that no longer matches what was approved.
 
 Verdict: approved (ready for the lead's gate; the gate also takes the A/B ruling)
+
+## Diff review (pass 1)
+
+Reviewed 7990853 (red) and 67e6921 (change) against the approved plan, the card's Acceptance and D-19/D-25/D-27/D-28.
+Probes ran on a scratch copy (`git archive` of each commit, re-initialised), never on this tree.
+
+### Commands (last line each)
+
+| Command                                                                  | Result                                                                                                              |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint` · `pnpm typecheck`                                           | `All matched files use Prettier code style!` · `tsc --noEmit` clean                                                 |
+| `pnpm test`                                                              | `Tests  202 passed (202)`                                                                                           |
+| `pnpm test:e2e`                                                          | `43 passed (2.0m)`                                                                                                  |
+| `pnpm test:mutation`                                                     | `Final mutation score of 93.40 is greater than or equal to break threshold 70`                                      |
+| `scripts/agent/feature-map-smoke.sh` · same under `/bin/bash` (3.2)      | `feature-map-smoke: 16 probes OK` · `feature-map-smoke: 16 probes OK`                                               |
+| smoke at 7990853 (scratch copy)                                          | `feature-map-smoke: 16 FAIL, 0 ok` (red proven by hand)                                                             |
+| `scripts/verify-red.sh B1.45`                                            | `::error::test(B1.45) commits touch no *.test.ts(x) file` (exit 1; see finding 1)                                   |
+| `scripts/verify-red.sh --auto` (CI's `guards` step, range 7570921..HEAD) | same error, **exit 1**                                                                                              |
+| `check-suppressions` · `check-feat-commits`                              | `OK: no new suppressions` · `OK: no feat commit touches tests`                                                      |
+| `check-config-change`                                                    | local: `Protected configuration changed without the 'config-change-approved' label` (no PR context); PR #154 has it |
+| `check-ac-coverage` · `check-spec-sections` · `check-features-map`       | `OK: every criterion of a shipped section has a test` · `OK: sections cited: 1 … 22` · `OK`                         |
+| `check-plan-scope` · `check-backlog`                                     | `OK: chore/B1.45-evidence stays inside the approved plan of B1.45` · `OK: README matches the cards`                 |
+| `scripts/agent/feature-map.sh` · `--json` · `--json extra` (live)        | heading + `No open agent-ready issues.` exit 0 · `[]` exit 0 · usage exit 2                                         |
+| `git diff --stat main...HEAD`                                            | 6 files, +667: template, 2 scripts, 3 `backlog/work/B1.45/` files                                                   |
+
+### Checklist
+
+| Check                                                       | Result                                                                                                                                   |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| every Acceptance clause has a probe whose assertion matches | template Evidence (F11), table riskiest first (F1, F2, F14–F16), print-only per ruling A, label on #154: yes; but see finding 3          |
+| no test weakened after red                                  | `git log --first-parent --no-merges 7990853..HEAD -- '*.test.*' e2e/ scripts/agent/feature-map-smoke.sh`: empty; no merges               |
+| every changed file in `plan.md`                             | yes (plan-scope OK)                                                                                                                      |
+| interfaces match the plan                                   | yes, except the template default `- AC met: N/N` where the plan's block reads `<green>/<total>` (note, not blocking)                     |
+| Zod / Prisma / raw SQL / migration                          | n/a (no `src/`, no `prisma/`)                                                                                                            |
+| no secret, no suppression                                   | yes                                                                                                                                      |
+| features map row                                            | n/a (tooling, no §); `scripts/CLAUDE.md` row deferred to the orchestrator per plan                                                       |
+| would a test fail if one changed line were reverted         | 10 line-reverts on the copy: 3 caught (lane exclusion 4 FAIL, unapproved note 1 FAIL, unknown rank 1 FAIL), 7 survive (finding 3, notes) |
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: commit 7990853 subject "test(scripts): B1.45 feature-map smoke (red)"; .github/workflows/ci.yml:158
+    DEFECT: the "(red)" marker on a commit that touches no *.test.ts makes CI's verify-red step fail.
+    TRIGGER: push 7990853 to PR #154 (origin's head is still be98af2); guards runs `scripts/verify-red.sh --auto`
+             on 7570921..HEAD, which selects B1.45 by the "(red)" subject and finds no test file.
+    WRONG BEHAVIOUR: the guards job exits 1 with "::error::test(B1.45) commits touch no *.test.ts(x) file"; the PR
+             cannot go green. Precedent avoids it: B1.29 1ae8fbb, B1.32 084bccb, B1.43 ba64613 omit "(red)" and say
+             "Red because" in the body. Both B1.45 commits are unpushed, so rewording the subject is not a force push;
+             the plan's work-breakdown subject then becomes a stated deviation.
+    CONFIDENCE: confirmed (ran `scripts/verify-red.sh --auto` on this branch: exit 1, same error)
+
+[2] KIND: security
+    WHERE: scripts/agent/feature-map.sh:63-64 (pr list fields), :37-43 (pr_of)
+    DEFECT: a card's PR is chosen by head branch name only, so a fork PR is indistinguishable from the agent's PR.
+    TRIGGER: the repo is PUBLIC (`gh repo view`); any account opens a fork PR whose head is `chore/B9.1-a` (or any
+             `<type>/<card>-…`), newer than the agent's PR. On the copy, adding `130<TAB>chore/B9.1-a<TAB>false` with
+             body "AC met: 7/7, deviations: none" printed `| 2 | B9.1 | #11 | #130 | review | high (body: low) | 7/7 | none |`.
+    WRONG BEHAVIOUR: the row shows the outsider's PR number, state and self-written AC met and deviations; the agent's
+             real PR disappears from the map the lead uses to set review depth (D-28). With a branch name origin
+             lacks, the fetch fails and the row ranks "unknown", second, above every medium PR. The field to filter
+             on exists: live `gh pr list --json isCrossRepository` returned `false` for #154 and #155.
+             Inside the Acceptance (identifying the card's PR), so not D-25 widening; the lead may still rule it a
+             follow-up.
+    CONFIDENCE: plausible (selection mechanism confirmed on the copy; no fork PR was opened)
+
+[3] KIND: coverage
+    WHERE: scripts/agent/feature-map-smoke.sh:151 (F1), :166 (F16), fixture :45-56, :89-117
+    DEFECT: three planned behaviours can be reverted with the smoke still at "16 probes OK".
+    TRIGGER: on the copy, each single edit to feature-map.sh:
+             (a) :52 drop `break` (oldest approval commit instead of the latest, unlike plan-files.sh);
+             (b) :82 `r=4` → `r=3` (queued ranks with low; F1's low row is issue #13, below queued #15 and #20, so
+                 the tie-break hides it);
+             (c) :50 drop `(round [0-9]+ )?` (B9.2's "plan round 2 approved" no longer counts; the row printed
+                 `| 6 | B9.2 | #12 | #102 | doing | medium (unapproved) | 2/2 | none |`, no probe reads B9.2's tier).
+    WRONG BEHAVIOUR: F1 claims "low > queued" and F16 claims "the approval commit's plan" (plan-files.sh's rule,
+             round N included), but neither assertion can fail for these inputs. Needed: a queued issue numbered
+             below the low row; `cell B9.2 6 == "medium"`; a branch approved low, then re-planned high and approved
+             "round 2", expected high.
+    CONFIDENCE: confirmed (ran all three mutants on the copy: 16 probes OK each)
+```
+
+Notes, not blocking:
+
+- Further surviving reverts: `gsub(/\t/…)` in `evidence`, the body-tier lowercasing, `[[ $# -le 1 ]]` (`--json extra`
+  untested), the backslash escape in `json_str`. Cheap to probe alongside finding 3.
+- Caller's (1): the first `B<e>.<n>` in the title wins, as planned. B1.43's form prefills `title: "B<e>.<n> "` and
+  has a required `card` input; a title "Follow-up to B1.42 runner" filed for B1.47 yields B1.42's row. Out of scope →
+  follow-up (prefer the form's card field), plausible.
+- Caller's (2): `git fetch origin refs/heads/<b>` writes the caller's per-worktree `FETCH_HEAD` and shared objects,
+  no ref, no working-tree change; it clobbers a pending `git merge FETCH_HEAD` in that checkout. Not blocking.
+- Caller's (3): `--limit 100` on both lists; 2 open PRs today, B1.44 caps agent PRs at 3. Trigger 101 open PRs →
+  older PRs absent, their cards "queued". Out of scope → follow-up, plausible.
+- Caller's (4): exit 1 on any gh failure is the plan's interface ("1 gh failed"). Trigger: an issue transferred
+  between list and view kills the whole table. Not a finding.
+- Caller's (5): the PR `--jq` ran live and printed `155<TAB>chore/B1.43-eligible<TAB>true`, the shim's format. The
+  issue expression has the same shape but the repo has no issue and no `agent-ready` label yet, so it is unexercised.
+- An unedited template body shows "N/N" (AC met) and "none" (deviations) in the map, not "?". B1.45's own
+  `pr-body.md` has no Evidence section of the new template.
+
+Verdict: back to test-writer (finding 1: reword the unpushed red commit; finding 3: the three probes; a fork-PR
+probe for finding 2), then code-writer for finding 2.
+
+Riskiest unfalsified: the tier column against the real `scripts/agent/tier.sh` (B1.44, not built): the map assumes
+`tier.sh <plan.md>` exits 0 with the word on line 1; only a stub has run.
