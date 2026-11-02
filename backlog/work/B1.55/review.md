@@ -207,3 +207,112 @@ Notes (not blocking; state them or leave them):
 
 This was round 2 of at most 2. A further round goes to the lead as "Waiting on human": the lead decides reasons 1–4
 at the gate.
+
+## Diff review (pass 1)
+
+SCOPE: all (tooling, no §: `scripts/ci`, `scripts/agent`, `scripts/metrics`, `.claude/`, `.github/`). Red bc11ca9,
+change 57b351e, base origin/main 7f2e214. I ran everything on a clone of 57b351e (and of bc11ca9 for the red check),
+on macOS `/bin/bash` 3.2 and in `node:24-bookworm` (bash 5.2.15, mawk, git 2.39.5).
+
+| Command                                                            | Last line                                                                                                                                                                                                                                                                                                  |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint` · `pnpm typecheck`                                     | `All matched files use Prettier code style!` · `tsc --noEmit` (exit 0)                                                                                                                                                                                                                                     |
+| `pnpm test`                                                        | `Tests  202 passed (202)`                                                                                                                                                                                                                                                                                  |
+| `pnpm test:e2e`                                                    | `43 passed (57.8s)`                                                                                                                                                                                                                                                                                        |
+| `pnpm test:mutation`                                               | `Final mutation score of 93.40 is greater than or equal to break threshold 70`                                                                                                                                                                                                                             |
+| `check-suppressions` · `check-feat-commits`                        | `OK: no new suppressions` · `OK: no feat commit touches tests`                                                                                                                                                                                                                                             |
+| `check-config-change`                                              | `::error::Protected configuration changed without the 'config-change-approved' label` (expected locally: the PR carries it, D-19)                                                                                                                                                                          |
+| `check-ac-coverage` · `check-spec-sections` · `check-features-map` | `OK: every criterion of a shipped section has a test` · `OK: sections cited: 1 … 22` · `OK`                                                                                                                                                                                                                |
+| `check-plan-scope`                                                 | `OK: chore/B1.55-agent-gate stays inside the approved plan of B1.55`                                                                                                                                                                                                                                       |
+| `verify-red.sh B1.55`                                              | `no 'test(<pkg>): B1.55 … (red)' commit` (expected: smoke-only red, no `(red)` marker, as B1.43 and B1.44; red proven below)                                                                                                                                                                               |
+| `git diff --stat main...HEAD`                                      | `16 files changed, 741 insertions(+), 29 deletions(-)`                                                                                                                                                                                                                                                     |
+| red bc11ca9, bash 3.2                                              | hook-smoke 18 FAIL (S17–S26, C9 high, C10, C11 labeled), eligible-smoke `2 of 11 probes FAILED` (E10, E11), metrics-smoke `25 ok, 2 FAIL` (M27, M29)                                                                                                                                                       |
+| 57b351e, bash 3.2                                                  | hook-smoke **498 ok, 1 FAIL** (finding 1), eligible-smoke `11 probes OK`, metrics-smoke `27 ok, 0 FAIL`                                                                                                                                                                                                    |
+| 57b351e, bash 5.2 + mawk (CI image)                                | hook-smoke **498 ok, 1 FAIL** (same probe), metrics-smoke `27 ok, 0 FAIL`, eligible-smoke (jq added) `11 probes OK`; all 23 D-27 probes ok                                                                                                                                                                 |
+| apt `gh` in `node:24-bookworm`                                     | `gh version 2.23.0 (2023-02-27 Debian 2.23.0+dfsg1-1)`; with a dummy token, the `issues?labels=agent-ready&state=open&per_page=100` `{owner}/{repo}` call reaches the API (`"status": "401"`), so the placeholder and the query string resolve. The job token's permission is still unproven until CI runs |
+
+Checklist:
+
+| Check                                                                          | Result                                                                                                                                              |
+| ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Acceptance: a probe each for plan-scope, check-plan-scope, plan-files, metrics | pass (S16–S26, C9–C11, S17 `pf`, M26–M29), except that the verdict reading accepts a looser review than the field claims (findings 2, 3)            |
+| no test weakened after red                                                     | pass: `git log --first-parent --no-merges bc11ca9..HEAD -- '*.test.*' e2e/ 'scripts/*smoke*' 'scripts/*/*smoke*'` is empty, and there are no merges |
+| every changed file in `plan.md`                                                | pass: all 13 non-paperwork files are Files rows                                                                                                     |
+| interfaces match the plan                                                      | pass: `plan-files.sh [--run] [--offline] <card> [<rev>]` with exit 5 `plan-files: <card> approval at <sha7>: <why>`; `eligible.sh <issue> [<card>]` |
+| no historical approval flips                                                   | pass: of 47 plans under `backlog/work/`, none has a status-line field starting `reviewer`; every one keeps the lead path                            |
+| no secret, no suppression, no raw SQL, no `src/` or `prisma/` change           | pass                                                                                                                                                |
+| would a test fail if one changed line were reverted                            | S23 kills a mutant that drops the "unchanged since the review" refusal. `plan-files.sh:80` `if (in_pr) v = ""` survives (finding 3)                 |
+| suite green at HEAD                                                            | **fail**: hook-smoke, which CI's test job runs (`ci.yml:55-58`), is red (finding 1)                                                                 |
+
+Findings:
+
+```
+[1] KIND: coverage
+    WHERE: scripts/hook-smoke.sh:226, :236 (at 57b351e); .claude/agents/dev-lead.md:11
+    DEFECT: the change adds '!backlog/work/*/review.md' to dev-lead's path-guard, but the role-pattern probe still
+            expects the old list, and no probe proves the new deny blocks.
+    TRIGGER: scripts/hook-smoke.sh at 57b351e, bash 3.2 or bash 5.2 (node:24-bookworm)
+    WRONG BEHAVIOUR: "FAIL dev-lead passes [backlog/* docs/metrics.md docs/mistake-log.md !backlog/00-decisions.md
+            !backlog/work/*/review.md] (want [... !backlog/00-decisions.md])", exit 1, so CI's "Every hook probe passes"
+            step goes red. The dev-lead deny that D-27's reviewer condition depends on (r1 #3) has no probe.
+    CONFIDENCE: confirmed (ran it on both shells)
+```
+
+The worktree holds an uncommitted edit to `scripts/hook-smoke.sh:226,236` (mtime 20:45, not made by this review). It
+updates the expected list and adds `2 backlog/work/B1.2/review.md`. It belongs in its own
+`test(scripts): B1.55 review pass 1 -- …` commit, which explains a test change made after the red commit. The "499 OK"
+in the dispatch does not match the committed tree.
+
+```
+[2] KIND: correctness
+    WHERE: scripts/ci/plan-files.sh:80
+    DEFECT: only a "## Plan review (round N)" heading opens a plan review section, so any other plan-review heading is
+            skipped, and the earlier approved round counts as "the last plan review".
+    TRIGGER: on chore/B9.1-agent, review.md holds "## Plan review (round 1)" / "Verdict: approved", then
+            "## Plan review (phase B amendment)" / "Verdict: changes requested" (the heading used in
+            backlog/work/B2.2/review.md:187, B2.3:185, B2.5:319), committed with the amended plan (adds docs/y.md).
+            Then the approval commit with field "reviewer (D-27, tier low, issue #7)".
+            `plan-files.sh --run --offline B9.1`
+    WRONG BEHAVIOUR: exit 0 and prints docs/x.md and docs/y.md. The reviewer rejected that plan, and D-27 ("a plan the
+            reviewer approved") plus the card's "nothing looser" need exit 5. Online, only eligible.sh is added, and it
+            does not read review.md, so the hook and CI let it through too.
+    CONFIDENCE: confirmed (ran the probe on the 57b351e copy)
+```
+
+The fix must fail closed. Either every `^## Plan review` heading opens a section, or the review is refused when its
+last `^## Plan review` heading is not the strict form. A red probe comes first.
+
+```
+[3] KIND: coverage
+    WHERE: scripts/ci/plan-files.sh:80 (`if (in_pr) v = ""`); scripts/hook-smoke.sh S22
+    DEFECT: no probe has two plan review rounds, so the per-section reset that makes the last round win is untested.
+    TRIGGER: delete `if (in_pr) v = ""; ` and run hook-smoke. Then use a review.md with round 1 "Verdict: approved" and
+            round 2 "Verdict: changes requested".
+    WRONG BEHAVIOUR: hook-smoke stays green (no D-27 probe fails). The mutant takes the first round's "approved" and
+            passes a plan the reviewer's last round rejected.
+    CONFIDENCE: confirmed (ran the mutant on the copy)
+```
+
+Not blocking (accepted costs or out of reach, recorded so the lead sees them):
+
+- a. Caller concern 4. When the approval commit itself touches review.md, `at == sha` and the "unchanged" check
+  compares the plan with itself. This is r2 #2's accepted cost ("edit plan.md in the review.md commit").
+- b. Caller concern 6. A run's bare `Bash` uses the lead's `gh` login, so it can unlabel or close its issue, or edit
+  the issue's "Card id". That takes a plain-branch card off CI's runner path, and a lead line forged by Bash then
+  passes CI. The hook still refuses with `RUNNER_CHILD`. This is the stated honor floor ("the same as today's lead
+  line"), widened by one `gh` call, until B1.58's sandbox. The lead sees it in the issue timeline.
+- c. `check-plan-scope.sh:34-35` concatenates every open issue's body before awk, and `f` survives an issue boundary.
+  So a body that ends right under `### Card id` takes the next issue's first line as a card id. The required form
+  field makes this unlikely. It only fails stricter (a lead-approved card read as being on the runner path).
+- d. `plan-deviations.sh` gives `--run` only to a `-agent` head ref. A D-27 PR on another branch (valid through
+  `RUNNER_CHILD` plus CI's issue lookup) therefore counts as fully deviating. `run.sh:135-141` always names
+  `-agent`, so this is reachable only off the runner's own naming.
+- e. Caller concern 5. The hook latency of about 5 `gh` calls per non-paperwork Edit/Write, and the fail-open on the
+  hook's timeout, are accepted costs of decision (2). I did not measure them against the live API.
+
+Verdict: back to test-writer (finding 1's committed probe fix, then red probes for 2 and 3), then code-writer
+(finding 2's heading match).
+
+Riskiest unfalsified: CI's job token on `issues/<n>/events --paginate` and `collaborators/<actor>/permission` under
+`permissions: {contents: read, issues: read}`. The placeholder and gh 2.23 are proven, but the token's permission
+only shows in this PR's first `guards` run.
