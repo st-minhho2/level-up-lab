@@ -644,3 +644,121 @@ deferral to B1.59.
 Riskiest unfalsified: whether 2.1.309 under `--permission-mode dontAsk` lets `git rebase -x '…'` or
 `git difftool --extcmd=…` through `Bash(git *)`. A sandboxed probe in B1.58 settles it. Until then, finding 1's
 restated cost should assume that it does.
+
+## Diff review (pass 3)
+
+SCOPE: tooling (no §; `scripts/agent/`, `scripts/ci/`). Diff `origin/main...HEAD` at `9e9869e`: 11 files, +1651 −10.
+This pass reviews the commits after `c96ca4d`: `c575661` (red R13 `--poll` TERM), `b801c11` (fix), `59ce358` (plan,
+lead round 2) and `9e9869e` (round 2 approval line). Nothing was run against the real `claude` binary or with real `gh`
+writes. All probes ran on a scratch `git clone` with run-smoke's own shims.
+
+### Commands (last line each)
+
+| Command                                            | Result                                                                                                        |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                        | `All matched files use Prettier code style!`                                                                  |
+| `pnpm typecheck`                                   | exit 0                                                                                                        |
+| `pnpm test`                                        | `Tests  202 passed (202)`                                                                                     |
+| `pnpm test:e2e`                                    | `43 passed (52.2s)`                                                                                           |
+| `pnpm test:mutation`                               | `Final mutation score of 93.40 is greater than or equal to break threshold 70` (no `src/` change)             |
+| `scripts/agent/run-smoke.sh` (`/bin/bash` 3.2)     | `14 probes OK` (40 s)                                                                                         |
+| `scripts/agent/tier-smoke.sh` (`/bin/bash` 3.2)    | `9 probes OK`                                                                                                 |
+| `scripts/ci/check-suppressions.sh`                 | `OK: no new suppressions`                                                                                     |
+| `scripts/ci/check-config-change.sh`                | exit 1 without the label; exit 0 with `CONFIG_CHANGE_APPROVED=true`. PR #163 carries `config-change-approved` |
+| `scripts/ci/check-feat-commits.sh`                 | `OK: no feat commit touches tests`                                                                            |
+| `scripts/ci/check-ac-coverage.sh`                  | `OK: every criterion of a shipped section has a test`                                                         |
+| `scripts/ci/check-spec-sections.sh`                | `OK: sections cited: 1 … 22`                                                                                  |
+| `scripts/ci/check-features-map.sh`                 | `OK`                                                                                                          |
+| `scripts/ci/check-backlog.sh`                      | `OK: README matches the cards`                                                                                |
+| `scripts/ci/check-plan-scope.sh`                   | `OK: chore/B1.44-runner stays inside the approved plan of B1.44`                                              |
+| `scripts/verify-red.sh B1.44`                      | `no 'test(<pkg>): B1.44 … (red)' commit` (expected, as B1.43; red proven by hand below)                       |
+| `scripts/next-task.sh --check B1.44`               | `B1.44: no overlap with any Doing or Review card`                                                             |
+| `scripts/agent/tier.sh backlog/work/B1.44/plan.md` | `high`                                                                                                        |
+
+`b801c11` says "run-smoke 14/14 (bash 5 and 3.2)". This host has only `/bin/bash` 3.2. The local `node:24-bookworm`
+image (bash 5.2.15) has no `jq`, and the run was offline, so the bash 5 half is [unverified] here.
+
+Red and mutants (run-smoke on the scratch clone, `/bin/bash` 3.2):
+
+- `run.sh` at `c575661` with that commit's smoke: `1 of 14 probes FAILED` (R13; the commit body: 60 s, 2 calls).
+  This is a behavioural red.
+- M1, `run_issue`'s own TERM/INT trap removed (`run.sh:180`) → R13 FAIL.
+- M2, the `--poll` subshell run in the foreground again (`run.sh:251`) → R13 FAIL.
+- M3, `on_signal` forwards nothing (`run.sh:173`) → R5 and R13 FAIL.
+- `CHILD_PID=""` after the `wait` (`:253`) is not probed. Dropping it only matters if a pid is reused between two
+  issues, so I do not count it as a gap.
+
+Adversarial probes on the fix (scratch harness built from run-smoke's shims):
+
+| Probe                                                             | Result                                                                                       |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| X1 `--poll` [7, 8], TERM run.sh while #7's claude sleeps          | rc 143 in 0 s; claude dead, no lock, no `stopped`, 1 call; #8 never started                  |
+| X2 INT to the whole process group (Ctrl-C)                        | rc 130 in 0 s; claude dead, no lock, no `stopped`, 1 call                                    |
+| X3 INT to run.sh only                                             | rc 130 in 0 s; same as X2                                                                    |
+| X4 TERM to the issue subshell only                                | claude dead, lock removed, no `stopped`; run.sh logs `#7 refused` and goes on (wording only) |
+| X5 plain `--poll` [7] (the async subshell's stdin is `/dev/null`) | prompt reaches claude's stdin intact; `stopped` = `gate`; rc 0                               |
+
+Side note on X2 and X3. My first harness started run.sh with `( … exec run.sh ) &` from a non-interactive shell. bash
+then gives run.sh SIGINT ignored on entry, and that cannot be trapped, so INT changed nothing (rc 0, retried, 60 s).
+That comes from how run.sh was started, not from `b801c11`. TERM is unaffected. B1.59's launchd wrapper should stop
+the job with TERM (launchd's default) and must not start `run.sh` with `&` from a script.
+
+### Pass 2 findings
+
+| Pass 2 finding                       | Status now                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [1] cost misstated                   | **closed.** plan.md:20-27 now says the run is on the host with no sandbox and can execute any command (`git rebase -x`, `git difftool --extcmd`, a written test under `pnpm test`, a written `scripts/ci/` file). It also says a run can add a package or start another run despite `RUNNER_CHILD`. The round 2 approval line is recorded at `9e9869e`. One clause of the new text overreaches (finding 1 below, not blocking) |
+| [2] interface changed after approval | **closed in plan.md.** Interfaces now carry the 7 named scripts, the 4 denies, `RUNNER_CHILD=1`, `Task` read as `Agent` and non-`builtin` plugins. These match `run.sh:30-38, 82, 87, 99-100` token for token. "Changed after approval" lists the `SKILL.md` prompt and `EXPECT=Write`. pr-body.md is still the pre-round-2 text. It is regenerated after this pass, which is known                                            |
+| [3] TERM during `--poll`             | **closed.** Red `c575661` (R13 extended), fix `b801c11`. Verified by M1–M3 and X1–X5 above                                                                                                                                                                                                                                                                                                                                     |
+| not blocking: plugins `[]`           | still at plan.md:31 and pr-body.md:37. Live runs 3, 4b and 4c show 4 `cc-plugin-*@builtin`. Text only                                                                                                                                                                                                                                                                                                                          |
+
+### Checklist
+
+| Check                                               | Result                                                                                                                                                                           |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every Acceptance clause has a probe                 | pass. Unchanged since pass 2. R13 now also covers stopping `--poll`                                                                                                              |
+| no test weakened after red                          | pass. `c575661` only adds assertions to R13. `git log --first-parent --no-merges c575661..HEAD -- '*smoke*' '*.test.*' e2e/`: empty. `--remerge-diff` over the same range: empty |
+| `chore`/`feat` commit touches no test               | pass. `b801c11` changes `scripts/agent/run.sh` only                                                                                                                              |
+| every changed file is in `plan.md`                  | pass. 11 files, all in Files; the Files table is unchanged in round 2                                                                                                            |
+| interfaces match the plan                           | pass. The plan's argv, env and kill rule match the code. TERM/INT in `--poll` is in "Changed after approval"                                                                     |
+| costs stated to the lead hold in the code           | pass, with finding 1 (not blocking)                                                                                                                                              |
+| Zod / Prisma / raw SQL / migration                  | n/a                                                                                                                                                                              |
+| no secret, no suppression                           | pass                                                                                                                                                                             |
+| features map row                                    | n/a (tooling)                                                                                                                                                                    |
+| would a test fail if one changed line were reverted | pass. Each of the 3 changed behaviours of `b801c11` has a killing probe (M1–M3)                                                                                                  |
+
+### Findings
+
+```
+[1] KIND: security
+    WHERE: backlog/work/B1.44/plan.md:23-25 ("such a change still shows in its diff … the lead starts runs by hand and
+           reads each one's diff"); pr-body.md is regenerated from this text
+    DEFECT: the restated cost offers the run's diff as the control, but some effects of a run never appear in that
+            diff.
+    TRIGGER: under plain `Bash(git *)`, with no matcher assumption: `git branch -f chore/B1.50-x HEAD` then a plain
+             `git push` of that branch to origin, or a push of `HEAD` to a new remote branch name. Either creates a
+             remote branch under the lead's token that is not in this run's diff. Under
+             `git rebase -x 'echo 2.1.400 >> ~/.level-up-lab/runs/verified-versions' HEAD~1`: an unproven claude
+             version is marked verified for every later run. I fed each command to `.claude/hooks/guard-bash.sh` on
+             the scratch clone and each returned exit 0.
+    WRONG BEHAVIOUR: the lead reads the diff and sees nothing, while a branch was pushed or `--check-binary`'s gate
+             was disabled. "A run can still execute any command" (same paragraph) is still true, and it is the
+             sentence the lead approved, so the approval stands. Only the mitigation clause overreaches.
+    DISPOSITION: not blocking. When pr-body.md is regenerated, say "a change committed in the worktree shows in its
+             diff; effects outside it (a push to another branch, a write under ~/.level-up-lab/runs) do not".
+             Keeping `runs/verified-versions` out of a run's reach is B1.58's sandbox (already filed), so D-25 needs
+             no new card.
+    CONFIDENCE: confirmed for the hook passing each command and for the plain push route under `Bash(git *)`;
+             plausible for `git rebase -x` (pass 2's matcher assumption, still unfalsified offline)
+```
+
+Not blocking, for the lead (carried over): `Bash(git * -c *)` also denies a commit message containing `-c`. The card
+title (E1-todos.md:636) still says "in a sandbox". X4 logs `#7 refused` for a subshell that was killed.
+
+Verdict: ready for PR. No blocking finding. Before the PR leaves draft, regenerate pr-body.md from the round 2 plan
+(pass 2 #2, known) and fix the finding 1 clause and the plugins `[]` clause in it.
+
+Riskiest unfalsified: does a TERM to the real claude pid stop the processes its tools started (a `pnpm test` or
+`pnpm build` tree)? Under `--poll`, run.sh forwards the TERM and exits without waiting. The shim has no grandchildren,
+so offline probes cannot show whether those trees outlive the run. The first live stop under B1.58/B1.59 should check
+`pgrep -f` after a TERM.
