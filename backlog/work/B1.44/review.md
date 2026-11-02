@@ -476,3 +476,22 @@ Finding 3 is one argument. Finding 2's probes go to the test-writer first, red b
 Riskiest unfalsified: whether Claude Code 2.1.309 under `--permission-mode dontAsk` accepts
 `scripts/sh -c '…'` and `git -c alias.r='!…' r` through the prefix rules. I traced it and did not run it. The first
 live `run.sh <n>` (or a sandboxed probe) settles finding 1's confidence.
+
+## Live runs (dev-lead, 2.1.309 macOS app build, lead's own claude.ai login)
+
+The lead allowed 2 runs, then 2 more (check-binary and one issue run); attempts that ended at the init check made no
+API turn. Logs under `~/.level-up-lab/runs/` on the lead's machine.
+
+| #   | Run                                        | Turns | USD   | Outcome                                                                                                  | Change it led to                                                      |
+| --- | ------------------------------------------ | ----- | ----- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| 1   | `--check-binary`                           | 0     | 0     | killed at init: 4 `cc-plugin-*@builtin` (path `builtin`) counted as user settings; no user plugin loaded | `bf8e612` → `a1bc002`: builtin plugins pass                           |
+| 2   | `--check-binary`                           | 1     | 0.073 | dev-lead declined the spec/ write before any tool call: no hook evidence                                 | `b25c8ac` → `731d06f`, `88d8552`: the prompt asks for the Write call  |
+| 3   | `--check-binary`                           | 2     | 0.080 | verified: PreToolUse:Write path-guard exit 2 on `spec/agent-probe.md`, no file; plugins builtin only     | `verified-versions` holds `2.1.309 (Claude Code)`                     |
+| 4a  | `run.sh 166` (card B1.41, 15 turns, USD 1) | 0     | 0     | no claude call: worktree.sh refused under `.worktrees/`, message hidden, EXIT trap unbound               | `896c8c1` → `0a9b54d` (with review pass 1)                            |
+| 4b  | `run.sh 166`                               | 0     | 0     | killed at init: tools `…,Bash,Task` (2.1.309 names Agent `Task`, lists no Skill); comment posted         | `25b824e`, `3a35ecc` → `f351eeb`: Task = Agent, prompt names SKILL.md |
+| 4c  | `run.sh 166`                               | 9     | 0.496 | **gate**: `is_error false`, `subtype success`; tier high; 0 permission denials; comment on #166          | —                                                                     |
+
+Run 4c: init tools `Read,Grep,Glob,Write,Edit,Bash,Task`, plugins builtin only, 0 MCP servers, 1 SessionStart hook
+(the project's), PreToolUse hooks on Bash, Read and Write. dev-lead wrote `backlog/work/B1.41/plan.md`, had the
+`reviewer` approve it in round 1 and stopped at the gate; its two commits (`f880de1`, `b1a7727`) passed the pre-commit
+hooks inside the run, `require-hooks.sh` included. Lock removed, `runs/166/stopped` = `gate`. Total measured: USD 0.649.
