@@ -289,3 +289,113 @@ Riskiest unfalsified: the tier column against the real `scripts/agent/tier.sh` (
 | 1    | c4  | one gh failure ends the table with exit 1                  | dev-lead | interface   | no change needed         | the approved plan's interface ("1 gh failed")                                                                                               |
 | 1    | c5  | the issue `--jq` is unexercised                            | dev-lead | coverage    | out of scope → follow-up | no `agent-ready` label or issue exists yet; first live run after B1.43's template lands                                                     |
 | 1    | own | `pr_of` comment named 2 fields, prints 3                   | dev-lead | docs        | fix now                  | 2d6247f comment names `<number>\t<branch>\t<isDraft>`                                                                                       |
+
+## Diff review (pass 2)
+
+Reviewed origin/main..43030de (6df8bb5 smoke, 4c62829 change, b11a96b hardening probes, 2d6247f fork fix, 43030de
+template placeholder and Evidence in `pr-body.md`) against the approved plan, the card's Acceptance, D-19/D-25/D-27/D-28
+and the pass-1 dispositions. I ran the probes on a scratch copy (`git archive HEAD`, re-initialised) and never on this
+tree.
+
+### Commands (last line each)
+
+| Command                                                            | Result                                                                                                                                                |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint` · `pnpm typecheck`                                     | `All matched files use Prettier code style!` · `tsc --noEmit` clean                                                                                   |
+| `pnpm test`                                                        | `Tests  202 passed (202)`                                                                                                                             |
+| `pnpm test:e2e`                                                    | `43 passed (1.1m)`                                                                                                                                    |
+| `pnpm test:mutation`                                               | `Final mutation score of 93.40 is greater than or equal to break threshold 70`                                                                        |
+| `scripts/agent/feature-map-smoke.sh` · `/bin/bash` (3.2.57)        | `feature-map-smoke: 18 probes OK` · same. `bash` on PATH is also 3.2, so bash 5 was not run                                                           |
+| smoke at b11a96b (the fix not yet applied, copy)                   | `feature-map-smoke: 15 FAIL, 4 ok`, so the hardening probes were red before 2d6247f                                                                   |
+| `scripts/verify-red.sh --auto`, range 7570921..HEAD                | `no test(...): B<e>.<n> … (red) commit in range; nothing to verify`, exit 0                                                                           |
+| `BASE_SHA=origin/main scripts/verify-red.sh --auto` (CI's shape)   | same line, exit 0. Pass-1 finding 1 is closed                                                                                                         |
+| `scripts/verify-red.sh B1.45`                                      | `::error::no 'test(<pkg>): B1.45 … (red)' commit …`, exit 1. Expected: no `*.test.ts`, CI runs `--auto` only                                          |
+| `check-suppressions` · `check-feat-commits`                        | `OK: no new suppressions` · `OK: no feat commit touches tests`                                                                                        |
+| `check-config-change`                                              | local exit 1 (`.github/pull_request_template.md`, no label in env); `CONFIG_CHANGE_APPROVED=true` → allowed. PR #154 carries `config-change-approved` |
+| `check-ac-coverage` · `check-spec-sections` · `check-features-map` | `OK: every criterion of a shipped section has a test` · `OK: sections cited: 1 … 22` · `OK`                                                           |
+| `check-plan-scope` · `check-backlog`                               | `OK: chore/B1.45-evidence stays inside the approved plan of B1.45` · `OK: README matches the cards`                                                   |
+| `scripts/agent/feature-map.sh` · `--json` (live)                   | heading + `No open agent-ready issues.`, exit 0 · `[]`, exit 0                                                                                        |
+| live `gh pr list --json …,isCrossRepository`                       | `156 chore/B1.46-depcruise true false`, `154 chore/B1.45-evidence true false`: same-repo PRs read `false`                                             |
+| `git diff --stat main...HEAD`                                      | 6 files, +819: template, 2 scripts, `plan.md`, `pr-body.md`, `review.md`                                                                              |
+
+The caller asked whether the template change inside a `docs(backlog)` commit (43030de) trips a guard. It does not.
+`check-config-change.sh` matches on paths only, and PR #154 has the label. `check-feat-commits.sh` reads only
+`feat(` subjects. `plan-files.sh` reads only `plan [round N ]approved` subjects. `check-plan-scope` passes because the
+template is in the plan's Files table. The PR is squash-merged, so the commit type does not reach main.
+
+### Pass-1 dispositions checked
+
+| #        | Disposition              | Checked                                                                                                                           |
+| -------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| 1        | fix now                  | 6df8bb5 has no `(red)` in its subject and its body says "Red because"; `--auto` exits 0 over both ranges (above)                  |
+| 2        | fix now                  | 2d6247f:40 `[[ "$fork" == false ]] \|\| continue`. Deleting that line on the copy gives 3 FAIL. Live same-repo PRs read `false`   |
+| 3        | fix now                  | on the copy: drop `break` → 2 FAIL; `r=4`→`r=3` → 1 FAIL; drop `(round [0-9]+ )?` → 2 FAIL                                        |
+| n1       | fix now                  | drop tab gsub / lowercasing / `[[ $# -le 1 ]]` / the backslash escape in `json_str` → 1 FAIL each                                 |
+| n2       | fix now                  | template line reads `- AC met: <green>/<total>`, matching the plan's Interfaces block                                             |
+| n3       | fix now                  | `pr-body.md:99-104` holds Evidence `3/3 · high · none · n/a`. The card's Acceptance has 3 clauses; posting is covered by ruling A |
+| c1 c3 c5 | out of scope → follow-up | each carries a proving input; agreed (D-25)                                                                                       |
+| c2 c4    | no change needed         | agreed                                                                                                                            |
+| own      | fix now                  | the `pr_of` comment names 3 fields                                                                                                |
+
+### Checklist
+
+| Check                                                | Result                                                                                                                                                                                                                                                          |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every Acceptance clause has a matching probe         | template (F11), riskiest-first table (F1, F2, F14–F18), print-only (ruling A), label on #154: yes. See finding 1 for State                                                                                                                                      |
+| no test weakened after the smoke commit              | `git log --first-parent --no-merges 6df8bb5..HEAD -- feature-map-smoke.sh '*.test.*' e2e/` lists only b11a96b, a `test(...)` commit. It adds probes. F6's row index 10→12 follows the larger fixture, and F7's exact JSON gets stricter. No merges in the range |
+| every changed file in `plan.md`                      | yes (plan-scope OK)                                                                                                                                                                                                                                             |
+| interfaces match the plan                            | yes. The fork filter adds a fourth `pr list` field inside the plan's "PR = …" rule, no new flag or output                                                                                                                                                       |
+| Zod / Prisma / raw SQL / migration                   | n/a (no `src/`, no `prisma/`)                                                                                                                                                                                                                                   |
+| no secret, no suppression                            | yes                                                                                                                                                                                                                                                             |
+| features map row                                     | n/a (tooling, no §)                                                                                                                                                                                                                                             |
+| would a probe fail if one changed line were reverted | 7 pass-1 reverts and the fork filter: all caught. 4 new reverts survive: two are finding 1, two are notes                                                                                                                                                       |
+
+### Findings
+
+```
+[1] KIND: coverage
+    WHERE: scripts/agent/feature-map.sh:76 (doing/review), :42 (`B[0-9]+\.[0-9]+-cards` lane); smoke :160-202
+    DEFECT: two planned behaviours can be reverted with the smoke still at "18 probes OK".
+    TRIGGER: on the copy, single edits to feature-map.sh:
+             (a) :76 `[[ "$draft" == true ]] && state=doing || state=review` → `state=review`. No probe reads a
+                 draft row's State column (B9.2, B9.4, B9.6, B9.9 are drafts), and F7's only PR row is a ready one.
+             (b) :42 drop `|B[0-9]+\.[0-9]+-cards`. The fixture has no `docs/B9.1-B9.3-cards` branch, but the
+                 interface names the lane and origin/main has the batch filings (#151 "cards B1.42 to B1.46").
+    WRONG BEHAVIOUR: (a) every draft PR shows `review`. The plan's "State: … doing (draft) · review (ready)" is
+             lost, so the lead cannot tell finished PRs from in-progress ones. (b) a batch-filing PR on
+             `docs/B9.1-B9.3-cards` becomes B9.1's PR. Its body (no Evidence) shows `?`, and its tier comes from a
+             plan that does not exist (unknown, ranked second).
+             Needed: `cell B9.2 5 == "doing"`, plus a `docs/B9.1-B9.3-cards` PR, newer than #101, absent from the output.
+    CONFIDENCE: confirmed (ran both mutants on the copy: 18 probes OK each)
+
+[2] KIND: correctness
+    WHERE: scripts/agent/feature-map.sh:34 (`gsub(/\t/, " ", v)`), :89 (`json_str`)
+    DEFECT: `--json` escapes only `\` and `"`, and `evidence` folds only tab. Any other C0 control character in an
+            Evidence value goes out raw, which makes the JSON invalid.
+    TRIGGER: on the copy, a PR body whose Evidence line reads
+             `- plan deviations: a.ts ESC[31mred ESC[0m b<FF>c <SOH>d` (ANSI colour pasted from a terminal), body
+             in CRLF, `feature-map.sh --json`.
+    WRONG BEHAVIOUR: exit 0 with output that `JSON.parse` rejects: "Bad control character in string literal in JSON
+             at position 112". One row breaks the parse of the whole map, so the orchestrator that publishes `--json`
+             daily (follow-up a) gets nothing. CRLF on its own is safe, because the trailing `\r` is trimmed (AC
+             read `3/4`). The plan's interface promises "--json: same rows", and pass 1's tab fold handled one case of
+             the same defect. Folding `[[:cntrl:]]` in the awk instead of `\t` closes it.
+    CONFIDENCE: confirmed (ran it on the copy; node's JSON.parse rejected the output)
+```
+
+Notes (not blocking):
+
+- `git log --first-parent` → `git log` in `tier_of` survives. A merged side branch that carries an approval subject
+  for this card is the only input that tells them apart. It matches `plan-files.sh` today.
+- `^## Evidence[[:space:]]*$` → `^## Evidence` survives. The exact match matters: `pr-body.md` copies `plan.md`,
+  and line 37 of B1.45's own body is `## Evidence        (template; …)` followed by `- AC met: <green>/<total>`. With
+  the prefix match, the map would read the plan's placeholder. A probe with that body is cheap.
+- `[[ "$fork" == false ]]` → `!= true` is equivalent while gh emits only `true`/`false`, so this is not a gap.
+- If an agent leaves `- AC met: <green>/<total>` in the body, the markdown cell becomes `<green>/<total>`, and a
+  renderer that strips unknown tags shows `/`. Follow-up (b) fills the line, so this is out of scope → follow-up.
+
+Verdict: back to test-writer (finding 1: a `doing` assertion and a `-cards` lane PR; finding 2: a control
+character in F7's body, red), then code-writer for finding 2. This will be pass 3 of 3.
+
+Riskiest unfalsified: the tier column against the real `scripts/agent/tier.sh` (B1.44, not built). The map assumes
+`tier.sh <plan.md>` exits 0 and prints the word on line 1. Only the stub has run.
