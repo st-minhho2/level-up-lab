@@ -158,13 +158,13 @@ Plan review: r1 7 reasons, r2 6 reasons, round 3 not re-reviewed (2-round cap). 
 | 2    | 1   | the ready mark survived a stop, so runner started before the new namespace had rules | fix now          | `50bfcc7`                                        |
 | 2    | n   | two image tags from two `build: .`; Evidence "plan deviations: none"                 | no change needed | same Dockerfile and cache; no file outside Files |
 
-Pass 3: pending.
+Pass 3: ready for PR, 0 findings. Not blocking (review.md): after `stop` / `up -d`, `docker compose -f .devcontainer/runner/docker-compose.yml logs firewall` showing a second "allow list applied" line is steadier evidence than the probe alone; pass 2 notes 2 and 4 (cost line, `start_period`) were acted on in `e7a669d` / `50bfcc7`.
 
 ## Evidence
 
 - AC met: 0/4 (host side of clause 4 proven; container side pending the lead's steps)
 - tier: pending
-- plan deviations: none
+- plan deviations: none (no file outside Files; the "Changed after approval" block waits for the lead's re-approval)
 - trace: n/a
 
 ## Checklist
