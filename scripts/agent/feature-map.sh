@@ -4,7 +4,7 @@
 # orchestrator session posts it to the agent board. Read-only; bash 3.2; gh + git only (gh's own --jq, no jq).
 #   scripts/agent/feature-map.sh [--json]
 #   exit 0 the table (also when empty) · 1 a gh call failed · 2 usage
-# A card's PR is its open PR on <type>/<card>[-…], the closing and filing lanes (docs/<card>-done, -partial, -card,
+# A card's PR is its open PR from this repository (never a fork's) on <type>/<card>[-…], the closing and filing lanes (docs/<card>-done, -partial, -card,
 # -file-card, -B<e>.<n>-cards) excepted. Its Evidence is the PR body's "## Evidence" lines. Its tier is never the body's
 # word (an agent writes the body): $FEATURE_MAP_TIER (default scripts/agent/tier.sh, B1.44) on the card's plan.md at
 # the branch's approval commit, as scripts/ci/plan-files.sh finds it, else at the tip, marked "(unapproved)"; no tier
@@ -34,9 +34,10 @@ evidence() { # evidence <key> <body file>: the value of "- <key>: …" inside ##
     e && index($0, k) == 1 { v = substr($0, length(k) + 1); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v); gsub(/\t/, " ", v); print v; exit }' "$2" \
     | { IFS= read -r v || true; printf '%s' "${v:-?}"; }
 }
-pr_of() { # pr_of <card>: "<number>\t<isDraft>" of the newest open PR on the card's work branch
-  local esc="${1//./\\.}" n b d
-  while IFS="$(printf '\t')" read -r n b d; do
+pr_of() { # pr_of <card>: "<number>\t<branch>\t<isDraft>" of the newest open PR on the card's work branch
+  local esc="${1//./\\.}" n b d fork
+  while IFS="$(printf '\t')" read -r n b d fork; do
+    [[ "$fork" == false ]] || continue # a fork can name its branch after any card
     [[ "$b" =~ ^[a-z]+/$esc(-.*)?$ ]] || continue
     [[ "$b" =~ ^docs/$esc-(done|partial|card|file-card|B[0-9]+\.[0-9]+-cards)$ ]] && continue
     printf '%s\t%s\t%s\n' "$n" "$b" "$d"; return
@@ -60,8 +61,8 @@ rank() { case "$1" in high*) echo 0 ;; medium*) echo 2 ;; low*) echo 3 ;; *) ech
 
 : > "$TMP/rows"
 if [[ -s "$TMP/issues" ]]; then
-  gh pr list --state open --limit 100 --json number,headRefName,isDraft \
-    --jq '.[] | [.number, .headRefName, (.isDraft | tostring)] | @tsv' </dev/null > "$TMP/prs" || die "gh pr list failed"
+  gh pr list --state open --limit 100 --json number,headRefName,isDraft,isCrossRepository \
+    --jq '.[] | [.number, .headRefName, (.isDraft | tostring), (.isCrossRepository | tostring)] | @tsv' </dev/null > "$TMP/prs" || die "gh pr list failed"
   while IFS="$(printf '\t')" read -r issue title; do
     card="?"
     if [[ "$title" =~ (B[0-9]+\.[0-9]+) ]]; then card="${BASH_REMATCH[1]}"; else
