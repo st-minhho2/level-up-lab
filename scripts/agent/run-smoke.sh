@@ -252,6 +252,17 @@ mkdir -p "$RUNS/8"; echo gate > "$RUNS/8/stopped"; run --poll
 [[ $(calls) -eq 0 ]] || { say "second poll ran $(calls)"; r=1; }
 : > "$LOG"; run 7
 [[ $(calls) -eq 1 ]] || { say "by hand after stopped: calls=$(calls)"; r=1; }
+# a TERM during --poll stops the claude run, writes no stopped mark and leaves no lock (review pass 2, finding 3)
+reset; echo '[{"number":7}]' > "$FIX/issues.json"; { start; echo SLEEP; } > "$FIX/stream.jsonl"
+(cd "$ROOT" && SMOKE_LOG="$LOG" SMOKE_FIX="$FIX" SMOKE_WT="$WT" SMOKE_ROOT="$ROOT" PATH="$TMP/bin:$PATH" GIT_DIR="$REPO/.git" \
+  RUNNER_CLAUDE="$TMP/bin/claude" RUNNER_RUNS="$RUNS" RUNNER_ELIGIBLE="$TMP/bin/fake-eligible" \
+  RUNNER_CLAIM="$TMP/bin/fake-claim" RUNNER_WORKTREE="$TMP/bin/fake-worktree" exec "$SRC" --poll) > "$TMP/out" 2>&1 &
+bg=$!; i=0; while [[ ! -s "$FIX/claude.pid" ]] && [[ $i -lt 20 ]]; do sleep 1; i=$((i + 1)); done
+t0=$(date +%s); kill -TERM "$bg" 2>/dev/null; wait "$bg" 2>/dev/null; t=$(( $(date +%s) - t0 ))
+sleep 1
+[[ $t -lt 10 ]] || { say "poll took ${t}s to stop"; r=1; }
+kill -0 "$(cat "$FIX/claude.pid" 2>/dev/null || echo 0)" 2>/dev/null && { say "TERM left the poll's claude run going"; r=1; }
+[[ ! -e "$RUNS/7/lock" && ! -e "$RUNS/7/stopped" && $(calls) -eq 1 ]] || { say "poll TERM: lock/stopped/calls=$(calls)"; r=1; }
 [[ $r -eq 0 ]] && ok R13 || fail R13
 # R14
 r=0
