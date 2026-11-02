@@ -111,13 +111,24 @@ None: tooling, no feature row.
 
 ## Review
 
-pending
+`/review-loop`: passes 2/3, verdict **ready for PR** at pass 2 (0 findings). Full text: `backlog/work/B1.43/review.md`
+"Diff review (pass 1)" and "(pass 2)". Plan reviews: round 1 changes requested (6 reasons), round 2 approved.
+
+| Pass | Finding                                                                                  | Disposition                                                                                                                  |
+| ---- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| 1    | [1] PR body gave the `ruby -ryaml` form check without its command line and expected exit | fix now — "Verification run" carries the block verbatim and exit 0; reviewer ran it (exit 0) and on 3 broken copies (exit 1) |
+| 1    | [2] no probe pinned `grep -qxF` (and the no-actor line): 2 of 11 mutants survived        | fix now — `6394630` adds E4 cases (look-alike labels only; actor null); both mutants now fail E4                             |
+| 2    | none                                                                                     | — 16 of 16 mutants of `eligible.sh` killed by the smoke                                                                      |
+
+Riskiest unfalsified: GitHub's live event behaviour behind "the last `agent-ready` event decides" (event order across
+`--paginate` pages, whether deleting or renaming a label emits `unlabeled`, a deleted actor as `ghost` rather than
+null — a `ghost` labeler still fails closed with "gh failed", 404). Open until the label exists and B1.44's first run.
 
 ## Checklist
 
-- [ ] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
-- [ ] Red commit precedes the green commit; the green commit touches no probe file.
-- [ ] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected config (`.github/ISSUE_TEMPLATE/agent-task.yml`) changed with label `config-change-approved` (D-19, approved plan).
+- [x] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
+- [x] Red commit precedes the green commit; the green commit touches no probe file.
+- [x] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected config (`.github/ISSUE_TEMPLATE/agent-task.yml`) changed with label `config-change-approved` (D-19, approved plan).
 - [ ] `docs/metrics.md` per-card row filled (closing PR).
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)

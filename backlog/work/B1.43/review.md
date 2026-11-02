@@ -256,3 +256,92 @@ probe for the test-writer as `test(scripts): B1.43 review pass 1 -- …`. It doe
 Riskiest unfalsified: GitHub's label event semantics behind the two state checks. Not run: whether deleting or renaming
 a label emits `unlabeled` events, whether events stay in ascending order across `--paginate` pages (only a 3-event
 issue was checked), and whether triage can edit an issue body.
+
+## Diff review (pass 2)
+
+Head `2c0e39f`, which is not pushed. PR #155's remote head is still `533591b` and the PR carries `config-change-approved`.
+Since pass 1 there are two new commits. `6394630 test(scripts): B1.43 review pass 1 -- exact label and no-actor
+probes` adds 4 lines to E4 and edits one header comment. `2c0e39f` adds a "Verification run" section to `pr-body.md`.
+`eligible.sh` and `agent-task.yml` have not changed since `804ce7d`.
+
+### Command results (run by the reviewer at 2c0e39f)
+
+| Command                                       | Last line                                                                                                     |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                   | `All matched files use Prettier code style!`, exit 0                                                          |
+| `pnpm typecheck`                              | `tsc --noEmit` clean                                                                                          |
+| `pnpm test`                                   | `Tests  202 passed (202)`                                                                                     |
+| `pnpm test:e2e`, `pnpm test:mutation`         | not run: nothing under `src/`, `prisma/` or `e2e/` changed, same as pass 1                                    |
+| `scripts/agent/eligible-smoke.sh`             | `9 probes OK`                                                                                                 |
+| `/bin/bash scripts/agent/eligible-smoke.sh`   | `9 probes OK`                                                                                                 |
+| `check-suppressions.sh`                       | `OK: no new suppressions`                                                                                     |
+| `check-config-change.sh`                      | exit 1 without the label. With `CONFIG_CHANGE_APPROVED=true`: `allowed by label config-change-approved`       |
+| `check-feat-commits.sh`                       | `OK: no feat commit touches tests`                                                                            |
+| `check-ac-coverage.sh`                        | `OK: every criterion of a shipped section has a test`                                                         |
+| `check-spec-sections.sh`                      | `OK: sections cited: 1 … 22`                                                                                  |
+| `check-features-map.sh`                       | `OK`                                                                                                          |
+| `check-backlog.sh`                            | `OK: README matches the cards`                                                                                |
+| `check-plan-scope.sh`                         | `OK: chore/B1.43-eligible stays inside the approved plan of B1.43`                                            |
+| `verify-red.sh B1.43`                         | `no 'test(<pkg>): B1.43 … (red)' commit`. This is expected per the plan, as in pass 1 (B1.29/B1.32 precedent) |
+| `next-task.sh --check B1.43`                  | `B1.43: no overlap with any Doing or Review card`                                                             |
+| PR body's ruby block, extracted verbatim, run | `form OK: 4 required fields, no labels`, exit 0                                                               |
+
+### Pass 1 findings
+
+- [1] is closed. I extracted the fenced `ruby -ryaml` block in `pr-body.md` byte for byte and ran it from the root
+  of a copy. On the shipped form it exits 0 with the stated line. I also ran it on three form mutants to show the check
+  can fail. Adding `labels: ["agent-ready"]` gives exit 1 with `top`. Setting `required: false` gives exit 1 with
+  `field card`. Changing the id `spec` to `spek` gives exit 1 with `ids …`.
+- [2] is closed. On a scratch copy, the `grep -qF` mutant now fails 1 of 9 (E4), and so does deleting the no-actor
+  line. The look-alike fixture has labels `not-agent-ready` and `agent-ready-later`, and both contain `agent-ready` as
+  a substring, so the probe really pins `-x`.
+
+### Revert probes (scratch copy, smoke at 2c0e39f): 16 mutants, 16 killed
+
+| Mutant of `eligible.sh`                            | Smoke         |
+| -------------------------------------------------- | ------------- |
+| `grep -qxF` → `grep -qF`                           | 1 of 9 FAILED |
+| no-actor check deleted                             | 1 of 9 FAILED |
+| author check removed                               | 4 of 9 FAILED |
+| labeler check removed                              | 6 of 9 FAILED |
+| `read` accepted                                    | 3 of 9 FAILED |
+| first event decides (`head -1`)                    | 2 of 9 FAILED |
+| `GH_REPO` kept / `GH_HOST` kept                    | 1 / 1 FAILED  |
+| `--paginate` dropped                               | 1 of 9 FAILED |
+| `cd` to the repo root dropped                      | 1 of 9 FAILED |
+| label-present check deleted                        | 1 of 9 FAILED |
+| last-event-is-labeled check deleted                | 1 of 9 FAILED |
+| `unlabeled` dropped from the events filter         | 2 of 9 FAILED |
+| `.label.name == "agent-ready"` dropped from filter | 2 of 9 FAILED |
+| usage regex loosened to `^[0-9]+$`                 | 1 of 9 FAILED |
+| `.role_name` decides instead of `.permission`      | 3 of 9 FAILED |
+
+### Checklist
+
+| Check                                        | Result                                                                                                                                                                                                                                                       |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every Acceptance clause has a matching probe | pass. Same as pass 1, and E4 now also covers the look-alike label and the null actor                                                                                                                                                                         |
+| no test weakened after red                   | pass. `git log --first-parent --no-merges ba64613..HEAD -- eligible-smoke.sh '*.test.*' e2e/` lists only `6394630`. That is a `test(...)` commit that adds 4 probe lines and rewords one header comment, and it removes no assertion. The range has 0 merges |
+| every changed file is in `plan.md`           | pass. 6 files, all in the Files table, and `check-plan-scope.sh` says OK                                                                                                                                                                                     |
+| interfaces match the plan                    | pass. The extra stderr reason ("label's last event has no actor") is now stated in the PR body as beyond the plan                                                                                                                                            |
+| Zod / Prisma / raw SQL / migration           | n/a: no TypeScript, no `prisma/`                                                                                                                                                                                                                             |
+| no secret, no suppression                    | pass                                                                                                                                                                                                                                                         |
+| features map row                             | n/a: tooling. The PR body says "Map delta: None"                                                                                                                                                                                                             |
+| D-27, D-28, D-19                             | pass. The form has no `labels:`. The tier is high and the lead approved it. `config-change-approved` is on #155                                                                                                                                              |
+
+### Findings
+
+No blocking finding.
+
+Not blocking, and not a finding because I have no trigger I can run: GitHub usually shows a deleted account as the
+`ghost` user rather than `actor: null` (not verified live). If so, the no-actor branch cannot be reached live. A `ghost`
+labeler goes to `collaborators/ghost/permission` and gets a 404, which ends as "gh failed", so it still fails closed.
+Only the reason text would differ.
+
+Verdict: ready for PR. Push `6394630` and `2c0e39f` first: the remote head is still `533591b`, so CI has not yet seen
+the red, green or hardening commits.
+
+Riskiest unfalsified: GitHub's live event semantics behind the "last `agent-ready` event decides" rule. Three things
+are not checked. Are events in ascending order across `--paginate` page boundaries? (I checked one 3-event issue.)
+Does deleting or renaming a label emit `unlabeled`? How is a deleted actor represented? None of these can be checked
+until the `agent-ready` label exists and B1.44's first run.
