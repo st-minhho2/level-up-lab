@@ -79,3 +79,75 @@ Verdict: changes requested
 
 Riskiest unfalsified: whether the tool-restriction and hook-per-version findings (spike 7 and 8) are left out of
 B1.44 on purpose. The card's Status line does not list them either, so the omission may come from the filing.
+
+## Plan review (round 2)
+
+The plan reviewed is `71a832e docs(backlog): B1.47 plan round 2`. I checked these facts without writing to the tree.
+The probe ran on a scratch export of `HEAD`: the plan's clause joined to one line (1592 bytes), appended to B1.44's
+Acceptance, and `B1.45` struck.
+
+- Red on `f9225f5`: every listed pattern gives 0 over `awk '/^### B1.44 /,/^### B1.45 /'`.
+- Green on the probe: every listed pattern gives 1. The listed patterns are `auth status`, `is_error`,
+  `<UTC timestamp>-<pid>.jsonl`, `per-issue lock`, `--model`, ``init` line's `tools``, `setting-sources`,
+  `claude-code-vm`, `permission-mode`, `stdin` and `frontmatter`. That is 11 patterns, not 12.
+- `diff` HEAD vs probe `E1-todos.md`: 2 changed lines (Acceptance, Depends). `check-backlog.sh` on the probe:
+  `[check-backlog] OK: README matches the cards`. `check-plan-scope.sh` passes by construction: every file is under
+  `backlog/`.
+- Round 1 is addressed. Reason 1: findings 7 and 8 are now carried (`permission-mode`, `stdin`, `frontmatter`, the
+  `--allowedTools` rationale). Reason 2: each check now has an outcome. Reason 3: the pattern is named.
+
+| Check                                                                             | Result                                                                                                                                 |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: tooling, no § and no map row; all four files are under `backlog/`                                                                |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass (n/a): no code. The clause is pasted verbatim                                                                                     |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: no `advice.md` (tier 0). The plan states that it carries findings 7 and 8 beyond B1.47's Acceptance list                         |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | fail: one stop rule contradicts the spike's own evidence (reason 1). A spike option is dropped without saying so (reason 3)            |
+| verification lists exact commands with expected numbers                           | fail (minor): the plan says "12 patterns" and lists 11 (reason 2). Every listed pattern reproduces 0 → 1                               |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass (n/a for skeleton, map and mutation: tier 0, no code). Red is measured by grep on the base; subjects are `docs(backlog): B1.47 …` |
+| `Lead approves spec` box ticked only by a human                                   | pass (n/a): no section. `Plan approved by:` is empty                                                                                   |
+| no settled D-n contradicted                                                       | pass: D-28 gives low (only `backlog/`); D-19 does not apply; the lead's gate holds (interactive card, D-27)                            |
+| `scripts/next-task.sh --check B1.47` says no overlap                              | pass: `[next-task] B1.47: no overlap with any Doing or Review card` (exit 0)                                                           |
+
+### Reasons (numbered)
+
+1. **The `init.tools` stop rule stops runs the spike shows are normal.**
+   - The clause reads: "the run stops when the `init` line's `tools` holds a tool outside the set given (`--tools`
+     may add Grep and Glob)".
+   - `spike.md` lines 43–44 show what `--tools` does: `--tools Read,Write` gave `["Read","Write","Grep","Glob"]`.
+   - Trigger: B1.44 passes `--tools Read,Edit,Write,Bash` for `dev-lead`, and `init.tools` adds Grep and Glob.
+   - Read literally, the clause stops every such run before its first turn. The only alternative is a runner that
+     exempts Grep and Glob, which the Acceptance does not name.
+   - The parenthetical names the cause but does not say whether the run tolerates it. The two readings produce
+     opposite behaviour in the one check that bounds what an unattended agent may use.
+   - Fix: "stops when `init.tools` holds a tool outside the set given, Grep and Glob excepted (`--tools` adds them)".
+     Or, if the intent is strict, say that every run whose `--tools` omits Grep and Glob stops.
+   - Confidence: confirmed (traced against the spike's recorded `init` lines).
+2. **The verification count is wrong.**
+   - The plan says "12 patterns; red measured 0 each" and "the same 12 greps → ≥ 1 each", but it lists 11.
+   - Trigger: the diff reviewer reruns the list, gets 11 results and cannot tell whether a pattern is missing.
+   - Fix: say 11, or name the missing twelfth. `allowedTools` is the obvious candidate: it gives 1 on the probe.
+   - Confidence: confirmed.
+3. **Spike finding 1's alternative is dropped without saying so.**
+   - The spike says "the macOS binary under `claude-code/<version>/…/MacOS/claude` (or a pinned standalone install)".
+     The clause allows only "the macOS app build on the host".
+   - Trigger: B1.44 wants a pinned standalone install so that the binary does not change between runs. That is the
+     natural way to meet the clause's own "before a new `claude` version is trusted, one smoke run". The Acceptance
+     as written forbids it.
+   - The app build sits in a per-version directory that the desktop app manages. The runner then has to detect a new
+     version itself before each run [unverified that the app auto-updates it].
+   - B1.47's Acceptance also says "macOS app build", so the plan follows its card. The approach line still claims
+     "all eight findings", though, and this narrowing should be visible to the lead.
+   - Fix: append "(or a pinned standalone install)", or name the option as dropped with the reason.
+   - Confidence: confirmed (text comparison); the auto-update consequence is plausible.
+
+### Cost for the lead, not blocking
+
+- Round 1's size cost stands and is larger now. B1.44's Acceptance grows to about 17 obligations at **Tier quick,
+  Size S [estimate]**. The plan defers the split to B1.44's own plan.
+- `plan.md`'s footer still reads `Rounds: 1`.
+
+Verdict: changes requested
+
+Riskiest unfalsified: whether `--setting-sources project,local` keeps a user plugin's SessionStart hook out of a `-p`
+run. The clause now makes that observable ("no user-level hook event in the stream"), but the spike marks the flag
+`[unverified]`. B1.44 may find that only a dedicated config meets it.
