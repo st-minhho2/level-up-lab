@@ -1,13 +1,13 @@
 # B1.42 plan — Spike: a headless dev-lead run keeps the hooks and limits (tooling)
 
-Round 2 (plan review r1: 8 reasons). At most 6 headless runs (4 planned, 2 retries) of the desktop app's macOS `claude`
+Round 3 (plan review r1: 8 reasons, r2: 3, all addressed; no third review round, cap 2). At most 6 headless runs (4 planned, 2 retries) of the desktop app's macOS `claude`
 in a throwaway sandbox; evidence and verdicts go to `spike.md`. Tooling, tier quick: spec-analyst and advisor skipped;
 no repo file outside `backlog/work/B1.42/` changes; nothing is committed or pushed from the sandbox.
 
 Pre-plan facts (no tokens): `claude-code-vm/2.1.309/claude` is a Linux ELF (exec format error); the macOS binary is
 `~/Library/Application Support/Claude/claude-code/2.1.309/<hash>/claude.app/Contents/MacOS/claude`, 2.1.309 (newest).
-`--help` lists `--tools`, `--max-budget-usd`, `--include-hook-events`, `--settings`, `--permission-mode dontAsk`, not
-`--max-turns`. `path-guard.sh` is declared only in agent frontmatter; `settings.json`'s `plan-scope.sh` blocks writes
+`--help` lists `--tools`, `--max-budget-usd`, `--include-hook-events`, `--settings`, `--permission-mode dontAsk`;
+`--max-turns` is hidden but in the binary. `path-guard.sh` is declared only in agent frontmatter; `settings.json`'s `plan-scope.sh` blocks writes
 outside `backlog/`, `spec/` on a `B1.42` branch with no approved plan, so each run also writes `spec/` (path-guard only).
 
 **Deviation the lead accepts by approving (r1 #4):** if R1 shows frontmatter `path-guard.sh` skipped (b1 ✗), (b) as
@@ -27,8 +27,10 @@ stops and reports before R3/R4. b1 ✓ → R2 is skipped and R3/R4 follow. (a) �
 
 None in the repo. Sandbox: `scripts/worktree.sh chore/B1.42-sandbox` from the app checkout (base origin/main, pnpm
 install, schema `wt_chore_b1_42_sandbox`). Outside the repo, one settings file per run (`--settings` takes one value):
-`tee.json` = PreToolUse `*` → `{ cat; echo; } >> $L/hook-input.jsonl`; `tee-guard.json` = that plus Edit|Write →
-`path-guard.sh` with dev-lead's frontmatter globs. `L=~/.level-up-lab/runs/B1.42-spike` (B1.44's folder). Every run,
+`tee.json` = PreToolUse `*` → `{ cat; echo; } >> <L>/hook-input.jsonl` and `permissions.allow`
+`Edit(src/spike-r*.txt)`, `Edit(spec/spike-r*.md)` (so `dontAsk` never denies a probe write: only a hook can);
+`tee-guard.json` = that plus Edit|Write → `path-guard.sh` with dev-lead's frontmatter globs. `<L>` is written expanded
+in both files: `/Users/<login>/.level-up-lab/runs/B1.42-spike` (B1.44's folder). Every run,
 in the background, cwd = sandbox, prompt on stdin (a variadic flag would eat a trailing prompt):
 `printf '<prompt>' | env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_SESSION_ID "$CLAUDE" -p --agent dev-lead
 --settings <file> --tools <list> --permission-mode dontAsk --output-format stream-json --verbose --include-hook-events
@@ -43,19 +45,18 @@ in the background, cwd = sandbox, prompt on stdin (a variadic flag would eat a t
 | R3  | c turns   | tee · `Read,Glob` · 2           | read five named files one per turn, then summarize                  |
 | R4  | c budget  | tee · `Read,Glob` · 8, USD 0.01 | same                                                                |
 
-`--max-turns` rejected (exit ≠ 0, "unknown option" in R1.err, no tokens) → rerun R1 without it (budget still caps it);
-(c) turns = not proven, budget only. Ignored (R3 `num_turns` > 3) → (c) turns not proven.
+(b1)/(b2) pass only when the `spec/` result text holds `BLOCKED by .claude/hooks/path-guard.sh`; a written file = the
+hook did not run. `--max-turns` ignored (R3 `num_turns` > 3) → (c) turns not proven.
 
 ## Verification
 
 ```bash
 grep -c '"agent_type":"dev-lead"' $L/hook-input.jsonl     # ≥ 2 after R1 (a: the event and the field)
 grep -c 'plan-scope.sh' $L/R1.jsonl                        # ≥ 1: project settings.json hook fired (a)
-grep -o '[a-z-]*\.sh[^"]*' $L/R1.jsonl $L/R2.jsonl          # src block names its hook; spec: path-guard.sh or written (b)
-ls <sandbox>/src/spike-r1.txt <sandbox>/src/spike-r2.txt   # No such file (b)
+grep -o 'BLOCKED by [^"]*' $L/R1.jsonl $L/R2.jsonl          # src: plan-scope.sh; spec: path-guard.sh (b)
 jq -c 'select(.type=="result")|{subtype,num_turns,total_cost_usd}' $L/R3.jsonl $L/R4.jsonl
 #   R3 error_max_turns, num_turns ≤ 3 · R4 error_max_budget_usd (c)
-tail -1 $L/R*.jsonl | jq -r .type                          # "result" for every run (d)
+for f in $L/R*.jsonl; do tail -n1 "$f" | jq -r .type; done  # "result" for every run (d)
 git -C <sandbox> log --oneline origin/main..HEAD           # empty: nothing committed in the sandbox
 git worktree remove --force <sandbox>; git branch -D chore/B1.42-sandbox   # then next-task --list: B1.42 one branch
 scripts/worktree-prune.sh --schemas --dry-run               # only orphan wt_chore_b1_42_sandbox → --drop
@@ -72,4 +73,4 @@ scripts/ci/check-backlog.sh | tail -1; git diff --stat origin/main...HEAD  # OK;
 No skeleton, test or map step (no §); no `config-change-approved` (no protected path). `spike.md` records that the
 runs were started from a desktop session (env unset as above). Findings that widen the card (D-25) → follow-ups.
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: round 2 changes requested (3), fixed in round 3, not re-reviewed (cap 2) · Plan approved by: · Rounds: 1
