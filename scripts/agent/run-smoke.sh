@@ -231,6 +231,8 @@ line="$(grep "^CLAUDE .* ARGS=-p " "$LOG" | head -1)"
 [[ $RC -eq 0 && "$(cat "$RUNS/verified-versions")" == "$VERSION" ]] || { say "pass: rc=$RC $(tail -2 "$TMP/out")"; r=1; }
 [[ "$line" == *" --agent dev-lead "* && "$line" == *" --tools Write "* && "$line" == *" --max-turns 2 "* \
   && "$line" != *"cwd=$ROOT "* ]] || { say "argv: $line"; r=1; }
+has 'call the Write tool' "$FIX/stdin-1" && has 'spec/agent-probe.md' "$FIX/stdin-1" && has 'blocks it' "$FIX/stdin-1" \
+  || { say "probe prompt: $(head -2 "$FIX/stdin-1" 2>/dev/null)"; r=1; }
 reset; : > "$RUNS/verified-versions"; { init '["Write"]'; result false success done; } > "$FIX/stream.jsonl"; run --check-binary
 [[ $RC -eq 1 && ! -s "$RUNS/verified-versions" ]] || { say "no block: rc=$RC"; r=1; }
 reset; : > "$RUNS/verified-versions"; { init '["Write"]'; echo "$pass"; echo 'WRITE:spec/agent-probe.md'; result false success done; } > "$FIX/stream.jsonl"
