@@ -11,7 +11,7 @@ command -v jq >/dev/null || { echo "run-smoke: needs jq" >&2; exit 2; }
 HERE="$(cd "$(dirname "$0")" && pwd -P)"
 SRC="$HERE/run.sh"
 ROOT="$(cd "$HERE/../.." && pwd -P)"
-TMP="$(mktemp -d)"; trap 'rm -rf -- "$TMP"' EXIT
+TMP="$(cd "$(mktemp -d)" && pwd -P)"; trap 'rm -rf -- "$TMP"' EXIT
 FIX="$TMP/fix"; LOG="$TMP/calls.log"; RUNS="$TMP/runs"; WT="$TMP/wt"
 mkdir -p "$TMP/bin" "$FIX" "$WT"
 oks=0; fails=0
