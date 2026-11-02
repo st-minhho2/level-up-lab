@@ -5,8 +5,21 @@
 # does not count until the lead approves again. Prints each backticked token of column 1 of the `## Files` table.
 #   scripts/ci/plan-files.sh <card> [<rev>]         exit 0 printed · 3 no approval commit · 4 no plan at it · 1 usage
 #   scripts/ci/plan-files.sh --any <card> [<rev>]   the Files at <rev> itself, approved or not (next-task.sh --check)
+#   scripts/ci/plan-files.sh --file <plan.md>       the Files of a plan file (scripts/agent/tier.sh); exit 1 unreadable
 # Run inside the card's worktree. bash 3.2-safe.
 set -uo pipefail
+files_of() { # the Files tokens of the plan on stdin
+  awk '
+  /^## / { files = ($0 ~ /^## Files[[:space:]]*$/); next }
+  files && /^\|/ {
+    split($0, col, "|"); cell = col[2]
+    while (match(cell, /`[^`]+`/)) { print substr(cell, RSTART + 1, RLENGTH - 2); cell = substr(cell, RSTART + RLENGTH) }
+  }'
+}
+if [[ "${1:-}" == --file ]]; then
+  [[ $# -eq 2 && -f "$2" && -r "$2" ]] || { echo "usage: scripts/ci/plan-files.sh --file <plan.md>" >&2; exit 1; }
+  files_of < "$2"; exit 0
+fi
 any=0; [[ "${1:-}" == --any ]] && { any=1; shift; }
 card="${1:-}"; rev="${2:-HEAD}"
 [[ "$card" =~ ^B[0-9]+\.[0-9]+$ ]] || { echo "usage: scripts/ci/plan-files.sh [--any] <card> [<rev>]" >&2; exit 1; }
@@ -21,9 +34,4 @@ done < <([[ $any -eq 1 ]] || git log --first-parent --format='%H %s' "$rev" 2>/d
 [[ -n "$sha" ]] || exit 3
 plan="backlog/work/$card/plan.md"
 git cat-file -e "$sha:$plan" 2>/dev/null || exit 4
-git show "$sha:$plan" | awk '
-  /^## / { files = ($0 ~ /^## Files[[:space:]]*$/); next }
-  files && /^\|/ {
-    split($0, col, "|"); cell = col[2]
-    while (match(cell, /`[^`]+`/)) { print substr(cell, RSTART + 1, RLENGTH - 2); cell = substr(cell, RSTART + RLENGTH) }
-  }'
+git show "$sha:$plan" | files_of
