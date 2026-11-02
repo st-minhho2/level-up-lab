@@ -223,7 +223,7 @@ role_patterns() { # the patterns each role's path-guard.sh must receive, in orde
   case "$1" in
     advisor) echo "backlog/work/*" ;;
     code-writer) echo "src/* prisma/* spec/features-map.md docs/metrics.md !*.test.ts !*.test.tsx !e2e/* !src/lib/prisma.ts" ;;
-    dev-lead) echo "backlog/* docs/metrics.md docs/mistake-log.md !backlog/00-decisions.md" ;;
+    dev-lead) echo "backlog/* docs/metrics.md docs/mistake-log.md !backlog/00-decisions.md !backlog/work/*/review.md" ;;
     reviewer) echo "backlog/work/*/review.md" ;;
     spec-analyst) echo "spec/contracts/* backlog/* !spec/features-map.md !backlog/00-decisions.md" ;;
     test-writer) echo "*.test.ts *.test.tsx e2e/*" ;;
@@ -233,7 +233,7 @@ role_probes() { # <exit> <path> pairs: one write the role may make, one it may n
   case "$1" in
     advisor) echo "0 backlog/work/B1.2/advice.md 2 src/lib/todos.ts" ;;
     code-writer) echo "0 src/lib/todos.ts 2 src/lib/todos.test.ts 2 e2e/x.spec.ts" ;;
-    dev-lead) echo "0 backlog/work/B1.2/plan.md 2 src/lib/todos.ts 2 backlog/00-decisions.md" ;;
+    dev-lead) echo "0 backlog/work/B1.2/plan.md 2 src/lib/todos.ts 2 backlog/00-decisions.md 2 backlog/work/B1.2/review.md" ;;
     reviewer) echo "0 backlog/work/B1.2/review.md 2 backlog/work/B1.2/plan.md" ;;
     spec-analyst) echo "0 spec/contracts/04-edit-title.md 2 src/lib/todos.ts 2 spec/features-map.md" ;;
     test-writer) echo "0 src/lib/todos.test.ts 0 e2e/x.spec.ts 2 src/lib/todos.ts" ;;
@@ -297,13 +297,36 @@ gs "$REPO" worktree add -q --detach "$OUTSIDE/wt"
 pg 2 "$REPO" "$OUTSIDE/wt/src/a.ts" "git worktree of the project outside it" "${pats[@]}"
 rm -rf "$REPO" "$PLAIN" "$OUTSIDE"
 
+# A gh shim for plan-files' D-27 check (eligible.sh) and check-plan-scope.sh's agent-ready lookup (B1.55): canned
+# answers per endpoint from $SMOKE_GHF, no jq (CI's image has none), no network. On PATH through the plan-scope,
+# check-plan-scope and plan-row sections; no open agent-ready issue unless a probe writes one.
+GS="$(mktemp -d)"; GHF="$GS/fix"; mkdir -p "$GS/bin" "$GHF"
+cat > "$GS/bin/gh" <<'SHIM'
+#!/bin/bash
+[[ "$1" == api ]] || exit 9
+shift; [[ "$1" == --paginate ]] && shift
+ep="$1"; q="${3:-}"
+case "$ep" in
+  *'issues?labels=agent-ready'*) f=open-bodies ;;
+  */issues/*/events) f="${ep%/events}"; f="${f##*/}/events" ;;
+  */issues/*) f="${ep##*/}"; if [[ "$q" == .state* ]]; then f="$f/state"; else f="$f/issue"; fi ;;
+  */collaborators/*/permission) f="${ep%/permission}"; f="perm-${f##*/}" ;;
+  *) exit 9 ;;
+esac
+[[ -f "$SMOKE_GHF/$f" ]] || { echo "gh: Not Found (HTTP 404)" >&2; exit 1; }
+cat "$SMOKE_GHF/$f"
+SHIM
+chmod +x "$GS/bin/gh"; : > "$GHF/open-bodies"; printf 'admin\tadmin\n' > "$GHF/perm-lead"
+PATH_SAVED="$PATH"; export SMOKE_GHF="$GHF" PATH="$GS/bin:$PATH"
+
 echo "== plan-scope.sh (B1.17): a card worktree writes only its approved plan's Files, per layout"
 # Fixture: a repo whose checkouts sit in every layout, each on a card branch of B9.1 cut after the plan's approval
 # commit; extra worktrees hold the other plan states. CLAUDE_PROJECT_DIR stays the repo root, as in a session.
 ps() { # ps <expected-exit> <project-dir> <file> <agent_type|-> <label>
   local want="$1" root="$2" file="$3" who="$4" label="$5" json rc; n=$((n+1))
   if [[ "$who" == - ]]; then json="$(read_path "$file")"; else json="$(printf '{"tool_input":{"file_path":"%s"},"agent_type":"%s"}' "$file" "$who")"; fi
-  printf '%s' "$json" | CLAUDE_PROJECT_DIR="$root" "$H/plan-scope.sh" >/dev/null 2>&1; rc=$?
+  if [[ -n "${PS_RUNNER:-}" ]]; then printf '%s' "$json" | RUNNER_CHILD=1 CLAUDE_PROJECT_DIR="$root" "$H/plan-scope.sh" >/dev/null 2>&1; rc=$?
+  else printf '%s' "$json" | env -u RUNNER_CHILD CLAUDE_PROJECT_DIR="$root" "$H/plan-scope.sh" >/dev/null 2>&1; rc=$?; fi
   if [[ $rc -eq $want ]]; then echo "ok   plan-scope exit $rc  $label"; else echo "FAIL plan-scope exit $rc (want $want)  $label"; fail=1; fi
 }
 plan_md() { # plan_md <dir> <card> <files...>: a plan whose Files table lists the given paths
@@ -401,6 +424,100 @@ if [[ $rc -eq 3 ]]; then echo "ok   plan-files exit 3  C8 an approval phrase in 
 else echo "FAIL plan-files exit $rc (want 3)  C8 an approval phrase in a commit body is not an approval (review pass 1)"; fail=1; fi
 rm -rf "$CO"
 
+echo "== D-27 approval (B1.55): on a runner's path only a reviewed low or medium plan of an eligible issue passes"
+# Runner path: a `<prefix>/<card>-agent` branch, or RUNNER_CHILD in the hook's env, or (CI) an open agent-ready issue
+# naming the card. Each probe cuts a branch from main with a plan + review commit, then the approval commit.
+gh_issue() { # gh_issue <n> <card id> <state> <labeler permission> [<label>]: issue <n> by lead, labeled by lab<n>
+  mkdir -p "$GHF/$1"; printf 'lead\n%s\n' "${5:-agent-ready}" > "$GHF/$1/issue"
+  printf '%s\n### Card id\n\n%s\n\n### Spec\n\nx\n' "$3" "$2" > "$GHF/$1/state"
+  printf 'labeled\tlab%s\n' "$1" > "$GHF/$1/events"; printf '%s\t%s\n' "$4" "$4" > "$GHF/perm-lab$1"
+}
+status_plan() { # status_plan <dir> <card> <field> <files...>: plan_md and its status line
+  local d="$1" c="$2" f="$3"; shift 3; plan_md "$d" "$c" "$@"
+  printf '\nPlan review: approved, round 1 · Plan approved by: %s · Rounds: 1\n' "$f" >> "$d/backlog/work/$c/plan.md"
+}
+review_md() { # review_md <dir> <card> <verdict | "## …" a whole body, printf %b escapes>
+  mkdir -p "$1/backlog/work/$2"
+  if [[ "$3" == '## '* ]]; then printf '# review\n\n%b\n' "$3" > "$1/backlog/work/$2/review.md"
+  else printf '# review\n\n## Plan review (round 1)\n\nVerdict: %s\n' "$3" > "$1/backlog/work/$2/review.md"; fi
+}
+approve() { # approve <dir> <branch> <card> <field> <verdict> <files...>: plan + review commit, then the approval commit
+  local d="$1" br="$2" c="$3" f="$4" v="$5"; shift 5
+  gs "$d" checkout -q -b "$br" main
+  status_plan "$d" "$c" "" "$@"; review_md "$d" "$c" "$v"; gs "$d" add backlog && gs "$d" commit -q -m "docs(backlog): $c plan"
+  status_plan "$d" "$c" "$f" "$@"; gs "$d" add backlog && gs "$d" commit -q --allow-empty -m "docs(backlog): $c plan approved"
+}
+d27() { printf 'reviewer (D-27, tier %s, issue #%s)' "$1" "$2"; }
+pf() { # pf <expected-exit> <dir> <text> <label> <plan-files args...>: plan-files' exit and its stderr
+  local want="$1" dir="$2" text="$3" label="$4" rc out; shift 4; n=$((n+1))
+  out="$(cd "$dir" && "$ROOT_DIR/scripts/ci/plan-files.sh" "$@" 2>&1 >/dev/null)"; rc=$?
+  if [[ $rc -eq $want && "$out" == *"$text"* ]]; then echo "ok   plan-files exit $rc  $label"
+  else echo "FAIL plan-files exit $rc (want $want, \"$text\")  $label: $out"; fail=1; fi
+}
+DO="$(mktemp -d)"; D="$DO/d"
+git init -q --bare "$DO/origin.git" && git clone -q "$DO/origin.git" "$D" 2>/dev/null
+gs "$D" checkout -q -b main && gs "$D" commit -q --allow-empty -m init && gs "$D" push -q origin main
+gh_issue 11 B9.11 open write; approve "$D" chore/B9.11-agent B9.11 "$(d27 low 11)" approved docs/x.md
+ps 0 "$D" "$D/docs/x.md" - "S16 low plan, reviewed, eligible issue, runner branch"
+mkdir -p "$D/docs" && echo x > "$D/docs/x.md" && gs "$D" add docs && gs "$D" commit -q -m "chore(docs): B9.11 x"
+cps 0 "$D" "C9 check-plan-scope takes the same low approval"
+gh_issue 12 B9.12 open write; approve "$D" chore/B9.12-agent B9.12 "$(d27 medium 12)" approved src/lib/a.ts
+ps 0 "$D" "$D/src/lib/a.ts" - "S16 medium plan, reviewed, eligible issue, runner branch"
+gh_issue 13 B9.13 open write; approve "$D" chore/B9.13-agent B9.13 "$(d27 high 13)" approved .claude/hooks/x.sh
+ps 2 "$D" "$D/.claude/hooks/x.sh" - "S17 a high-tier plan approved by the reviewer"
+pf 5 "$D" "tier high" "S17 plan-files names the tier" --run B9.13
+mkdir -p "$D/.claude/hooks" && echo x > "$D/.claude/hooks/x.sh" && gs "$D" add .claude && gs "$D" commit -q -m "chore(hooks): B9.13 x"
+cps 1 "$D" "C9 check-plan-scope refuses the high-tier self-approval"
+gh_issue 14 B9.14 open write; approve "$D" chore/B9.14-agent B9.14 "$(d27 low 14)" approved .claude/hooks/x.sh
+ps 2 "$D" "$D/.claude/hooks/x.sh" - "S18 the field says low, tier.sh says high"
+gh_issue 15 B9.15 open write bug; approve "$D" chore/B9.15-agent B9.15 "$(d27 low 15)" approved docs/x.md
+ps 2 "$D" "$D/docs/x.md" - "S19 the issue is not labeled agent-ready"
+approve "$D" chore/B9.16-agent B9.16 "$(d27 low 16)" approved docs/x.md
+ps 2 "$D" "$D/docs/x.md" - "S19 no such issue"
+gh_issue 17 B9.17 closed write; approve "$D" chore/B9.17-agent B9.17 "$(d27 low 17)" approved docs/x.md
+ps 2 "$D" "$D/docs/x.md" - "S19 the issue is closed"
+gh_issue 18 B9.18 open read; approve "$D" chore/B9.18-agent B9.18 "$(d27 low 18)" approved docs/x.md
+ps 2 "$D" "$D/docs/x.md" - "S20 the labeler has read access only"
+gh_issue 19 B9.99 open write; approve "$D" chore/B9.19-agent B9.19 "$(d27 low 19)" approved docs/x.md
+ps 2 "$D" "$D/docs/x.md" - "S21 the issue names another card"
+gh_issue 20 B9.20 open write; approve "$D" chore/B9.20-agent B9.20 "$(d27 low 20)" "changes requested" docs/x.md
+ps 2 "$D" "$D/docs/x.md" - "S22 the last plan review requested changes"
+gh_issue 26 B9.26 open write; approve "$D" chore/B9.26-agent B9.26 "$(d27 low 26)" \
+  '## Plan review (round 1)\n\nVerdict: approved\n\n## Plan review (phase B amendment)\n\nVerdict: changes requested' docs/x.md
+ps 2 "$D" "$D/docs/x.md" - "S27 a later plan review under another heading requested changes (review pass 1)"
+gh_issue 27 B9.27 open write; approve "$D" chore/B9.27-agent B9.27 "$(d27 low 27)" \
+  '## Plan review (round 1)\n\nVerdict: changes requested\n\n## Plan review (round 2)\n\nVerdict: approved\n\n## Diff review (pass 1)\n\nVerdict: back to code-writer' docs/x.md
+ps 0 "$D" "$D/docs/x.md" - "S28 round 1 changes requested, round 2 approved, a diff review after (review pass 1)"
+gh_issue 28 B9.28 open write; approve "$D" chore/B9.28-agent B9.28 "$(d27 low 28)" \
+  '## Plan review (round 1)\n\nVerdict: approved\n\n## Plan review (round 2)\n\nVerdict: changes requested' docs/x.md
+ps 2 "$D" "$D/docs/x.md" - "S28 round 1 approved, round 2 changes requested (review pass 1)"
+gh_issue 21 B9.21 open write; gs "$D" checkout -q -b chore/B9.21-agent main
+status_plan "$D" B9.21 "" docs/x.md; review_md "$D" B9.21 approved; gs "$D" add backlog && gs "$D" commit -q -m "docs(backlog): B9.21 plan"
+status_plan "$D" B9.21 "" docs/x.md docs/y.md; gs "$D" add backlog && gs "$D" commit -q -m "docs(backlog): B9.21 plan adds y"
+status_plan "$D" B9.21 "$(d27 low 21)" docs/x.md docs/y.md; gs "$D" add backlog && gs "$D" commit -q -m "docs(backlog): B9.21 plan approved"
+ps 2 "$D" "$D/docs/x.md" - "S23 the plan changed after the review"
+gh_issue 22 B9.22 open write; approve "$D" chore/B9.22-agent B9.22 "lead, 2026-11-02" approved docs/x.md
+ps 2 "$D" "$D/docs/x.md" - "S24 a lead field on a runner branch"
+mkdir -p "$D/docs" && echo x > "$D/docs/x.md" && gs "$D" add docs && gs "$D" commit -q -m "chore(docs): B9.22 x"
+cps 1 "$D" "C10 check-plan-scope refuses a lead field on a runner branch"
+approve "$D" chore/B9.23-agent B9.23 "" approved docs/x.md
+ps 2 "$D" "$D/docs/x.md" - "S24 an empty field on a runner branch"
+approve "$D" chore/B9.24-agent B9.24 "reviewer (D-27, tier low)" approved docs/x.md
+ps 2 "$D" "$D/docs/x.md" - "S24 a malformed field on a runner branch"
+approve "$D" chore/B9.11-x B9.11 "$(d27 low 11)" approved docs/x.md
+ps 2 "$D" "$D/docs/x.md" - "S25 a D-27 field off the runner path"
+approve "$D" chore/B9.25-x B9.25 "lead, 2026-11-02" approved docs/x.md
+printf 'Prose quoting it: Plan approved by: %s\n' "$(d27 low 11)" >> "$D/backlog/work/B9.25/plan.md"
+gs "$D" add backlog && gs "$D" commit -q -m "docs(backlog): B9.25 plan round 2 approved"
+ps 0 "$D" "$D/docs/x.md" - "S25 a D-27 field quoted in prose only, lead field off the runner path"
+PS_RUNNER=1 ps 2 "$D" "$D/docs/x.md" - "S26 the same lead field inside a run (RUNNER_CHILD), plain branch"
+mkdir -p "$D/docs" && echo x > "$D/docs/x.md" && gs "$D" add docs && gs "$D" commit -q -m "chore(docs): B9.25 x"
+cps 0 "$D" "C11 a lead field on a plain branch, no open agent-ready issue names the card"
+printf 'open\n### Card id\n\nB9.25\n\n### Spec\n\nx\n' > "$GHF/open-bodies"
+cps 1 "$D" "C11 the same while an open agent-ready issue names the card"
+: > "$GHF/open-bodies"
+rm -rf "$DO"
+
 echo "== plan rows with [ ] and * (B1.20, B1.32): a row names its own path; only * is a wildcard, within one segment, per layout"
 # Fixture: the plan lists src/app/[id]/page.tsx (read as a glob, a bracket expression that never matches itself), the
 # glob src/app/*/layout.tsx and, for B1.32, src/app/[id]/*.css, src/app/x?.ts and prisma/migrations/*. plan-scope.sh
@@ -442,7 +559,7 @@ for lay in $LAYOUTS; do
   gs "$w" add prisma && gs "$w" commit -q -m "feat(todos): B9.10 migration"
   cps 0 "$w" "L11 $lay prisma/migrations/* covers every migration file"
 done
-rm -rf "$LS"
+rm -rf "$LS" "$GS"; export PATH="$PATH_SAVED"; unset SMOKE_GHF
 
 echo "== review gate (require-review.sh / mark-reviewed.sh)"
 STATE="node_modules/.cache/level-up-lab"; saved=""; [[ -f "$STATE/reviewed" ]] && saved="$(cat "$STATE/reviewed")"
