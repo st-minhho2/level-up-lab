@@ -6,6 +6,8 @@
 #   E4 missing, removed, look-alike label; no actor refused   E5 maintain, admin accepted E6 bad argument, gh failure
 #   E7 a caller's GH_REPO/GH_HOST never reach gh              E8 another label's events do not count
 #   E9 read author refused; gh runs in the repo root
+#   B1.55: E10 with <card>: the issue's "Card id" field equals it (exact gh lines), differs, or is missing
+#   E11 with <card>: a closed issue refused; without <card> its state is not read
 set -uo pipefail
 command -v jq >/dev/null || { echo "eligible-smoke: needs jq (the shim applies gh's --jq filters with it)" >&2; exit 2; }
 HERE="$(cd "$(dirname "$0")" && pwd -P)"
@@ -39,7 +41,7 @@ chmod +x "$TMP/bin/gh"
 issue() { # issue <author> [<label>…]
   local author="$1"; shift; local labels="" l
   for l in "$@"; do labels="$labels${labels:+,}{\"name\":\"$l\"}"; done
-  printf '{"number":7,"user":{"login":"%s"},"labels":[%s]}\n' "$author" "$labels" > "$FIX/issue.json"
+  printf '{"number":7,"state":"%s","body":"%s","user":{"login":"%s"},"labels":[%s]}\n' "${STATE:-open}" "${BODY:-}" "$author" "$labels" > "$FIX/issue.json"
 }
 events() { # events [<event>:<label>:<actor>…]
   local e items='{"event":"assigned","actor":{"login":"x"}}' ev label actor
@@ -140,6 +142,32 @@ issue alice agent-ready; perm alice admin admin; : > "$LOG"
 DIR="$TMP/elsewhere" accepted 'other directory' 'eligible: #7 agent-ready labeled by lead (write), author alice (admin)' 7 \
   && [[ "$(cut -d' ' -f1 "$LOG" | sort -u)" == "$ROOT" ]] || { echo "     other directory: log=$(head -1 "$LOG")"; r=1; }
 [[ $r -eq 0 ]] && ok E9 || fail E9
+
+# E10
+CARD_BODY='### Card id\n\nB1.55\n\n### Spec\n\nx'
+r=0; reset; BODY="$CARD_BODY" issue alice agent-ready; events labeled:agent-ready:lead; perm lead write write; perm alice admin admin
+want="$(printf '%s\n' \
+  "$ROOT GH_REPO= GH_HOST= api repos/{owner}/{repo}/issues/7 --jq .user.login, .labels[].name" \
+  "$ROOT GH_REPO= GH_HOST= api repos/{owner}/{repo}/issues/7 --jq .state, (.body // \"\")" \
+  "$ROOT GH_REPO= GH_HOST= api --paginate repos/{owner}/{repo}/issues/7/events --jq $EVF" \
+  "$ROOT GH_REPO= GH_HOST= api repos/{owner}/{repo}/collaborators/lead/permission --jq $PERMF" \
+  "$ROOT GH_REPO= GH_HOST= api repos/{owner}/{repo}/collaborators/alice/permission --jq $PERMF")"
+accepted 'same card' 'eligible: #7 agent-ready labeled by lead (write), author alice (admin), card B1.55' 7 B1.55 \
+  && [[ "$(cat "$LOG")" == "$want" ]] || { echo "     same card: log=$(cat "$LOG")"; r=1; }
+refused 'another card' 'eligible: #7 card id B1.55, not B1.5' 7 B1.5 || r=1
+BODY='### Card id\n\n_No response_' issue alice agent-ready
+refused 'no card id' 'eligible: #7 card id _No response_, not B1.55' 7 B1.55 || r=1
+BODY='### Spec\n\nx' issue alice agent-ready
+refused 'no card id field' 'eligible: #7 card id (none), not B1.55' 7 B1.55 || r=1
+[[ $r -eq 0 ]] && ok E10 || fail E10
+# E11
+r=0; reset; STATE=closed BODY="$CARD_BODY" issue alice agent-ready; events labeled:agent-ready:lead
+perm lead write write; perm alice admin admin
+refused 'closed with card' 'eligible: #7 is closed, needs open' 7 B1.55 || r=1
+: > "$LOG"
+accepted 'closed without card' 'eligible: #7 agent-ready labeled by lead (write), author alice (admin)' 7 \
+  && ! grep -q '\.state' "$LOG" || { echo "     closed without card: log=$(cat "$LOG")"; r=1; }
+[[ $r -eq 0 ]] && ok E11 || fail E11
 
 echo
 if [[ $fails -eq 0 ]]; then echo "$oks probes OK"; exit 0; fi

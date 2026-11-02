@@ -691,13 +691,13 @@ _tooling · no §_
 ### B1.49 · Live check of the eligibility rule on a labeled issue
 
 _tooling · no §_
-**Status: Open** — `scripts/agent/eligible.sh` (B1.43) was run live only on #1 (exit 1, "not labeled agent-ready"): the `agent-ready` label did not exist, so GitHub's event order across `--paginate` pages, whether deleting or renaming a label emits `unlabeled`, and how a deleted actor appears (`ghost` or null) stay unverified (`backlog/work/B1.43/review.md`, "Diff review (pass 2)", riskiest unfalsified)
+**Status: Done** — 9b16008 (#168); `work/B1.49/live.md` on throwaway issue #169: add/remove/re-add exit 0/1/0, event order held across 3 one-event pages, label delete recorded (safe); label rename fails open (REST events keep the old name) → B1.63; closed issue still labeled exits 0 → B1.64; read-only-author clause not run (no second account); no tests (tooling, no code)
 
 - **Spec:** none — tooling (D-27); no `src/` change, no section
 - **Test:** `backlog/work/B1.49/live.md` records each command, its exit code and output — red because: no labeled issue has been checked
 - **Acceptance:** on a throwaway issue filed by the lead: `eligible.sh` exits 0 after the lead adds `agent-ready`, 1 after removing it, 0 after re-adding it; on an issue filed by a read-only account it exits 1 (author), when the lead has such an account; the events of a label renamed and of a label deleted are recorded; any difference from the rule becomes a fix card. Read-only for the agent: the lead files, labels and closes the issues
 - **Tier:** quick · **Depends on:** ~~B1.43~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.49/`
+- **Work:** `work/B1.49/` (plan, live, review: plan review 2 rounds, lead rounds 1; diff review 1 of 3 passes, 0 findings; follow-ups B1.63, B1.64)
 
 ### B1.50 · The client layer rule also stops a component reaching @prisma/client
 
@@ -757,7 +757,7 @@ _tooling · no §_
 ### B1.55 · dev-lead carries an agent-ready card past a reviewed low or medium plan
 
 _tooling · no §_
-**Status: Open** — D-27 lets a reviewer-approved low- or medium-tier plan on an `agent-ready` issue proceed without the lead, but `.claude/agents/dev-lead.md` and `.claude/skills/work-next/SKILL.md` stop every card at the plan gate, and `plan-scope.sh`, `scripts/ci/plan-files.sh` and the metrics read the approval only from a lead's `Plan approved by: lead` line and the `docs(backlog): <card> plan approved` commit; a headless run (B1.44) would stop at every card
+**Status: Partial** — merged d66fccd (#171); pending B1.65: `scripts/agent/run.sh`'s prompt still says "At the plan gate print the gate line and stop", so no run takes the D-27 path yet (4 of 5 acceptance clauses met). hook-smoke 511, eligible-smoke 11, metrics-smoke 27 on bash 3.2 and 5.2 (red bc11ca9: 18 + 2 + 2 FAIL; d4b1b00: 1 FAIL); vitest 202, playwright 43; no src/ change, mutation 93.40
 
 - **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
 - **Test:** `grep -n agent-ready .claude/agents/dev-lead.md .claude/skills/work-next/SKILL.md` and new probes in `scripts/hook-smoke.sh` — red because: no match, and a plan approved by the reviewer under D-27 is refused by `plan-scope.sh`
@@ -841,6 +841,28 @@ _tooling · no §_
 - **Acceptance:** `eligible.sh` reads the issue's labeled and unlabeled events with their label node ids and decides on the newest event whose id is the id of the `agent-ready` label the issue carries now; the rename sequence above exits 1 (the labeler of `y` has no write), a label deleted and re-created needs a new `labeled` event, and events across pages keep their order; the PR carries `config-change-approved` (D-19, `scripts/agent/` is protected)
 - **Tier:** quick · **Depends on:** ~~B1.43~~, B1.55 (both change `eligible.sh`) · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.63/`
+
+### B1.64 · The eligibility check refuses a closed issue, with or without a card id
+
+_tooling · no §_
+**Status: Open** — B1.49's live check (`backlog/work/B1.49/live.md`, step 9a): `scripts/agent/eligible.sh 169` exits 0 on the closed issue #169 while it still carries `agent-ready`, because the script never reads the issue's state. `run.sh --poll` lists only open issues, but `run.sh <issue>` (`scripts/agent/run.sh:256-258`) goes straight to the run. B1.55's plan adds the open check only when `eligible.sh` gets a `<card>` argument
+
+- **Spec:** none — tooling (D-27); no `src/` change, no section
+- **Test:** a new probe in `scripts/agent/eligible-smoke.sh` — red because: a closed issue with a valid `agent-ready` history and no `<card>` argument exits 0
+- **Acceptance:** `eligible.sh <issue>` exits 1 with `eligible: #<n> is closed` on a closed issue whether or not `<card>` is given, so `run.sh <issue>` refuses it; the PR carries `config-change-approved` (D-19, `scripts/agent/` is protected)
+- **Tier:** quick · **Depends on:** ~~B1.43~~, B1.55 (both change `eligible.sh`) · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.64/`
+
+### B1.65 · The runner's prompt lets a run pass a reviewed low or medium plan (D-27)
+
+_tooling · no §_
+**Status: Open** — `scripts/agent/run.sh:197` tells every run "At the plan gate print the gate line and stop" and its header (`run.sh:4`) says "Until B1.55 every run stops at the plan gate". B1.55 (#171) gives dev-lead the D-27 path (`.claude/agents/dev-lead.md` Loop 5: a reviewed low- or medium-tier plan on an eligible `agent-ready` issue proceeds) and makes the guards check it, but it could not change `run.sh` while B1.58 held it, so a run told to stop at the gate still stops at every card
+
+- **Spec:** none — tooling (D-27); no `src/` change, no section
+- **Test:** a new probe in `scripts/agent/run-smoke.sh` — red because: the prompt the `claude` shim receives still says "At the plan gate print the gate line and stop"
+- **Acceptance:** the run's prompt tells dev-lead to follow Loop 5's D-27 path (a reviewed low or medium plan of the issue it names proceeds; a high-tier plan or a refusal prints the gate line and stops) and the header says the same; run-smoke asserts the exact prompt; one live run on a low-tier test card passes the gate with the D-27 field (`docs(backlog): <card> plan approved`) and reaches a draft PR; B1.55's card moves from Partial to Done; the PR carries `config-change-approved` (D-19, `scripts/agent/` is protected)
+- **Tier:** quick · **Depends on:** B1.55, B1.58 · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.65/`
 
 ### B1.62 · The runner's image carries the Prisma engines and Playwright's browser for a full run inside
 

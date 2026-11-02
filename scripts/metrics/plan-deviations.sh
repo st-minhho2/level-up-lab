@@ -24,7 +24,10 @@ k=0; n=0
 while read -r card pr; do
   want "$card" "$@" || continue
   git fetch -q origin "refs/pull/$pr/head" </dev/null
-  rc=0; pats="$("$HERE/../ci/plan-files.sh" "$card" FETCH_HEAD 2>/dev/null)" || rc=$?
+  # a runner's branch takes plan-files' D-27 check, offline: the PR's guards asked about its issue when it ran (B1.55)
+  ref="$(gh pr view "$pr" --json headRefName --jq .headRefName </dev/null)"; run=""
+  [[ "${ref#*/}" == "$card-agent" ]] && run=--run
+  rc=0; pats="$("$HERE/../ci/plan-files.sh" $run --offline "$card" FETCH_HEAD 2>/dev/null)" || rc=$?
   if [[ $rc -ne 0 && $pr -lt $GUARDED_FROM ]]; then printf '%s\t%s\tn/a\n' "$card" "$pr"; continue; fi
   [[ $rc -eq 0 ]] || pats="" # check-plan-scope.sh fails such a PR whole: every non-paperwork file is outside
   out=""

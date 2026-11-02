@@ -14,7 +14,7 @@ picked.
 Files:
 
 - `backlog/plan/E1-todos.md` — the card at the end of E1
-- `backlog/README.md` — totals (E1 38/0/25 of 63; total 49/0/26 of 75), node S75, Remaining row 75
+- `backlog/README.md` — totals (E1 39/1/25 of 65; total 50/1/26 of 77), node S77, Remaining row 77 (after B1.64, B1.65 merged)
 - `backlog/work/B1.62/filing-pr-body.md` — this body
 
 For the lead: B1.59 (launchd poll) should also wait for B1.62, or its ticks stop at worktree setup inside the
