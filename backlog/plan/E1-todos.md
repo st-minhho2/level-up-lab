@@ -451,10 +451,7 @@ _tooling · no §_
 ### B1.32 · plan-scope reads a Files token as a glob only where the plan says so
 
 _tooling · no §_
-**Status: Open** — B1.20 (#132) diff review, out of scope (D-25): the glob half of `.claude/hooks/plan-scope.sh:36`
-and `scripts/ci/check-plan-scope.sh:25` (`"$REL" == $p`) still over-matches, unchanged since #60: on /bin/bash 3.2
-the row `src/app/[id]/page.tsx` also allows `src/app/i/page.tsx`, `src/app/[...slug]/page.tsx` allows
-`src/app/s/page.tsx`, and `src/app/*/layout.tsx` allows `src/app/a/b/layout.tsx` (`*` crosses `/`)
+**Status: Done** — 12063db (#141), hook-smoke L7–L15 × 4 layouts red at 084bccb (28 FAIL: L7–L10, L12, L13, L15), 476 probes OK at 89ee611 and in CI's `test` job (bash 5); plan_lists in scripts/ci/lib.sh shared by plan-scope.sh and check-plan-scope.sh; every L1–L6, S1–S15, C1–C8 probe unchanged; label config-change-approved; no src/ change (vitest 202, e2e 43, mutation 93.40 % unchanged)
 
 - **Spec:** none — tooling (`.claude/docs/hooks.md` plan-scope row); no `src/` change, no section
 - **Test:** new probes in `scripts/hook-smoke.sh` — red because: with a plan listing `src/app/[id]/page.tsx` and
@@ -464,7 +461,7 @@ the row `src/app/[id]/page.tsx` also allows `src/app/i/page.tsx`, `src/app/[...s
   keeps matching every migration file; every L1–L6, S1–S15 and C1–C8 probe keeps its verdict; the PR carries
   `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.32/`
+- **Work:** `work/B1.32/` (plan, review: plan review 2 rounds, lead rounds 1; diff review 1 of 3 passes, 0 findings)
 
 ### B1.33 · CI runs hook-smoke and its guide row names every probe group
 
@@ -564,3 +561,52 @@ revert), so a CI card's squash title cannot carry its commit's type; #138 merged
   the branch-name rule and R1–R14 keep their verdicts; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.38/`
+
+### B1.39 · plan-deviations judges a merged PR's files by the guard's plan_lists rule
+
+_tooling · no §_
+**Status: Open** — B1.32 (#141) diff review, out of scope (D-25): `scripts/metrics/plan-deviations.sh:35` still
+compares `"$f" == "$p" || "$f" == $p`, so with a plan row `src/app/[id]/page.tsx` a merged PR file
+`src/app/i/page.tsx` counts as inside the plan, while `scripts/ci/check-plan-scope.sh` (`plan_lists`, #141) refuses
+it; the bypass counter and the guard disagree
+
+- **Spec:** none — tooling (`scripts/metrics/plan-deviations.sh`); no `src/` change, no section
+- **Test:** a new probe in `scripts/metrics-smoke.sh` — red because: with a plan row `src/app/[id]/page.tsx` and a PR
+  file `src/app/i/page.tsx`, plan-deviations prints `-` for that PR today; expected the file
+- **Acceptance:** plan-deviations judges each PR file with `plan_lists` (`scripts/ci/lib.sh`); M1–M25 keep their
+  verdicts
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.39/`
+
+### B1.40 · next-task --check reads plan tokens by the plan_lists rule
+
+_tooling · no §_
+**Status: Open** — B1.32 (#141) plan and diff review, out of scope (D-25): `scripts/next-task.sh:134`
+(`"$a" == "$t" || "$a" == $t || "$t" == $a`) still reads `[ ]`, `?` and a cross-segment `*` as glob syntax, so
+plans listing `src/app/[id]/page.tsx` and `src/app/i/page.tsx` are reported as overlapping (a false overlap, on the
+safe side), unlike `plan_lists` in the hook and the guard
+
+- **Spec:** none — tooling (`scripts/next-task.sh` `--check`, protected); no `src/` change, no section
+- **Test:** a new probe in `scripts/next-task-smoke.sh` — red because: two Doing plans listing `src/app/[id]/page.tsx`
+  and `src/app/i/page.tsx` make `--check` exit 1 today; expected 0
+- **Acceptance:** a token without `*` overlaps another only when `plan_lists` covers it; the plan states the rule for
+  two tokens that both hold `*`; W1–W16 keep their verdicts; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.40/`
+
+### B1.41 · Guides state the plan-token rule and name hook-smoke's L1–L15
+
+_tooling · no §_
+**Status: Open** — B1.32 (#141) review, out of scope (D-25): `.claude/agents/dev-lead.md:44` says "backticked repo
+paths or globs" without the rule `plan_lists` applies since #141 (only `*` is a wildcard, within one segment; a last
+segment `*` covers the directory below); the `scripts/CLAUDE.md` hook-smoke row names "`[ ]` rows L1–L6" while
+`scripts/hook-smoke.sh` holds L1–L15; the `.claude/docs/hooks.md` plan-scope row says "a last segment `*`" where the
+code needs the segment to be exactly `*`
+
+- **Spec:** none — tooling (`.claude/agents/dev-lead.md`, `scripts/CLAUDE.md`, `.claude/docs/hooks.md`); no `src/`
+  change, no section
+- **Test:** `grep -c 'L1–L15' scripts/CLAUDE.md` — red because: 0 today; expected 1
+- **Acceptance:** the dev-lead Files line states the token rule; the hook-smoke row names L1–L15; the hooks.md row
+  says "exactly `*`"; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.41/`
