@@ -830,3 +830,14 @@ _tooling · no §_
 - **Acceptance:** the deny list blocks `git -c <k>=<v> …` and `git -C <dir> -c …` without blocking a commit message that contains `-c`; a TERM to run.sh in `<issue>` and `--poll` mode leaves no process the run started (probed with a shim that starts a child); the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** ~~B1.44~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.61/`
+
+### B1.63 · The eligibility check matches the agent-ready label by its node id, not its name
+
+_tooling · no §_
+**Status: Open** — B1.49's live check (`backlog/work/B1.49/live.md`, step 6): after a label rename, the REST issue events and timeline keep `label.name` as it was when the event happened, while the issue's labels carry the new name, and no `unlabeled` or `renamed` event is added. `scripts/agent/eligible.sh:30` matches events by `.label.name == "agent-ready"`, so it fails open: the lead labels issue K `agent-ready`, a write user renames `agent-ready` away, a triage user labels K with `y`, `y` is renamed to `agent-ready` → the last event named `agent-ready` is the lead's old one and the script exits 0 for a label the triage user applied. GraphQL `LabeledEvent.label.id` / `UnlabeledEvent.label.id` stays the label's node id through a rename and a delete (live.md steps 6–7)
+
+- **Spec:** none — tooling (D-27); no `src/` change, no section
+- **Test:** new probes in `scripts/agent/eligible-smoke.sh` — red because: the script filters events by name, so a fixture whose newest `agent-ready`-named event belongs to another label node exits 0
+- **Acceptance:** `eligible.sh` reads the issue's labeled and unlabeled events with their label node ids and decides on the newest event whose id is the id of the `agent-ready` label the issue carries now; the rename sequence above exits 1 (the labeler of `y` has no write), a label deleted and re-created needs a new `labeled` event, and events across pages keep their order; the PR carries `config-change-approved` (D-19, `scripts/agent/` is protected)
+- **Tier:** quick · **Depends on:** ~~B1.43~~, B1.55 (both change `eligible.sh`) · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.63/`
