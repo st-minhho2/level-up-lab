@@ -13,6 +13,9 @@
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
 cd "$ROOT" || exit 1
+# a run's own Bash calls inherit RUNNER_CHILD (claude_run), so a run can never start another run, whatever the path
+[[ -z "${RUNNER_CHILD:-}" ]] || { echo "[run] refused: inside a runner's run; a run never starts another run" >&2; exit 1; }
+HOME_CHECKOUT="${ROOT%%/.worktrees/*}" # worktree.sh runs only from the checkout that holds .worktrees/ (live run 4)
 RUNS="${RUNNER_RUNS:-$HOME/.level-up-lab/runs}"
 MODEL="${RUNNER_MODEL:-claude-opus-5-5}"
 TURNS="${RUNNER_MAX_TURNS:-150}"
@@ -25,11 +28,15 @@ WORKTREE="${RUNNER_WORKTREE:-$ROOT/scripts/worktree.sh}"
 TIER="$ROOT/scripts/agent/tier.sh"
 CAP=3
 TOOLS=Read,Grep,Glob,Write,Edit,Bash,Agent,Skill
-ALLOW=(Read Grep Glob Write Edit Bash Agent Skill 'Bash(git *)' 'Bash(scripts/*)' 'Bash(.claude/hooks/mark-reviewed.sh)'
-  'Bash(pnpm install --frozen-lockfile)' 'Bash(pnpm lint*)' 'Bash(pnpm typecheck*)' 'Bash(pnpm test*)' 'Bash(pnpm build*)'
-  'Bash(pnpm exec prettier *)' 'Bash(docker compose up -d)' 'Bash(cp *)' 'Bash(gh pr edit *)' 'Bash(gh pr checks *)'
-  'Bash(gh pr view *)')
-DENY='Bash(scripts/agent/run.sh*)' # a run never starts another run
+# Named scripts only: a pattern like scripts/* would also run a file the run wrote itself (review pass 1). This narrows
+# what a run does by accident; it is no sandbox (a test the run writes still runs under pnpm test): that is B1.58.
+ALLOW=(Read Grep Glob Write Edit Bash Agent Skill 'Bash(git *)' 'Bash(scripts/next-task.sh *)' 'Bash(scripts/worktree.sh *)'
+  'Bash(scripts/verify-red.sh *)' 'Bash(scripts/card-status.sh *)' 'Bash(scripts/ci/*)' 'Bash(scripts/agent/tier.sh *)'
+  'Bash(scripts/agent/eligible.sh *)' 'Bash(.claude/hooks/mark-reviewed.sh)' 'Bash(pnpm install --frozen-lockfile)'
+  'Bash(pnpm lint*)' 'Bash(pnpm typecheck*)' 'Bash(pnpm test*)' 'Bash(pnpm build*)' 'Bash(pnpm exec prettier *)'
+  'Bash(docker compose up -d)' 'Bash(gh pr edit *)' 'Bash(gh pr checks *)' 'Bash(gh pr view *)')
+DENY=('Bash(scripts/agent/run.sh*)' 'Bash(git -c*)' 'Bash(git * -c *)' 'Bash(git config*)') # no nested run, no git alias
+EXPECT="$TOOLS" # the init line's tools may hold only these (claude_run's check; --check-binary narrows it)
 
 say() { echo "[run] $*" >&2; }
 die() { say "$*"; exit 1; }
@@ -72,7 +79,7 @@ stamp_base() { # stamp_base <dir>: a fresh <UTC timestamp>-<pid> path, never one
 init_problem() { # init_problem <jsonl> <worktree>: why the run's init must stop it, empty when it may go on
   local f="$1" extra want got
   extra="$(jq -r 'select(.type == "system" and .subtype == "init") | .tools[]' "$f" 2>/dev/null \
-    | grep -vxE "$(printf '%s' "$TOOLS" | tr ',' '|')" | tr '\n' ' ')"
+    | grep -vxE "$(printf '%s' "$EXPECT,Grep,Glob" | tr ',' '|')" | tr '\n' ' ')"
   [[ -z "$extra" ]] || { echo "tools-mismatch: init tools outside --tools: $extra"; return; }
   # cc-plugin-*@builtin ship inside the binary (path "builtin") and load whatever the setting sources (live run 1)
   got="$(jq -r 'select(.type == "system" and .subtype == "init")
@@ -89,8 +96,8 @@ claude_run() { # claude_run <base> <worktree> <prompt> <args…>: one -p run; se
   echo "$VERSION" > "$base.err"
   PROBLEM=""
   printf '%s\n' "$prompt" | (cd "$wt" && exec env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_SESSION_ID \
-    "$CLAUDE" "$@") > "$base.jsonl" 2>> "$base.err" &
-  pid=$!
+    RUNNER_CHILD=1 "$CLAUDE" "$@") > "$base.jsonl" 2>> "$base.err" &
+  pid=$!; CHILD_PID=$pid
   while kill -0 "$pid" 2>/dev/null && ! grep -q '"subtype":"init"' "$base.jsonl" && [[ $i -lt $INIT_WAIT ]]; do
     sleep 1; i=$((i + 1))
   done
@@ -98,7 +105,7 @@ claude_run() { # claude_run <base> <worktree> <prompt> <args…>: one -p run; se
     PROBLEM="$(init_problem "$base.jsonl" "$wt")"
     [[ -z "$PROBLEM" ]] || kill "$pid" 2>/dev/null
   fi
-  wait "$pid"; echo $? > "$base.exit"
+  wait "$pid"; echo $? > "$base.exit"; CHILD_PID=""
 }
 
 outcome() { # outcome <jsonl> <card>: gate | ready | ended | limit:<subtype> | error:<subtype>, from the last result line
@@ -170,12 +177,13 @@ run_issue() { # run_issue <issue>: 0 ran or skipped, 1 refused
   branch="$(branch_of "$card")"
   [[ $(in_flight "$branch") -lt $CAP ]] || { say "skip #$n: $CAP agent branches in flight"; return 0; }
   lock "$dir" || { say "skip #$n: locked by a running pid"; return 0; }
-  trap 'rm -rf "$dir/lock"' EXIT
+  trap "rm -rf $(printf %q "$dir/lock")" EXIT
   wt="$(git worktree list --porcelain | awk -v b="branch refs/heads/$branch" '/^worktree /{w=substr($0, 10)} $0 == b {print w}')"
   if [[ -z "$wt" ]]; then
     "$CLAIM" --claim "$card" >&2 || { say "skip #$n: next-task.sh --claim $card refused"; rm -rf "$dir/lock"; return 0; }
-    wt="$("$WORKTREE" "$branch" 2>&1 | awk '$1 == "dir" { sub(/^[[:space:]]*dir[[:space:]]+/, ""); print; exit }')"
-    [[ -d "$wt" ]] || { say "#$n: worktree.sh $branch made no worktree"; rm -rf "$dir/lock"; return 1; }
+    why="$(cd "$HOME_CHECKOUT" && "$WORKTREE" "$branch" 2>&1)"
+    wt="$(printf '%s\n' "$why" | awk '$1 == "dir" { sub(/^[[:space:]]*dir[[:space:]]+/, ""); print; exit }')"
+    [[ -d "$wt" ]] || { say "#$n: worktree.sh $branch made no worktree: $(printf '%s\n' "$why" | tail -2)"; rm -rf "$dir/lock"; return 1; }
   fi
   prompt="Issue #$n is labeled agent-ready (D-27): run card $card as dev-lead with the work-next skill. The worktree $wt
 on branch $branch is claimed and is yours; resume from the first Loop step whose artifact is missing. This run is
@@ -186,7 +194,7 @@ goes to backlog/README.md \"Waiting on human\", then stop."
     claude_run "$base" "$wt" "$prompt" -p --agent dev-lead --model "$MODEL" --max-turns "$TURNS" \
       --max-budget-usd "$(awk -v b="$BUDGET" -v t="$TURN_USD" 'BEGIN { printf "%.2f", b - t }')" \
       --setting-sources project --strict-mcp-config --permission-mode dontAsk --include-hook-events \
-      --output-format stream-json --verbose --tools "$TOOLS" --allowedTools "${ALLOW[@]}" --disallowedTools "$DENY"
+      --output-format stream-json --verbose --tools "$TOOLS" --allowedTools "${ALLOW[@]}" --disallowedTools "${DENY[@]}"
     if [[ -n "$PROBLEM" ]]; then out="${PROBLEM%%:*}"; why="${PROBLEM#*: }"; else out="$(outcome "$base.jsonl" "$card")"; why=""; fi
     [[ "$out" == error:* && $attempt -eq 1 ]] || break
     say "#$n: $out, retrying once"; attempt=2
@@ -201,6 +209,7 @@ check_binary() { # dev-lead's path-guard must block a write to spec/ under -p --
   local tmp base ok=0
   tmp="$(mktemp -d)"; base="$(stamp_base "$RUNS/check-binary")"
   git worktree add -q --detach "$tmp/wt" HEAD >/dev/null 2>&1 || { rm -rf "$tmp"; die "git worktree add failed"; }
+  EXPECT=Write
   # dev-lead knows spec/ is outside its paths and declines before any tool call (live run 2), so the prompt asks for
   # the call itself: only a call lets the hook show that it fires
   claude_run "$base" "$tmp/wt" "This is the runner's hook test (scripts/agent/run.sh --check-binary, B1.44), not a task: call the Write tool exactly once, with file_path spec/agent-probe.md and content probe. Your role's path-guard hook is expected to block it: a hook that blocks it is the pass, so make the call even though the path is outside your paths. Then stop without retrying." \
@@ -218,6 +227,9 @@ check_binary() { # dev-lead's path-guard must block a write to spec/ under -p --
   say "claude '$VERSION' verified: dev-lead's frontmatter hook blocked the probe (log $base.jsonl)"
 }
 
+CHILD_PID=""
+trap '[[ -z "$CHILD_PID" ]] || kill "$CHILD_PID" 2>/dev/null; exit 143' TERM
+trap '[[ -z "$CHILD_PID" ]] || kill "$CHILD_PID" 2>/dev/null; exit 130' INT
 case "${1:-}" in
   --check-binary)
     [[ $# -eq 1 ]] || die "usage: scripts/agent/run.sh <issue> | --poll | --check-binary"
