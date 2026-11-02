@@ -669,13 +669,13 @@ _tooling · no §_
 ### B1.47 · B1.44's acceptance takes the B1.42 spike findings
 
 _tooling · no §_
-**Status: Open** — B1.42's spike (`backlog/work/B1.42/spike.md`, "What the runner (B1.44) must do differently") found that the desktop session's login never reaches a child `claude`, that `--max-budget-usd` overshoots by one turn, that `subtype success` can carry `is_error true` (`api_error`), that two runs sharing a log file corrupt it, that `--tools` may add Grep and Glob, that `model: inherit` resolves to the login's default, and that user-level plugins load in `-p`; B1.44's Acceptance (`plan/E1-todos.md`, "### B1.44") names none of these, and its devcontainer needs the Linux build (`claude-code-vm`) where the spike used the macOS one
+**Status: Done** — e37509c (#162), B1.44's Acceptance carries spike findings 1–8: 12/12 grep patterns 0 → 1 over its card, check-backlog OK; no code, no mutation
 
 - **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
 - **Test:** `grep -c` over the B1.44 card for `auth status`, `is_error`, a per-run log name and a per-issue lock — red because: B1.44's Acceptance holds none of them
 - **Acceptance:** B1.44's Acceptance adds: an `auth status` check before a run; one log file per run and one run per issue at a time; budget set one turn below the spend limit; the outcome read from `is_error` then `subtype`; `--model` pinned; `init.tools` checked; user settings kept out of the run (or the reason they stay); the binary named per host (macOS app build on the host, Linux build in the devcontainer, verified there). Card text only, through the lead's review; no script change
 - **Tier:** 0 · **Depends on:** ~~B1.42~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.47/`
+- **Work:** `work/B1.47/` (plan, review: plan review 2 rounds + plan round 3, lead rounds 1; diff review 1 of 3 passes, 0 findings)
 
 ### B1.48 · CI runs the agent-ready eligibility probes
 

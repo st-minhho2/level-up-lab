@@ -7,11 +7,11 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open   | Total  |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ------ | ------ |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 36     | 0       | 23     | 59     |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 37     | 0       | 22     | 59     |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0      | 5      |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3      |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4      |
-| **Total**        |                                                      | **47** | **0**   | **24** | **71** |
+| **Total**        |                                                      | **48** | **0**   | **23** | **71** |
 
 ## Execution order
 
@@ -89,7 +89,7 @@ flowchart TD
   S56["56 · agent runner<br/>B1.44"]
   S57["57 · pr evidence and feature map<br/>~~B1.45~~"]
   S58["58 · layer rules in CI<br/>~~B1.46~~"]
-  S59["59 · runner card takes spike findings<br/>B1.47"]
+  S59["59 · runner card takes spike findings<br/>~~B1.47~~"]
   S60["60 · CI runs eligibility probes<br/>B1.48"]
   S61["61 · live eligibility check<br/>B1.49"]
   S62["62 · client rule covers prisma client<br/>B1.50"]
@@ -122,7 +122,6 @@ at most 3 cards Doing (B1.18).
 | 52   | B1.41 | Guides state the plan-token rule and name hook-smoke's L1–L15                                                | —      | Open   | —                               | Lead  | S [estimate] |
 | 53   | B4.4  | Section 22 criteria measure the reload rule and the no-role rule                                             | —      | Open   | —                               | Lead  | S [estimate] |
 | 56   | B1.44 | Runner: poll agent-ready issues and run dev-lead headless in a sandbox                                       | —      | Open   | ~~B1.43~~, ~~B1.45~~, ~~B1.46~~ | Lead  | S [estimate] |
-| 59   | B1.47 | B1.44's acceptance takes the B1.42 spike findings                                                            | —      | Open   | ~~B1.42~~                       | Lead  | S [estimate] |
 | 60   | B1.48 | CI runs the agent-ready eligibility probes                                                                   | —      | Open   | ~~B1.43~~                       | Lead  | S [estimate] |
 | 61   | B1.49 | Live check of the eligibility rule on a labeled issue                                                        | —      | Open   | ~~B1.43~~                       | Lead  | S [estimate] |
 | 62   | B1.50 | The client layer rule also stops a component reaching @prisma/client                                         | —      | Open   | ~~B1.46~~                       | Lead  | S [estimate] |
