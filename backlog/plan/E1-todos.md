@@ -636,13 +636,13 @@ _tooling · no §_
 ### B1.44 · Runner: poll agent-ready issues and run dev-lead headless in a sandbox
 
 _tooling · no §_
-**Status: Open** — D-27 to D-29 need a runner on the lead's machine (D-26): pick eligible issues, run each card unattended, stop at a high-tier gate
+**Status: Done** — d2c7789 (#163), tier-smoke 9/9 and run-smoke 14/14 (bash 3.2), hook-smoke 476, vitest 202; live: --check-binary verified 2.1.309, run.sh on #166 reached the plan gate (9 turns, USD 0.496); no src/, mutation 93.40 unchanged
 
 - **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
 - **Test:** `scripts/agent/run-smoke.sh` and `scripts/agent/tier-smoke.sh` (new) — red because: `run.sh` and `tier.sh` do not exist
 - **Acceptance:** `scripts/agent/tier.sh <plan.md>` prints high, medium or low by D-28; `scripts/agent/run.sh` makes a worktree, runs `claude -p --agent dev-lead` with turn and budget limits and one retry, logs to `~/.level-up-lab/runs/`, comments on the issue when it stops at a gate; the devcontainer whose firewall allows only GitHub, the npm registry and Anthropic moved to B1.58, the launchd job that polls every 15 min to B1.59 (the lead's decision 1 at this card's plan gate); at most 3 open agent PRs; the PR carries `config-change-approved` (D-19); from B1.42's spike (`work/B1.42/spike.md`, "What the runner (B1.44) must do differently"): before a run, `claude auth status --json` must report `loggedIn true`, else the run stops with a clear message (the desktop app's login never reaches a child `claude`); one log per run, `~/.level-up-lab/runs/<issue>/<UTC timestamp>-<pid>.jsonl` (+ `.err`, `.exit`), never shared, and one run per issue at a time (a per-issue lock); `--max-budget-usd` set one turn below what a run may spend (the limit is checked after a turn); the outcome read from the stream's last line, `is_error` first, then `subtype` (`error_max_turns`, `error_max_budget_usd`), never the exit code alone; `--model` pinned (`model: inherit` resolves to the login's default); the tool set given by `--tools` and permissions by `--permission-mode dontAsk` with narrow allow rules (`--allowedTools` only adds to `settings.json`'s allow list, so `Bash(scripts/pr-step.sh *)` stays live), the prompt on stdin, and the run stops when the `init` line's `tools` holds a tool outside the set given plus Grep and Glob (which `--tools` adds); user-level settings, plugins and hooks kept out of the run (`--setting-sources project,local` or a dedicated config, shown by no user-level hook event in the stream), or the reason they stay written in the plan; the binary named per host with its `--version` in the log: the macOS app build or a pinned standalone install on the host, the Linux build (`claude-code-vm`) in the devcontainer, verified there (B1.58); before a new `claude` version is trusted, one smoke run shows `dev-lead`'s frontmatter hooks fire under `-p --agent dev-lead`
 - **Tier:** quick · **Depends on:** ~~B1.43~~, ~~B1.45~~, ~~B1.46~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.44/`
+- **Work:** `work/B1.44/` (plan, review: plan review 2 rounds + plan round 3, lead rounds 2; diff review 3 of 3 passes, 3 + 3 findings fixed, 1 stated in the PR; 6 live runs, USD 0.649; follow-ups B1.60, B1.61)
 
 ### B1.45 · Evidence section in the PR and a daily feature map
 
@@ -718,7 +718,7 @@ _tooling · no §_
 - **Spec:** none — tooling (D-27, D-28); no `src/` change, no section
 - **Test:** `scripts/agent/feature-map-smoke.sh` gains a probe with `GH_REPO` pointing elsewhere — red because: the script honours it
 - **Acceptance:** the runner (B1.44) writes `- tier: <tier.sh word>` into each agent PR's Evidence; an attended orchestrator session runs `feature-map.sh` once a day and publishes the table to the agent board (how it is triggered is written down); `feature-map.sh` unsets `GH_REPO` and `GH_HOST`; the PR carries `config-change-approved` when it touches a protected path (D-19)
-- **Tier:** quick · **Depends on:** B1.44 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** quick · **Depends on:** ~~B1.44~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.51/`
 
 ### B1.52 · dev-lead fills the PR Evidence section after CI is green
@@ -762,7 +762,7 @@ _tooling · no §_
 - **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
 - **Test:** `grep -n agent-ready .claude/agents/dev-lead.md .claude/skills/work-next/SKILL.md` and new probes in `scripts/hook-smoke.sh` — red because: no match, and a plan approved by the reviewer under D-27 is refused by `plan-scope.sh`
 - **Acceptance:** in a run started for an `agent-ready` issue (the runner names it), `dev-lead` takes the reviewer's approval, computes the tier with `scripts/agent/tier.sh` and, for low or medium, commits the approval itself (`docs(backlog): <card> plan approved`, a `Plan approved by: reviewer (D-27, tier <t>, issue #<n>)` line) and continues; for high it stops at the gate as today; interactive sessions keep the lead's gate; `plan-scope.sh`, `check-plan-scope.sh`, `plan-files.sh` and the metrics scripts accept the D-27 approval and nothing looser (a probe each); the PR carries `config-change-approved` (D-19)
-- **Tier:** quick · **Depends on:** B1.44 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** quick · **Depends on:** ~~B1.44~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.55/`
 
 ### B1.56 · A high-tier gate stop resumes when the lead approves on the issue
@@ -773,7 +773,7 @@ _tooling · no §_
 - **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
 - **Test:** new probes in `scripts/agent/run-smoke.sh` — red because: a gate-stopped issue with a later `approve` comment from a collaborator with write access is not resumed
 - **Acceptance:** the lead approves by an issue comment reading exactly `approve` from an actor with write access (the permission rule of `scripts/agent/eligible.sh`), posted after the runner's gate comment; the next poll records the approval on the card's branch (`docs(backlog): <card> plan approved`, the comment's URL as evidence) and resumes the run in the same worktree; a comment by anyone else, or before the gate, is ignored and reported; the stop counts as expected for D-29; the PR carries `config-change-approved` (D-19)
-- **Tier:** quick · **Depends on:** B1.44, B1.55 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** quick · **Depends on:** ~~B1.44~~, B1.55 · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.56/`
 
 ### B1.57 · Scripts measure unattended runs and PRs merged with no rework
@@ -784,7 +784,7 @@ _tooling · no §_
 - **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
 - **Test:** new probes in `scripts/metrics-smoke.sh` — red because: `scripts/metrics/unattended.sh` and `scripts/metrics/no-rework.sh` do not exist
 - **Acceptance:** `scripts/metrics/unattended.sh [<issue>…]` prints per `agent-ready` issue the label time, the ready time, the human messages in between (issue and PR comments and reviews, the approve comment of an expected gate excepted) and the share; `scripts/metrics/no-rework.sh [<pr>…]` prints per agent PR the commits after ready not made by a run and the lead's change requests, and the share; every commit a run makes is told apart from a human's by a mark the runner adds (for example an `Agent-Run:` trailer), with a probe; `docs/metrics.md` gains the two rows with how to re-measure; the PR carries `config-change-approved` (D-19) if it touches protected paths
-- **Tier:** quick · **Depends on:** B1.44 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** quick · **Depends on:** ~~B1.44~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.57/`
 
 ### B1.58 · The runner's devcontainer: a firewall that allows only GitHub, npm and Anthropic, and the Linux claude build
@@ -795,7 +795,7 @@ _tooling · no §_
 - **Spec:** none — tooling (D-26, D-27); no `src/` change, no section
 - **Test:** a probe script run inside the container (new) — red because: from the container today `curl` reaches any host, and `claude --version` is not found
 - **Acceptance:** the devcontainer applies an allow-list firewall at start (GitHub, the npm registry, Anthropic; everything else refused, probed both ways); a pinned Linux `claude` build is installed and `scripts/agent/run.sh --check-binary` passes inside; the lead's own login is made inside the container and no credential is baked into the image or the repository; `run.sh` may drop `--permission-mode dontAsk` for `bypassPermissions` only when it detects this firewalled container, never on the host (a probe on the host proves it refuses)
-- **Tier:** quick · **Depends on:** B1.44 · **Owner:** Lead · **Size:** M [estimate]
+- **Tier:** quick · **Depends on:** ~~B1.44~~ · **Owner:** Lead · **Size:** M [estimate]
 - **Work:** `work/B1.58/`
 
 ### B1.59 · A launchd job runs the runner's poll every 15 minutes, inside the sandbox
@@ -806,5 +806,27 @@ _tooling · no §_
 - **Spec:** none — tooling (D-26, D-27); no `src/` change, no section
 - **Test:** `scripts/agent/launchd-smoke.sh` (new) — red because: the plist and its install script do not exist
 - **Acceptance:** a LaunchAgent plist (`StartInterval` 900) and an install / uninstall script the lead runs by hand; each tick runs `scripts/agent/run.sh --poll` inside B1.58's container, never on the host; a tick never overlaps the previous one; output goes to `~/.level-up-lab/runs/poll.log`; `plutil -lint` clean
-- **Tier:** quick · **Depends on:** B1.44, B1.58 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** quick · **Depends on:** ~~B1.44~~, B1.58 · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.59/`
+
+### B1.60 · CI runs the runner and tier probes, under bash 5 as well
+
+_tooling · no §_
+**Status: Open** — `scripts/agent/run-smoke.sh` (R1–R14) and `scripts/agent/tier-smoke.sh` (T1–T9) landed with B1.44 (#163), but no CI job runs them (`grep -c 'run-smoke\|tier-smoke' .github/workflows/ci.yml` → 0), and the lead's host has only `/bin/bash` 3.2, so B1.44's "bash 5" lines were never run (`backlog/work/B1.44/review.md`, pass 3)
+
+- **Spec:** none — tooling (D-19); no `src/` change, no section
+- **Test:** a CI step running both smokes — red because: no step names them
+- **Acceptance:** the `guards` (or `test`) job runs `scripts/agent/run-smoke.sh` and `scripts/agent/tier-smoke.sh` under the CI image's bash 5 with `jq` present; both print their probe count; a failing probe fails the job; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** ~~B1.44~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.60/`
+
+### B1.61 · The runner's deny list spares commit messages, and TERM ends the tools a run started
+
+_tooling · no §_
+**Status: Open** — B1.44's diff review pass 3 (`backlog/work/B1.44/review.md`): the deny rule `Bash(git * -c *)` in `scripts/agent/run.sh` also matches `git commit -m "… -c …"`, so a run cannot commit a message holding `-c`; and under `--poll` run.sh sends TERM to the claude pid and exits without waiting, so whether the process trees a run's tools start (`pnpm test`, `pnpm build`) end with it is unverified (the smoke's shim starts no children)
+
+- **Spec:** none — tooling (D-27); no `src/` change, no section
+- **Test:** new probes in `scripts/agent/run-smoke.sh` — red because: the deny list holds `Bash(git * -c *)`, and no probe gives the shim a child process to outlive a TERM
+- **Acceptance:** the deny list blocks `git -c <k>=<v> …` and `git -C <dir> -c …` without blocking a commit message that contains `-c`; a TERM to run.sh in `<issue>` and `--poll` mode leaves no process the run started (probed with a shim that starts a child); the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** ~~B1.44~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.61/`
