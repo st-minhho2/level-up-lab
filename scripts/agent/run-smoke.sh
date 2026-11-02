@@ -16,7 +16,7 @@ TMP="$(cd "$(mktemp -d)" && pwd -P)"; trap 'rm -rf -- "$TMP"' EXIT
 FIX="$TMP/fix"; LOG="$TMP/calls.log"; RUNS="$TMP/runs"; WT="$TMP/wt"
 mkdir -p "$TMP/bin" "$FIX" "$WT"
 # run.sh's own git calls (local agent branches, worktree list, --check-binary's worktree) go to a scratch repository, so
-# the probes never depend on the host's branches and never touch the real repository
+# the probes never depend on the host's branches; only R14's probe folder lands in the checkout's .worktrees/, removed
 REPO="$TMP/repo"; git init -q "$REPO"
 git -C "$REPO" -c user.name=s -c user.email=s@x commit -q --allow-empty -m s
 oks=0; fails=0
@@ -299,6 +299,15 @@ reset; : > "$RUNS/verified-versions"; { init '["Write"]'; echo "$pass"; result f
 run --check-binary
 [[ $RC -eq 0 && "$(cat "$RUNS/verified-versions")" == "$VERSION" ]] || { say "jq 1.6: rc=$RC $(tail -1 "$TMP/out")"; r=1; }
 rm -f "$TMP/bin/jq"
+# a TERM during the check removes its probe worktree, which worktree-prune.sh never lists (review pass 4, finding 2)
+reset; : > "$RUNS/verified-versions"; { init '["Write"]'; echo SLEEP; } > "$FIX/stream.jsonl"
+(cd "$ROOT" && SMOKE_LOG="$LOG" SMOKE_FIX="$FIX" SMOKE_WT="$WT" SMOKE_ROOT="$ROOT" PATH="$TMP/bin:$PATH" GIT_DIR="$REPO/.git" \
+  RUNNER_CLAUDE="$TMP/bin/claude" RUNNER_RUNS="$RUNS" exec "$SRC" --check-binary) > "$TMP/out" 2>&1 &
+bg=$!; i=0; while [[ ! -s "$FIX/claude.pid" ]] && [[ $i -lt 20 ]]; do sleep 1; i=$((i + 1)); done
+kill -TERM "$bg" 2>/dev/null; wait "$bg" 2>/dev/null; sleep 1
+left="$(ls -d "${ROOT%%/.worktrees/*}"/.worktrees/check-binary-* 2>/dev/null)"
+[[ -z "$left" && ! -s "$RUNS/verified-versions" ]] || { say "TERM left the probe worktree: $left"; r=1; }
+git --git-dir="$REPO/.git" worktree prune; for d in $left; do rm -rf "$d"; done
 has 'call the Write tool' "$FIX/stdin-1" && has 'spec/agent-probe.md' "$FIX/stdin-1" && has 'blocks it' "$FIX/stdin-1" \
   || { say "probe prompt: $(head -2 "$FIX/stdin-1" 2>/dev/null)"; r=1; }
 reset; : > "$RUNS/verified-versions"; { init '["Write"]'; result false success done; } > "$FIX/stream.jsonl"; run --check-binary
