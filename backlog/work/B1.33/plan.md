@@ -1,41 +1,41 @@
 # B1.33 plan — CI runs hook-smoke and its guide row names every probe group (tooling)
 
-Round 1. A new last step of the push-safe group in the required `guards` job runs `scripts/hook-smoke.sh`; its exit 1
-fails the step, the job and the merge (the ruleset requires `guards`; a new job would not be required). The step runs
-`env -u HEAD_SHA -u BASE_SHA scripts/hook-smoke.sh`: `guards` exports both for its own checks, and `cps` in
-`hook-smoke.sh` unsets only `GITHUB_HEAD_REF`/`GITHUB_BASE_REF`, so `check-plan-scope.sh` reads the PR's `HEAD_SHA`
-inside the fixture repos (prototype in `node:24-bookworm` with `guards`' env: exit 1, 18 FAIL — C1–C4, C6, C7, L4–L6 ×
-4 layouts, all exit 128; with the two unset: 440 OK). `hook-smoke.sh` is B1.32's file, so the unset lives in the step
-and `cps` itself is a follow-up candidate (D-25). `scripts/CLAUDE.md` row names S1–S15, C1–C8, L1–L6 and needs
-`node_modules (js-yaml)` (`check-agent-frontmatter.sh` runs inside). Tooling card: spec-analyst and advisor skipped.
+Round 2 (plan review r1: 5 reasons). A step in the required `test` job runs `scripts/hook-smoke.sh`; exit 1 fails the
+job and blocks the merge (the ruleset requires `test`; a new job would not be required). Not `guards`: its
+`fetch-depth: 0` gives `origin/main`, so on any PR with a committed `src/` change the review-gate probe (its "clean
+tree" is `git diff HEAD`, `require-review.sh`'s is `merge-base origin/main`) fails, and its `HEAD_SHA` reaches
+`check-plan-scope.sh` in the C/L fixture repos (18 FAIL, exit 128). `test` checks out one ref at depth 1: no
+`origin/main` (base = HEAD), no `HEAD_SHA`. `if: !cancelled() && env.HOTFIX != 'true'`: it reports even after a unit
+failure, and the hotfix lane stays lint, typecheck, unit. Both probe defects are in B1.32's `hook-smoke.sh` → follow-up
+cards in the closing PR (D-25). Tooling: spec-analyst and advisor skipped.
 
-Pre-plan runs on origin/main a733c7b: /bin/bash 3.2 (macOS) 440 OK, 55 s · bash 5.2.15 in `node:24-bookworm`, root,
-shallow clone, after `.github/actions/setup`'s install: 440 OK, 19 s, tree and `git worktree list` clean afterwards ·
-a hook made non-executable: exit 1, 6 FAIL. No probe fails only under bash 5.
+Pre-plan runs (a733c7b): /bin/bash 3.2 440 OK, 55 s · `node:24-bookworm` bash 5.2.15, root: 440 OK, 19 s, tree clean
+after · simulated PR merge ref with a `src/lib/todos.ts` change: depth 1 → 440 OK; `guards`' checkout → exit 1,
+`FAIL require-review.sh spoke on a clean tree` · a non-executable hook → exit 1, 6 FAIL.
 
-Costs: `guards` 38 s (run 41371867185) → ≈ 57 s [unverified on CI's x86 until the PR run]; still one billed minute,
-run wall clock unchanged (`mutation` ≈ 5 min is the longest job). A `hotfix` PR skips `guards`, so hook-smoke too (the
-hotfix lane runs lint, typecheck, unit only). Siblings' new probes (B1.32) gate every later PR on bash 5.
+Costs: `test` 49 s (run 41371867185) → ≈ 68 s, billed 1 → 2 min per run [unverified on CI's x86 until the PR run];
+run wall clock unchanged (`mutation` ≈ 5 min). A hotfix PR skips it. Every later PR runs B1.32's new probes on bash 5.
 
 ## Files
 
-| File                            | Change                                                                          |
-| ------------------------------- | ------------------------------------------------------------------------------- |
-| `.github/workflows/ci.yml`      | `guards`: hook-smoke step after the frontmatter step (block below)              |
-| `scripts/CLAUDE.md`             | hook-smoke row: S1–S15, C1–C8, L1–L6; Needs `node_modules (js-yaml)`, CI guards |
-| `backlog/work/B1.33/plan.md`    | plan                                                                            |
-| `backlog/work/B1.33/review.md`  | reviews                                                                         |
-| `backlog/work/B1.33/pr-body.md` | PR body                                                                         |
+| File                            | Change                                                            |
+| ------------------------------- | ----------------------------------------------------------------- |
+| `.github/workflows/ci.yml`      | `test`: hook-smoke step after the unit step (block below)         |
+| `scripts/CLAUDE.md`             | hook-smoke row: S1–S15, C1–C8, L1–L6; Needs node_modules, CI test |
+| `backlog/work/B1.33/plan.md`    | plan                                                              |
+| `backlog/work/B1.33/review.md`  | reviews                                                           |
+| `backlog/work/B1.33/pr-body.md` | PR body                                                           |
 
 ## Interfaces touched
 
 ```yaml
 - name: Every hook probe passes under CI's bash (hook-smoke.sh)
-  # guards' HEAD_SHA/BASE_SHA would reach check-plan-scope.sh inside hook-smoke's fixture repos (exit 128)
-  run: env -u HEAD_SHA -u BASE_SHA scripts/hook-smoke.sh
+  # Here, not in guards: guards' fetch-depth 0 and HEAD_SHA leak into the review-gate and check-plan-scope probes.
+  if: ${{ !cancelled() && env.HOTFIX != 'true' }}
+  run: scripts/hook-smoke.sh
 ```
 
-No script changes; `scripts/hook-smoke.sh` arguments, output and exit codes unchanged.
+No script changes; `hook-smoke.sh` arguments, output and exit codes unchanged.
 
 ## Verification (in the card worktree)
 
@@ -43,17 +43,19 @@ No script changes; `scripts/hook-smoke.sh` arguments, output and exit codes unch
 grep -l hook-smoke .github/workflows/*      # before: no output, exit 1 · after: .github/workflows/ci.yml
 scripts/hook-smoke.sh | tail -1             # "hook-smoke: 440 probes OK" (more if B1.32 merged first); /bin/bash too
 scripts/ci/check-plan-scope.sh | tail -1; scripts/ci/check-backlog.sh | tail -1   # OK; OK
-# PR CI: guards → step "Every hook probe passes under CI's bash (hook-smoke.sh)" green, log ends "hook-smoke: N probes OK"
+# node:24-bookworm, PR merge ref with a committed src/ change fetched at depth 1 (test's checkout): 440 probes OK
+# PR CI: test → step "Every hook probe passes under CI's bash (hook-smoke.sh)" green, "hook-smoke: N probes OK"
 ```
 
 ## Work breakdown
 
-| Step | Role / skill | Produces                                            | Commit                                  |
-| ---- | ------------ | --------------------------------------------------- | --------------------------------------- |
-| 1    | dev-lead     | `guards` step + guide row                           | `ci(scripts): B1.33 CI runs hook-smoke` |
-| 2    | reviewer     | diff review (D-25: scope widening → follow-up card) | `docs(backlog): B1.33 review …`         |
+| Step | Role / skill        | Produces                                            | Commit                                  |
+| ---- | ------------------- | --------------------------------------------------- | --------------------------------------- |
+| 1    | lead's main session | `test` step + guide row (dev-lead's guard refuses)  | `ci(scripts): B1.33 CI runs hook-smoke` |
+| 2    | reviewer            | diff review (D-25: scope widening → follow-up card) | `docs(backlog): B1.33 review …`         |
 
-No test commit: the card's Test is the grep (red today) and the PR's own `guards` run; no vitest file changes.
-PR: `scripts/pr-step.sh`, `config-change-approved` (D-19: `.github/`).
+No skeleton (no § function), no map step (no `features-map.md` row), no test commit (the card's Test is the grep and
+the PR's own `test` run). Row vs B1.32: merged first → Loop 9's merge brings its ids and the row follows here; merged
+after → its new ids are a follow-up. PR: `scripts/pr-step.sh`, `config-change-approved` (D-19: `.github/`).
 
 Plan review: · Plan approved by: · Rounds: 1
