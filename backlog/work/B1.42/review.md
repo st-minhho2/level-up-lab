@@ -204,3 +204,138 @@ Riskiest unfalsified: hook order under `dontAsk`. If the permission denial is de
 neither `plan-scope.sh` nor `path-guard.sh` fires on Write, and R1 reports a false (a) ✗. The allow-rule fix in
 reason 1 also removes this risk. The next round is the third; if it still requests changes, it goes to "Waiting on
 human".
+
+## Diff review (round 1)
+
+The diff under review is `23031a5 docs(backlog): B1.42 spike results` on the approved plan `9c66844`. The contract is
+the card's Acceptance ((a) to (d), and "if (a) or (b) fails the card stops"), the plan's run cap (6), spend cap
+(USD 6) and branch rules. Every number and quote in `spike.md` was checked against
+`~/.level-up-lab/runs/B1.42-spike/` and against the run's own launcher and settings (`run.sh`, `r1.sh`, `tee.json` in
+the session scratchpad). No `claude` run was started.
+
+### Commands (last line of each)
+
+| Command                                         | Last line                                                                                                  |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                     | `All matched files use Prettier code style!`                                                               |
+| `pnpm typecheck`                                | `> tsc --noEmit` (exit 0)                                                                                  |
+| `pnpm test`                                     | `Tests  202 passed (202)`                                                                                  |
+| `pnpm test:e2e`                                 | `43 passed (1.6m)`                                                                                         |
+| `pnpm test:mutation`                            | `All files 93.40` (297 killed, 19 survived), `Done in 3 minutes and 38 seconds`, exit 0                    |
+| `scripts/ci/check-suppressions.sh`              | `OK: no new suppressions`                                                                                  |
+| `scripts/ci/check-config-change.sh`             | `OK: no protected config changed`                                                                          |
+| `scripts/ci/check-feat-commits.sh`              | `OK: no feat commit touches tests`                                                                         |
+| `scripts/ci/check-ac-coverage.sh`               | `OK: every criterion of a shipped section has a test`                                                      |
+| `scripts/ci/check-spec-sections.sh`             | `OK: sections cited: 1 … 22`                                                                               |
+| `scripts/ci/check-features-map.sh`              | `OK`                                                                                                       |
+| `scripts/ci/check-backlog.sh`                   | `OK: README matches the cards`                                                                             |
+| `scripts/ci/check-plan-scope.sh`                | `OK: chore/B1.42-spike stays inside the approved plan of B1.42`                                            |
+| `scripts/verify-red.sh B1.42`                   | `no 'test(<pkg>): B1.42 … (red)' commit` (expected: tooling, the card's Test is `spike.md`)                |
+| `git diff --stat origin/main...HEAD`            | `4 files changed, 481 insertions(+)`, all under `backlog/work/B1.42/` (local `main` is stale; origin used) |
+| `scripts/worktree-prune.sh --schemas --dry-run` | `[schemas] no orphan schema`; no `chore/B1.42-sandbox` branch, local or remote                             |
+
+### Checklist
+
+| Check                                                        | Result                                                                                                |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| every AC has evidence matching its Then                      | pass for (a), (b), (c), (d) on the logs; wording defects in [1] to [5]                                |
+| no test weakened after the red commit                        | n/a: no test, no red commit                                                                           |
+| every changed file is in `plan.md`                           | pass: the 4 files of the Files table, nothing else                                                    |
+| no `src/`, `.claude/`, `scripts/ci/` change (card)           | pass                                                                                                  |
+| run cap 6 / spend cap USD 6 / `--max-turns` ≤ 15 / no bypass | pass: 5 runs; USD 0.532 measured + run 2 ≈ 0.15 [unverified]; turns 8, 2, 8; `dontAsk` only           |
+| stop rules                                                   | pass: run 1 failed on login (no tool call), neither (a) ✗ nor (b) ✗; b1 ✓ so R2 skipped as planned    |
+| run 2 (lead's terminal) vs plan                              | deviation, recorded: plan step 1 gives the runs to dev-lead; run 2 cost a run and its log; see [3]    |
+| D-25: does "What the runner must do" widen B1.42             | no: nothing in it changes a B1.42 file; item 1 conflicts with B1.44's Acceptance, see [6] (follow-up) |
+| PR body                                                      | fail: stale, see [7]                                                                                  |
+
+Verified as written: 7 PreToolUse inputs, all `agent_type dev-lead`, `permission_mode dontAsk` (4 Write sessions
+`66bbcfde`/`de71d8d8`, 2 Read `fed1c6e4`, 1 Read `ce0c0d4e`); `tee.json` holds no `path-guard.sh`, so the `spec/`
+block at R1-interleaved line 29 is the frontmatter hook; lines 7 and 9 unparseable, 33 of 35 parse; Stop at line 33;
+run 3 `success`, 3 turns, USD 0.14869, both Writes in `permission_denials`; R3 `error_max_turns`, 3, USD 0.3402,
+"Reached maximum number of turns (2)", 2 Reads, 4 `PreToolUse:Read` exit 0; R4 `error_max_budget_usd`, 1, USD 0.04323,
+`budget_exhausted`; exits 1/0/1/1; R3 28 lines, R4 12 lines; init model `claude-fable-5-1` (attempt 1:
+`claude-opus-5-5`).
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: backlog/work/B1.42/spike.md:42-43, :91-92 (runner item 7)
+    DEFECT: `--tools Read,Write` produced four tools, which the spike omits while stating `--tools` "removes the rest".
+    TRIGGER: r1.sh passes "Read,Write"; `jq -c 'select(.subtype=="init").tools' attempt1-not-logged-in/R1.jsonl` →
+             ["Read","Write","Grep","Glob"]; R1-interleaved.jsonl line 7 (run 3 init) holds the same list.
+    WRONG BEHAVIOUR: "tools exactly the `--tools` list" is claimed for R3/R4 only (Read,Glob → Read,Glob); B1.44 would
+             treat `--tools` as an exact allow-list although 2 of 3 Read,Write runs got Grep and Glob too.
+    CONFIDENCE: confirmed
+[2] KIND: correctness
+    WHERE: backlog/work/B1.42/spike.md:53-62
+    DEFECT: the excerpt labelled "Tool results (run 3, `result` line)" splices in "(and BLOCKED by path-guard.sh:
+            'src/spike-r1.txt' …)", which is in neither the tool_result nor the result line.
+    TRIGGER: `sed -n 23p R1-interleaved.jsonl | jq '.message.content[0].content'` → plan-scope.sh text only; the
+             path-guard text for src/ is hook_response line 21.
+    WRONG BEHAVIOUR: hides an observation B1.44 needs: when two hooks block, the agent sees only one reason
+             (plan-scope), not both.
+    CONFIDENCE: confirmed
+[3] KIND: correctness
+    WHERE: backlog/work/B1.42/spike.md:33 (run 2 row)
+    DEFECT: "both writes blocked" is cited to hook-input session 66bbcfde, which records only that the tee received
+            the two Write inputs, not any verdict.
+    TRIGGER: `grep 66bbcfde R1-interleaved.jsonl` → one line (8), an empty thinking block; no hook_response,
+             tool_result or result of that session survives.
+    WRONG BEHAVIOUR: an outcome the logs cannot show is stated as observed; it needs [unverified] or the sandbox's
+             clean-tree/`ls` evidence as its source.
+    CONFIDENCE: confirmed
+[4] KIND: correctness
+    WHERE: backlog/work/B1.42/spike.md:32 (run 1 row)
+    DEFECT: Turns 0; the log says 1.
+    TRIGGER: `jq 'select(.type=="result").num_turns' attempt1-not-logged-in/R1.jsonl` → 1 (subtype "success",
+             is_error true, terminal_reason api_error).
+    WRONG BEHAVIOUR: table cell differs from the log; also `subtype success` with `is_error true` is the case
+             runner item 4 ("read `subtype`") would misread, worth stating.
+    CONFIDENCE: confirmed
+[5] KIND: correctness
+    WHERE: backlog/work/B1.42/spike.md:36, :48 (R4 "1 Read")
+    DEFECT: R4's Read never executed: two `PreToolUse:Read` hook_started, no hook_response, no tool_result, then
+            the result line.
+    TRIGGER: `jq -c '{type,subtype,hook_name}' R4.jsonl` lines 10-12.
+    WRONG BEHAVIOUR: "1 Read" reads as a completed call; the log shows the budget stop lands after the model call and
+             interrupts in-flight hooks, which runner item 4 should say.
+    CONFIDENCE: confirmed
+[6] KIND: spec-mismatch (card Acceptance, D-25)
+    WHERE: backlog/work/B1.42/spike.md:79-80 (runner item 1), :83-84 (item 3)
+    DEFECT: "never `claude-code-vm`" and "one runner at a time (a lock)" are stated as musts for B1.44, whose
+            Acceptance runs the agent in "a devcontainer whose firewall allows only GitHub, the npm registry and
+            Anthropic" (a Linux container needs the Linux binary) and allows "at most 3 open agent PRs".
+    TRIGGER: `git show origin/main:backlog/plan/E1-todos.md`, ### B1.44 Acceptance.
+    WRONG BEHAVIOUR: the spike measured only the macOS host binary with user-level plugins; it cannot rule on the
+             devcontainer binary. Disposition: out of scope → follow-up/open question for B1.44's plan (D-25),
+             does not hold this PR; reword "must" to "open for B1.44" or note the devcontainer case.
+    CONFIDENCE: plausible
+[7] KIND: plan-mismatch
+    WHERE: backlog/work/B1.42/pr-body.md:7, :86, :94
+    DEFECT: the PR body still reads "verdicts: pending", "Plan approved by:" (empty), "Diff review: pending".
+    TRIGGER: opening the PR from this file now.
+    WRONG BEHAVIOUR: the PR shows an unapproved plan and no results, against planning.md ("The approved plan goes into
+             the PR body").
+    CONFIDENCE: confirmed
+```
+
+None of [1] to [7] widens B1.42: each is a text fix in `spike.md` or `pr-body.md`. Not a finding: the overlap of runs 2
+and 3 is recorded honestly and runner item 3 draws the right lesson; runs, spend and turns stay inside the plan.
+
+Verdict: back to dev-lead (author of `spike.md`/`pr-body.md`; fix [1] to [5] and [7], disposition [6])
+
+Riskiest unfalsified: that path-guard fired from the frontmatter in run 2 too and that no `src/`/`spec/` file was
+written by it; only `tee.json` and the de71d8d8 stream prove (b), and run 2's stream is lost.
+
+### Dispositions (dev-lead, diff round 1)
+
+| #   | Finding                                  | Disposition                                                                                                                                  |
+| --- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `--tools Read,Write` gave Grep, Glob too | fix now: Runs note and runner item 7 state the observed lists; check `init.tools`                                                            |
+| 2   | run 3 excerpt spliced two hooks' reasons | fix now: excerpt is the tool results only (lines 23, 31); "agent sees one reason" note                                                       |
+| 3   | run 2 outcome not in its logs            | fix now: table says outcome lost; (b) rests on run 3                                                                                         |
+| 4   | run 1 turns 0                            | fix now: 1 (`num_turns 1`, `is_error true`)                                                                                                  |
+| 5   | R4's Read never ran                      | fix now: table and (c) say the budget stop cut the Read's hooks                                                                              |
+| 6   | runner items 1, 3 vs B1.44 acceptance    | partly fixed (item 1: `claude-code-vm` is the Linux build; item 3: lock per issue); the B1.44 card text → follow-up in the closing PR (D-25) |
+| 7   | `pr-body.md` stale                       | fix now: verdicts, approval line and review filled                                                                                           |
