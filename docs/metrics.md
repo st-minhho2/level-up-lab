@@ -38,6 +38,7 @@ Each batch re-measured with `scripts/metrics/*.sh <its cards>` once its last car
 | 3     | B3.1–B3.3 (#95, #94, #93)                       | 3        | 26.7 as written (11-01: 4 cards incl. B2.5, 1.2 h from the first approval); 15.7 for the 3 B3 cards from the E3 filing merge (09:12) — passes either way | 57 (65, 57, 38)                       | 0/3           | median 2 (0, 5, 2)  | median 5 (11, 5, 5); upper 57                 | 0/3                     | 2026-11-01 |
 | 4     | B4.1–B4.3 (#110, #108, #109)                    | 3        | 11.2 (11-01: 7 cards incl. B2.5 and B3.1–B3.3, 5.0 h) — passes                                                                                           | **76 (76, 116, 52) — fails by 6 min** | 0/3           | median 1 (2, 0, 1)  | median 4 (4, 0, 21); upper 78                 | 0/3                     | 2026-11-01 |
 | 5     | B1.24, B1.26, B1.27 (#124, #122, #121; tooling) | 3        | 10.9 (11-01: 11 cards, 8.1 h) — passes                                                                                                                   | **88 (116, 88, 78) — fails**          | 0/3           | median 1 (1, 5, 0)  | median 1 (1, 0, 2); upper 27                  | 0/3                     | 2026-11-01 |
+| 6     | B1.28, B1.29, B1.20 (#130, #131, #132; D-25)    | 3        | 9.4 (11-01: 14 cards, 11.9 h) — passes                                                                                                                   | 23 (14, 23, 32) — passes              | 0/3           | median 1 (0, 3, 1)  | median 4 (1, 4, 11); upper 23                 | 0/3                     | 2026-11-02 |
 
 Batch 1 notes: B2.2 and B2.3 each waited for `src/app/page.tsx` (D-20 (a)): phase B after the previous holder merged,
 a second lead approval each; B2.3's 127-min lead time and 100-min PR wait are that queue. `gh pr ready` was refused by
@@ -67,6 +68,12 @@ yet the median lead time is 88 min. The time is review depth: B1.24 ran four dif
 granted by the lead) on a hook whose spellings regexes cannot close (B1.30 files the shell-word rewrite); B1.26 two;
 B1.27 one plus CI cycles after siblings merged. Across batches 3–5 the lead-time misses come from rework inside a card
 (tooling defects found mid-batch, multi-pass reviews), not from waiting on the lead or on shared files.
+
+Batch 6 notes (D-25: a diff-review finding that widens a card goes to a follow-up card): every D-18 target met. Each
+card took one diff-review pass with 0 findings; plan review took 2, 1 and 2 rounds. The review notes that would have
+grown scope were filed instead: B1.31 (root and `src` guide § ranges, from B1.28), B1.32 and B1.33 (plan-scope globs,
+hook-smoke in CI, from B1.20). `scripts/pr-step.sh draft` was refused once before approval (B1.29), as in batches 4
+and 5. Batch 6 is the first of the two consecutive passing batches D-18 asks for.
 
 ## Per card
 
