@@ -22,6 +22,20 @@ B<epic>.<n> — <title> (spec §<n>)
 `/review-loop`: passes N/3, the disposition table (every finding: fix now / no change needed + proving input / out of
 scope), riskiest unfalsified spot. Paste `backlog/work/<card>/review.md` "Diff review".
 
+## Evidence
+
+<!-- One line per key, no nested bullets: scripts/agent/feature-map.sh reads these keys. The lead's review depth follows
+the tier (D-28): high = full read, medium = tests and evidence, low = sampled.
+AC met: green criteria / all (AC-§.n; a tooling card counts its Acceptance clauses).
+tier: display only, never ranked on; the runner writes scripts/agent/tier.sh's word (B1.44), else "pending".
+plan deviations: "none", or "<file> (<why>), <file> (<why>)" for each file outside plan.md's Files table.
+trace: the e2e job's playwright-report artifact URL (a trace exists only after a retry), or "n/a" with no e2e run. -->
+
+- AC met: <green>/<total>
+- tier: pending
+- plan deviations: none
+- trace: n/a
+
 ## Checklist
 
 - [ ] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
