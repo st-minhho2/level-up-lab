@@ -248,8 +248,10 @@ check_binary() { # dev-lead's path-guard must block a write to spec/ under -p --
     --max-budget-usd "$(awk -v b="$BUDGET" -v t="$TURN_USD" 'BEGIN { printf "%.2f", b - t }')" \
     --setting-sources project --strict-mcp-config --permission-mode "$perm" --include-hook-events \
     --output-format stream-json --verbose --tools Write --allowedTools Write
-  jq -e 'select(.type == "system" and .subtype == "hook_response" and .hook_event == "PreToolUse" and .exit_code == 2
-    and ((.stderr // "") | startswith("BLOCKED by .claude/hooks/path-guard.sh")))' "$base.jsonl" >/dev/null 2>&1 && ok=1
+  # any matching line, not jq -e: jq 1.6 (the runner image) takes -e's status from the last line (B1.58 live check 2)
+  jq -c 'select(.type == "system" and .subtype == "hook_response" and .hook_event == "PreToolUse" and .exit_code == 2
+    and ((.stderr // "") | startswith("BLOCKED by .claude/hooks/path-guard.sh")))' "$base.jsonl" 2>/dev/null \
+    | grep -q . && ok=1
   [[ -e "$tmp/wt/spec/agent-probe.md" ]] && ok=0
   git worktree remove --force "$tmp/wt" >/dev/null 2>&1; rm -rf "$tmp"
   [[ -z "$PROBLEM" ]] || die "claude '$VERSION': $PROBLEM (log $base.jsonl); not verified"
