@@ -52,6 +52,12 @@ removes the volumes (r2 #5). Host and container keep separate locks and stop mar
   and `down -v` clears them.
 - New cost: an allowed CDN address (npm, claude.ai) also serves other sites behind the same edge; IPs stay pinned
   until a restart. A root exec into `firewall` can still change the rules: only the lead uses that service.
+- **Live check 1** (2026-11-03; the lead chose option 1, approved in the session): inside the container `--check-binary`
+  failed: 2.1.303 ran `plan-scope.sh` but not dev-lead's frontmatter `path-guard.sh` in a workspace not trusted
+  (`.err`: "this workspace has not been trusted"), so the probe write landed in its `/tmp` worktree. Fix:
+  `check_binary` makes its worktree under `<checkout>/.worktrees/check-binary-*` (where `run_issue`'s worktrees live),
+  so it proves the trust a real run gets; R14 asserts it. The lead's steps add one interactive `claude` in the clone
+  to accept the trust dialog (that trust covering subfolders is [unverified] until live check 2, the last live run).
 
 ## Files
 
