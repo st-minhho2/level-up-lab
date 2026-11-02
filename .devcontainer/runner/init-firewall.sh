@@ -1,8 +1,9 @@
 #!/bin/bash
-# Entrypoint of the runner container (B1.58): as root, allow outbound traffic only to GitHub, the npm registry and
-# Anthropic, prove it both ways, then run the command as node with no capabilities. Any failure exits non-zero, so the
-# container stops instead of running without the firewall. Run again by node it fails at the first check.
-#   init-firewall.sh <command…>        (the image's ENTRYPOINT; CMD is `sleep infinity`)
+# Entrypoint of the `firewall` service (B1.58, docker-compose.yml): as root with NET_ADMIN and NET_RAW only, allow
+# outbound traffic of the shared network namespace only to GitHub, the npm registry and Anthropic, prove it both ways,
+# mark the service ready, then run the command. Any failure exits non-zero, so `runner` (which joins this namespace with
+# no capability) never starts without the firewall. Run by node inside `runner` it fails at the first check.
+#   init-firewall.sh <command…>        (compose: entrypoint, command `sleep infinity`)
 # Allowed: GitHub's web, api and git ranges (api.github.com/meta), the A records of DOMAINS at start, loopback (Docker's
 # DNS is 127.0.0.11 on lo, so no other name server is reachable). Everything else is REJECTed; IPv6 is off and DROPped.
 # Limits: IPs are resolved once, so a rotated CDN address is refused until a restart; a CDN address also serves other
@@ -51,5 +52,5 @@ if curl -sS -o /dev/null --max-time 5 https://example.com 2>/dev/null; then die 
 curl -sS -o /dev/null --max-time 10 https://api.github.com || die "api.github.com is refused"
 echo "[init-firewall] allow list applied: $(ipset list "$SET" | grep -cE '^[0-9]') entries"
 
-# node, its own groups, no capability left in any set, and no way back (the container also sets no-new-privileges).
-exec setpriv --reuid=node --regid=node --init-groups --inh-caps=-all --bounding-set=-all -- "$@"
+touch /run/level-up-lab-firewall-ready # the healthcheck runner waits for
+exec "$@"
