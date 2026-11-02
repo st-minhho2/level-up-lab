@@ -14,10 +14,13 @@ SET=runner-allowed
 
 die() { echo "[init-firewall] $*" >&2; exit 1; }
 [[ "$(id -u)" == 0 ]] || die "needs root: only the container's entrypoint runs it"
+READY=/run/level-up-lab-firewall-ready
+rm -f "$READY" # a restart reuses the container but not its network namespace: not ready until checked again
 [[ $# -gt 0 ]] || die "usage: init-firewall.sh <command…>"
 [[ "$(cat /proc/sys/net/ipv6/conf/all/disable_ipv6 2>/dev/null)" == 1 ]] || die "IPv6 is not disabled (compose sysctls)"
 
-# Resolve everything first, while the network is still open; PID 1 is this script, so nothing else runs yet.
+# Resolve everything first, while the network is still open; runner waits for the ready mark, so nothing else runs
+# in this namespace yet.
 meta="$(curl -fsS --max-time 20 https://api.github.com/meta)" || die "cannot read api.github.com/meta"
 github="$(jq -r '(.web + .api + .git)[]' <<< "$meta" | grep -E '^[0-9.]+/[0-9]+$' | aggregate -q)"
 [[ -n "$github" ]] || die "no IPv4 ranges in api.github.com/meta"
@@ -52,5 +55,5 @@ if curl -sS -o /dev/null --max-time 5 https://example.com 2>/dev/null; then die 
 curl -sS -o /dev/null --max-time 10 https://api.github.com || die "api.github.com is refused"
 echo "[init-firewall] allow list applied: $(ipset list "$SET" | grep -cE '^[0-9]') entries"
 
-touch /run/level-up-lab-firewall-ready # the healthcheck runner waits for
+touch "$READY" # the healthcheck runner waits for
 exec "$@"

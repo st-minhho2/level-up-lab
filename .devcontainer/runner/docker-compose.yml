@@ -11,6 +11,9 @@
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec runner claude auth login
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec -e RUNNER_BUDGET_USD=1 runner scripts/agent/run.sh --check-binary
+#   docker compose -f .devcontainer/runner/docker-compose.yml stop
+#   docker compose -f .devcontainer/runner/docker-compose.yml up -d
+#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh
 # Logins live only in the runner-claude and runner-gh volumes (git's global config in runner-runs); after a suspect run
 # remove them (`docker compose -f .devcontainer/runner/docker-compose.yml down -v`) and log in again.
 name: level-up-lab-runner
@@ -21,6 +24,8 @@ services:
     entrypoint: ['/usr/local/bin/init-firewall.sh']
     command: ['sleep', 'infinity']
     init: true
+    # /run in memory, so the ready mark of an earlier start never survives a stop (diff review 2 #1)
+    tmpfs: [/run]
     cap_drop: [ALL]
     cap_add: [NET_ADMIN, NET_RAW]
     security_opt: ['no-new-privileges:true']
@@ -33,6 +38,7 @@ services:
       interval: 2s
       timeout: 2s
       retries: 30
+      start_period: 60s
   runner:
     build: .
     network_mode: service:firewall
