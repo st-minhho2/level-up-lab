@@ -5,13 +5,13 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 ## Status summary
 
-| Epic             | File                                                 | Done   | Partial | Open  | Total  |
-| ---------------- | ---------------------------------------------------- | ------ | ------- | ----- | ------ |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 32     | 0       | 9     | 41     |
-| E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0     | 5      |
-| E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0     | 3      |
-| E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 0     | 3      |
-| **Total**        |                                                      | **43** | **0**   | **9** | **52** |
+| Epic             | File                                                 | Done   | Partial | Open   | Total  |
+| ---------------- | ---------------------------------------------------- | ------ | ------- | ------ | ------ |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 32     | 0       | 9      | 41     |
+| E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0      | 5      |
+| E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3      |
+| E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4      |
+| **Total**        |                                                      | **43** | **0**   | **10** | **53** |
 
 ## Execution order
 
@@ -83,6 +83,7 @@ flowchart TD
   S50["50 · plan-deviations uses plan_lists<br/>B1.39"]
   S51["51 · next-task --check uses plan_lists<br/>B1.40"]
   S52["52 · guides state the token rule<br/>B1.41"]
+  S53["53 · section 22 criteria gaps<br/>B4.4"]
 ```
 
 ## Remaining
@@ -101,6 +102,7 @@ at most 3 cards Doing (B1.18).
 | 50   | B1.39 | plan-deviations judges a merged PR's files by the guard's plan_lists rule           | —      | Open   | —          | Lead  | S [estimate] |
 | 51   | B1.40 | next-task --check reads plan tokens by the plan_lists rule                          | —      | Open   | —          | Lead  | S [estimate] |
 | 52   | B1.41 | Guides state the plan-token rule and name hook-smoke's L1–L15                       | —      | Open   | —          | Lead  | S [estimate] |
+| 53   | B4.4  | Section 22 criteria measure the reload rule and the no-role rule                    | —      | Open   | —          | Lead  | S [estimate] |
 
 ## Waiting on human
 
