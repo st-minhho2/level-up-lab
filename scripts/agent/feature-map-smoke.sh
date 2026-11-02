@@ -19,6 +19,9 @@
 #   F18 the latest approval wins (low, then high in round 2 → high); a round-2 approval counts (B9.2 medium)
 #   F1 also holds a queued issue numbered below the low row; F7 escapes a backslash and folds a tab; F10 --json extra;
 #   F15 a body tier in capitals still compares
+#   review pass 2: F19 draft → doing, ready → review; F5 also docs/B9.1-B9.3-cards; F7 a CRLF body with control
+#   characters folds them; F20 an approval reached only through a merged side branch does not count (--first-parent);
+#   F4 a "## Evidence notes" section is not the Evidence section
 set -uo pipefail
 cd "$(git rev-parse --show-toplevel)"
 TOP="$PWD"
@@ -57,7 +60,10 @@ branch docs/B9.8-guides; echo h > "$REPO/h.md"; g add -A; g commit -q --no-verif
 branch docs/B9.9-scorecard; plan B9.9 src/i.ts "docs(backlog): B9.9 plan" # never approved
 branch chore/B9.12-l; plan B9.12 docs/l.md "docs(backlog): B9.12 plan approved"
 plan B9.12 .github/l.yml "docs(backlog): B9.12 plan round 2 approved"
-for b in docs/B9.1-done docs/B9.1-partial docs/B9.1-card docs/B9.1-file-card feat/B9.10-x; do
+branch chore/B9.13-m; plan B9.13 docs/m.md "docs(backlog): B9.13 plan approved"
+g checkout -q -b side13 main; plan B9.13 .github/m.yml "docs(backlog): B9.13 plan round 2 approved"
+g checkout -q chore/B9.13-m; g merge -q -s ours --no-edit --no-verify side13 # tip and first-parent plan stay low
+for b in docs/B9.1-done docs/B9.1-partial docs/B9.1-card docs/B9.1-file-card docs/B9.1-B9.3-cards feat/B9.10-x; do
   branch "$b"; plan B9.1 docs/lane.md "docs(backlog): B9.1 lane"
 done
 g checkout -q main
@@ -93,6 +99,7 @@ evidence() { # evidence <ac> <tier> <deviations>
 }
 FULL="$TMP/full"; mkdir -p "$FULL"
 cat > "$FULL/issues.tsv" <<EOF
+22${T}B9.13 thirteen
 21${T}B9.12 twelve
 20${T}Something without an id
 19${T}B9.9 scorecard
@@ -110,6 +117,8 @@ printf '### Card id\n\nB9.6\n\n### Acceptance\n\nx\n' > "$FULL/issue-6.md"
 printf '### Card id\n\n_No response_\n' > "$FULL/issue-20.md"
 cat > "$FULL/prs.tsv" <<EOF
 130${T}chore/B9.1-a${T}false${T}true
+119${T}chore/B9.13-m${T}false${T}false
+118${T}docs/B9.1-B9.3-cards${T}false${T}false
 117${T}chore/B9.12-l${T}false${T}false
 116${T}feat/B9.10-x${T}false${T}false
 115${T}docs/B9.1-file-card${T}false${T}false
@@ -127,20 +136,21 @@ cat > "$FULL/prs.tsv" <<EOF
 EOF
 evidence 3/4 low 'src/x.ts ("needed" | by y)' > "$FULL/pr-101.md"
 evidence 2/2 Medium none > "$FULL/pr-102.md"
-printf '## Item\n\nno evidence here\n' > "$FULL/pr-103.md"
+printf '## Item\n\nno evidence here\n\n## Evidence notes\n\n- AC met: 9/9\n- plan deviations: notes\n' > "$FULL/pr-103.md"
 evidence 1/1 pending '' > "$FULL/pr-104.md"
 evidence 4/4 high none > "$FULL/pr-106.md"
 evidence 5/5 pending none > "$FULL/pr-107.md"
 evidence 1/2 pending none > "$FULL/pr-108.md"
 evidence 0/3 pending none > "$FULL/pr-109.md"
-for n in 112 113 114 115 116; do evidence 9/9 low lane > "$FULL/pr-$n.md"; done
+for n in 112 113 114 115 116 118; do evidence 9/9 low lane > "$FULL/pr-$n.md"; done
 evidence 7/7 low none > "$FULL/pr-130.md" # a fork's PR claiming B9.1's branch name
 evidence 2/2 pending none > "$FULL/pr-117.md"
+evidence 1/1 pending none > "$FULL/pr-119.md"
 
 SMALL="$TMP/small"; mkdir -p "$SMALL"
 printf '15\tB9.5 queued\n11\tB9.1 one\n' > "$SMALL/issues.tsv"
 printf '101\tchore/B9.1-a\tfalse\tfalse\n' > "$SMALL/prs.tsv"
-evidence 3/4 low "$(printf 'src\\x.ts ("needed" | by y)\tz.ts')" > "$SMALL/pr-101.md"
+evidence 3/4 low "$(printf 'src\\x.ts ("needed" | by y)\tz.ts\033[31m w\001x')" | sed 's/$/\r/' > "$SMALL/pr-101.md"
 EMPTY="$TMP/empty"; mkdir -p "$EMPTY"; : > "$EMPTY/issues.tsv"; : > "$EMPTY/prs.tsv"
 FAILS="$TMP/fails"; mkdir -p "$FAILS"; touch "$FAILS/issue-list-fails"; : > "$FAILS/prs.tsv"
 
@@ -160,7 +170,7 @@ cell() { row "$1" | awk -F' \\| ' -v c="$2" '{ print $c }'; } # cell <card-re> <
 # --- probes on the full fixture with the stub tier ----------------------------------------------------------------
 run "$FULL" "$TMP/tier-stub"
 cards="$(grep -E '^\| [0-9]+ \|' "$TMP/out" | awk -F' \\| ' '{ print $2 }' | tr '\n' ' ')"
-[[ $rc -eq 0 && "$cards" == "B9.6 B9.1 B9.7 B9.12 B9.4 B9.8 B9.2 B9.9 B9.3 B9.11 B9.5 ? " ]] && ok "F1 order high>unknown>medium>low>queued" \
+[[ $rc -eq 0 && "$cards" == "B9.6 B9.1 B9.7 B9.12 B9.4 B9.8 B9.2 B9.9 B9.3 B9.13 B9.11 B9.5 ? " ]] && ok "F1 order high>unknown>medium>low>queued" \
   || fail "F1 order (rc $rc): '$cards'"
 [[ "$(cell B9.6 3)" == "#6" && "$(cell B9.1 3)" == "#11" && "$(cell B9.7 3)" == "#17" ]] && ok "F2 ties by issue number" \
   || fail "F2 ties: $(cell B9.6 3) $(cell B9.1 3) $(cell B9.7 3)"
@@ -168,9 +178,9 @@ cards="$(grep -E '^\| [0-9]+ \|' "$TMP/out" | awk -F' \\| ' '{ print $2 }' | tr 
   || fail "F3 Evidence: $(row B9.1)"
 [[ "$(cell B9.3 7)" == "?" && "$(row B9.3)" == *'| ? |' ]] && ok "F4 no Evidence → ?" || fail "F4: $(row B9.3)"
 [[ "$(cell B9.1 4)" == "#101" && "$(cell B9.8 4)" == "#108" && "$(cell B9.9 4)" == "#109" ]] \
-  && ! grep -q '#11[2-6]' "$TMP/out" && ok "F5 lane branches and B9.10 excluded, docs work branches kept" \
+  && ! grep -q '#11[2-68]' "$TMP/out" && ok "F5 lane branches and B9.10 excluded, docs work branches kept" \
   || fail "F5 PRs: B9.1 $(cell B9.1 4) B9.8 $(cell B9.8 4) B9.9 $(cell B9.9 4)"
-[[ "$(cell B9.6 2)" == "B9.6" && "$(row '\?')" == '| 12 | ? | #20 | - | queued | - | - | - |' ]] \
+[[ "$(cell B9.6 2)" == "B9.6" && "$(row '\?')" == '| 13 | ? | #20 | - | queued | - | - | - |' ]] \
   && ok "F6 card from body; none → ? row" || fail "F6: '$(row B9.6)' / '$(row '\?')'"
 [[ "$(cell B9.4 8)" == '? |' && "$(cell B9.4 6)" == "unknown" ]] && ok "F13 empty deviations → ?" || fail "F13: $(row B9.4)"
 [[ "$(cell B9.1 6)" == "high (body: low)" && "$(cell B9.1 1)" == "| 2" ]] && ok "F14 body tier shown, not ranked" \
@@ -182,6 +192,9 @@ cards="$(grep -E '^\| [0-9]+ \|' "$TMP/out" | awk -F' \\| ' '{ print $2 }' | tr 
   || fail "F17: $(row B9.1)"
 [[ "$(cell B9.12 6)" == "high" && "$(cell B9.2 6)" == "medium" ]] && ok "F18 latest approval wins; round-2 approval counts" \
   || fail "F18: '$(cell B9.12 6)' '$(cell B9.2 6)'"
+[[ "$(cell B9.2 5)" == "doing" && "$(cell B9.6 5)" == "doing" && "$(cell B9.1 5)" == "review" && "$(cell B9.3 5)" == "review" ]] \
+  && ok "F19 draft → doing, ready → review" || fail "F19: $(cell B9.2 5) $(cell B9.6 5) $(cell B9.1 5) $(cell B9.3 5)"
+[[ "$(cell B9.13 6)" == "low" ]] && ok "F20 first-parent approval only" || fail "F20: '$(cell B9.13 6)'"
 
 run "$FULL" ""
 [[ $rc -eq 0 && "$(cell B9.1 6)" == "unknown (body: low)" && "$(cell B9.2 6)" == "unknown (body: medium)" ]] \
@@ -189,7 +202,7 @@ run "$FULL" ""
 
 # --- --json, failures, empty, usage, template ---------------------------------------------------------------------
 run "$SMALL" "$TMP/tier-stub" --json
-want='[{"card":"B9.1","issue":11,"pr":101,"state":"review","tier":"high (body: low)","ac":"3/4","deviations":"src\\x.ts (\"needed\" | by y) z.ts"},{"card":"B9.5","issue":15,"pr":null,"state":"queued","tier":"-","ac":"-","deviations":"-"}]'
+want='[{"card":"B9.1","issue":11,"pr":101,"state":"review","tier":"high (body: low)","ac":"3/4","deviations":"src\\x.ts (\"needed\" | by y) z.ts [31m w x"},{"card":"B9.5","issue":15,"pr":null,"state":"queued","tier":"-","ac":"-","deviations":"-"}]'
 [[ $rc -eq 0 && "$(cat "$TMP/out")" == "$want" ]] && ok "F7 --json exact" || { fail "F7 --json (rc $rc)"; sed 's/^/  /' "$TMP/out"; }
 run "$FAILS" "$TMP/tier-stub"
 [[ $rc -eq 1 ]] && ! grep -q '|' "$TMP/out" && grep -q 'gh issue list' "$TMP/err" && ok "F8 gh fails → exit 1, no table" \
