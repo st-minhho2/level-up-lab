@@ -28,10 +28,10 @@ below what a run may spend (the limit is checked after a turn); the outcome read
 pinned (`model: inherit` resolves to the login's default); the tool set given by `--tools` and permissions by
 `--permission-mode dontAsk` with narrow allow rules (`--allowedTools` only adds to `settings.json`'s allow list, so
 `Bash(scripts/pr-step.sh *)` stays live), the prompt on stdin, and the run stops when the `init` line's `tools` holds a
-tool outside the set given (`--tools` may add Grep and Glob); user-level settings, plugins and hooks kept out of the
+tool outside the set given plus Grep and Glob (which `--tools` adds); user-level settings, plugins and hooks kept out of the
 run (`--setting-sources project,local` or a dedicated config, shown by no user-level hook event in the stream), or the
 reason they stay written in the plan; the binary named per host with its `--version` in the log: the macOS app build
-on the host, the Linux build (`claude-code-vm`) in the devcontainer, verified there; before a new `claude` version is
+or a pinned standalone install on the host, the Linux build (`claude-code-vm`) in the devcontainer, verified there; before a new `claude` version is
 trusted, one smoke run shows `dev-lead`'s frontmatter hooks fire under `-p --agent dev-lead`
 ```
 
@@ -41,7 +41,7 @@ trusted, one smoke run shows `dev-lead`'s frontmatter hooks fire under `-p --age
 
 - Red, measured on `f9225f5`: `awk '/^### B1.44 /,/^### B1.45 /' backlog/plan/E1-todos.md | grep -c -- <p>` → 0 for
   each of `auth status`, `is_error`, `<UTC timestamp>-<pid>.jsonl`, `per-issue lock`, `--model`, ``init` line's `tools``,
-  `setting-sources`, `claude-code-vm`, `permission-mode`, `stdin`, `frontmatter` (12 patterns; red measured 0 each).
+  `setting-sources`, `claude-code-vm`, `permission-mode`, `allowedTools`, `stdin`, `frontmatter` (12 patterns; red measured 0 each).
 - Green: the same 12 greps → ≥ 1 each; `git diff origin/main -- backlog/plan/E1-todos.md` changes only B1.44's
   Acceptance and Depends on lines (2 lines).
 - `scripts/ci/check-backlog.sh` OK (totals unchanged: no card added or closed); `scripts/ci/check-plan-scope.sh` OK.
@@ -55,7 +55,7 @@ trusted, one smoke run shows `dev-lead`'s frontmatter hooks fire under `-p --age
 
 Not in scope: B1.44's plan and scripts (B1.44 itself), the closing of B1.47 (closing lane after merge).
 
-Round 2 (plan review r1: 3 reasons, all addressed). Not in this card: B1.44's size (S, quick) no longer fits
+Round 3 (plan review r1: 3 reasons, r2: 3 reasons, all addressed; round 3 not re-reviewed, 2-round cap). Not in this card: B1.44's size (S, quick) no longer fits
 its Acceptance; B1.44's own plan puts a split to the lead (r1 note).
 
 Plan review: pending · Plan approved by: · Rounds: 1
