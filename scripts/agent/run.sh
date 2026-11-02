@@ -1,0 +1,233 @@
+#!/usr/bin/env bash
+# The agent runner (B1.44; D-26, D-27): runs dev-lead headless on an `agent-ready` issue's card, on the lead's machine
+# with the lead's own Claude login, never on GitHub Actions. Until B1.58 there is no sandbox: the run is held by
+# `--permission-mode dontAsk`, the allow list below and the repo's hooks. Until B1.55 every run stops at the plan gate.
+#   scripts/agent/run.sh <issue>          run that issue now (a stopped mark from an earlier run is replaced)
+#   scripts/agent/run.sh --poll           every open agent-ready issue, oldest first, skipping stopped and locked ones
+#   scripts/agent/run.sh --check-binary   prove dev-lead's frontmatter hooks fire under this claude; record its version
+#   exit 0 ran to an end, or skipped with the reason · 1 refused (stderr "[run] <why>")
+# Each run: auth status → a verified version → eligible.sh → under 3 agent branches in flight → a per-issue lock →
+# next-task.sh --claim → worktree.sh <chore|feat>/<card>-agent → claude -p with the outcome read from the stream's last
+# line (is_error, then subtype; one retry on an error) → a comment on the issue → runs/<issue>/stopped.
+# Logs: $RUNNER_RUNS/<issue>/<UTC timestamp>-<pid>.jsonl, .err (line 1: --version), .exit. bash 3.2-safe; gh, git, jq.
+set -uo pipefail
+ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
+cd "$ROOT" || exit 1
+RUNS="${RUNNER_RUNS:-$HOME/.level-up-lab/runs}"
+MODEL="${RUNNER_MODEL:-claude-opus-5-5}"
+TURNS="${RUNNER_MAX_TURNS:-150}"
+BUDGET="${RUNNER_BUDGET_USD:-10}"
+TURN_USD="${RUNNER_TURN_USD:-0.25}"
+INIT_WAIT="${RUNNER_INIT_WAIT:-120}"
+ELIGIBLE="${RUNNER_ELIGIBLE:-$ROOT/scripts/agent/eligible.sh}"
+CLAIM="${RUNNER_CLAIM:-$ROOT/scripts/next-task.sh}"
+WORKTREE="${RUNNER_WORKTREE:-$ROOT/scripts/worktree.sh}"
+TIER="$ROOT/scripts/agent/tier.sh"
+CAP=3
+TOOLS=Read,Grep,Glob,Write,Edit,Bash,Agent,Skill
+ALLOW=(Read Grep Glob Write Edit Bash Agent Skill 'Bash(git *)' 'Bash(scripts/*)' 'Bash(.claude/hooks/mark-reviewed.sh)'
+  'Bash(pnpm install --frozen-lockfile)' 'Bash(pnpm lint*)' 'Bash(pnpm typecheck*)' 'Bash(pnpm test*)' 'Bash(pnpm build*)'
+  'Bash(pnpm exec prettier *)' 'Bash(docker compose up -d)' 'Bash(cp *)' 'Bash(gh pr edit *)' 'Bash(gh pr checks *)'
+  'Bash(gh pr view *)')
+DENY='Bash(scripts/agent/run.sh*)' # a run never starts another run
+
+say() { echo "[run] $*" >&2; }
+die() { say "$*"; exit 1; }
+gh_() { env -u GH_REPO -u GH_HOST gh "$@" </dev/null; }
+child() { env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_SESSION_ID "$CLAUDE" "$@"; }
+
+default_claude() { # the newest macOS app build on the host, else claude on PATH (the devcontainer, B1.58)
+  local base="$HOME/Library/Application Support/Claude/claude-code" bin v
+  if [[ "$(uname -s)" == Darwin ]]; then
+    for bin in "$base"/*/*/claude.app/Contents/MacOS/claude; do
+      [[ -x "$bin" ]] || continue
+      v="${bin#"$base"/}"; echo "${v%%/*} $bin"
+    done | sort -t. -k1,1n -k2,2n -k3,3n | tail -1 | cut -d' ' -f2-
+  else
+    command -v claude
+  fi
+}
+CLAUDE="${RUNNER_CLAUDE:-$(default_claude)}"
+[[ -n "$CLAUDE" && -x "$CLAUDE" ]] || die "no claude binary: set RUNNER_CLAUDE"
+VERSION="$(child --version 2>/dev/null | head -1)"
+
+preflight() { # the lead's own login and a version whose hooks were proven (B1.42 spike: neither is given)
+  child auth status --json 2>/dev/null | jq -e '.loggedIn == true' >/dev/null \
+    || die "claude is not logged in: run '$CLAUDE auth login' in a terminal (the desktop app's login never reaches a child claude)"
+  [[ "${1:-}" == binary ]] && return 0
+  grep -qxF -- "$VERSION" "$RUNS/verified-versions" 2>/dev/null \
+    || die "claude '$VERSION' is not verified: run scripts/agent/run.sh --check-binary first"
+}
+
+stamp_base() { # stamp_base <dir>: a fresh <UTC timestamp>-<pid> path, never one an earlier run used
+  local b
+  mkdir -p "$1"
+  while :; do
+    b="$1/$(date -u +%Y%m%dT%H%M%SZ)-$$"
+    [[ -e "$b.jsonl" ]] || { echo "$b"; return; }
+    sleep 1
+  done
+}
+
+init_problem() { # init_problem <jsonl> <worktree>: why the run's init must stop it, empty when it may go on
+  local f="$1" extra want got
+  extra="$(jq -r 'select(.type == "system" and .subtype == "init") | .tools[]' "$f" 2>/dev/null \
+    | grep -vxE "$(printf '%s' "$TOOLS" | tr ',' '|')" | tr '\n' ' ')"
+  [[ -z "$extra" ]] || { echo "tools-mismatch: init tools outside --tools: $extra"; return; }
+  got="$(jq -r 'select(.type == "system" and .subtype == "init") | [(.plugins // [] | length), (.mcp_servers // [] | length)] | @tsv' "$f" 2>/dev/null)"
+  [[ "$got" == "0	0" ]] || { echo "user-settings: plugins and MCP servers loaded ($got)"; return; }
+  want="$(jq '[.hooks.SessionStart[]?.hooks[]?] | length' "$2/.claude/settings.json" 2>/dev/null || echo 0)"
+  got="$(jq -c 'select(.type == "system" and .subtype == "hook_started" and .hook_event == "SessionStart")' "$f" 2>/dev/null | grep -c .)"
+  [[ $got -le $want ]] || echo "user-settings: $got SessionStart hooks, the project defines $want"
+}
+
+claude_run() { # claude_run <base> <worktree> <prompt> <args…>: one -p run; sets PROBLEM (init check), logs .err/.exit
+  local base="$1" wt="$2" prompt="$3" pid i=0
+  shift 3
+  echo "$VERSION" > "$base.err"
+  PROBLEM=""
+  printf '%s\n' "$prompt" | (cd "$wt" && exec env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_SESSION_ID \
+    "$CLAUDE" "$@") > "$base.jsonl" 2>> "$base.err" &
+  pid=$!
+  while kill -0 "$pid" 2>/dev/null && ! grep -q '"subtype":"init"' "$base.jsonl" && [[ $i -lt $INIT_WAIT ]]; do
+    sleep 1; i=$((i + 1))
+  done
+  if grep -q '"subtype":"init"' "$base.jsonl"; then
+    PROBLEM="$(init_problem "$base.jsonl" "$wt")"
+    [[ -z "$PROBLEM" ]] || kill "$pid" 2>/dev/null
+  fi
+  wait "$pid"; echo $? > "$base.exit"
+}
+
+outcome() { # outcome <jsonl> <card>: gate | ready | ended | limit:<subtype> | error:<subtype>, from the last result line
+  local last
+  last="$(jq -c 'select(.type == "result")' "$1" 2>/dev/null | tail -1)"
+  [[ -n "$last" ]] || { echo "error:no-result"; return; }
+  if [[ "$(jq -r '.is_error' <<< "$last")" == true ]]; then
+    case "$(jq -r '.subtype' <<< "$last")" in
+      error_max_turns | error_max_budget_usd) echo "limit:$(jq -r '.subtype' <<< "$last")" ;;
+      *) echo "error:$(jq -r '.subtype' <<< "$last")" ;;
+    esac
+    return
+  fi
+  case "$(jq -r '.result // ""' <<< "$last")" in
+    *"Plan for $2 is ready"*) echo gate ;;
+    *"PR for $2 is ready"*) echo ready ;;
+    *) echo ended ;;
+  esac
+}
+
+card_of() { # card_of <issue>: the issue form's "Card id" field
+  gh_ issue view "$1" --json body --jq .body | awk '
+    /^### / { f = ($0 ~ /^### Card id[[:space:]]*$/); next }
+    f && NF { gsub(/[[:space:]]/, ""); print; exit }'
+}
+branch_of() { # chore/<card>-agent for a tooling card, feat/<card>-agent otherwise
+  if CARD="$1" awk 'index($0, "### " ENVIRON["CARD"] " ") == 1 { getline; getline; print; exit }' backlog/plan/*.md \
+    | grep -q '^_tooling'; then
+    echo "chore/$1-agent"
+  else
+    echo "feat/$1-agent"
+  fi
+}
+in_flight() { # in_flight <own branch>: agent branches with a local branch or an open PR, the issue's own excepted
+  { git for-each-ref --format='%(refname:short)' refs/heads/
+    gh_ pr list --state open --limit 100 --json headRefName --jq '.[].headRefName'; } \
+    | grep -E '^[a-z]+/B[0-9]+\.[0-9]+-agent$' | grep -vxF -- "$1" | sort -u | grep -c .
+}
+lock() { # lock <dir>: 0 when this process holds <dir>/lock; a dead holder's lock is taken over
+  local holder
+  mkdir -p "$1"
+  if ! mkdir "$1/lock" 2>/dev/null; then
+    holder="$(cat "$1/lock/pid" 2>/dev/null)"
+    if [[ -n "$holder" ]] && kill -0 "$holder" 2>/dev/null; then return 1; fi
+    say "removing the stale lock of pid ${holder:-?} in $1"
+    rm -rf "$1/lock"; mkdir "$1/lock" 2>/dev/null || return 1
+  fi
+  echo $$ > "$1/lock/pid"
+}
+
+comment() { # comment <issue> <outcome> <card> <branch> <worktree> <base> <detail>: fixed fields only, never agent text
+  local n="$1" out="$2" card="$3" branch="$4" wt="$5" base="$6" detail="$7" tier=n/a sid denials
+  [[ -f "$wt/backlog/work/$card/plan.md" ]] && tier="$("$TIER" "$wt/backlog/work/$card/plan.md" 2>/dev/null || echo unknown)"
+  sid="$(jq -r 'select(.session_id) | .session_id' "$base.jsonl" 2>/dev/null | tail -1)"
+  denials="$(jq -r 'select(.type == "result") | (.permission_denials // [] | length)' "$base.jsonl" 2>/dev/null | tail -1)"
+  printf '%s\n' "Runner (\`scripts/agent/run.sh\`, B1.44): **${out%%:*}** for $card." "" \
+    "- outcome: $out${detail:+ ($detail)}" "- tier: $tier" "- branch: \`$branch\`" "- session: \`${sid:-?}\`" \
+    "- log: \`$(basename "$base").jsonl\` (runs/$n/ on the lead's machine)" "- permission denials: ${denials:-?}" \
+    "- retry: \`scripts/agent/run.sh $n\`" | env -u GH_REPO -u GH_HOST gh issue comment "$n" --body-file - >/dev/null \
+    || say "#$n: gh issue comment failed"
+}
+
+run_issue() { # run_issue <issue>: 0 ran or skipped, 1 refused
+  local n="$1" card branch wt base out attempt=1 prompt dir="$RUNS/$1"
+  local why
+  why="$("$ELIGIBLE" "$n" 2>&1 >/dev/null)" || { say "skip #$n: ${why:-not eligible}"; return 0; }
+  card="$(card_of "$n")"
+  [[ "$card" =~ ^B[0-9]+\.[0-9]+$ ]] || { say "skip #$n: no card id in the issue form (got '$card')"; return 0; }
+  branch="$(branch_of "$card")"
+  [[ $(in_flight "$branch") -lt $CAP ]] || { say "skip #$n: $CAP agent branches in flight"; return 0; }
+  lock "$dir" || { say "skip #$n: locked by a running pid"; return 0; }
+  trap 'rm -rf "$dir/lock"' EXIT
+  wt="$(git worktree list --porcelain | awk -v b="branch refs/heads/$branch" '/^worktree /{w=substr($0, 10)} $0 == b {print w}')"
+  if [[ -z "$wt" ]]; then
+    "$CLAIM" --claim "$card" >&2 || { say "skip #$n: next-task.sh --claim $card refused"; rm -rf "$dir/lock"; return 0; }
+    wt="$("$WORKTREE" "$branch" 2>&1 | awk '$1 == "dir" { sub(/^[[:space:]]*dir[[:space:]]+/, ""); print; exit }')"
+    [[ -d "$wt" ]] || { say "#$n: worktree.sh $branch made no worktree"; rm -rf "$dir/lock"; return 1; }
+  fi
+  prompt="Issue #$n is labeled agent-ready (D-27): run card $card as dev-lead with the work-next skill. The worktree $wt
+on branch $branch is claimed and is yours; resume from the first Loop step whose artifact is missing. This run is
+headless: nobody answers inside it. At the plan gate print the gate line and stop; a question only the lead can answer
+goes to backlog/README.md \"Waiting on human\", then stop."
+  while :; do
+    base="$(stamp_base "$dir")"
+    claude_run "$base" "$wt" "$prompt" -p --agent dev-lead --model "$MODEL" --max-turns "$TURNS" \
+      --max-budget-usd "$(awk -v b="$BUDGET" -v t="$TURN_USD" 'BEGIN { printf "%.2f", b - t }')" \
+      --setting-sources project --strict-mcp-config --permission-mode dontAsk --include-hook-events \
+      --output-format stream-json --verbose --tools "$TOOLS" --allowedTools "${ALLOW[@]}" --disallowedTools "$DENY"
+    if [[ -n "$PROBLEM" ]]; then out="${PROBLEM%%:*}"; why="${PROBLEM#*: }"; else out="$(outcome "$base.jsonl" "$card")"; why=""; fi
+    [[ "$out" == error:* && $attempt -eq 1 ]] || break
+    say "#$n: $out, retrying once"; attempt=2
+  done
+  say "#$n $card: $out (log $base.jsonl)"
+  comment "$n" "$out" "$card" "$branch" "$wt" "$base" "$why"
+  echo "$out" > "$dir/stopped"
+  rm -rf "$dir/lock"; trap - EXIT
+}
+
+check_binary() { # dev-lead's path-guard must block a write to spec/ under -p --agent dev-lead (B1.42 finding 8)
+  local tmp base ok=0
+  tmp="$(mktemp -d)"; base="$(stamp_base "$RUNS/check-binary")"
+  git worktree add -q --detach "$tmp/wt" HEAD >/dev/null 2>&1 || { rm -rf "$tmp"; die "git worktree add failed"; }
+  claude_run "$base" "$tmp/wt" "Write the file spec/agent-probe.md containing the single line: probe. Then stop." \
+    -p --agent dev-lead --model "$MODEL" --max-turns 2 \
+    --max-budget-usd "$(awk -v b="$BUDGET" -v t="$TURN_USD" 'BEGIN { printf "%.2f", b - t }')" \
+    --setting-sources project --strict-mcp-config --permission-mode dontAsk --include-hook-events \
+    --output-format stream-json --verbose --tools Write --allowedTools Write
+  jq -e 'select(.type == "system" and .subtype == "hook_response" and .hook_event == "PreToolUse" and .exit_code == 2
+    and ((.stderr // "") | startswith("BLOCKED by .claude/hooks/path-guard.sh")))' "$base.jsonl" >/dev/null 2>&1 && ok=1
+  [[ -e "$tmp/wt/spec/agent-probe.md" ]] && ok=0
+  git worktree remove --force "$tmp/wt" >/dev/null 2>&1; rm -rf "$tmp"
+  [[ $ok -eq 1 ]] || die "claude '$VERSION': dev-lead's path-guard did not block the probe write (log $base.jsonl); not verified"
+  echo "$VERSION" >> "$RUNS/verified-versions"
+  say "claude '$VERSION' verified: dev-lead's frontmatter hook blocked the probe (log $base.jsonl)"
+}
+
+case "${1:-}" in
+  --check-binary)
+    [[ $# -eq 1 ]] || die "usage: scripts/agent/run.sh <issue> | --poll | --check-binary"
+    preflight binary; check_binary ;;
+  --poll)
+    [[ $# -eq 1 ]] || die "usage: scripts/agent/run.sh <issue> | --poll | --check-binary"
+    preflight
+    issues="$(gh_ issue list --label agent-ready --state open --limit 100 --json number --jq '.[].number' | sort -n)" \
+      || die "gh issue list failed"
+    for n in $issues; do
+      [[ -e "$RUNS/$n/stopped" ]] && continue
+      (run_issue "$n") || say "#$n refused"
+    done ;;
+  *)
+    [[ $# -eq 1 && "$1" =~ ^[1-9][0-9]*$ ]] || die "usage: scripts/agent/run.sh <issue> | --poll | --check-binary"
+    preflight
+    run_issue "$1" ;;
+esac
