@@ -148,16 +148,15 @@ None: tooling, no `spec/features-map.md` row.
 
 Plan review: r1 7 reasons, r2 6 reasons, round 3 not re-reviewed (2-round cap). Diff review (`backlog/work/B1.58/review.md`):
 
-| Pass | #   | Finding                                                                          | Disposition  | Commit               |
-| ---- | --- | -------------------------------------------------------------------------------- | ------------ | -------------------- |
-| 1    | 1   | a root `exec runner` kept NET_ADMIN; S5 loosened before re-approval              | fix now      | `23e7f63`, `5057810` |
-| 1    | 2   | deleting sandboxed()'s uid check left every probe green                          | fix now      | `23e7f63`            |
-| 1    | 3   | the lead's commands cloned main (old `--check-binary` mode); PR body lacked them | fix now      | `5057810`, this body |
-| 1    | n1  | PID 1 `sleep` without init; `~/.gitconfig` not persisted                         | fix now      | `5057810`            |
-| 1    | n2  | no git identity in the image, so `run.sh <issue>` cannot commit inside yet       | out of scope | B1.59 / B1.62 plan   |
-
-| 2 | 1 | the ready mark survived a stop, so runner started before the new namespace had rules | fix now | `50bfcc7` |
-| 2 | n | two image tags from two `build: .`; Evidence "plan deviations: none" | no change needed | same Dockerfile and cache; no file outside Files |
+| Pass | #   | Finding                                                                              | Disposition      | Commit                                           |
+| ---- | --- | ------------------------------------------------------------------------------------ | ---------------- | ------------------------------------------------ |
+| 1    | 1   | a root `exec runner` kept NET_ADMIN; S5 loosened before re-approval                  | fix now          | `23e7f63`, `5057810`                             |
+| 1    | 2   | deleting sandboxed()'s uid check left every probe green                              | fix now          | `23e7f63`                                        |
+| 1    | 3   | the lead's commands cloned main (old `--check-binary` mode); PR body lacked them     | fix now          | `5057810`, this body                             |
+| 1    | n1  | PID 1 `sleep` without init; `~/.gitconfig` not persisted                             | fix now          | `5057810`                                        |
+| 1    | n2  | no git identity in the image, so `run.sh <issue>` cannot commit inside yet           | out of scope     | B1.59 / B1.62 plan                               |
+| 2    | 1   | the ready mark survived a stop, so runner started before the new namespace had rules | fix now          | `50bfcc7`                                        |
+| 2    | n   | two image tags from two `build: .`; Evidence "plan deviations: none"                 | no change needed | same Dockerfile and cache; no file outside Files |
 
 Pass 3: pending.
 
