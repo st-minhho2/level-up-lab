@@ -7,11 +7,11 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open  | Total  |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ----- | ------ |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 27     | 1       | 3     | 31     |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 28     | 1       | 4     | 33     |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0     | 5      |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0     | 3      |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 0     | 3      |
-| **Total**        |                                                      | **38** | **1**   | **3** | **42** |
+| **Total**        |                                                      | **39** | **1**   | **4** | **44** |
 
 ## Execution order
 
@@ -46,7 +46,7 @@ flowchart TD
   S17["17 · plan-scope hook<br/>~~B1.17~~"]
   S18["18 · WIP limit<br/>~~B1.18~~"]
   S19["19 · git hooks in every worktree<br/>~~B1.19~~"]
-  S20["20 · plan-scope literal match<br/>B1.20"]
+  S20["20 · plan-scope literal match<br/>~~B1.20~~"]
   S21["21 · draft PR, ping, current branches<br/>~~B1.21~~"]
   S22["22 · batch review and lane metrics<br/>~~B1.22~~"]
   S21 --> S22
@@ -73,6 +73,8 @@ flowchart TD
   S40["40 · verify-red base run<br/>~~B1.29~~"]
   S41["41 · guard-bash shell words<br/>B1.30"]
   S42["42 · root guides cite sections<br/>B1.31"]
+  S43["43 · plan-scope glob per segment<br/>B1.32"]
+  S44["44 · CI runs hook-smoke<br/>B1.33"]
 ```
 
 ## Remaining
@@ -80,12 +82,13 @@ flowchart TD
 Board state (To do · Doing · Review · Closing) is derived, not typed: `scripts/next-task.sh --list` (BOARD column),
 at most 3 cards Doing (B1.18).
 
-| Step | ID    | Title                                                                      | Spec § | Status  | Blocked by | Owner | Size         |
-| ---- | ----- | -------------------------------------------------------------------------- | ------ | ------- | ---------- | ----- | ------------ |
-| 20   | B1.20 | Plan rows with `[ ]` match their own path in the plan-scope hook and guard | —      | Open    | ~~B1.17~~  | Lead  | S [estimate] |
-| 31   | B1.23 | Card sessions run their own PR steps: push, open, label, mark ready        | —      | Partial | —          | Lead  | S [estimate] |
-| 41   | B1.30 | guard-bash reads shell words before matching a push                        | —      | Open    | —          | Lead  | S [estimate] |
-| 42   | B1.31 | Root and src guides cite the sections their packages implement             | —      | Open    | —          | Lead  | S [estimate] |
+| Step | ID    | Title                                                                | Spec § | Status  | Blocked by | Owner | Size         |
+| ---- | ----- | -------------------------------------------------------------------- | ------ | ------- | ---------- | ----- | ------------ |
+| 31   | B1.23 | Card sessions run their own PR steps: push, open, label, mark ready  | —      | Partial | —          | Lead  | S [estimate] |
+| 41   | B1.30 | guard-bash reads shell words before matching a push                  | —      | Open    | —          | Lead  | S [estimate] |
+| 42   | B1.31 | Root and src guides cite the sections their packages implement       | —      | Open    | —          | Lead  | S [estimate] |
+| 43   | B1.32 | plan-scope reads a Files token as a glob only where the plan says so | —      | Open    | —          | Lead  | S [estimate] |
+| 44   | B1.33 | CI runs hook-smoke and its guide row names every probe group         | —      | Open    | —          | Lead  | S [estimate] |
 
 ## Waiting on human
 

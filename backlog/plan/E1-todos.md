@@ -272,10 +272,7 @@ _tooling · no §_
 ### B1.20 · Plan rows with `[ ]` match their own path in the plan-scope hook and guard
 
 _tooling · no §_
-**Status: Open** — `.claude/hooks/plan-scope.sh:36` (`[[ -n "$p" && "$REL" == $p ]]`) and
-`scripts/ci/check-plan-scope.sh:25` (`[[ -n "$p" && "$f" == $p ]]`) compare a plan's Files token only as a glob; a
-row `src/app/[id]/page.tsx` is the bracket expression `[id]`, so the file it names never matches and its write is
-refused (B1.18 diff review pass 2, confirmed in bash; `next-task.sh --check` was fixed the same way in #63)
+**Status: Done** — 07c62cc (#132), scripts/hook-smoke.sh 440 probes OK on /bin/bash 3.2 (f83e5da: 432 ok, 8 FAIL); 24 new probes L1–L6 in each of the 4 worktree layouts; every S1–S15 / C1–C8 probe unchanged; no src/ change, mutation 93.40
 
 - **Spec:** none — tooling (`.claude/docs/hooks.md` plan-scope row); no `src/` change, no section
 - **Test:** new probes in `scripts/hook-smoke.sh` — red because: with a plan listing `src/app/[id]/page.tsx`, a
@@ -284,7 +281,7 @@ refused (B1.18 diff review pass 2, confirmed in bash; `next-task.sh --check` was
 - **Acceptance:** both compare a token literally before as a glob, in every worktree layout; every existing probe
   still passes; `.claude/` and `scripts/ci/` are protected → the PR needs the human-only `config-change-approved` label
 - **Tier:** quick · **Depends on:** ~~B1.17~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.20/`
+- **Work:** `work/B1.20/` — plan (review round 2 approved; lead 1), review (diff pass 1/3: 0 findings; 2 out of scope → B1.32, B1.33); squash `07c62cc` (#132)
 
 ### B1.21 · Parallel sessions report status: draft PR, a ping when waiting, branches kept current
 
@@ -453,3 +450,36 @@ and `src/components/CLAUDE.md` §7, §10, §12–§22; `src/CLAUDE.md` package t
   has no match; `check-spec-sections.sh` and `check-features-map.sh` stay OK
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.31/`
+
+### B1.32 · plan-scope reads a Files token as a glob only where the plan says so
+
+_tooling · no §_
+**Status: Open** — B1.20 (#132) diff review, out of scope (D-25): the glob half of `.claude/hooks/plan-scope.sh:36`
+and `scripts/ci/check-plan-scope.sh:25` (`"$REL" == $p`) still over-matches, unchanged since #60: on /bin/bash 3.2
+the row `src/app/[id]/page.tsx` also allows `src/app/i/page.tsx`, `src/app/[...slug]/page.tsx` allows
+`src/app/s/page.tsx`, and `src/app/*/layout.tsx` allows `src/app/a/b/layout.tsx` (`*` crosses `/`)
+
+- **Spec:** none — tooling (`.claude/docs/hooks.md` plan-scope row); no `src/` change, no section
+- **Test:** new probes in `scripts/hook-smoke.sh` — red because: with a plan listing `src/app/[id]/page.tsx` and
+  `src/app/*/layout.tsx`, writes to `src/app/i/page.tsx` and `src/app/a/b/layout.tsx` exit 0 today; expected 2
+  (hook) and 1 (`check-plan-scope.sh`)
+- **Acceptance:** a token without `*` matches only itself; `*` matches within one path segment and `prisma/migrations/*`
+  keeps matching every migration file; every L1–L6, S1–S15 and C1–C8 probe keeps its verdict; the PR carries
+  `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.32/`
+
+### B1.33 · CI runs hook-smoke and its guide row names every probe group
+
+_tooling · no §_
+**Status: Open** — B1.20 (#132) plan and diff review, out of scope (D-25): `grep -l hook-smoke .github/workflows/*`
+finds nothing, so "every existing probe still passes" is proven only on a local /bin/bash 3.2 run, never on CI's
+bash 5; `scripts/CLAUDE.md` hook-smoke row still reads "plan-scope S1–S15; check-plan-scope C1–C5" while the script
+runs C1–C8 and L1–L6 (440 probes)
+
+- **Spec:** none — tooling (`.github/workflows/ci.yml`, `scripts/CLAUDE.md`); no `src/` change, no section
+- **Test:** `grep -l hook-smoke .github/workflows/*` — red because: no match today; expected `ci.yml`
+- **Acceptance:** a CI job runs `scripts/hook-smoke.sh` on every PR and fails on its exit 1; the `scripts/CLAUDE.md`
+  row names C1–C8 and L1–L6; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.33/`
