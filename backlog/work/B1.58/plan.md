@@ -27,8 +27,8 @@ skipped (tier quick). Risk tier **high** (`scripts/agent/`, `scripts/ci/`) → l
 Costs: the repo is **public**; a run can read the Claude login and gh token its own tools need and push them to a
 branch or gist; the firewall bounds where data goes, not what goes to GitHub or Anthropic (and DNS lookups through
 127.0.0.11 still reach any name server). Mitigation: a fine-grained gh token for this repo, short expiry; revoke on a
-leak. No sudo in the image (r2 #1): the entrypoint runs as root, applies the firewall, then `setpriv` drops to `node`
-with an empty capability bounding set; `run.sh --mode` also needs uid ≠ 0. Volumes carry one run's writes (clone
+leak. No sudo in the image (r2 #1); root runs only in the `firewall` service (below); `run.sh --mode` also needs
+uid ≠ 0. Volumes carry one run's writes (clone
 `.git/hooks`, `.git/config`, `runner-claude`) into later runs, inside the firewall; after a suspect run the lead
 removes the volumes (r2 #5). Host and container keep separate locks and stop marks, so after this card the lead runs
 `run.sh` only inside (the branch cap still counts open PRs on both). `--disallowedTools` under `bypassPermissions` is
@@ -36,20 +36,25 @@ removes the volumes (r2 #5). Host and container keep separate locks and stop mar
 
 **Changed after approval** (needs the lead's `approve` again; Files unchanged):
 
-- S5 judges `CapEff` 0 and `NoNewPrivs` 1, not `CapBnd` 0: a `docker compose exec` process gets the container's
-  bounding set, not PID 1's (`0258b7f`, red first). The compose file adds `cap_drop: [ALL]`, `cap_add` NET_ADMIN,
-  NET_RAW, SETUID, SETGID, SETPCAP (setpriv needs the last three) and `no-new-privileges`. Every exec is `-u node`: a
-  root exec keeps NET_ADMIN (the lead's commands all say so).
+- **Firewall sidecar** (diff review 1 #1): an exec gets the container's bounding set, not PID 1's, so with the
+  entrypoint-plus-setpriv design a plain (root) `exec runner` kept NET_ADMIN and could flush the rules. Now one image,
+  two services: `firewall` (root, `cap_add` NET_ADMIN, NET_RAW only, IPv6 sysctls, healthy after its check both ways)
+  and `runner` (`network_mode: service:firewall`, `user` node, `cap_drop: [ALL]`, no `cap_add`, `no-new-privileges`,
+  starts only once `firewall` is healthy). Every exec into `runner`, root included, has `CapBnd` 0: S5 as approved,
+  plus `NoNewPrivs` 1 (`0258b7f` → `23e7f63`, fix `5057810`). No setpriv, no entrypoint in the image.
+- S4 also expects `dontAsk` with an `id` shim printing 0 and a `uname` shim printing Darwin (diff review 1 #2).
+- The lead's commands check out `chore/B1.58-sandbox` after the clone until this merges (diff review 1 #3); git's
+  global config lives in `runner-runs` (`GIT_CONFIG_GLOBAL`); `init: true` on both services.
 - New cost: an allowed CDN address (npm, claude.ai) also serves other sites behind the same edge; IPs stay pinned
-  until a restart.
+  until a restart. A root exec into `firewall` can still change the rules: only the lead uses that service.
 
 ## Files
 
 | File                                      | Change                                                                       |
 | ----------------------------------------- | ---------------------------------------------------------------------------- |
-| `.devcontainer/runner/Dockerfile`         | new: base, apt, claude pin, `/etc/level-up-lab-runner`, entrypoint, no sudo  |
-| `.devcontainer/runner/init-firewall.sh`   | new: ipset allow list, REJECT, ip6tables DROP, self-check; then setpriv node |
-| `.devcontainer/runner/docker-compose.yml` | new: project `level-up-lab-runner`, cap NET_ADMIN/NET_RAW, IPv6 off, volumes |
+| `.devcontainer/runner/Dockerfile`         | new: base, apt, claude pin, `/etc/level-up-lab-runner`, user node, no sudo   |
+| `.devcontainer/runner/init-firewall.sh`   | new: ipset allow list, REJECT, ip6tables DROP, self-check, ready mark        |
+| `.devcontainer/runner/docker-compose.yml` | new: project `level-up-lab-runner`: `firewall` + `runner` (no caps), volumes |
 | `scripts/agent/run.sh`                    | `--mode`; `sandboxed()` picks `bypassPermissions`, else `dontAsk`            |
 | `scripts/agent/run-smoke.sh`              | R6 `dontAsk` on the host; new R15 `--mode` on the host                       |
 | `scripts/agent/sandbox-probe.sh`          | new: S1–S7, run inside the container                                         |
@@ -69,7 +74,7 @@ scripts/agent/sandbox-probe.sh   exit 0 all ok · 1 any FAIL. S1 example.com, 1.
   · S4 --mode bypassPermissions; curl shim reaching all, or none → dontAsk · S5 uid node, no sudo, CapBnd 0,
   `iptables -F` and `init-firewall.sh` refused, rules unchanged after · S6 claude config dir a mount, no
   `.credentials.json` in the repo · S7 no `postgres` host
-docker compose -f .devcontainer/runner/docker-compose.yml up -d --build   (firewall fails → container exits)
+docker compose -f .devcontainer/runner/docker-compose.yml up -d --build   (firewall fails → runner never starts)
   volumes runner-repo, runner-claude, runner-gh, runner-runs, runner-pnpm-store
 ```
 
@@ -86,4 +91,4 @@ Steps: 1 red `test(scripts): B1.58 sandbox probes` · 2 green `chore(scripts): B
 `docs(backlog): B1.58 review`; B1.62 filing PR. All dev-lead (no `src/`). Not in scope: B1.59, a GitHub secret guard.
 
 Plan review: changes requested, round 2 (6 reasons carried into round 3, not re-reviewed: 2-round cap) · Plan approved
-by: lead, 2026-11-02 (decisions 1–5 as proposed) · Rounds: 2
+by: lead, 2026-11-02 (decisions 1–5 as proposed) · Rounds: 2 (re-approval pending for "Changed after approval")
