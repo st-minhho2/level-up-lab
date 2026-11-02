@@ -78,4 +78,4 @@ dev-lead in a run (prompt "Issue #<n> is labeled agent-ready (D-27)", RUNNER_CHI
 Follow-ups after B1.58 (it holds `scripts/CLAUDE.md`, `scripts/agent/run.sh`): B1.62 above; `scripts/CLAUDE.md` rows
 for plan-files `--run`/`--offline`/exit 5, eligible.sh `[<card>]`, probe ids.
 
-Plan review: changes requested, round 2 (cap; round 3 not re-reviewed) · Plan approved by: · Rounds: 1
+Plan review: changes requested, round 2 (cap; round 3 not re-reviewed) · Plan approved by: lead (session reply "approve"; decisions 1–3 as proposed), 2026-11-02 · Rounds: 1
