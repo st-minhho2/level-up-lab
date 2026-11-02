@@ -323,7 +323,7 @@ throughput.sh`, `wait-time.sh` and `plan-deviations.sh` do not exist, so no card
 ### B1.23 · Card sessions run their own PR steps: push, open, label, mark ready
 
 _tooling · no §_
-**Status: Partial** — merged 97fb986 (#99); pending the live check: batch 4's card sessions (from a checkout at or after 97fb986) run `scripts/pr-step.sh push`, `draft` and `ready` with no refusal. pr-step-smoke 10 of 10 and hook-smoke 309 on bash 3.2 and 5.2 (red 2167759: 0 ok, 10 FAIL); no src/ change, mutation 92.95 on CI
+**Status: Done** — 97fb986 (#99); live check over batches 4–7 (12 card sessions): push and ready ran with no refusal, closing PRs open through `scripts/pr-step.sh open` (B1.26, #122); the auto-mode classifier refused `draft` before plan approval in B4.3, B1.24 and B1.29, each ran once after the lead's approve. The lead accepted Done with this note (2026-11-02): the refusal comes from the session classifier, outside the repo
 
 - **Spec:** none — tooling (`.claude/settings.json`, `.claude/docs/hooks.md`); no `src/` change, no section
 - **Test:** `scripts/pr-step-smoke.sh` (new) and guard and settings probes in `scripts/hook-smoke.sh` — red because: no
