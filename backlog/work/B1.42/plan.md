@@ -73,4 +73,4 @@ scripts/ci/check-backlog.sh | tail -1; git diff --stat origin/main...HEAD  # OK;
 No skeleton, test or map step (no §); no `config-change-approved` (no protected path). `spike.md` records that the
 runs were started from a desktop session (env unset as above). Findings that widen the card (D-25) → follow-ups.
 
-Plan review: round 2 changes requested (3), fixed in round 3, not re-reviewed (cap 2) · Plan approved by: · Rounds: 1
+Plan review: round 2 changes requested (3), fixed in round 3, not re-reviewed (cap 2) · Plan approved by: lead (session reply "approve", incl. the b1 deviation), 2026-11-02 · Rounds: 1
