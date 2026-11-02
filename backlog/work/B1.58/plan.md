@@ -34,6 +34,15 @@ removes the volumes (r2 #5). Host and container keep separate locks and stop mar
 `run.sh` only inside (the branch cap still counts open PRs on both). `--disallowedTools` under `bypassPermissions` is
 [unverified] in 2.1.303; hooks are proven by `--check-binary`. CDN IPs resolve at start; restart on a rotated IP.
 
+**Changed after approval** (needs the lead's `approve` again; Files unchanged):
+
+- S5 judges `CapEff` 0 and `NoNewPrivs` 1, not `CapBnd` 0: a `docker compose exec` process gets the container's
+  bounding set, not PID 1's (`0258b7f`, red first). The compose file adds `cap_drop: [ALL]`, `cap_add` NET_ADMIN,
+  NET_RAW, SETUID, SETGID, SETPCAP (setpriv needs the last three) and `no-new-privileges`. Every exec is `-u node`: a
+  root exec keeps NET_ADMIN (the lead's commands all say so).
+- New cost: an allowed CDN address (npm, claude.ai) also serves other sites behind the same edge; IPs stay pinned
+  until a restart.
+
 ## Files
 
 | File                                      | Change                                                                       |
@@ -77,4 +86,4 @@ Steps: 1 red `test(scripts): B1.58 sandbox probes` · 2 green `chore(scripts): B
 `docs(backlog): B1.58 review`; B1.62 filing PR. All dev-lead (no `src/`). Not in scope: B1.59, a GitHub secret guard.
 
 Plan review: changes requested, round 2 (6 reasons carried into round 3, not re-reviewed: 2-round cap) · Plan approved
-by: lead, 2026-11-02 (decisions 1–5 as proposed) · Rounds: 1
+by: lead, 2026-11-02 (decisions 1–5 as proposed) · Rounds: 2
