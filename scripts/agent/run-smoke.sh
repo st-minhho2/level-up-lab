@@ -14,6 +14,10 @@ ROOT="$(cd "$HERE/../.." && pwd -P)"
 TMP="$(cd "$(mktemp -d)" && pwd -P)"; trap 'rm -rf -- "$TMP"' EXIT
 FIX="$TMP/fix"; LOG="$TMP/calls.log"; RUNS="$TMP/runs"; WT="$TMP/wt"
 mkdir -p "$TMP/bin" "$FIX" "$WT"
+# run.sh's own git calls (local agent branches, worktree list, --check-binary's worktree) go to a scratch repository, so
+# the probes never depend on the host's branches and never touch the real repository
+REPO="$TMP/repo"; git init -q "$REPO"
+git -C "$REPO" -c user.name=s -c user.email=s@x commit -q --allow-empty -m s
 oks=0; fails=0
 ok() { echo "ok   $1"; oks=$((oks + 1)); }
 fail() { echo "FAIL $1"; fails=$((fails + 1)); }
@@ -97,7 +101,7 @@ reset() {
 }
 run() { # run <args…>: run.sh with the shims; stdout+stderr in $TMP/out, exit code in $RC
   (cd "${DIR:-$ROOT}" && CLAUDECODE=1 CLAUDE_CODE_ENTRYPOINT=desktop CLAUDE_CODE_SESSION_ID=parent GH_REPO=evil/x \
-    SMOKE_LOG="$LOG" SMOKE_FIX="$FIX" SMOKE_WT="$WT" SMOKE_ROOT="$ROOT" PATH="$TMP/bin:$PATH" \
+    SMOKE_LOG="$LOG" SMOKE_FIX="$FIX" SMOKE_WT="$WT" SMOKE_ROOT="$ROOT" PATH="$TMP/bin:$PATH" GIT_DIR="$REPO/.git" \
     RUNNER_CLAUDE="$TMP/bin/claude" RUNNER_RUNS="$RUNS" RUNNER_ELIGIBLE="$TMP/bin/fake-eligible" \
     RUNNER_CLAIM="$TMP/bin/fake-claim" RUNNER_WORKTREE="$TMP/bin/fake-worktree" "$SRC" "$@") > "$TMP/out" 2>&1
   RC=$?
@@ -129,6 +133,9 @@ reset; prs feat/B9.1-agent chore/B9.2-agent feat/B9.3-agent feat/B9.4-other; run
   || { say "3 in flight: rc=$RC $(head -2 "$TMP/out")"; r=1; }
 reset; prs feat/B9.1-agent chore/B9.2-agent chore/B1.44-agent; run 7
 [[ $RC -eq 0 && $(calls) -eq 1 ]] || { say "own branch counted: rc=$RC calls=$(calls)"; r=1; }
+reset; git -C "$REPO" branch feat/B9.5-agent; prs feat/B9.1-agent chore/B9.2-agent; run 7
+[[ $RC -eq 0 && $(calls) -eq 0 ]] && has 'agent branches in flight' "$TMP/out" || { say "local branch not counted: calls=$(calls)"; r=1; }
+git -C "$REPO" branch -q -D feat/B9.5-agent
 [[ $r -eq 0 ]] && ok R4 || fail R4
 # R5
 r=0
@@ -140,7 +147,7 @@ sh -c 'exit 0' & dead=$!; wait "$dead"
 reset; mkdir -p "$RUNS/7/lock"; echo "$dead" > "$RUNS/7/lock/pid"; run 7
 [[ $RC -eq 0 && $(calls) -eq 1 && ! -e "$RUNS/7/lock" ]] || { say "stale lock: rc=$RC calls=$(calls)"; r=1; }
 reset; { start; echo SLEEP; } > "$FIX/stream.jsonl"
-(cd "$ROOT" && SMOKE_LOG="$LOG" SMOKE_FIX="$FIX" SMOKE_WT="$WT" SMOKE_ROOT="$ROOT" PATH="$TMP/bin:$PATH" \
+(cd "$ROOT" && SMOKE_LOG="$LOG" SMOKE_FIX="$FIX" SMOKE_WT="$WT" SMOKE_ROOT="$ROOT" PATH="$TMP/bin:$PATH" GIT_DIR="$REPO/.git" \
   RUNNER_CLAUDE="$TMP/bin/claude" RUNNER_RUNS="$RUNS" RUNNER_ELIGIBLE="$TMP/bin/fake-eligible" \
   RUNNER_CLAIM="$TMP/bin/fake-claim" RUNNER_WORKTREE="$TMP/bin/fake-worktree" exec "$SRC" 7) > "$TMP/out" 2>&1 &
 bg=$!; i=0; while [[ ! -d "$RUNS/7/lock" || $(calls) -eq 0 ]] && [[ $i -lt 20 ]]; do sleep 1; i=$((i + 1)); done
