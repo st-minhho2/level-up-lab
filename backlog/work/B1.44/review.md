@@ -344,3 +344,135 @@ is probed offline; the first evidence is the single live run.
 
 Verdict: changes requested (round 2 of 2: the next step is "Waiting on human". The lead can settle reasons 1–4 at the
 gate, because each has a one-line fix named above.)
+
+## Diff review (pass 1)
+
+SCOPE: tooling (no §; `scripts/agent/`, `scripts/ci/`). Diff `origin/main...HEAD` at `88d8552`: 10 files, +1254 −9.
+Contract: B1.44's Acceptance (as amended by B1.47) minus the devcontainer and launchd clauses (decision 1). The
+`backlog/plan/E1-todos.md` edit (step 3) is not in this diff yet. Nothing was run against the real `claude` binary or
+the real `gh`. Live evidence was read only from `~/.level-up-lab/runs/check-binary/`. There are three logs:
+
+- run 1: exit 143, killed at init by 4 `cc-plugin-*@builtin`.
+- run 2: 1 turn, no tool call.
+- run 3 (`20261102T092255Z-42033`): 2 turns, USD 0.080. One PreToolUse `hook_response` has exit 2 and stderr
+  `BLOCKED by .claude/hooks/path-guard.sh: 'spec/agent-probe.md' is outside this role's paths`.
+  `verified-versions` now holds `2.1.309 (Claude Code)`.
+
+So the `--check-binary` live step is done. The `run.sh <n>` live step is not.
+
+### Commands (last line each)
+
+| Command                                            | Result                                                                                                          |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                        | `All matched files use Prettier code style!`                                                                    |
+| `pnpm typecheck`                                   | `tsc --noEmit` exit 0                                                                                           |
+| `pnpm test`                                        | `Tests  202 passed (202)`                                                                                       |
+| `pnpm test:e2e`                                    | `43 passed (1.1m)`                                                                                              |
+| `pnpm test:mutation`                               | `Final mutation score of 93.40 is greater than or equal to break threshold 70` (unchanged, no `src/`)           |
+| `scripts/agent/tier-smoke.sh` (`/bin/bash` 3.2)    | `9 probes OK` (no bash 5 on this host: `which -a bash` → `/bin/bash` only)                                      |
+| `scripts/agent/run-smoke.sh` (`/bin/bash` 3.2)     | `14 probes OK`                                                                                                  |
+| `scripts/ci/check-suppressions.sh`                 | `OK: no new suppressions`                                                                                       |
+| `scripts/ci/check-config-change.sh`                | exit 1 without the label (lists `scripts/agent/run-smoke.sh` …), exit 0 with `CONFIG_CHANGE_APPROVED=true`      |
+| `scripts/ci/check-feat-commits.sh`                 | `OK: no feat commit touches tests`                                                                              |
+| `scripts/ci/check-ac-coverage.sh`                  | `OK: every criterion of a shipped section has a test`                                                           |
+| `scripts/ci/check-spec-sections.sh`                | `OK: sections cited: 1 … 22`                                                                                    |
+| `scripts/ci/check-features-map.sh`                 | `OK`                                                                                                            |
+| `scripts/ci/check-backlog.sh`                      | `OK: README matches the cards`                                                                                  |
+| `scripts/ci/check-plan-scope.sh`                   | `OK: chore/B1.44-runner stays inside the approved plan of B1.44`                                                |
+| `scripts/verify-red.sh B1.44`                      | `no 'test(<pkg>): B1.44 … (red)' commit` (expected: the plan has no `(red)` marker, as B1.43; red proven below) |
+| `scripts/next-task.sh --check B1.44`               | `no overlap with any Doing or Review card`                                                                      |
+| `scripts/agent/tier.sh backlog/work/B1.44/plan.md` | `high`                                                                                                          |
+| `git diff --stat main...HEAD`                      | `10 files changed, 1254 insertions(+), 9 deletions(-)`                                                          |
+
+Red, proven by hand on `git archive` copies of each test commit:
+
+- `b1b20db`: `9 of 9 probes FAILED`, `14 of 14 probes FAILED`. `run.sh` and `tier.sh` are missing, which is the card's
+  "red because".
+- `bf8e612`: `FAIL R9`, `FAIL R14` (2 of 14).
+- `b25c8ac`: `FAIL R14` (1 of 14).
+- HEAD: 9 and 14 OK.
+
+### Checklist
+
+| Check                                               | Result                                                                                                                                                                                                                                             |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every Acceptance clause has a probe                 | pass. auth R1, verified version R2/R14, eligibility R3, cap R4, lock R5, argv/env/stdin/no bypass R6, logs R7, init kill R8/R9, retry R10, limits R11, comment and tier R12, poll R13, tier T1–T9                                                  |
+| no test weakened after red                          | pass. `git log --first-parent --no-merges b1b20db..HEAD` on the smokes: `9b7cda1` (only the TMP path), `bf8e612` (R9 fixture gains `path`; a plugin with no `path` still fails), `b25c8ac` (adds a check). No merge after red (remerge-diff empty) |
+| every changed file is in `plan.md`                  | pass. All 10 are in Files. `E1-todos.md` is pending (step 3)                                                                                                                                                                                       |
+| interfaces match the plan                           | fail (minor): `--check-binary` checks init tools against the main set, not `Write ∪ {Grep, Glob}` (finding 3)                                                                                                                                      |
+| costs stated to the lead hold in the code           | fail: "may not start `run.sh` itself … or add packages" does not hold (finding 1)                                                                                                                                                                  |
+| Zod / Prisma / raw SQL / migration                  | n/a (no `src/`, no `prisma/`)                                                                                                                                                                                                                      |
+| no secret, no suppression                           | pass. `check-suppressions` OK. The comment carries fixed fields only (R12 asserts no agent text)                                                                                                                                                   |
+| features map row                                    | n/a (tooling)                                                                                                                                                                                                                                      |
+| would a test fail if one changed line were reverted | fail for 4 lines (finding 2). On copies, I removed each of: `and .exit_code == 2`; the `startswith("BLOCKED by .claude/hooks/path-guard.sh")` condition; the card-id regex guard; the `trap … EXIT`. Each time, 9 + 14 probes OK                   |
+
+### Findings
+
+```
+[1] KIND: security
+    WHERE: scripts/agent/run.sh:28-32 (ALLOW, DENY); plan.md:20-21 and pr-body.md:33-35 ("Costs")
+    DEFECT: the allow list composes into arbitrary command execution, so the two limits the lead approved
+            ("the run may not start run.sh itself (--disallowedTools) or add packages (only named pnpm scripts are
+            allowed)") do not hold.
+    TRIGGER: a headless run issues `cp /bin/sh scripts/sh` (matches `Bash(cp *)`), then
+             `scripts/sh -c 'pnpm add left-pad'` or `scripts/sh -c 'scripts/agent/run.sh 8'` (matches
+             `Bash(scripts/*)`, not the `Bash(scripts/agent/run.sh*)` deny). Other single-call routes:
+             `git -c alias.r='!pnpm add left-pad' r` (matches `Bash(git *)`), and `scripts/../scripts/agent/run.sh 8`.
+             I fed each of these commands to `.claude/hooks/guard-bash.sh` on a copy, and each returned exit 0.
+    WRONG BEHAVIOUR: a hand-started run on the host (no sandbox until B1.58) can install packages, whose install
+             scripts run with the lead's gh token and keychain. It can also start nested runs that the per-issue lock
+             and the branch cap do not account for. The lead approved the plan on the stated limit. Either narrow
+             the list, or restate the cost and get it re-approved before the live `run.sh <n>`. To narrow it:
+             drop `Bash(cp *)` or confine it to the reviewer's copy form; name scripts instead of `scripts/*`; name
+             git subcommands instead of `git *`, and deny `git -c`/`--config-env`.
+    CONFIDENCE: plausible. guard-bash passing them is confirmed. Claude Code's prefix matcher accepting them under
+             dontAsk is traced from the rules, not run: running the real binary is out of bounds for this review.
+```
+
+```
+[2] KIND: coverage
+    WHERE: scripts/agent/run.sh:211-212 (check_binary's hook test); also :169 (card-id guard), :173 (lock trap)
+    DEFECT: no probe pins what makes a version "verified". R14 has no fixture in which a PreToolUse hook other
+            than path-guard answers, so dropping `.exit_code == 2` or the path-guard stderr test leaves 14/14
+            green.
+    TRIGGER: on a copy, remove the stderr condition; then a stream whose only PreToolUse hook_response is
+             `exit_code 2, stderr "BLOCKED by .claude/hooks/plan-scope.sh: x"` and that writes no file is
+             verified. With HEAD's code the same stream is refused (my extra probe X2: rc=1, nothing recorded),
+             so the code is right today and only the test is missing. This is the case B1.42 finding 8 is about:
+             a project-level hook fires, dev-lead's frontmatter hook does not.
+    WRONG BEHAVIOUR: a later edit can weaken the version gate with every probe green. Live run 3 already shows a
+             second PreToolUse hook_response (exit 0) in the same stream, so "any PreToolUse response" is a real
+             false pass. Add to R14: another hook's exit-2 response → refused; path-guard's response with exit 0 →
+             refused. Smaller gaps: an issue whose Card id is `_No response_` (the guard is correct, X3: skipped,
+             no claim), and an interrupted run removing its lock.
+    CONFIDENCE: confirmed (4 mutants survive on copies; X2/X3 run on a copy)
+```
+
+```
+[3] KIND: plan-mismatch
+    WHERE: scripts/agent/run.sh:74-76 (init_problem uses $TOOLS) as called from check_binary :206-210
+    DEFECT: the plan's kill rule is "init tools ⊄ --tools ∪ {Grep, Glob}". In --check-binary, --tools is Write,
+            but the check compares against the main run's eight tools.
+    TRIGGER: a --check-binary stream whose init lists ["Write","Grep","Glob","Bash"] and that contains path-guard's
+             exit-2 response (my extra probe X1 on a copy): rc=0, `2.1.309 (Claude Code)` is appended to
+             verified-versions.
+    WRONG BEHAVIOUR: a claude version that no longer honours --tools is verified. The main run's own init check
+             still catches tools outside its eight, so the exposure is small. Pass the run's tool set to
+             init_problem.
+    CONFIDENCE: confirmed (ran X1 on a copy)
+```
+
+Not blocking, for the lead:
+
+- plan.md:24 and pr-body.md:37 still say "the live run shows plugins `[]`". Run 3 shows 4 `cc-plugin-*@builtin`.
+- The PR body's `Plan approved by:` is empty while plan.md has the approval.
+- A lock directory whose `pid` is not yet written reads as stale, so two starts within microseconds can both run.
+- If `run.sh` is killed, its EXIT trap frees the lock while the backgrounded `claude` keeps running.
+- If init arrives after `RUNNER_INIT_WAIT` (120 s), the init check is skipped, not failed.
+
+Verdict: back to code-writer. Finding 1 needs the allow list narrowed, or the lead re-approving the restated cost.
+Finding 3 is one argument. Finding 2's probes go to the test-writer first, red before the change.
+
+Riskiest unfalsified: whether Claude Code 2.1.309 under `--permission-mode dontAsk` accepts
+`scripts/sh -c '…'` and `git -c alias.r='!…' r` through the prefix rules. I traced it and did not run it. The first
+live `run.sh <n>` (or a sandboxed probe) settles finding 1's confidence.
