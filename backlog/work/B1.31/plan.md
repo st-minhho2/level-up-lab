@@ -47,6 +47,7 @@ scripts/ci/check-plan-scope.sh | tail -1; scripts/ci/check-backlog.sh | tail -1;
 
 Red/green: Test command "before" is the red; no `test(...)` commit. No protected path → no label. Out of scope (D-25
 follow-up): `src/lib/CLAUDE.md` heading `§3–§22` → `§3–§7, §9–§22`; `src/components/CLAUDE.md` heading omits §6,
-§9; `src/app/CLAUDE.md` heading cites §7 only; root Map `src/components/` says "client components" though `remaining-count.tsx`, `todo-search-form.tsx` are Server Components.
+§9; `src/app/CLAUDE.md` heading cites §7 only; `src/app/page.tsx` header omits §9 (cited at line 36 only); root Map
+`src/components/` says "client components" though `remaining-count.tsx`, `todo-search-form.tsx` are Server Components.
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: · Rounds: 1
