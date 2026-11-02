@@ -66,4 +66,4 @@ label `config-change-approved` (D-19: `.claude/`, `scripts/ci/`). PR (squash) ti
 (merged 2026-10-30); `change-failure-rate.sh` counts only `fix(`/revert titles, so this repair stays out of the CFR,
 as B1.20 (#132) did; a `fix(hooks): …` title would count it until 2026-11-15 (#99, #124, #132 share these files, merged 2026-11-01).
 
-Plan review: approved, round 2 (r1: approved, 0 findings, 2 notes taken into r2; r2: 0 findings, 4 out of scope → follow-up) · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 (r1: approved, 0 findings, 2 notes taken into r2; r2: 0 findings, 4 out of scope → follow-up) · Plan approved by: lead (session reply "approve"), 2026-11-02 · Rounds: 1
