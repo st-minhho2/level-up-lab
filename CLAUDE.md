@@ -58,18 +58,18 @@ scripts/card-status.sh B1.2 Done "<evidence>"
 
 ## Map
 
-| Path              | Contents                                                   | Spec §     |
-| ----------------- | ---------------------------------------------------------- | ---------- |
-| `src/app/`        | Server Components, `api/health` Route Handler              | §7         |
-| `src/actions/`    | Server Actions (`'use server'`): the only mutations        | §5, §6, §7 |
-| `src/lib/`        | domain logic, Zod schemas, the Prisma client, env          | §3–§6      |
-| `src/components/` | client components (`'use client'`)                         | §7         |
-| `prisma/`         | schema, migrations, seed                                   | §3         |
-| `e2e/`            | Playwright, one file per section (`05-todos.spec.ts`)      | §2         |
-| `spec/`           | the contract (`contracts/`, `features-map.md`)             | —          |
-| `backlog/`        | cards, board, decisions, `work/<card>/` artifacts          | —          |
-| `docs/`           | design, ADRs, metrics, mistake log                         | —          |
-| `scripts/`        | worktree, verify-red, next-task, card-status, `ci/` guards | —          |
+| Path              | Contents                                                   | Spec §                       |
+| ----------------- | ---------------------------------------------------------- | ---------------------------- |
+| `src/app/`        | Server Components, `api/health` Route Handler              | §7, §12–§14, §16             |
+| `src/actions/`    | Server Actions (`'use server'`): the only mutations        | §5–§7, §9–§11, §14, §15, §19 |
+| `src/lib/`        | domain logic, Zod schemas, the Prisma client, env          | §3–§7, §9–§22                |
+| `src/components/` | client components (`'use client'`)                         | §6, §7, §9, §10, §12–§22     |
+| `prisma/`         | schema, migrations, seed                                   | §3                           |
+| `e2e/`            | Playwright, one file per section (`05-todos.spec.ts`)      | §2                           |
+| `spec/`           | the contract (`contracts/`, `features-map.md`)             | —                            |
+| `backlog/`        | cards, board, decisions, `work/<card>/` artifacts          | —                            |
+| `docs/`           | design, ADRs, metrics, mistake log                         | —                            |
+| `scripts/`        | worktree, verify-red, next-task, card-status, `ci/` guards | —                            |
 
 ## Architecture in one pass
 
