@@ -863,3 +863,14 @@ _tooling · no §_
 - **Acceptance:** the run's prompt tells dev-lead to follow Loop 5's D-27 path (a reviewed low or medium plan of the issue it names proceeds; a high-tier plan or a refusal prints the gate line and stops) and the header says the same; run-smoke asserts the exact prompt; one live run on a low-tier test card passes the gate with the D-27 field (`docs(backlog): <card> plan approved`) and reaches a draft PR; B1.55's card moves from Partial to Done; the PR carries `config-change-approved` (D-19, `scripts/agent/` is protected)
 - **Tier:** quick · **Depends on:** B1.55, ~~B1.58~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.65/`
+
+### B1.62 · The runner's image carries the Prisma engines and Playwright's browser for a full run inside
+
+_tooling · no §_
+**Status: Open** — B1.58's plan (`work/B1.58/plan.md`, decision 5) keeps the runner container's allow list to GitHub, the npm registry and Anthropic; `scripts/worktree.sh:101` runs `pnpm install`, whose Prisma postinstall fetches engines from `binaries.prisma.sh`, and `pnpm test:e2e` needs the Playwright browser from its CDN, neither of which the firewall allows, so a full `run.sh <issue>` inside the container stops at worktree setup (B1.58 proves only `run.sh --check-binary` inside)
+
+- **Spec:** none — tooling (D-26, D-27); no `src/` change, no section
+- **Test:** new probes in `scripts/agent/sandbox-probe.sh` — red because: inside the container `pnpm install --frozen-lockfile` in a fresh worktree fails on the engine download and `pnpm exec playwright --version` finds no browser
+- **Acceptance:** the runner image (`.devcontainer/runner/Dockerfile`) holds the Prisma engines for the lockfile's Prisma version and Playwright's chromium with its system libraries, wired through the engine and browser path variables, so `scripts/worktree.sh <branch>` and `pnpm test:e2e` succeed inside with the allow list unchanged; a Prisma or Playwright bump that the image does not match fails a probe instead of reaching the network; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** ~~B1.58~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.62/`

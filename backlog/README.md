@@ -7,11 +7,11 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open   | Total  |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ------ | ------ |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 40     | 1       | 23     | 64     |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 40     | 1       | 24     | 65     |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0      | 5      |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3      |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4      |
-| **Total**        |                                                      | **51** | **1**   | **24** | **76** |
+| **Total**        |                                                      | **51** | **1**   | **25** | **77** |
 
 ## Execution order
 
@@ -107,6 +107,7 @@ flowchart TD
   S74["74 · eligibility by label node id<br/>B1.63"]
   S75["75 · eligibility refuses a closed issue<br/>B1.64"]
   S76["76 · runner prompt follows D-27<br/>B1.65"]
+  S77["77 · runner image engines and browser<br/>B1.62"]
 ```
 
 ## Remaining
@@ -141,6 +142,7 @@ at most 3 cards Doing (B1.18).
 | 74   | B1.63 | The eligibility check matches the agent-ready label by its node id, not its name                      | —      | Open    | ~~B1.43~~, B1.55     | Lead  | S [estimate] |
 | 75   | B1.64 | The eligibility check refuses a closed issue, with or without a card id                               | —      | Open    | ~~B1.43~~, B1.55     | Lead  | S [estimate] |
 | 76   | B1.65 | The runner's prompt lets a run pass a reviewed low or medium plan (D-27)                              | —      | Open    | B1.55, ~~B1.58~~     | Lead  | S [estimate] |
+| 77   | B1.62 | The runner's image carries the Prisma engines and Playwright's browser for a full run inside          | —      | Open    | ~~B1.58~~            | Lead  | S [estimate] |
 
 ## Waiting on human
 
