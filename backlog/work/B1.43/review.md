@@ -161,3 +161,98 @@ Verdict: approved (ready for the lead's `approve` gate. Tier high, so this is no
 Riskiest unfalsified: the claim that only the author and write-or-higher collaborators can edit an issue's body or
 title (that triage cannot) was not run. Whether the issue form renders in the template chooser is visible only on the
 default branch after the merge.
+
+## Diff review (pass 1)
+
+Diff `origin/main...HEAD` (7 commits, 6 files, +564). Red is `ba64613 test(scripts): B1.43 eligibility probes` and
+green is `804ce7d chore(scripts): B1.43 agent-ready eligibility check`. PR #155's remote head is still `533591b`, so the
+red and green commits are not pushed yet.
+
+### Command results (run by the reviewer at 804ce7d)
+
+| Command                                                          | Last line                                                                                                                                 |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                                      | `All matched files use Prettier code style!` (0 errors)                                                                                   |
+| `pnpm typecheck`                                                 | `tsc --noEmit` clean                                                                                                                      |
+| `pnpm test`                                                      | `Tests  202 passed (202)`                                                                                                                 |
+| `pnpm test:e2e`, `pnpm test:mutation`                            | not run: no change under `src/`, `prisma/` or `e2e/`, so there is nothing new for either to measure                                       |
+| `scripts/agent/eligible-smoke.sh`                                | `9 probes OK`                                                                                                                             |
+| `/bin/bash …/eligible-smoke.sh` (GNU bash 3.2.57, the only bash) | `9 probes OK`                                                                                                                             |
+| smoke at `ba64613` (no `eligible.sh`)                            | `9 of 9 probes FAILED` (red)                                                                                                              |
+| `scripts/verify-red.sh B1.43`                                    | `no 'test(<pkg>): B1.43 … (red)' commit`: expected. The plan drops `(red)` because the probe is a shell smoke (B1.29 and B1.32 precedent) |
+| `check-suppressions.sh`                                          | `OK: no new suppressions`                                                                                                                 |
+| `check-config-change.sh`                                         | without the label: error on `.github/ISSUE_TEMPLATE/agent-task.yml`. With `CONFIG_CHANGE_APPROVED=true`: allowed. PR #155 has the label   |
+| `check-feat-commits.sh`                                          | `OK: no feat commit touches tests`                                                                                                        |
+| `check-ac-coverage.sh`                                           | `OK: every criterion of a shipped section has a test`                                                                                     |
+| `check-spec-sections.sh`                                         | `OK: sections cited: 1 … 22`                                                                                                              |
+| `check-features-map.sh`                                          | `OK`                                                                                                                                      |
+| `check-backlog.sh`                                               | `OK: README matches the cards`                                                                                                            |
+| `check-plan-scope.sh`                                            | `OK: chore/B1.43-eligible stays inside the approved plan of B1.43`                                                                        |
+| `next-task.sh --check B1.43`                                     | `B1.43: no overlap with any Doing or Review card`                                                                                         |
+| `ruby -ryaml` form check (reviewer's own)                        | `form OK 4 fields, title="B<e>.<n> "`, exit 0                                                                                             |
+| live `scripts/agent/eligible.sh 1`                               | `eligible: #1 not labeled agent-ready`, exit 1                                                                                            |
+| live `gh api --paginate …/issues/150/events`                     | ascending `created_at` (labeled 04:46:01, merged 04:51:15, closed 04:51:15), so the script's "last line decides" holds on this sample     |
+
+### Revert probes (copies in the scratchpad, smoke unchanged)
+
+| Mutant of `eligible.sh`                              | Smoke result               |
+| ---------------------------------------------------- | -------------------------- |
+| author check removed (`author_role=admin`)           | 4 of 9 FAILED              |
+| labeler check removed                                | 6 of 9 FAILED              |
+| `read` accepted                                      | 3 of 9 FAILED              |
+| first event decides (`head -1`)                      | 2 of 9 FAILED              |
+| `GH_REPO` kept                                       | 1 of 9 FAILED              |
+| `--paginate` dropped                                 | 1 of 9 FAILED              |
+| `cd` to the repo root dropped                        | 1 of 9 FAILED              |
+| label-present check (l.27) deleted                   | 1 of 9 FAILED              |
+| last-event-is-labeled check (l.33) deleted           | 1 of 9 FAILED              |
+| `grep -qxF` → `grep -qF` (l.27, exact match dropped) | **9 probes OK** (survives) |
+| empty-actor check (l.35) deleted                     | **9 probes OK** (survives) |
+
+### Checklist
+
+| Check                                                       | Result                                                                                                                                                                                                                                                            |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every Acceptance clause has a probe whose assertion matches | pass. Form fields: the reviewer's ruby check. Write, maintain or admin → 0: E1 and E5. Read-only actor: E2. Removed and re-added: E3. Missing: E4. Reason on stderr: exact substrings. `config-change-approved`: on #155                                          |
+| no test weakened after red                                  | pass. `git log --first-parent --no-merges ba64613..HEAD -- scripts/agent/eligible-smoke.sh '*.test.*' e2e/` is empty, and the range has no merges                                                                                                                 |
+| every changed file is in `plan.md`                          | pass. All 6 files are in the Files table, and `check-plan-scope.sh` says OK                                                                                                                                                                                       |
+| interfaces match the plan                                   | pass, with one nit: the three `gh api` calls and `--jq` filters match byte for byte (E1 asserts the log). The stdout line matches. The stderr reasons match, plus one extra reason the plan does not list, "label's last event has no actor" (l.35, fails closed) |
+| Zod at actions, Prisma only in lib, no raw SQL, migration   | n/a: no TypeScript, no `prisma/`                                                                                                                                                                                                                                  |
+| no secret, no suppression                                   | pass. The smoke's single `# shellcheck disable=SC2086` is a shell comment, deliberately word-splitting `$args`, and `check-suppressions.sh` passes                                                                                                                |
+| features map row moved                                      | n/a: tooling with no feature row. The PR body says "Map delta: None"                                                                                                                                                                                              |
+| D-27, D-28, D-19                                            | pass. The form has no `labels:` (D-27). The tier is high from `.github/` and the lead's approve is recorded (D-28). The label is on #155 (D-19)                                                                                                                   |
+
+### Findings
+
+```
+[1] KIND: plan-mismatch
+    WHERE: backlog/work/B1.43/pr-body.md:65
+    DEFECT: the `ruby -ryaml` form check still states only its assertions, without the command line or its expected
+            exit. Plan review round 2 made adding both a condition of this diff review.
+    TRIGGER: the lead, or B1.46's CI wiring, tries to re-run the form check from the PR body.
+    WRONG BEHAVIOUR: the verification is not reproducible as written, though `planning.md` requires "the exact
+            commands and the expected result".
+    CONFIDENCE: confirmed (read pr-body.md at 804ce7d)
+
+[2] KIND: coverage
+    WHERE: scripts/agent/eligible.sh:27
+    DEFECT: no probe pins the exact-match `-x` on the label-present check. Reverting it to a substring match leaves
+            9 of 9 probes OK.
+    TRIGGER: the issue carries a label such as `agent-ready-old` but not `agent-ready`, while its last `agent-ready`
+            event is still `labeled`. That happens if the lead deletes the `agent-ready` label from the repository,
+            assuming GitHub records no `unlabeled` event when it strips a deleted label (not run).
+    WRONG BEHAVIOUR: none today, because the code uses `-x`. A future edit could drop it and nothing would catch it,
+            so the issue would be accepted without the label.
+    CONFIDENCE: confirmed that the mutant survives (ran it). Plausible that the triggering state occurs.
+```
+
+Not blocking: l.35 (the empty-actor check) also survives a revert. Without it, an empty login reaches
+`collaborators//permission`, which fails closed as "gh failed", so it only guards the reason text. The bot-login 404
+note from plan review round 2 still applies.
+
+Verdict: back to code-writer (only [1]: put the command and exit 0 in `pr-body.md`). [2] is a suggested hardening
+probe for the test-writer as `test(scripts): B1.43 review pass 1 -- …`. It does not block on its own.
+
+Riskiest unfalsified: GitHub's label event semantics behind the two state checks. Not run: whether deleting or renaming
+a label emits `unlabeled` events, whether events stay in ascending order across `--paginate` pages (only a 3-event
+issue was checked), and whether triage can edit an issue body.

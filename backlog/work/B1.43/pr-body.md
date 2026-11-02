@@ -82,6 +82,29 @@ pull requests and closed issues (the runner's poll, B1.44), creating the `agent-
 
 Plan review: approved, round 2 · Plan approved by: lead, 2026-11-02 · Rounds: 1
 
+## Verification run
+
+- Red `ba64613`: `scripts/agent/eligible-smoke.sh` → "9 of 9 probes FAILED", exit 1.
+- Green `804ce7d` + review pass 1 `6394630`: `scripts/agent/eligible-smoke.sh` → "9 probes OK", exit 0; same with
+  `/bin/bash` 3.2.57 first on `PATH`. Pass 1's two surviving mutants (`grep -qF`, the no-actor line removed) now fail E4.
+- Issue form, from the worktree root → prints `form OK: 4 required fields, no labels`, exit 0:
+
+```bash
+ruby -ryaml -e '
+f = YAML.load_file(".github/ISSUE_TEMPLATE/agent-task.yml")
+abort "top" unless f["name"] && f["description"] && f["title"] && !f.key?("labels")
+fields = f["body"].reject { |b| b["type"] == "markdown" }
+abort "ids #{fields.map { |b| b["id"] }}" unless fields.map { |b| b["id"] } == %w[card spec acceptance out_of_scope]
+fields.each { |b| abort "field #{b["id"]}" unless %w[input textarea].include?(b["type"]) && b.dig("attributes", "label") && b.dig("validations", "required") == true }
+puts "form OK: #{fields.size} required fields, no labels"'
+```
+
+- Live, read-only: `scripts/agent/eligible.sh 1` → "eligible: #1 not labeled agent-ready", exit 1. The permission
+  filter on the owner → `admin	admin`; the events filter on #155 (label `config-change-approved`) → `labeled	<owner>`.
+- `pnpm lint` 0 errors (1 pre-existing warning, `src/components/todo-form.tsx`), `pnpm typecheck` OK, `pnpm test` 202
+  passed; `scripts/ci/check-plan-scope.sh`, `scripts/ci/check-backlog.sh` OK.
+- Beyond the plan's interface list: one more stderr reason, "label's last event has no actor" (a deleted account), probed in E4.
+
 ## Map delta
 
 None: tooling, no feature row.
