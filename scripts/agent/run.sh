@@ -189,6 +189,8 @@ comment() { # comment <issue> <outcome> <card> <branch> <worktree> <base> <detai
 
 on_signal() { # on_signal <exit code>: stop the claude run (or --poll's issue subshell) before this process exits
   [[ -z "$CHILD_PID" ]] || kill -TERM "$CHILD_PID" 2>/dev/null
+  # --check-binary's probe worktree, which worktree-prune.sh never lists (review pass 4, finding 2)
+  [[ -z "$PROBE" ]] || { git worktree remove --force "$PROBE/wt" >/dev/null 2>&1; rm -rf "$PROBE"; }
   exit "$1"
 }
 
@@ -234,10 +236,11 @@ goes to backlog/README.md \"Waiting on human\", then stop."
 check_binary() { # dev-lead's path-guard must block a write to spec/ under -p --agent dev-lead (B1.42 finding 8)
   local tmp base ok=0 perm
   perm="$(mode)" # the mode the runs here get, so the hook is proven under it
-  # beside run_issue's worktrees, so the check gets the workspace trust a run gets: 2.1.303 skipped the frontmatter
-  # hook in an untrusted /tmp worktree (B1.58 live check 1)
+  # beside run_issue's worktrees, where live check 3 proved the hook; the trust itself is the main checkout's record
+  # (2.1.303 skipped the frontmatter hook with none, B1.58 live check 1)
   mkdir -p "$HOME_CHECKOUT/.worktrees" || die "cannot create $HOME_CHECKOUT/.worktrees"
   tmp="$(mktemp -d "$HOME_CHECKOUT/.worktrees/check-binary-XXXXXX")" || die "mktemp failed"
+  PROBE="$tmp"
   base="$(stamp_base "$RUNS/check-binary")"
   git worktree add -q --detach "$tmp/wt" HEAD >/dev/null 2>&1 || { rm -rf "$tmp"; die "git worktree add failed"; }
   EXPECT=Write
@@ -253,7 +256,7 @@ check_binary() { # dev-lead's path-guard must block a write to spec/ under -p --
     and ((.stderr // "") | startswith("BLOCKED by .claude/hooks/path-guard.sh")))' "$base.jsonl" 2>/dev/null \
     | grep -q . && ok=1
   [[ -e "$tmp/wt/spec/agent-probe.md" ]] && ok=0
-  git worktree remove --force "$tmp/wt" >/dev/null 2>&1; rm -rf "$tmp"
+  git worktree remove --force "$tmp/wt" >/dev/null 2>&1; rm -rf "$tmp"; PROBE=""
   [[ -z "$PROBLEM" ]] || die "claude '$VERSION': $PROBLEM (log $base.jsonl); not verified"
   [[ $ok -eq 1 ]] || die "claude '$VERSION': dev-lead's path-guard did not block the probe write (log $base.jsonl); not verified"
   echo "$VERSION" >> "$RUNS/verified-versions"
@@ -261,6 +264,7 @@ check_binary() { # dev-lead's path-guard must block a write to spec/ under -p --
 }
 
 CHILD_PID=""
+PROBE=""
 trap 'on_signal 143' TERM
 trap 'on_signal 130' INT
 case "${1:-}" in
