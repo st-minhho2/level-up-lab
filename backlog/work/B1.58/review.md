@@ -421,3 +421,97 @@ the block. Pass-1 findings 1–3 are closed.
 Riskiest unfalsified: whether init-firewall.sh completes at all on Docker Desktop with root and only NET_ADMIN/NET_RAW
 (ipset kernel module, iptables-nft, upstream DNS through 127.0.0.11 with OUTPUT open only on lo). Nobody has built the
 image, and every in-container probe depends on it.
+
+## Diff review (pass 3)
+
+SCOPE: all (tooling: `.devcontainer/runner/`, `scripts/agent/`, `scripts/ci/lib.sh`; no `src/`, `prisma/`, `e2e/`
+change). Range `origin/main...HEAD` (12 files); new since pass 2: `50bfcc7` (fix), `e7a669d`, `50c71c4` (plan, PR
+body). Judged against `plan.md` including its "Changed after approval" block. The runner image was still not built;
+the compose mechanics were checked on a throwaway stand-in (`bash:5.2`, project `b158-review-probe3`, removed with
+`down -v`) with the exact `firewall`/`runner` shape of `50bfcc7`: `tmpfs: [/run]`, the same healthcheck with
+`start_period: 60s`, `depends_on: service_healthy`, `network_mode: service:firewall`, and an entrypoint that removes
+the mark, sleeps 12 s (the resolve window), touches the mark and execs.
+
+### Commands (run by the reviewer, host macOS, engine 29.9.2, compose v5.6.1)
+
+| Command                                                               | Last line                                                                       |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `pnpm lint`                                                           | `All matched files use Prettier code style!`                                    |
+| `pnpm typecheck`                                                      | `> tsc --noEmit` (exit 0)                                                       |
+| `pnpm test`                                                           | `Tests  202 passed (202)`                                                       |
+| `pnpm test:e2e`                                                       | `43 passed (52.1s)`                                                             |
+| `pnpm test:mutation`                                                  | `Final mutation score of 93.40 is greater than or equal to break threshold 70`  |
+| `scripts/ci/check-suppressions.sh`                                    | `OK: no new suppressions`                                                       |
+| `scripts/ci/check-config-change.sh`                                   | lists the protected files, last `scripts/ci/lib.sh` (label at PR, D-19)         |
+| `scripts/ci/check-feat-commits.sh`                                    | `OK: no feat commit touches tests`                                              |
+| `scripts/ci/check-ac-coverage.sh`                                     | `OK: every criterion of a shipped section has a test`                           |
+| `scripts/ci/check-spec-sections.sh`                                   | `OK: sections cited: 1 … 22`                                                    |
+| `scripts/ci/check-features-map.sh`                                    | `OK`                                                                            |
+| `scripts/ci/check-plan-scope.sh` · `check-backlog.sh`                 | `OK: chore/B1.58-sandbox stays inside the approved plan of B1.58` · `OK`        |
+| `scripts/verify-red.sh B1.58`                                         | `no 'test(<pkg>): B1.58 … (red)' commit` (shell-only red, as in passes 1 and 2) |
+| `scripts/agent/run-smoke.sh` · `tier-smoke.sh`                        | `15 probes OK` · `9 probes OK`                                                  |
+| `scripts/agent/sandbox-probe.sh` (host)                               | `6 of 7 probes FAILED` (the host red still holds)                               |
+| `docker compose -f .devcontainer/runner/docker-compose.yml config -q` | exit 0; `bash -n init-firewall.sh` exit 0                                       |
+| `scripts/next-task.sh --check B1.58`                                  | `B1.58: no overlap with any Doing or Review card`                               |
+| `git diff --stat origin/main...HEAD`                                  | `12 files changed, 1014 insertions(+), 15 deletions(-)`                         |
+
+### Pass 2 finding
+
+| #   | Closed? | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| --- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | yes     | stand-in: first `up -d` 16.0 s, `stop`, second `up -d` 15.7 s (pass 2: 3 s); firewall log `init start … marker=absent` on both starts, runner started 4 s after `ready` each time (pass 2: before it). `mount` in firewall: `tmpfs on /run type tmpfs (rw,nosuid,nodev,noexec,relatime,mode=755)`. Either half alone (tmpfs or the `rm -f`) closes it. Stale comment at init-firewall.sh:20 rewritten. Lead's commands end with stop, `up -d`, probe |
+
+### What the fix could have introduced (checked)
+
+- **Other restart paths.** `docker compose start` after `stop`: 15.7 s, runner started after `ready` (waits on
+  health). `docker compose restart` (no health wait in compose): runner's restart fails with
+  `cannot join network namespace of a non running container` / `namespace path: lstat /proc/<pid>/ns/net: no such file`,
+  runner stays `Exited`, three tries out of three: fails closed, not open. A later `up -d` waits for health again.
+- **Healthcheck timing.** During `start_period` a failing check does not count and a passing one marks healthy at
+  once, so the 60 s only extend the patience: 60 s + 30 × 2 s = 120 s against init's worst case (meta 20 s, five `dig`
+  at 3 × 5 s each, example.com 5 s, api.github.com 10 s ≈ 110 s). A dead init exits the container, so `up` fails at
+  `service_healthy` rather than waiting the 120 s out.
+- **tmpfs over /run.** Root-owned, mode 755, `noexec`: init-firewall.sh only creates a file there; nothing executes
+  from /run. iptables-legacy's `/run/xtables.lock` (iptables-nft, bookworm's default, takes none) is created by root
+  on the tmpfs. The image's own `/run` (bookworm: `/run/lock`) is hidden; no tool in the script uses it
+  [unverified on the real image].
+- **`rm -f` placement.** After the root check, so node's S5 call (`init-firewall.sh` refused) dies before it; a root
+  exec into `runner` reaches it but `runner` has its own mount namespace, so it can never remove firewall's mark.
+- **Plan and PR body.** The "Changed after approval" block names the fix and pass 2 note 2's cost; the PR body's
+  Plan copy equals `plan.md`; its commands equal the compose header's 11 lines; the review table records pass 2.
+
+### Checklist
+
+| Check                                                      | Result                                                                                                                                                                                                |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every acceptance clause has a probe                        | pass by text (S1–S7, R6, R15, `--check-binary`); in-container [unverified]                                                                                                                            |
+| no test changed after the red without a `test(...)` commit | pass: no probe file touched after `23e7f63`; no merge commits in `origin/main..HEAD`                                                                                                                  |
+| fix commit touches no probe file                           | pass: `50bfcc7` touches only `.devcontainer/runner/docker-compose.yml`, `init-firewall.sh`                                                                                                            |
+| every changed file in `plan.md` Files                      | pass (`check-plan-scope` OK; Files unchanged)                                                                                                                                                         |
+| interfaces match the plan                                  | pass: "firewall fails → runner never starts" and "starts only once firewall is healthy" now hold on `up`, `start` after `stop`; `restart` fails closed                                                |
+| "Changed after approval" states every change               | pass (tmpfs, `rm -f`, restart step, `runner-runs` cost)                                                                                                                                               |
+| Zod / Prisma / raw SQL / migration                         | n/a                                                                                                                                                                                                   |
+| no secret, no suppression                                  | pass                                                                                                                                                                                                  |
+| features map row                                           | n/a (tooling)                                                                                                                                                                                         |
+| would a test fail if one changed line were reverted        | tmpfs and `rm -f` are redundant halves: reverting one fails nothing, by design; reverting both is caught only by the lead's restart probe, and only if it runs within the resolve window (see note 1) |
+
+### Findings
+
+None blocking.
+
+### Not blocking, for the lead
+
+1. The lead's restart step proves the fix only by timing: `sandbox-probe.sh` after `up -d` catches a stale mark only
+   if it runs before init-firewall.sh finishes (S1 example.com reachable). `docker compose … logs firewall` showing a
+   second `allow list applied` line before runner's start is the steadier evidence; the stand-in above stands in for
+   it until then.
+2. The PR body's Evidence still says "plan deviations: none" while the "Changed after approval" block waits for the
+   lead's `approve`; the review table does not list pass 2 notes 2 and 4 (both acted on in `e7a669d`, `50bfcc7`).
+3. Pass 2 note 1 (two image tags from two `build: .`) stays as dispositioned.
+
+Verdict: ready for PR, on two conditions outside this review: the lead's `approve` of the "Changed after approval"
+block, and the lead's in-container steps (the only proof of S1–S7 and `--check-binary`).
+
+Riskiest unfalsified: whether init-firewall.sh completes on Docker Desktop in the real image (ipset `hash:net` and
+iptables-nft with only NET_ADMIN/NET_RAW, `dig` through 127.0.0.11 before the rules, then upstream DNS for a run once
+OUTPUT is open only on lo and the allow set); nobody has built the image.
