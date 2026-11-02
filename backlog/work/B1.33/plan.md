@@ -58,4 +58,4 @@ No skeleton (no § function), no map step (no `features-map.md` row), no test co
 the PR's own `test` run). Row vs B1.32: merged first → Loop 9's merge brings its ids and the row follows here; merged
 after → its new ids are a follow-up. PR: `scripts/pr-step.sh`, `config-change-approved` (D-19: `.github/`).
 
-Plan review: approved, round 2 · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: lead (session reply "approve"), 2026-11-02 · Rounds: 1
