@@ -641,7 +641,7 @@ _tooling · no §_
 - **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
 - **Test:** `scripts/agent/run-smoke.sh` and `scripts/agent/tier-smoke.sh` (new) — red because: `run.sh` and `tier.sh` do not exist
 - **Acceptance:** `scripts/agent/tier.sh <plan.md>` prints high, medium or low by D-28; `scripts/agent/run.sh` makes a worktree, runs `claude -p --agent dev-lead` with turn and budget limits and one retry, logs to `~/.level-up-lab/runs/`, comments on the issue when it stops at a gate; a devcontainer whose firewall allows only GitHub, the npm registry and Anthropic; a launchd job polls every 15 min; at most 3 open agent PRs; the PR carries `config-change-approved` (D-19)
-- **Tier:** quick · **Depends on:** ~~B1.43~~, B1.45, B1.46 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** quick · **Depends on:** ~~B1.43~~, B1.45, ~~B1.46~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.44/`
 
 ### B1.45 · Evidence section in the PR and a daily feature map
@@ -658,13 +658,13 @@ _tooling · no §_
 ### B1.46 · Layer rules checked in CI with dependency-cruiser
 
 _tooling · no §_
-**Status: Open** — the layering in `CLAUDE.md` (Prisma only in `src/lib`, mutations only in `src/actions`, client components never import `src/lib/prisma.ts`) is enforced by review and `next build`, not by a rule an unattended run cannot argue with
+**Status: Done** — 400f105 (#156), scripts/ci/check-layers.sh 0 violations on the merged tree (80 modules/191 deps, 75/139), CI step 2 s in the required lint job; backlog/work/B1.46/probe.sh 14/14 forbidden imports caught and the type-only control passes (1/14 at origin/main before); lockfile +178/-0; no src/ change (vitest 202, e2e 43, mutation 93.40 unchanged)
 
 - **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
 - **Test:** a CI step running `depcruise` — red because: a probe import of `@/lib/prisma` from `src/components/` passes CI today
 - **Acceptance:** `dependency-cruiser` added as a dev dependency (lead's approval with the autonomous-delivery plan) with rules for the layers in `CLAUDE.md` "Architecture in one pass"; a CI job fails on a violation; today's tree has none; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** ~~B1.42~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.46/`
+- **Work:** `work/B1.46/` (plan, probe.sh, review: plan review 2 rounds, lead rounds 1; diff review 1 of 3 passes, 0 findings; follow-up B1.50)
 
 ### B1.47 · B1.44's acceptance takes the B1.42 spike findings
 
@@ -698,3 +698,14 @@ _tooling · no §_
 - **Acceptance:** on a throwaway issue filed by the lead: `eligible.sh` exits 0 after the lead adds `agent-ready`, 1 after removing it, 0 after re-adding it; on an issue filed by a read-only account it exits 1 (author), when the lead has such an account; the events of a label renamed and of a label deleted are recorded; any difference from the rule becomes a fix card. Read-only for the agent: the lead files, labels and closes the issues
 - **Tier:** quick · **Depends on:** ~~B1.43~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.49/`
+
+### B1.50 · The client layer rule also stops a component reaching @prisma/client
+
+_tooling · no §_
+**Status: Open** — `.dependency-cruiser-client.mjs` (B1.46, #156) targets only `^src/lib/prisma\.ts$` and `node_modules/server-only/`: on 400f105 a `src/lib/probe-db.ts` that imports `@prisma/client` directly, imported by a `src/components/probe.tsx`, passes both cruises of `scripts/ci/check-layers.sh` (82 modules, 193 deps; 77, 141). Today only `src/lib/prisma.ts` imports `@prisma/client` (`backlog/work/B1.46/review.md`, "Diff review (round 1)", observation 3)
+
+- **Spec:** none — tooling (D-27, D-28); no `src/` change, no section
+- **Test:** a P16 in `backlog/work/B1.46/probe.sh` style (that probe pair) — red because: `check-layers.sh` exits 0 on it
+- **Acceptance:** `components-reach-db-only-through-actions` also targets `node_modules/@prisma/client/` (and `.prisma/client`); the probe pair above fails `check-layers.sh` naming the rule; today's tree still has 0 violations; the type-only control still passes; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** ~~B1.46~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.50/`
