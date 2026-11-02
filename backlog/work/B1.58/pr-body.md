@@ -5,14 +5,37 @@ B1.58 — The runner's devcontainer: a firewall that allows only GitHub, npm and
 
 - spec: none — tooling (D-26, D-27); no `src/` change, no section
 - test: `scripts/agent/sandbox-probe.sh` S1–S7 (inside the container), `scripts/agent/run-smoke.sh` R6/R15 and
-  `scripts/agent/tier-smoke.sh` T3 (offline, host) — red before, green after: pending
+  `scripts/agent/tier-smoke.sh` T3 (offline, host). Red `69ce71a` (run-smoke 13/15, tier-smoke 8/9, sandbox-probe on
+  the host 1/7), `0258b7f`, review pass 1 `23e7f63`; green on the host: run-smoke 15/15, tier-smoke 9/9 (bash 3.2).
+  Inside the container: [unverified] until the lead's steps below.
 - acceptance: B1.58's four clauses (firewall both ways, pinned Linux build with `--check-binary` inside, the lead's own
-  login inside with no credential baked, `bypassPermissions` only in the firewalled container): pending
-- risk tier: high (`scripts/agent/`, `scripts/ci/`); label `config-change-approved` (D-19)
+  login inside with no credential baked, `bypassPermissions` only in the firewalled container, refused on the host):
+  host side proven (R6, R15); container side pending the lead's steps
+- risk tier: high (`scripts/agent/`, `scripts/ci/`, `.devcontainer/`); label `config-change-approved` (D-19)
+- follow-up: B1.62 (#174), the image carries the Prisma engines and Playwright's browser
+
+## For the lead: build, log in, probe (from the host checkout, on this branch)
+
+```bash
+docker compose -f .devcontainer/runner/docker-compose.yml up -d --build
+docker compose -f .devcontainer/runner/docker-compose.yml exec runner gh auth login
+docker compose -f .devcontainer/runner/docker-compose.yml exec runner gh auth setup-git
+docker compose -f .devcontainer/runner/docker-compose.yml exec runner git clone https://github.com/st-minhho2/level-up-lab.git .
+docker compose -f .devcontainer/runner/docker-compose.yml exec runner git checkout chore/B1.58-sandbox
+docker compose -f .devcontainer/runner/docker-compose.yml exec runner claude auth login
+docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh
+docker compose -f .devcontainer/runner/docker-compose.yml exec -e RUNNER_BUDGET_USD=1 runner scripts/agent/run.sh --check-binary
+```
+
+Expected: `up` prints the firewall's "allow list applied: N entries" in `docker compose … logs firewall` and starts
+`runner` once `firewall` is healthy; `sandbox-probe.sh` → "7 probes OK"; `--check-binary` → "claude '2.1.303 (Claude
+Code)' verified" (2 turns, under USD 1). gh: a fine-grained token for this repo with a short expiry. After a suspect
+run: `docker compose -f .devcontainer/runner/docker-compose.yml down -v`.
 
 ## Plan
 
-Status: waiting for the lead's `approve` (plan review r1: 7 reasons, r2: 6 reasons; round 3 not re-reviewed).
+Approved by the lead 2026-11-02 (decisions 1–5 as proposed); the "Changed after approval" block waits for the lead's
+`approve` again.
 
 ### B1.58 plan — The runner's devcontainer: allow-list firewall, Linux claude build (tooling, no §)
 
@@ -43,20 +66,34 @@ skipped (tier quick). Risk tier **high** (`scripts/agent/`, `scripts/ci/`) → l
 Costs: the repo is **public**; a run can read the Claude login and gh token its own tools need and push them to a
 branch or gist; the firewall bounds where data goes, not what goes to GitHub or Anthropic (and DNS lookups through
 127.0.0.11 still reach any name server). Mitigation: a fine-grained gh token for this repo, short expiry; revoke on a
-leak. No sudo in the image (r2 #1): the entrypoint runs as root, applies the firewall, then `setpriv` drops to `node`
-with an empty capability bounding set; `run.sh --mode` also needs uid ≠ 0. Volumes carry one run's writes (clone
+leak. No sudo in the image (r2 #1); root runs only in the `firewall` service (below); `run.sh --mode` also needs
+uid ≠ 0. Volumes carry one run's writes (clone
 `.git/hooks`, `.git/config`, `runner-claude`) into later runs, inside the firewall; after a suspect run the lead
 removes the volumes (r2 #5). Host and container keep separate locks and stop marks, so after this card the lead runs
 `run.sh` only inside (the branch cap still counts open PRs on both). `--disallowedTools` under `bypassPermissions` is
 [unverified] in 2.1.303; hooks are proven by `--check-binary`. CDN IPs resolve at start; restart on a rotated IP.
 
+**Changed after approval** (needs the lead's `approve` again; Files unchanged):
+
+- **Firewall sidecar** (diff review 1 #1): an exec gets the container's bounding set, not PID 1's, so with the
+  entrypoint-plus-setpriv design a plain (root) `exec runner` kept NET_ADMIN and could flush the rules. Now one image,
+  two services: `firewall` (root, `cap_add` NET_ADMIN, NET_RAW only, IPv6 sysctls, healthy after its check both ways)
+  and `runner` (`network_mode: service:firewall`, `user` node, `cap_drop: [ALL]`, no `cap_add`, `no-new-privileges`,
+  starts only once `firewall` is healthy). Every exec into `runner`, root included, has `CapBnd` 0: S5 as approved,
+  plus `NoNewPrivs` 1 (`0258b7f` → `23e7f63`, fix `5057810`). No setpriv, no entrypoint in the image.
+- S4 also expects `dontAsk` with an `id` shim printing 0 and a `uname` shim printing Darwin (diff review 1 #2).
+- The lead's commands check out `chore/B1.58-sandbox` after the clone until this merges (diff review 1 #3); git's
+  global config lives in `runner-runs` (`GIT_CONFIG_GLOBAL`); `init: true` on both services.
+- New cost: an allowed CDN address (npm, claude.ai) also serves other sites behind the same edge; IPs stay pinned
+  until a restart. A root exec into `firewall` can still change the rules: only the lead uses that service.
+
 #### Files
 
 | File                                      | Change                                                                       |
 | ----------------------------------------- | ---------------------------------------------------------------------------- |
-| `.devcontainer/runner/Dockerfile`         | new: base, apt, claude pin, `/etc/level-up-lab-runner`, entrypoint, no sudo  |
-| `.devcontainer/runner/init-firewall.sh`   | new: ipset allow list, REJECT, ip6tables DROP, self-check; then setpriv node |
-| `.devcontainer/runner/docker-compose.yml` | new: project `level-up-lab-runner`, cap NET_ADMIN/NET_RAW, IPv6 off, volumes |
+| `.devcontainer/runner/Dockerfile`         | new: base, apt, claude pin, `/etc/level-up-lab-runner`, user node, no sudo   |
+| `.devcontainer/runner/init-firewall.sh`   | new: ipset allow list, REJECT, ip6tables DROP, self-check, ready mark        |
+| `.devcontainer/runner/docker-compose.yml` | new: project `level-up-lab-runner`: `firewall` + `runner` (no caps), volumes |
 | `scripts/agent/run.sh`                    | `--mode`; `sandboxed()` picks `bypassPermissions`, else `dontAsk`            |
 | `scripts/agent/run-smoke.sh`              | R6 `dontAsk` on the host; new R15 `--mode` on the host                       |
 | `scripts/agent/sandbox-probe.sh`          | new: S1–S7, run inside the container                                         |
@@ -76,7 +113,7 @@ scripts/agent/sandbox-probe.sh   exit 0 all ok · 1 any FAIL. S1 example.com, 1.
   · S4 --mode bypassPermissions; curl shim reaching all, or none → dontAsk · S5 uid node, no sudo, CapBnd 0,
   `iptables -F` and `init-firewall.sh` refused, rules unchanged after · S6 claude config dir a mount, no
   `.credentials.json` in the repo · S7 no `postgres` host
-docker compose -f .devcontainer/runner/docker-compose.yml up -d --build   (firewall fails → container exits)
+docker compose -f .devcontainer/runner/docker-compose.yml up -d --build   (firewall fails → runner never starts)
   volumes runner-repo, runner-claude, runner-gh, runner-runs, runner-pnpm-store
 ```
 
@@ -93,7 +130,7 @@ Steps: 1 red `test(scripts): B1.58 sandbox probes` · 2 green `chore(scripts): B
 `docs(backlog): B1.58 review`; B1.62 filing PR. All dev-lead (no `src/`). Not in scope: B1.59, a GitHub secret guard.
 
 Plan review: changes requested, round 2 (6 reasons carried into round 3, not re-reviewed: 2-round cap) · Plan approved
-by: · Rounds: 1
+by: lead, 2026-11-02 (decisions 1–5 as proposed) · Rounds: 2 (re-approval pending for "Changed after approval")
 
 ## Map delta
 
@@ -101,11 +138,21 @@ None: tooling, no `spec/features-map.md` row.
 
 ## Review
 
-pending
+Plan review: r1 7 reasons, r2 6 reasons, round 3 not re-reviewed (2-round cap). Diff review (`backlog/work/B1.58/review.md`):
+
+| Pass | #   | Finding                                                                          | Disposition  | Commit               |
+| ---- | --- | -------------------------------------------------------------------------------- | ------------ | -------------------- |
+| 1    | 1   | a root `exec runner` kept NET_ADMIN; S5 loosened before re-approval              | fix now      | `23e7f63`, `5057810` |
+| 1    | 2   | deleting sandboxed()'s uid check left every probe green                          | fix now      | `23e7f63`            |
+| 1    | 3   | the lead's commands cloned main (old `--check-binary` mode); PR body lacked them | fix now      | `5057810`, this body |
+| 1    | n1  | PID 1 `sleep` without init; `~/.gitconfig` not persisted                         | fix now      | `5057810`            |
+| 1    | n2  | no git identity in the image, so `run.sh <issue>` cannot commit inside yet       | out of scope | B1.59 / B1.62 plan   |
+
+Pass 2: pending.
 
 ## Evidence
 
-- AC met: 0/4
+- AC met: 0/4 (host side of clause 4 proven; container side pending the lead's steps)
 - tier: pending
 - plan deviations: none
 - trace: n/a
@@ -113,8 +160,8 @@ pending
 ## Checklist
 
 - [ ] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
-- [ ] Red commit precedes the change commit.
-- [ ] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected config change carries `config-change-approved`.
+- [x] Red commit precedes the change commit.
+- [x] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected config change carries `config-change-approved`.
 - [ ] `docs/metrics.md` per-card row filled; mistake-log updated if a known mistake repeated.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
