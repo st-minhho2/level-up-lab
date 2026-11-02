@@ -17,13 +17,31 @@ dependency). Advisor skipped (tier quick). Risk tier **high** (`scripts/ci/`) �
    high (B1.55 lets an agent pass its own plan by `tier.sh`); the run loads `--setting-sources project` only.
 3. **Model** `claude-opus-5-5` pinned by default; one run's budget USD 10, 150 turns (set by env per run).
 
-Costs (r2 #3): a hand-started `run.sh` is a headless run on the host (up to 150 turns), limited by `dontAsk`, the
-allow list below and the repo's hooks, not by a sandbox; the run may not start `run.sh` itself (`--disallowedTools`)
-or add packages (only named `pnpm` scripts are allowed). The leak check sees plugins, MCP servers and extra
+**Lead round 2 (after diff reviews 1–2 and live runs 1–4):** the changes below the line "Changed after approval"
+need the lead's `approve` again (planning.md); the Files table is unchanged.
+
+Costs (r2 #3, restated by diff review pass 2): a hand-started `run.sh` is a headless run **on the host, with no
+sandbox**: `dontAsk`, the allow list and the repo's hooks narrow what it does by accident, not what it can do. A run
+can still execute any command: through `Bash(git *)` (`git rebase -x`, `git difftool --extcmd`), through a test it
+writes and runs with `pnpm test`, or through a script under `scripts/ci/` it writes. So it can add a package or start
+another run, guards and `RUNNER_CHILD` notwithstanding; such a change still shows in its diff (a dependency or
+`scripts/` change rates high and needs the label). The sandbox is B1.58; until then the lead starts runs by hand and
+reads each one's diff. The leak check sees plugins, MCP servers and extra
 SessionStart hooks; a user hook on another event stays invisible, so `--setting-sources project` is what keeps it out
 (the live run shows plugins `[]`). Commands outside the allow list are denied and counted (`permission_denials` in the
 comment). Until B1.55/B1.56 every run stops at the plan gate: in-flight runs are capped by branch, not by PR (r1 #9);
 an unpushed gate branch shows tier `unknown` in feature-map; runs share next-task's WIP 3.
+
+**Changed after approval** (diff reviews 1–2, live runs 1–4; each landed red probe first):
+
+- allow list: named scripts instead of `scripts/*`, no `cp *`; deny `git -c`, `git * -c *`, `git config`; the run's
+  env carries `RUNNER_CHILD=1` and `run.sh` refuses inside a run (review 1 #1, a speed bump, not a boundary: above)
+- init check: `Task` counts as `Agent` (2.1.309's init name, live run 4b); `--tools …,Skill` gives no `Skill`, so the
+  prompt names `.claude/agents/dev-lead.md` and `.claude/skills/work-next/SKILL.md`; plugins with path `builtin` do
+  not count as user settings (live run 1); `--check-binary` judges `Write` + Grep, Glob only (review 1 #3)
+- `--check-binary`'s prompt asks dev-lead for the Write call (live run 2); it refuses on any init problem
+- worktree.sh runs from the checkout that holds `.worktrees/` and its message is shown (live run 4a); TERM/INT stop
+  the claude run, in `<issue>` and in `--poll` (review 1 #2, review 2 #3)
 
 ## Files
 
@@ -62,12 +80,16 @@ scripts/agent/run.sh <issue> | --poll | --check-binary      exit 0 done or skipp
   run  env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_SESSION_ID (r1 #6), cwd worktree:
        $RUNNER_CLAUDE -p --agent dev-lead --model … --max-turns … --max-budget-usd <BUDGET−TURN> --setting-sources
        project --strict-mcp-config --permission-mode dontAsk --include-hook-events --output-format stream-json
-       --verbose --tools Read,Grep,Glob,Write,Edit,Bash,Agent,Skill --allowedTools <those + Bash(git *) Bash(scripts/*)
-       Bash(.claude/hooks/mark-reviewed.sh) Bash(pnpm install --frozen-lockfile) Bash(pnpm lint*) Bash(pnpm typecheck*)
-       Bash(pnpm test*) Bash(pnpm build*) Bash(pnpm exec prettier *) Bash(docker compose up -d) Bash(cp *)
-       Bash(gh pr edit *) Bash(gh pr checks *) Bash(gh pr view *)> --disallowedTools 'Bash(scripts/agent/run.sh*)' < prompt
+       --verbose --tools Read,Grep,Glob,Write,Edit,Bash,Agent,Skill --allowedTools <those + Bash(git *)
+       Bash(scripts/next-task.sh *) Bash(scripts/worktree.sh *) Bash(scripts/verify-red.sh *) Bash(scripts/card-status.sh *)
+       Bash(scripts/ci/*) Bash(scripts/agent/tier.sh *) Bash(scripts/agent/eligible.sh *) Bash(.claude/hooks/mark-reviewed.sh)
+       Bash(pnpm install --frozen-lockfile) Bash(pnpm lint*) Bash(pnpm typecheck*) Bash(pnpm test*) Bash(pnpm build*)
+       Bash(pnpm exec prettier *) Bash(docker compose up -d) Bash(gh pr edit *) Bash(gh pr checks *) Bash(gh pr view *)>
+       --disallowedTools 'Bash(scripts/agent/run.sh*)' 'Bash(git -c*)' 'Bash(git * -c *)' 'Bash(git config*)' < prompt
+       env RUNNER_CHILD=1 (run.sh exits 1 when it is set)
        log runs/<n>/<%Y%m%dT%H%M%SZ>-<pid>.jsonl + .err (line 1 `--version`) + .exit
-  kill early: init tools ⊄ --tools ∪ {Grep, Glob} → tools-mismatch · init plugins or mcp_servers not empty, or more
+  kill early: init tools (Task read as Agent) ⊄ --tools ∪ {Grep, Glob} → tools-mismatch · init plugins whose path is not
+       `builtin`, or mcp_servers, not empty, or more
        SessionStart hook_started lines than the worktree's .claude/settings.json defines (r1 #4) → user-settings
   outcome (last line): is_error false → gate ("Plan for <card> is ready") | ready ("PR for <card> is ready") | ended;
        is_error true → limit (subtype error_max_turns|error_max_budget_usd) | error (one retry, new log)
@@ -101,4 +123,4 @@ scripts/agent/run.sh <issue> | --poll | --check-binary      exit 0 done or skipp
 
 Not in scope: B1.51, B1.55–B1.57, B1.58/B1.59 (filed here), `scripts/CLAUDE.md` rows (orchestrator, r1 #10).
 
-Plan review: changes requested, round 2 (4 reasons carried into round 3, not re-reviewed: 2-round cap) · Plan approved by: lead, 2026-11-02 (decisions 1–3 as proposed, 4: no further split) · Rounds: 1
+Plan review: changes requested, round 2 (4 reasons carried into round 3, not re-reviewed: 2-round cap) · Plan approved by: lead, 2026-11-02 (decisions 1–3 as proposed, 4: no further split); round 2: pending · Rounds: 2
