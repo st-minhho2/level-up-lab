@@ -106,3 +106,58 @@ probes …` and `1ae8fbb test(scripts): B1.29 verify-red base-run probes`.
    - Confidence: (a) plausible, traced from `gh`'s placeholder resolution. (b) confirmed (plan text).
 
 Verdict: changes requested
+
+## Plan review (round 2)
+
+The plan under review is `3dde344 docs(backlog): B1.43 plan round 2 and plan review round 1`. I checked the following
+read-only:
+
+- `pnpm test` at 3dde344: `Tests  202 passed (202)`, which matches the plan's expected count.
+- `gh api …/collaborators/octocat/permission` (a non-collaborator on this public repository) returns `read	read`.
+  The author check therefore rejects an outsider's issue. An unknown login returns HTTP 404, and the plan routes that
+  to "gh failed" (exit 1).
+- `gh api …/issues/150 --jq '.user.login, .labels[].name'` prints the author first and then one label per line, which
+  is the shape the plan parses.
+- `jq` 1.7.1 (`/usr/bin/jq`) and `ruby -ryaml` (Psych 3.1.0) are both present, so the shim and the form check add no
+  dependency.
+- The plan is 72 lines, against `planning.md`'s ≈ 40. The precedent is B1.42's approved plan at 76 lines, and most of
+  the length is table rows. Not blocking.
+
+| Check                                                                             | Result                                                                                                                                                                                                                                                           |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: unchanged from round 1. Three new files from the card's Acceptance and Test, plus `work/B1.43/`. Nothing owned by B1.45 or B1.46, and not `scripts/CLAUDE.md`                                                                                              |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass (n/a): no TypeScript. The interface lists exit codes, exact messages, the three `gh api` calls with their `--jq` filters, and which field decides (`.permission`)                                                                                           |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: there is no `advice.md`, and the plan states that the quick tier skips it                                                                                                                                                                                  |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: the card has 4 Acceptance clauses. E1–E9 are probes with exit codes and messages. r1 #3 is fixed (fixtures pair `permission` with `role_name`). r1 #4 is closed by the author check, and its cost is stated for the lead                                   |
+| verification lists exact commands with expected numbers                           | pass: "9 probes OK" under both bashes, 202 tests, and the live `eligible.sh 1` → exit 1 with its message. One nit: the `ruby -ryaml` check gives its assertions but not the command line or its expected exit. The diff review will require both in `pr-body.md` |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: no § means no skeleton or map. The red subject no longer carries `(red)` (r1 #1), with B1.29 and B1.32 as precedent, and the plan says why `verify-red.sh` does not apply                                                                                  |
+| `Lead approves spec` box ticked only by a human                                   | pass (n/a): no section. `Plan approved by:` is empty. Tier high (`.github/.*` is in PROTECTED), so the lead's `approve` holds and the PR carries `config-change-approved`                                                                                        |
+| no settled D-n contradicted                                                       | pass: D-27 holds because the form sets no `labels:`. D-28 holds because the tier is high, from a PROTECTED path. D-19 holds because the label is named. D-26 holds because the script runs locally only                                                          |
+| `scripts/next-task.sh --check B1.43` says no overlap                              | pass: `[next-task] B1.43: no overlap with any Doing or Review card` (exit 0). `check-plan-scope.sh`: `OK: … changes only paperwork`. `check-backlog.sh`: `OK: README matches the cards`                                                                          |
+
+Round 1 reasons:
+
+1. Fixed: `(red)` is dropped and the reason is stated.
+2. Fixed: the plan adds `description` and switches the check to `ruby -ryaml`. The assertions now include
+   `validations.required` and `attributes.label`.
+3. Fixed: the plan decides on `.permission`. Fixtures for maintain → `write` and triage → `read` mirror the API.
+4. Fixed: the plan adds the author write check, probed by E9. The cost (an outsider's issue is never eligible) is
+   stated for the lead.
+5. Fixed: the lead creates the label, and it is listed under not in scope. The live probe covers only the first call,
+   and the plan says so.
+6. Fixed: (a) the script `cd`s to its repository root, probed by E9. (b) The expected count is 202.
+
+Non-blocking notes, for the lead before approving:
+
+- **Bot logins.** A `name[bot]` labeler or author (for example a workflow applying the label) makes the permission
+  endpoint return 404. The script then exits 1 with "gh failed" rather than "needs write". It fails closed, but the
+  reason is misleading.
+- **Other write collaborators are trusted.** Any write collaborator other than the lead can still label, or edit the
+  body after the label, and pass the check. The card's Acceptance accepts this ("write, maintain or admin"). Today the
+  only collaborator is the lead (round 1).
+
+Verdict: approved (ready for the lead's `approve` gate. Tier high, so this is not approval to build)
+
+Riskiest unfalsified: the claim that only the author and write-or-higher collaborators can edit an issue's body or
+title (that triage cannot) was not run. Whether the issue form renders in the template chooser is visible only on the
+default branch after the merge.
