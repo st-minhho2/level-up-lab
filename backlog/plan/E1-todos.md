@@ -625,13 +625,13 @@ _tooling · no §_
 ### B1.43 · Agent-task issue template and an eligibility check on the label
 
 _tooling · no §_
-**Status: Open** — D-27 makes the lead's `agent-ready` label the spec approval, so the runner must accept an issue only when that label was applied by someone with write permission or higher
+**Status: Done** — c2bb060 (#155), `scripts/agent/eligible-smoke.sh` 9 probes OK (E1–E9, also under /bin/bash 3.2), 16 of 16 mutants of `eligible.sh` killed; issue form check OK (4 required fields, no label); live read-only `eligible.sh 1` → exit 1 not labeled; no src/ change (vitest 202 unchanged)
 
 - **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
 - **Test:** `scripts/agent/eligible-smoke.sh` (new) — red because: `scripts/agent/eligible.sh` does not exist
 - **Acceptance:** `.github/ISSUE_TEMPLATE/agent-task.yml` asks for the card id, spec section or change, acceptance and out of scope; `scripts/agent/eligible.sh <issue>` exits 0 only when the `agent-ready` label's most recent `labeled` event comes from an actor whose repository permission is write, maintain or admin, and 1 otherwise (with the reason); probes cover a read-only actor, a removed and re-added label and a missing label; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** ~~B1.42~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.43/`
+- **Work:** `work/B1.43/` (plan, review: plan review 2 rounds, lead rounds 1; diff review 2 of 3 passes, 2 findings fixed; follow-ups B1.48, B1.49)
 
 ### B1.44 · Runner: poll agent-ready issues and run dev-lead headless in a sandbox
 
@@ -641,7 +641,7 @@ _tooling · no §_
 - **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
 - **Test:** `scripts/agent/run-smoke.sh` and `scripts/agent/tier-smoke.sh` (new) — red because: `run.sh` and `tier.sh` do not exist
 - **Acceptance:** `scripts/agent/tier.sh <plan.md>` prints high, medium or low by D-28; `scripts/agent/run.sh` makes a worktree, runs `claude -p --agent dev-lead` with turn and budget limits and one retry, logs to `~/.level-up-lab/runs/`, comments on the issue when it stops at a gate; a devcontainer whose firewall allows only GitHub, the npm registry and Anthropic; a launchd job polls every 15 min; at most 3 open agent PRs; the PR carries `config-change-approved` (D-19)
-- **Tier:** quick · **Depends on:** B1.43, B1.45, B1.46 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** quick · **Depends on:** ~~B1.43~~, B1.45, ~~B1.46~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.44/`
 
 ### B1.45 · Evidence section in the PR and a daily feature map
@@ -658,13 +658,13 @@ _tooling · no §_
 ### B1.46 · Layer rules checked in CI with dependency-cruiser
 
 _tooling · no §_
-**Status: Open** — the layering in `CLAUDE.md` (Prisma only in `src/lib`, mutations only in `src/actions`, client components never import `src/lib/prisma.ts`) is enforced by review and `next build`, not by a rule an unattended run cannot argue with
+**Status: Done** — 400f105 (#156), scripts/ci/check-layers.sh 0 violations on the merged tree (80 modules/191 deps, 75/139), CI step 2 s in the required lint job; backlog/work/B1.46/probe.sh 14/14 forbidden imports caught and the type-only control passes (1/14 at origin/main before); lockfile +178/-0; no src/ change (vitest 202, e2e 43, mutation 93.40 unchanged)
 
 - **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
 - **Test:** a CI step running `depcruise` — red because: a probe import of `@/lib/prisma` from `src/components/` passes CI today
 - **Acceptance:** `dependency-cruiser` added as a dev dependency (lead's approval with the autonomous-delivery plan) with rules for the layers in `CLAUDE.md` "Architecture in one pass"; a CI job fails on a violation; today's tree has none; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** ~~B1.42~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.46/`
+- **Work:** `work/B1.46/` (plan, probe.sh, review: plan review 2 rounds, lead rounds 1; diff review 1 of 3 passes, 0 findings; follow-up B1.50)
 
 ### B1.47 · B1.44's acceptance takes the B1.42 spike findings
 
@@ -676,3 +676,36 @@ _tooling · no §_
 - **Acceptance:** B1.44's Acceptance adds: an `auth status` check before a run; one log file per run and one run per issue at a time; budget set one turn below the spend limit; the outcome read from `is_error` then `subtype`; `--model` pinned; `init.tools` checked; user settings kept out of the run (or the reason they stay); the binary named per host (macOS app build on the host, Linux build in the devcontainer, verified there). Card text only, through the lead's review; no script change
 - **Tier:** 0 · **Depends on:** ~~B1.42~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.47/`
+
+### B1.48 · CI runs the agent-ready eligibility probes
+
+_tooling · no §_
+**Status: Open** — `scripts/agent/eligible-smoke.sh` (B1.43, #155) runs only by hand: `grep -c eligible-smoke .github/workflows/ci.yml` → 0, while `scripts/hook-smoke.sh` has its own step (`.github/workflows/ci.yml:51`); B1.43 left `ci.yml` to B1.46 in the same batch
+
+- **Spec:** none — tooling (D-27); no `src/` change, no section
+- **Test:** the PR's `ci` run shows the step "9 probes OK" — red because: no CI step runs `scripts/agent/eligible-smoke.sh`
+- **Acceptance:** a `test`-job step runs `scripts/agent/eligible-smoke.sh` (needs `jq`, present on the runner image) and fails the job on a failed probe; a deliberately broken copy of `eligible.sh` on a throwaway branch turns the step red; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** ~~B1.43~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.48/`
+
+### B1.49 · Live check of the eligibility rule on a labeled issue
+
+_tooling · no §_
+**Status: Open** — `scripts/agent/eligible.sh` (B1.43) was run live only on #1 (exit 1, "not labeled agent-ready"): the `agent-ready` label did not exist, so GitHub's event order across `--paginate` pages, whether deleting or renaming a label emits `unlabeled`, and how a deleted actor appears (`ghost` or null) stay unverified (`backlog/work/B1.43/review.md`, "Diff review (pass 2)", riskiest unfalsified)
+
+- **Spec:** none — tooling (D-27); no `src/` change, no section
+- **Test:** `backlog/work/B1.49/live.md` records each command, its exit code and output — red because: no labeled issue has been checked
+- **Acceptance:** on a throwaway issue filed by the lead: `eligible.sh` exits 0 after the lead adds `agent-ready`, 1 after removing it, 0 after re-adding it; on an issue filed by a read-only account it exits 1 (author), when the lead has such an account; the events of a label renamed and of a label deleted are recorded; any difference from the rule becomes a fix card. Read-only for the agent: the lead files, labels and closes the issues
+- **Tier:** quick · **Depends on:** ~~B1.43~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.49/`
+
+### B1.50 · The client layer rule also stops a component reaching @prisma/client
+
+_tooling · no §_
+**Status: Open** — `.dependency-cruiser-client.mjs` (B1.46, #156) targets only `^src/lib/prisma\.ts$` and `node_modules/server-only/`: on 400f105 a `src/lib/probe-db.ts` that imports `@prisma/client` directly, imported by a `src/components/probe.tsx`, passes both cruises of `scripts/ci/check-layers.sh` (82 modules, 193 deps; 77, 141). Today only `src/lib/prisma.ts` imports `@prisma/client` (`backlog/work/B1.46/review.md`, "Diff review (round 1)", observation 3)
+
+- **Spec:** none — tooling (D-27, D-28); no `src/` change, no section
+- **Test:** a P16 in `backlog/work/B1.46/probe.sh` style (that probe pair) — red because: `check-layers.sh` exits 0 on it
+- **Acceptance:** `components-reach-db-only-through-actions` also targets `node_modules/@prisma/client/` (and `.prisma/client`); the probe pair above fails `check-layers.sh` naming the rule; today's tree still has 0 violations; the type-only control still passes; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** ~~B1.46~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.50/`

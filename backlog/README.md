@@ -7,11 +7,11 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open   | Total  |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ------ | ------ |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 33     | 0       | 14     | 47     |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 35     | 0       | 15     | 50     |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0      | 5      |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3      |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4      |
-| **Total**        |                                                      | **44** | **0**   | **15** | **59** |
+| **Total**        |                                                      | **46** | **0**   | **16** | **62** |
 
 ## Execution order
 
@@ -85,11 +85,14 @@ flowchart TD
   S52["52 · guides state the token rule<br/>B1.41"]
   S53["53 · section 22 criteria gaps<br/>B4.4"]
   S54["54 · spike headless dev-lead<br/>~~B1.42~~"]
-  S55["55 · agent-ready eligibility<br/>B1.43"]
+  S55["55 · agent-ready eligibility<br/>~~B1.43~~"]
   S56["56 · agent runner<br/>B1.44"]
   S57["57 · pr evidence and feature map<br/>B1.45"]
-  S58["58 · layer rules in CI<br/>B1.46"]
+  S58["58 · layer rules in CI<br/>~~B1.46~~"]
   S59["59 · runner card takes spike findings<br/>B1.47"]
+  S60["60 · CI runs eligibility probes<br/>B1.48"]
+  S61["61 · live eligibility check<br/>B1.49"]
+  S62["62 · client rule covers prisma client<br/>B1.50"]
 ```
 
 ## Remaining
@@ -97,23 +100,24 @@ flowchart TD
 Board state (To do · Doing · Review · Closing) is derived, not typed: `scripts/next-task.sh --list` (BOARD column),
 at most 3 cards Doing (B1.18).
 
-| Step | ID    | Title                                                                               | Spec § | Status | Blocked by          | Owner | Size         |
-| ---- | ----- | ----------------------------------------------------------------------------------- | ------ | ------ | ------------------- | ----- | ------------ |
-| 41   | B1.30 | guard-bash reads shell words before matching a push                                 | —      | Open   | —                   | Lead  | S [estimate] |
-| 45   | B1.34 | Package guide headings and the app page header cite the sections their modules name | —      | Open   | —                   | Lead  | S [estimate] |
-| 46   | B1.35 | A guard checks that the guide tables cite the sections their packages name          | —      | Open   | —                   | Lead  | S [estimate] |
-| 47   | B1.36 | hook-smoke's review-gate probe judges "clean" from the gate's own base              | —      | Open   | —                   | Lead  | S [estimate] |
-| 48   | B1.37 | hook-smoke's check-plan-scope probes ignore an exported HEAD_SHA and BASE_SHA       | —      | Open   | —                   | Lead  | S [estimate] |
-| 49   | B1.38 | pr-step accepts the ci type that commit-msg accepts                                 | —      | Open   | —                   | Lead  | S [estimate] |
-| 50   | B1.39 | plan-deviations judges a merged PR's files by the guard's plan_lists rule           | —      | Open   | —                   | Lead  | S [estimate] |
-| 51   | B1.40 | next-task --check reads plan tokens by the plan_lists rule                          | —      | Open   | —                   | Lead  | S [estimate] |
-| 52   | B1.41 | Guides state the plan-token rule and name hook-smoke's L1–L15                       | —      | Open   | —                   | Lead  | S [estimate] |
-| 53   | B4.4  | Section 22 criteria measure the reload rule and the no-role rule                    | —      | Open   | —                   | Lead  | S [estimate] |
-| 55   | B1.43 | Agent-task issue template and an eligibility check on the label                     | —      | Open   | ~~B1.42~~           | Lead  | S [estimate] |
-| 56   | B1.44 | Runner: poll agent-ready issues and run dev-lead headless in a sandbox              | —      | Open   | B1.43, B1.45, B1.46 | Lead  | S [estimate] |
-| 57   | B1.45 | Evidence section in the PR and a daily feature map                                  | —      | Open   | ~~B1.42~~           | Lead  | S [estimate] |
-| 58   | B1.46 | Layer rules checked in CI with dependency-cruiser                                   | —      | Open   | ~~B1.42~~           | Lead  | S [estimate] |
-| 59   | B1.47 | B1.44's acceptance takes the B1.42 spike findings                                   | —      | Open   | ~~B1.42~~           | Lead  | S [estimate] |
+| Step | ID    | Title                                                                               | Spec § | Status | Blocked by                  | Owner | Size         |
+| ---- | ----- | ----------------------------------------------------------------------------------- | ------ | ------ | --------------------------- | ----- | ------------ |
+| 41   | B1.30 | guard-bash reads shell words before matching a push                                 | —      | Open   | —                           | Lead  | S [estimate] |
+| 45   | B1.34 | Package guide headings and the app page header cite the sections their modules name | —      | Open   | —                           | Lead  | S [estimate] |
+| 46   | B1.35 | A guard checks that the guide tables cite the sections their packages name          | —      | Open   | —                           | Lead  | S [estimate] |
+| 47   | B1.36 | hook-smoke's review-gate probe judges "clean" from the gate's own base              | —      | Open   | —                           | Lead  | S [estimate] |
+| 48   | B1.37 | hook-smoke's check-plan-scope probes ignore an exported HEAD_SHA and BASE_SHA       | —      | Open   | —                           | Lead  | S [estimate] |
+| 49   | B1.38 | pr-step accepts the ci type that commit-msg accepts                                 | —      | Open   | —                           | Lead  | S [estimate] |
+| 50   | B1.39 | plan-deviations judges a merged PR's files by the guard's plan_lists rule           | —      | Open   | —                           | Lead  | S [estimate] |
+| 51   | B1.40 | next-task --check reads plan tokens by the plan_lists rule                          | —      | Open   | —                           | Lead  | S [estimate] |
+| 52   | B1.41 | Guides state the plan-token rule and name hook-smoke's L1–L15                       | —      | Open   | —                           | Lead  | S [estimate] |
+| 53   | B4.4  | Section 22 criteria measure the reload rule and the no-role rule                    | —      | Open   | —                           | Lead  | S [estimate] |
+| 56   | B1.44 | Runner: poll agent-ready issues and run dev-lead headless in a sandbox              | —      | Open   | ~~B1.43~~, B1.45, ~~B1.46~~ | Lead  | S [estimate] |
+| 57   | B1.45 | Evidence section in the PR and a daily feature map                                  | —      | Open   | ~~B1.42~~                   | Lead  | S [estimate] |
+| 59   | B1.47 | B1.44's acceptance takes the B1.42 spike findings                                   | —      | Open   | ~~B1.42~~                   | Lead  | S [estimate] |
+| 60   | B1.48 | CI runs the agent-ready eligibility probes                                          | —      | Open   | ~~B1.43~~                   | Lead  | S [estimate] |
+| 61   | B1.49 | Live check of the eligibility rule on a labeled issue                               | —      | Open   | ~~B1.43~~                   | Lead  | S [estimate] |
+| 62   | B1.50 | The client layer rule also stops a component reaching @prisma/client                | —      | Open   | ~~B1.46~~                   | Lead  | S [estimate] |
 
 ## Waiting on human
 
