@@ -10,9 +10,10 @@
 # The approval field (B1.55, D-27) is the text after "Plan approved by:" up to " · " or the line end, on the plan's
 # last line starting "Plan review:"; prose quoting it is never read. With --run (a runner's path: the caller decides)
 # it must read "reviewer (D-27, tier <low|medium>, issue #<n>)" and hold at the approval commit: tier.sh gives <t>,
-# review.md's last "## Plan review (round N)" has "Verdict: approved", plan.md is unchanged but for its status line
-# since the last commit touching review.md, and scripts/agent/eligible.sh <n> <card> passes (--offline skips only
-# that call: metrics on merged PRs). Without --run a field starting "reviewer" is refused; any other is the lead's.
+# the last "## Plan review…" section of review.md (any such heading, a round or not) has "Verdict: approved", plan.md
+# is unchanged but for its status line since the last commit touching review.md, and scripts/agent/eligible.sh <n>
+# <card> passes (--offline skips only that call: metrics on merged PRs). Without --run a field starting "reviewer" is
+# refused; any other is the lead's.
 # Exit 5 prints "plan-files: <card> approval at <sha7>: <why>" on stderr. Run inside the card's worktree. bash 3.2-safe.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -77,7 +78,7 @@ else
   [[ "$got" == "$tier" ]] || refuse "the field says tier $tier, scripts/agent/tier.sh says ${got:-nothing}"
   review="backlog/work/$card/review.md"
   verdict="$(git show "$sha:$review" 2>/dev/null | awk '
-    /^## / { in_pr = ($0 ~ /^## Plan review \(round [0-9]+\)/); if (in_pr) v = ""; next }
+    /^## / { in_pr = ($0 ~ /^## Plan review([[:space:](]|$)/); if (in_pr) v = ""; next }
     in_pr && v == "" && /^Verdict:/ { v = $0 }
     END { print v }')"
   [[ "$verdict" == "Verdict: approved"* ]] || refuse "$review's last plan review is not 'Verdict: approved' (${verdict:-none})"
