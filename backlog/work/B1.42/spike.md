@@ -29,18 +29,20 @@ printf '%s' "$PROMPT" | env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CO
 
 | #   | Run                | Tools / turns / USD  | Exit | Turns | Cost    | Outcome                                                                      |
 | --- | ------------------ | -------------------- | ---- | ----- | ------- | ---------------------------------------------------------------------------- |
-| 1   | R1                 | Read,Write / 8 / 1   | 1    | 0     | 0       | `api_error`: "Not logged in · Please run /login" (`attempt1-not-logged-in/`) |
-| 2   | R1 (lead terminal) | Read,Write / 8 / 1   | ?    | ?     | ≈ 0.15? | both writes blocked (hook-input session `66bbcfde`); stream overwritten      |
+| 1   | R1                 | Read,Write / 8 / 1   | 1    | 1     | 0       | `api_error`: "Not logged in · Please run /login" (`attempt1-not-logged-in/`) |
+| 2   | R1 (lead terminal) | Read,Write / 8 / 1   | ?    | ?     | ≈ 0.15? | hooks received both Writes (`66bbcfde`); outcome lost, stream overwritten    |
 | 3   | R1                 | Read,Write / 8 / 1   | 0    | 3     | 0.149   | both writes blocked (session `de71d8d8`)                                     |
 | 4   | R3                 | Read,Glob / 2 / 1    | 1    | 3     | 0.340   | `error_max_turns`, "Reached maximum number of turns (2)", 2 Reads            |
-| 5   | R4                 | Read,Glob / 8 / 0.01 | 1    | 1     | 0.043   | `error_max_budget_usd`, "Reached maximum budget ($0.01)", 1 Read             |
+| 5   | R4                 | Read,Glob / 8 / 0.01 | 1    | 1     | 0.043   | `error_max_budget_usd`, "Reached maximum budget ($0.01)", Read never ran     |
 
 Run 1: `auth status --json` gave `loggedIn false, authMethod none` from this session and from the lead's terminal
 panel; the desktop session's login does not reach a child `claude`. The lead ran `claude auth login` with this binary;
 `loggedIn true, authMethod claude.ai` afterwards. Runs 2 and 3 overlapped: both wrote `R1.jsonl` with `>`, so lines 7
 and 9 do not parse (`{"type{"type":...`); kept as `R1-interleaved.jsonl`, 33 of its 35 lines parse. R2 skipped
 (b1 passed). `init`: model `claude-fable-5-1` (the login's default, `dev-lead` is `model: inherit`), `permissionMode
-dontAsk`, tools exactly the `--tools` list in R3/R4.
+dontAsk`. Tools: `--tools Read,Glob` gave `["Read","Glob"]` (R3, R4), but `--tools Read,Write` gave
+`["Read","Write","Grep","Glob"]` (runs 1 and 3): `--tools` is not an exact list. Bash was never present. Run 1's
+result: `subtype success`, `is_error true`, `num_turns 1`.
 
 ## Probes
 
@@ -51,23 +53,26 @@ Read (R3: 4 `PreToolUse:Read` hook_started for 2 Reads, each `exit_code 0, outco
 hooks (a user plugin and a silent one, `session-mark.sh` [unverified]) and a Stop hook (R1 line 33) appear as events.
 
 **(b) path-guard.sh blocks an out-of-scope write — proven (frontmatter route, b1).** Each Write started 3 PreToolUse
-hooks (tee, `plan-scope.sh`, `dev-lead.md`'s `path-guard.sh`). Tool results (run 3, `result` line):
+hooks (tee, `plan-scope.sh`, `dev-lead.md`'s `path-guard.sh`). Tool results (run 3, `R1-interleaved.jsonl` lines 23, 31):
 
 ```
 src/spike-r1.txt: BLOCKED by .claude/hooks/plan-scope.sh: backlog/work/B1.42/plan.md is not approved on
   chore/B1.42-sandbox (no 'docs(backlog): B1.42 plan approved' commit): nothing outside backlog/ and spec/ changes …
-  (and BLOCKED by .claude/hooks/path-guard.sh: 'src/spike-r1.txt' is outside this role's paths …)
 spec/spike-r1.md: BLOCKED by .claude/hooks/path-guard.sh: 'spec/spike-r1.md' is outside this role's paths
   (backlog/* docs/metrics.md docs/mistake-log.md !backlog/00-decisions.md). Report back to the orchestrator …
 ```
 
 `spec/` is allowed by `plan-scope.sh` and by the run's allow rule, so only the frontmatter hook can have blocked it.
-`permission_denials` lists both Writes; `ls` of both files after the run: No such file or directory.
+`permission_denials` lists both Writes; `ls` of both files after the run: No such file or directory. On `src/`
+`path-guard.sh` blocked too (hook_response, line 21), but the tool result carries only `plan-scope.sh`'s reason: when
+two hooks block, the agent sees one. Run 2's outcome is not in the logs (its stream was overwritten; `hook-input.jsonl`
+shows only that its hooks received both Writes), so (b) rests on run 3.
 
 **(c) turn and budget limits stop the run — proven.** `--max-turns` is hidden from `--help` but works: R3 stopped
 with `subtype error_max_turns`, `num_turns 3` (the limit + the final turn), `terminal_reason max_turns`, exit 1.
 `--max-budget-usd 0.01`: R4 stopped with `error_max_budget_usd`, `terminal_reason budget_exhausted`, exit 1 — after
-spending USD 0.043: the budget is checked after a turn, never before one, so a run overshoots by up to one turn.
+spending USD 0.043: the budget is checked after a turn, never before one, so a run overshoots by up to one turn. The stop also cut R4's first Read: two `PreToolUse:Read` hooks started, none
+responded, no tool result.
 
 **(d) the full JSON log is captured — proven.** `--output-format stream-json --verbose --include-hook-events` writes
 one JSON event per line (system init, hook_started/hook_response with `exit_code` and `outcome`, assistant, user
@@ -76,12 +81,12 @@ line of every run is `"type":"result"`. Runs 2 and 3 show the failure mode of a 
 
 ## What the runner (B1.44) must do differently
 
-1. Use the macOS binary under `claude-code/<version>/…/MacOS/claude` (or a pinned standalone install), never
-   `claude-code-vm`; record `--version` in each run's log.
+1. On the macOS host, the macOS binary under `claude-code/<version>/…/MacOS/claude` (or a pinned standalone install);
+   `claude-code-vm` is a Linux build (for B1.44's devcontainer [unverified]); record `--version` in each run's log.
 2. Own login: check `claude auth status --json` → `loggedIn true` before a run and stop with a clear message
    otherwise; the desktop app's session never lends its login.
 3. One log per run, never shared: `~/.level-up-lab/runs/<issue>/<UTC timestamp>-<pid>.jsonl` (+ `.err`, `.exit`),
-   and one runner at a time (a lock), so two runs cannot interleave a stream again.
+   and one run per issue at a time (a lock), so two runs cannot interleave a stream again.
 4. Budget = what one run may spend minus one turn (R3: two turns of this repo's context cost USD 0.34); read the
    outcome from the last line (`subtype`: `success`, `error_max_turns`, `error_max_budget_usd`), not only the exit code
    (1 for both limits).
@@ -89,6 +94,7 @@ line of every run is `"type":"result"`. Runs 2 and 3 show the failure mode of a 
 6. User-level settings and plugins load in `-p` (a user plugin's SessionStart and UserPromptSubmit hooks ran in every
    run); run under a dedicated config or with `--setting-sources project,local` [unverified].
 7. Keep `--tools` + `--permission-mode dontAsk` + narrow allow rules: `--allowedTools` only adds to `settings.json`'s
-   allow list (`Bash(scripts/pr-step.sh *)` stays live), `--tools` removes the rest. Prompt on stdin.
+   allow list (`Bash(scripts/pr-step.sh *)` stays live), `--tools` drops Bash; check `init.tools` in the log, since
+   `--tools` may add read-only tools (Grep, Glob). Prompt on stdin.
 8. Frontmatter hooks do fire for `--agent <role>` in 2.1.309 `-p`; still assert it per version (a smoke run like R1)
    before trusting an upgrade, since the card's premise came from an older report.
