@@ -169,7 +169,7 @@ line="$(grep "^CLAUDE .* ARGS=-p " "$LOG" | head -1)"
   || { say "cwd/env: ${line%% ARGS=*}"; r=1; }
 grep -q "^WORKTREE chore/B1.44-agent$" "$LOG" && grep -q "^CLAIM --claim B1.44$" "$LOG" || { say "claim/worktree: $(grep -E '^(CLAIM|WORKTREE)' "$LOG")"; r=1; }
 grep -qxF "WORKTREE-CWD ${ROOT%%/.worktrees/*}" "$LOG" || { say "worktree.sh not run from the checkout that holds .worktrees/: $(grep '^WORKTREE-CWD' "$LOG")"; r=1; }
-has '#7' "$FIX/stdin-1" && has 'B1.44' "$FIX/stdin-1" && has "$WT/chore-b1-44-agent" "$FIX/stdin-1" || { say "stdin: $(head -3 "$FIX/stdin-1" 2>/dev/null)"; r=1; }
+has '#7' "$FIX/stdin-1" && has 'B1.44' "$FIX/stdin-1" && has '.claude/skills/work-next/SKILL.md' "$FIX/stdin-1" && has "$WT/chore-b1-44-agent" "$FIX/stdin-1" || { say "stdin: $(head -3 "$FIX/stdin-1" 2>/dev/null)"; r=1; }
 grep -q 'GH_REPO=evil' "$LOG" && { say "GH_REPO reached gh"; r=1; }
 grep -Eq 'dangerously-skip-permissions|bypassPermissions' "$SRC" && { say "a bypass flag is named in run.sh"; r=1; }
 reset; RUNNER_CHILD=1 run 7
@@ -194,6 +194,8 @@ reset; { start; init '["Read","Grep","Glob","Write","Edit","Bash","Agent","Skill
 t0=$(date +%s); run 7; t=$(( $(date +%s) - t0 ))
 [[ $RC -eq 0 && $t -lt 20 && $(calls) -eq 1 ]] && has 'tools-mismatch' "$FIX/comments" && has 'WebFetch' "$FIX/comments" \
   || { say "rc=$RC t=${t}s calls=$(calls) comments=$(cat "$FIX/comments" 2>/dev/null | head -3)"; r=1; }
+reset; { start; init '["Read","Grep","Glob","Write","Edit","Bash","Task"]'; result false success "$GATE"; } > "$FIX/stream.jsonl"; run 7
+has 'outcome: gate' "$FIX/comments" || { say "Task (the Agent tool's name in 2.1.309's init) stopped the run: $(sed -n 3p "$FIX/comments" 2>/dev/null)"; r=1; }
 [[ $r -eq 0 ]] && ok R8 || fail R8
 # R9
 r=0
