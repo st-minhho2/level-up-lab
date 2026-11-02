@@ -614,13 +614,13 @@ code needs the segment to be exactly `*`
 ### B1.42 · Spike: a headless dev-lead run keeps the hooks and limits
 
 _tooling · no §_
-**Status: Open** — autonomous delivery (D-27) runs `dev-lead` headless with `claude -p` on the lead's machine (D-26); frontmatter hooks are known to be skipped in `-p` mode, so whether `.claude/settings.json` hooks still fire with `agent_type`, whether `path-guard.sh` still blocks, and whether turn and budget limits and a full JSON log work is unproven
+**Status: Done** — 6561267 (#152), `backlog/work/B1.42/spike.md`: (a) proven — 7 PreToolUse inputs with `agent_type` dev-lead, `plan-scope.sh` and `guard-read.sh` from settings.json fired; (b) proven — the agent's frontmatter `path-guard.sh` blocked `spec/` (frontmatter hooks do fire for `--agent` in 2.1.309 `-p`); (c) proven — `error_max_turns` at `--max-turns 2`, `error_max_budget_usd` at USD 0.01 after USD 0.043 (one-turn overshoot); (d) proven — stream-json per run; 5 of 6 runs, USD 0.53 measured; no src/ change (vitest 202, e2e 43, mutation 93.40 % unchanged)
 
 - **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
 - **Test:** `backlog/work/B1.42/spike.md` records each run (command, exit code, log path, hook evidence) — red because: no headless run has been made
 - **Acceptance:** on a throwaway worktree, with the `claude` binary bundled with the desktop app: (a) `settings.json` PreToolUse hooks fire under `claude -p --agent dev-lead` and receive `agent_type`; (b) `path-guard.sh` blocks a write outside the role's scope; (c) `--max-turns` and a budget limit stop the run; (d) the full JSON (stream) log is captured to a file. If (a) or (b) fails the card stops and reports before anything else; no change under `src/`, `.claude/` or `scripts/ci/`
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.42/`
+- **Work:** `work/B1.42/` (plan, review: plan review 2 rounds + plan round 3, lead rounds 1; diff review 3 of 3 passes, 7 + 1 findings fixed, 1 out of scope → B1.47; spike)
 
 ### B1.43 · Agent-task issue template and an eligibility check on the label
 
@@ -630,7 +630,7 @@ _tooling · no §_
 - **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
 - **Test:** `scripts/agent/eligible-smoke.sh` (new) — red because: `scripts/agent/eligible.sh` does not exist
 - **Acceptance:** `.github/ISSUE_TEMPLATE/agent-task.yml` asks for the card id, spec section or change, acceptance and out of scope; `scripts/agent/eligible.sh <issue>` exits 0 only when the `agent-ready` label's most recent `labeled` event comes from an actor whose repository permission is write, maintain or admin, and 1 otherwise (with the reason); probes cover a read-only actor, a removed and re-added label and a missing label; the PR carries `config-change-approved` (D-19)
-- **Tier:** quick · **Depends on:** B1.42 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** quick · **Depends on:** ~~B1.42~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.43/`
 
 ### B1.44 · Runner: poll agent-ready issues and run dev-lead headless in a sandbox
@@ -652,7 +652,7 @@ _tooling · no §_
 - **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
 - **Test:** `scripts/agent/feature-map-smoke.sh` (new) — red because: `scripts/agent/feature-map.sh` does not exist
 - **Acceptance:** the PR template gains an Evidence section (AC met N/N, tier, plan deviations, Playwright trace link); `scripts/agent/feature-map.sh` prints a daily table of agent cards, riskiest first, and posts it to the agent board; the PR carries `config-change-approved` (D-19)
-- **Tier:** quick · **Depends on:** B1.42 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** quick · **Depends on:** ~~B1.42~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.45/`
 
 ### B1.46 · Layer rules checked in CI with dependency-cruiser
@@ -663,5 +663,16 @@ _tooling · no §_
 - **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
 - **Test:** a CI step running `depcruise` — red because: a probe import of `@/lib/prisma` from `src/components/` passes CI today
 - **Acceptance:** `dependency-cruiser` added as a dev dependency (lead's approval with the autonomous-delivery plan) with rules for the layers in `CLAUDE.md` "Architecture in one pass"; a CI job fails on a violation; today's tree has none; the PR carries `config-change-approved` (D-19)
-- **Tier:** quick · **Depends on:** B1.42 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** quick · **Depends on:** ~~B1.42~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.46/`
+
+### B1.47 · B1.44's acceptance takes the B1.42 spike findings
+
+_tooling · no §_
+**Status: Open** — B1.42's spike (`backlog/work/B1.42/spike.md`, "What the runner (B1.44) must do differently") found that the desktop session's login never reaches a child `claude`, that `--max-budget-usd` overshoots by one turn, that `subtype success` can carry `is_error true` (`api_error`), that two runs sharing a log file corrupt it, that `--tools` may add Grep and Glob, that `model: inherit` resolves to the login's default, and that user-level plugins load in `-p`; B1.44's Acceptance (`plan/E1-todos.md`, "### B1.44") names none of these, and its devcontainer needs the Linux build (`claude-code-vm`) where the spike used the macOS one
+
+- **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
+- **Test:** `grep -c` over the B1.44 card for `auth status`, `is_error`, a per-run log name and a per-issue lock — red because: B1.44's Acceptance holds none of them
+- **Acceptance:** B1.44's Acceptance adds: an `auth status` check before a run; one log file per run and one run per issue at a time; budget set one turn below the spend limit; the outcome read from `is_error` then `subtype`; `--model` pinned; `init.tools` checked; user settings kept out of the run (or the reason they stay); the binary named per host (macOS app build on the host, Linux build in the devcontainer, verified there). Card text only, through the lead's review; no script change
+- **Tier:** 0 · **Depends on:** ~~B1.42~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.47/`
