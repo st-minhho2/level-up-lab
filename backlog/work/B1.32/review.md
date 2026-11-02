@@ -107,3 +107,61 @@ Verdict: approved (ready for the lead's gate, not approved for build)
   not say so.
 - If B1.32 merges after B1.33, `scripts/CLAUDE.md`'s hook-smoke row ("L1–L6") will miss L7–L14. B1.33's plan already
   routes this case to a follow-up.
+
+## Plan review (round 2)
+
+The plan under review is `e05a85f docs(backlog): B1.32 plan round 2 (review r1 note: ? probe L15, CFR window date)`.
+That commit changes only `plan.md`: `git show --stat e05a85f` lists 1 file, 11 lines added and 11 removed. The approach,
+the Files list, the interfaces and the work breakdown are the ones round 1 reviewed. Only the probe set, the expected
+numbers and the CFR date moved.
+
+Round-1 notes:
+
+1. Resolved. The `?` gap is closed by a fixture row `src/app/x?.ts` and hook probe L15 `src/app/xy.ts` → 2. I re-ran
+   it on the scratch copy:
+   - With the HEAD matcher plus all planned probes, L15 FAILs 4 times on both bash versions.
+   - My escape-only-`[ ]` mutant still matches (`plan_lists src/app/xy.ts 'src/app/x?.ts'` → 0), so L15 kills it.
+2. Not adopted, and not required: the build notes on segment splitting, the end-of-token test and the two header
+   comments still apply to step 2.
+3. Resolved. The CFR date is now 2026-11-15, citing #99, #124 and #132 (all merged 2026-11-01). That matches
+   `git log origin/main --since=2026-10-19` on the four code files.
+
+`origin/main` moved by four commits: #137 and #139 (B1.31), and #138 and #140 (B1.33).
+
+- `git diff HEAD origin/main` on the plan's 5 code and doc files is empty.
+- `git merge-tree --write-tree HEAD origin/main` merges clean.
+- #138 adds `scripts/hook-smoke.sh` as a step in CI's `test` job, which runs bash 5 with a depth-1 checkout. The
+  B1.32 PR's probes will therefore also run there. The new guard probes L9–L11 go through `cps`, which unsets
+  `GITHUB_HEAD_REF` and `GITHUB_BASE_REF`, the same path that L4–L6 and C1–C8 took to a green `test` run on #138.
+- B1.36 and B1.37, filed in #140, will edit `hook-smoke.sh` (the review-gate block, and `cps`). Both are Open, not
+  Doing, so `--check` does not count them. Whichever of them starts after B1.32 merges must rebase onto its L7–L15.
+  B1.37's `cps` change will cover L9–L11 with no extra work.
+
+| Check                                                                             | Result                                                                                                                                                                                                                                                                                                                      |
+| --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: the Files list is unchanged from r1, and only the `hook-smoke.sh` cell gained `x?.ts`. On `origin/main`, nothing changed in the plan's files                                                                                                                                                                          |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass (n/a): unchanged. The only new interface is `plan_lists <path> <token>`, which exits 0 or 1                                                                                                                                                                                                                            |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: there is no `advice.md`, and the plan states that spec-analyst and advisor were skipped                                                                                                                                                                                                                               |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: 4 Acceptance clauses. Clause 1 is now pinned by L7, L9, L12, L13 and L15                                                                                                                                                                                                                                              |
+| verification lists exact commands with expected numbers                           | pass: reproduced on the scratch copy. On both /bin/bash 3.2.57 and `node:24-bookworm` bash 5.2.15, the HEAD matcher gives 28 FAIL (4 each of L7, L8, L9, L10, L12, L13, L15, 94 L/S/C ok) and `plan_lists` gives 0 L/S/C FAIL (122 ok). Both copies also had 3 environment-only agent-frontmatter FAILs (js-yaml), as in r1 |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: unchanged from r1. Step 1 now produces L7–L15 with 28 FAIL                                                                                                                                                                                                                                                            |
+| the section has a `Lead approves spec` box, ticked only by a human                | pass (n/a): there is no section. `Plan approved by:` is empty                                                                                                                                                                                                                                                               |
+| no settled D-n contradicted                                                       | pass: D-19 (label), D-25 (out-of-scope items are named, not built). D-7 is n/a                                                                                                                                                                                                                                              |
+| `scripts/next-task.sh --check B1.32` on the committed plan says no overlap        | pass: `[next-task] B1.32: no overlap with any Doing or Review card` (exit 0), re-run after `git fetch`                                                                                                                                                                                                                      |
+
+Verdict: approved (ready for the lead's gate, not approved for build)
+
+Notes (not reasons):
+
+- The plan is still 69 lines, which is the r1 length and has precedent.
+- The prose line for L13–L15 is long but passed the pre-commit prettier check.
+
+Out of scope → follow-up (D-25), updated:
+
+- Unchanged from r1: `scripts/metrics/plan-deviations.sh:35`, `scripts/next-task.sh:134` and
+  `.claude/agents/dev-lead.md:44-45`, with the same inputs as in round 1.
+- `scripts/CLAUDE.md`'s hook-smoke row on `origin/main` (#138) now reads "`[ ]` rows L1–L6". After this card that row
+  misses L7–L15. Input: `git show origin/main:scripts/CLAUDE.md | grep hook-smoke`.
+  - B1.33 is merged, so no batch-7 sibling owns that file any more.
+  - The lead may add that one cell to Files at the gate, or leave it to the follow-up that B1.33's plan named.
+    Either way it is not a reason to change this plan.
