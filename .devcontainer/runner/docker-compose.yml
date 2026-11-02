@@ -1,0 +1,74 @@
+# The runner's sandbox (B1.58): a compose project of its own, so it shares no network, volume or database with
+# ../../docker-compose.yml or the dev container. Two services from one image: `firewall` (root, NET_ADMIN, NET_RAW
+# only) applies init-firewall.sh's allow list to a network namespace that `runner` joins with no capability at all, so
+# no exec into `runner`, root included, can change the rules. The workspace is a clone in the runner-repo volume,
+# never the host's checkout (plan decision 1). The lead's commands, from the host checkout (the branch until merged):
+#   docker compose -f .devcontainer/runner/docker-compose.yml up -d --build
+#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner gh auth login
+#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner gh auth setup-git
+#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner git clone https://github.com/st-minhho2/level-up-lab.git .
+#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner git checkout chore/B1.58-sandbox
+#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner claude auth login
+#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner sh -c 'umask 077; f=~/.claude/.claude.json; jq ".projects[\"/home/node/level-up-lab\"].hasTrustDialogAccepted = true" "$f" > "$f.tmp" && mv "$f.tmp" "$f"'
+# (that line trusts the clone, as claude's own "workspace has not been trusted" message suggests; an interactive
+# `claude` asks for the organization's managed settings first, a separate decision the runner does not need)
+#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh
+#   docker compose -f .devcontainer/runner/docker-compose.yml exec -e RUNNER_BUDGET_USD=1 runner scripts/agent/run.sh --check-binary
+#   docker compose -f .devcontainer/runner/docker-compose.yml stop
+#   docker compose -f .devcontainer/runner/docker-compose.yml up -d
+#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh
+# Logins live only in the runner-claude and runner-gh volumes (git's global config in runner-runs); after a suspect run
+# remove them (`docker compose -f .devcontainer/runner/docker-compose.yml down -v`) and log in again.
+name: level-up-lab-runner
+services:
+  firewall:
+    build: .
+    user: root
+    entrypoint: ['/usr/local/bin/init-firewall.sh']
+    command: ['sleep', 'infinity']
+    init: true
+    # /run in memory, so the ready mark of an earlier start never survives a stop (diff review 2 #1)
+    tmpfs: [/run]
+    cap_drop: [ALL]
+    cap_add: [NET_ADMIN, NET_RAW]
+    security_opt: ['no-new-privileges:true']
+    sysctls:
+      net.ipv6.conf.all.disable_ipv6: 1
+      net.ipv6.conf.default.disable_ipv6: 1
+    # ready only after the allow list passed its own check both ways; a failed check exits, and runner never starts
+    healthcheck:
+      test: ['CMD', 'test', '-e', '/run/level-up-lab-firewall-ready']
+      interval: 2s
+      timeout: 2s
+      retries: 30
+      start_period: 60s
+  runner:
+    build: .
+    network_mode: service:firewall
+    depends_on:
+      firewall:
+        condition: service_healthy
+    init: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    working_dir: /home/node/level-up-lab
+    environment:
+      CLAUDE_CONFIG_DIR: /home/node/.claude
+      DISABLE_AUTOUPDATER: '1'
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1'
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
+      GIT_CONFIG_GLOBAL: /home/node/.level-up-lab/gitconfig
+    volumes:
+      - runner-repo:/home/node/level-up-lab
+      - runner-claude:/home/node/.claude
+      - runner-gh:/home/node/.config/gh
+      # run.sh's RUNNER_RUNS default ($HOME/.level-up-lab/runs): logs, verified-versions, stop marks survive a rebuild
+      - runner-runs:/home/node/.level-up-lab
+      - runner-pnpm-store:/home/node/.local/share/pnpm/store
+
+volumes:
+  runner-repo:
+  runner-claude:
+  runner-gh:
+  runner-runs:
+  runner-pnpm-store:
