@@ -852,3 +852,14 @@ _tooling · no §_
 - **Acceptance:** `eligible.sh <issue>` exits 1 with `eligible: #<n> is closed` on a closed issue whether or not `<card>` is given, so `run.sh <issue>` refuses it; the PR carries `config-change-approved` (D-19, `scripts/agent/` is protected)
 - **Tier:** quick · **Depends on:** ~~B1.43~~, B1.55 (both change `eligible.sh`) · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.64/`
+
+### B1.65 · The runner's prompt lets a run pass a reviewed low or medium plan (D-27)
+
+_tooling · no §_
+**Status: Open** — `scripts/agent/run.sh:197` tells every run "At the plan gate print the gate line and stop" and its header (`run.sh:4`) says "Until B1.55 every run stops at the plan gate". B1.55 (#171) gives dev-lead the D-27 path (`.claude/agents/dev-lead.md` Loop 5: a reviewed low- or medium-tier plan on an eligible `agent-ready` issue proceeds) and makes the guards check it, but it could not change `run.sh` while B1.58 held it, so a run told to stop at the gate still stops at every card
+
+- **Spec:** none — tooling (D-27); no `src/` change, no section
+- **Test:** a new probe in `scripts/agent/run-smoke.sh` — red because: the prompt the `claude` shim receives still says "At the plan gate print the gate line and stop"
+- **Acceptance:** the run's prompt tells dev-lead to follow Loop 5's D-27 path (a reviewed low or medium plan of the issue it names proceeds; a high-tier plan or a refusal prints the gate line and stops) and the header says the same; run-smoke asserts the exact prompt; one live run on a low-tier test card passes the gate with the D-27 field (`docs(backlog): <card> plan approved`) and reaches a draft PR; B1.55's card moves from Partial to Done; the PR carries `config-change-approved` (D-19, `scripts/agent/` is protected)
+- **Tier:** quick · **Depends on:** B1.55, B1.58 · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.65/`
