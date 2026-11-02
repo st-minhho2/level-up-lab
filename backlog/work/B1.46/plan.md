@@ -1,6 +1,6 @@
 # B1.46 plan — Layer rules checked in CI with dependency-cruiser (tooling)
 
-Round 2 (plan review r1: 4 reasons). `dependency-cruiser` 18.6.0 (2026-10-11, 22 days old; 18.7.0 is exactly 14) as
+Round 3 (plan review r1: 4 reasons; r2: 1). `dependency-cruiser` 18.6.0 (2026-10-11, 22 days old; 18.7.0 is exactly 14) as
 an exact dev dependency. `scripts/ci/check-layers.sh` runs two cruises and fails if either finds a violation; a step in
 the required `lint` job runs it, so a violation blocks the merge. CI calls the protected script, not a `package.json`
 script (unprotected), and every `.dependency-cruiser*` file joins `check-config-change.sh`'s list (a known-violations
@@ -81,4 +81,4 @@ No skeleton, no map row, no `test(` commit (no test file; `verify-red.sh` judges
 `scripts/ci/`). Guides naming the protected list or the CI guards (`.claude/docs/git-workflow.md`, `scripts/CLAUDE.md`)
 are the orchestrator's after the batch.
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: round 2 changes requested, 1 finding (P14 control could not fail), fixed in round 3 without a third review (dev-lead: ≤ 2 rounds, then the lead) · Plan approved by: · Rounds: 1

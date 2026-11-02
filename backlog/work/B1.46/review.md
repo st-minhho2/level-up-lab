@@ -97,3 +97,65 @@ Probes, on a copy at `$TMPDIR/…/scratchpad/rv1`, with the plan's config:
      about a scratch copy that will disappear.
 
 Verdict: changes requested
+
+## Plan review (round 2)
+
+Plan reviewed: `4089071 docs(backlog): B1.46 plan round 2`, together with the new `probe.sh`. What happened to each
+round 1 reason:
+
+- **r1 #1 (reachability):** addressed. The second config `.dependency-cruiser-client.mjs` adds the reachable rule,
+  with `src/actions/` not followed and type-only imports left out.
+- **r1 #2 (unstated costs):** addressed. The plan now states:
+  - `next/cache` is banned outside `src/actions`;
+  - the 3 Server Components in `src/components` fall under both component rules;
+  - three things are not covered: a `'use server'` file outside `src/actions`, a `'use client'` file under
+    `src/app`, and any deep `next/dist` path other than `revalidate.js`.
+- **r1 #3 (unprotected script):** addressed. CI runs the protected `scripts/ci/check-layers.sh`. `package.json` gets
+  no script. The pattern widens to `\.dependency-cruiser.*`, which covers both configs and a known-violations
+  baseline.
+- **r1 #4 (verification):** mostly addressed. P15 isolates the protected-list change on a one-file range. The vitest
+  counts are now numbers. The probes are named and are reproducible at `origin/main`. One gap remains: reason 1 below.
+
+What I re-ran:
+
+- The prototype configs on a copy of 7570921's `src`:
+  - Clean tree: `main=0 client=0`. The modules and dependencies match the plan (80/191 and 75/139).
+  - P6 (`listTodos` from a component): `client=2`, `components-reach-db-only-through-actions`.
+  - P8 (deep `revalidate`): `revalidate-only-in-actions`.
+  - P14 (type-only `Todo` from `@/lib/todos`): `main=0 client=0`.
+  - A lib module importing a component: `lib-imports-no-upper-layer`.
+- The red run: `bash backlog/work/B1.46/probe.sh origin/main` → `probe: 1/14 caught, control pass`, exit 1. P13 was caught by tsc, and P15 printed `exit 0 unlabelled` for both files. The run took 5 min 58 s here, against the plan's 2.5 min; three sessions were sharing the machine.
+
+| Check                                                                             | Result                                                                                                                                                                                                           |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass (n/a): tooling, so no § and no map row. Each row maps to an Acceptance clause or to D-19/D-28. `scripts/ci/check-layers.sh` is new and already protected by `scripts/ci/.*`                                 |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass (n/a): nothing changes under `src/`. The CI step and the script's contract (no arguments, exit 0/1) are stated                                                                                              |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: there is no `advice.md` (quick tier). "A CI job" became a step in the required `lint` job, and the plan says why                                                                                           |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: four Acceptance clauses, each with a numbered expectation. Observation: the plan is 84 lines against planning.md's ≈ 40, mostly tables and code blocks. The lead may ask for a split; I do not block on it |
+| verification lists exact commands with expected numbers                           | fail: green-mode `probe.sh` reports "control pass" even when `check-layers.sh` flags the control file, so the "14/14 caught, control pass" line cannot catch the regression P14 exists to catch (reason 1)       |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: no § and no test file, so no skeleton, `test(` commit or map row, and the plan says so. Red is `probe.sh origin/main`, green is `probe.sh` after step 3. The subjects pass lefthook's regex                |
+| the section has a `Lead approves spec` box, ticked only by a human                | pass (n/a): there is no section. `Plan approved by:` is empty                                                                                                                                                    |
+| no settled D-n contradicted                                                       | pass: D-19 (label, protected paths), D-25 (follow-ups), D-27/D-28 (high tier from `package.json`, the lockfile, `.github/`, `scripts/ci/`)                                                                       |
+| `scripts/next-task.sh --check B1.46` says no overlap                              | pass: `[next-task] B1.46: no overlap with any Doing or Review card` (re-run on 4089071)                                                                                                                          |
+
+### Reasons (numbered)
+
+1. **The P14 control cannot fail in green mode.**
+   - In `check()` (`probe.sh:26`), a run is `CAUGHT` only when `check-layers.sh` exits non-zero _and_ its output
+     contains the probe's rule name. P14 passes the rule as `none`.
+   - `probe()` (`probe.sh:46`) then sets `control=pass` for any verdict starting with `MISSED`, and that includes
+     `MISSED (check-layers exit 1)`.
+   - Trigger: `.dependency-cruiser-client.mjs` regresses to `tsPreCompilationDeps: true`, which is exactly what P14
+     guards against. On today's tree that gives 10 violations (r1). `check-layers.sh` exits 1 on the type-only import
+     in `src/components/probe.tsx`, but its output never contains the string `none`.
+   - Result: the verdict is `MISSED (check-layers exit 1)`, the output says `P14 control …: pass`, and if P1–P13 and
+     P15 are caught, `probe.sh` exits 0.
+   - Confirmed: I ran `probe.sh` lines 20–53 and 82–83 against a stub `check-layers.sh` that prints a
+     `components-reach-db-only-through-actions` error for `probe.tsx` and exits 1. It printed
+     `P14 control (type-only import, as todo-item.tsx does): pass`.
+   - Fix: count the control as passing only when the gate itself passes, meaning `check-layers.sh` exits 0 in green
+     mode, or eslint and tsc both exit 0 in red mode. For example, have `check()` return a distinct
+     `PASSED`/`FLAGGED` verdict and test P14 against `PASSED`. While editing, the plan footer still says
+     `Rounds: 1`.
+
+Verdict: changes requested

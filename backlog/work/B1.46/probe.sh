@@ -16,16 +16,20 @@ caught=0
 total=0
 control=fail
 
-# check <rule> <file>…: "CAUGHT …" or "MISSED …" for the probe files just written.
+# check <rule> <file>…: for the probe files just written, "CAUGHT by …" (the gate failed naming the rule), "PASSED (…)"
+# (the gate passed: a miss for a forbidden import, the expected result for the P14 control) or "FLAGGED …" (the gate
+# failed for another reason: neither).
 check() {
   local rule="$1" out rc
   shift
   if [[ -f "$T/scripts/ci/check-layers.sh" ]]; then
     out="$(cd "$T" && bash scripts/ci/check-layers.sh 2>&1)"
     rc=$?
-    if [[ $rc -ne 0 && "$out" == *"$rule"* ]]; then echo "CAUGHT by $rule"; else echo "MISSED (check-layers exit $rc)"; fi
+    if [[ $rc -eq 0 ]]; then echo "PASSED (check-layers exit 0)"
+    elif [[ "$out" == *"$rule"* ]]; then echo "CAUGHT by $rule"
+    else echo "FLAGGED by another rule (check-layers exit $rc)"; fi
   elif (cd "$T" && pnpm exec eslint --no-warn-ignored "$@" >/dev/null 2>&1 && pnpm exec tsc --noEmit >/dev/null 2>&1); then
-    echo "MISSED (eslint 0, tsc 0)"
+    echo "PASSED (eslint 0, tsc 0)"
   else
     echo "CAUGHT by eslint or tsc"
   fi
@@ -43,12 +47,12 @@ probe() {
   verdict="$(check "$rule" "${files[@]}")"
   for f in "${files[@]}"; do rm -f "$T/$f"; done
   if [[ "$id" == P14 ]]; then
-    if [[ "$verdict" == MISSED* ]]; then control=pass; else control=fail; fi
-    echo "$id control (type-only import, as todo-item.tsx does): $control"
+    if [[ "$verdict" == PASSED* ]]; then control=pass; else control=fail; fi
+    echo "$id control (type-only import, as todo-item.tsx does): $control, $verdict"
     return
   fi
   total=$((total + 1))
-  [[ "$verdict" == CAUGHT* ]] && caught=$((caught + 1))
+  if [[ "$verdict" == CAUGHT* ]]; then caught=$((caught + 1)); else verdict="MISSED, $verdict"; fi
   echo "$id $rule: $verdict"
 }
 
