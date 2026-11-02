@@ -175,10 +175,13 @@ t0=$(date +%s); run 7; t=$(( $(date +%s) - t0 ))
 [[ $r -eq 0 ]] && ok R8 || fail R8
 # R9
 r=0
-reset; { start; init '' '[{"name":"caveman"}]'; echo SLEEP; } > "$FIX/stream.jsonl"; run 7
+reset; { start; init '' '[{"name":"caveman","source":"caveman@caveman","path":"/u/.claude/plugins/cache/caveman"}]'; echo SLEEP; } > "$FIX/stream.jsonl"; run 7
 [[ $(calls) -eq 1 ]] && has 'user-settings' "$FIX/comments" || { say "plugin: $(head -3 "$FIX/comments" 2>/dev/null)"; r=1; }
 reset; { start; start; init; echo SLEEP; } > "$FIX/stream.jsonl"; run 7
 [[ $(calls) -eq 1 ]] && has 'user-settings' "$FIX/comments" || { say "extra SessionStart: $(head -3 "$FIX/comments" 2>/dev/null)"; r=1; }
+BUILTIN='[{"name":"cc-plugin-telemetry","source":"cc-plugin-telemetry@builtin","path":"builtin"}]'
+reset; { start; init '' "$BUILTIN"; result false success "$GATE"; } > "$FIX/stream.jsonl"; run 7
+has 'outcome: gate' "$FIX/comments" || { say "builtin plugin stopped the run: $(head -3 "$FIX/comments" 2>/dev/null)"; r=1; }
 [[ $r -eq 0 ]] && ok R9 || fail R9
 # R10
 r=0
@@ -233,6 +236,10 @@ reset; : > "$RUNS/verified-versions"; { init '["Write"]'; result false success d
 reset; : > "$RUNS/verified-versions"; { init '["Write"]'; echo "$pass"; echo 'WRITE:spec/agent-probe.md'; result false success done; } > "$FIX/stream.jsonl"
 run --check-binary
 [[ $RC -eq 1 && ! -s "$RUNS/verified-versions" ]] || { say "file written: rc=$RC"; r=1; }
+reset; : > "$RUNS/verified-versions"
+{ init '["Write"]' '[{"name":"caveman","source":"caveman@caveman","path":"/u/x"}]'; echo "$pass"; result false success done; } > "$FIX/stream.jsonl"
+run --check-binary
+[[ $RC -eq 1 && ! -s "$RUNS/verified-versions" ]] && has 'user-settings' "$TMP/out" || { say "user plugin: rc=$RC $(tail -1 "$TMP/out")"; r=1; }
 [[ $r -eq 0 ]] && ok R14 || fail R14
 
 echo
