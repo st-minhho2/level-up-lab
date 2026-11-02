@@ -37,3 +37,19 @@ _F20 · section 22_
 - **Acceptance:** AC-22.1 to AC-22.7 (contract `spec/contracts/20-all-done.md`; mounts in `src/components/remaining-count.tsx` only)
 - **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B4.3/`
+
+### B4.4 · Section 22 criteria measure the reload rule and the no-role rule
+
+_F20 · section 22_
+**Status: Open** — B4.3 diff review (`backlog/work/B4.3/review.md`, spec gaps G1 and G2): AC-22.6 counts document
+navigations over "the first four steps", which include the reload itself (`navigations()` is 1 right after
+`page.reload()`), so only check, uncheck and "Mark all complete" are measured and a "Clear completed" that ends in
+`window.location.reload()` passes every test, leaving REQ-22.6's "without a full reload" for §9 unmeasured; AC-22.2's
+Then names only the `listitem`, `button`, `link` and `alert` roles, so a `<span role="status">` passes every test while
+the §22 Function contract says the sibling element "has no role". Needs a D-n before any `docs(spec)` change
+
+- **Spec:** change: §22 AC-22.6 and AC-22.2 wording, a `docs(spec)` commit under a D-n (the review suggests "0 document
+  navigations during the check, the uncheck, 'Mark all complete' and 'Clear completed' (the reload excepted)", and an
+  AC-22.2 Then that the sibling element has no role)
+- **Tier:** full · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B4.4/`
