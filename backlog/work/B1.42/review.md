@@ -102,3 +102,105 @@ the binary named in the plan, version `2.1.309 (Claude Code)`, without any API c
    - Confidence: plausible (I confirmed the environment, not how the child behaves).
 
 Verdict: changes requested
+
+## Plan review (round 2)
+
+The plan under review is `f24f3cd docs(backlog): B1.42 plan round 2`, measured against the same contract as round 1
+(card ### B1.42 Acceptance (a) to (d) and its stop rule, plus the lead's brief). Re-checked without any API call:
+
+- `--max-turns <turns>` exists in 2.1.309 as a hidden option. The binary's strings hold
+  `.addOption(new ss("--max-turns <turns>","Maximum number of agentic turns in non-interactive mode …")…)`, which is
+  why `--help` omits it. The "rejected" fallback branch should not occur.
+- `--no-session-persistence`, `--include-hook-events`, `--tools <tools...>` and `--settings <file-or-json>` (one
+  value) are all listed. `--permission-mode` accepts `dontAsk`.
+- The binary sets each hook's `CLAUDE_PROJECT_DIR` to the child's own project (`{…, CLAUDE_PROJECT_DIR: projectDir}`),
+  and this session's Bash does not export it. So the sandbox hooks resolve `repo_rel` against the sandbox.
+- In the sandbox (branch `chore/B1.42-sandbox`, base origin/main), `plan-scope.sh` matches card B1.42, and
+  `plan-files.sh B1.42` exits 3 because there is no approval commit. That blocks `src/` with
+  `BLOCKED by .claude/hooks/plan-scope.sh: … is not approved …`. `spec/*` passes plan-scope, and dev-lead's
+  frontmatter globs (`backlog/*`, `docs/metrics.md`, `docs/mistake-log.md`) leave `spec/` to path-guard alone, so the
+  b1 discriminator holds.
+- `guard-bash.sh` lets the run line through: the `| env -u …` segment matches neither the environment-dump rule nor
+  the secret-variable rule. It also passes the teardown: `git worktree remove --force` and `git branch -D` match
+  neither the push rule nor the rm rule.
+
+### Round 1 reasons
+
+| #   | Round 1 reason                         | Round 2                                                                                                                                                                    |
+| --- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `--allowedTools` does not narrow       | resolved: `--tools Read,Write` / `Read,Glob` in comma form, prompt on stdin; no Bash or Agent, so `Bash(scripts/pr-step.sh *)` cannot fire                                 |
+| 2   | R2 rewrites R1's file                  | resolved: each run has its own paths (`spike-r1`, `spike-r2`)                                                                                                              |
+| 3   | second `--settings` drops tee          | resolved: one merged `tee-guard.json` for R2                                                                                                                               |
+| 4   | (b) redefined instead of a deviation   | resolved: the "Deviation the lead accepts by approving" paragraph says b1 ✗ means (b) as worded is not proven, R2 is the extra run, and the spike stops before R3/R4       |
+| 5   | (a) measured on the extra hook         | resolved: `grep -c 'plan-scope.sh' R1.jsonl ≥ 1` checks the project hook, and `{ cat; echo; }` puts one record on each line                                                |
+| 6   | (c)/(d) expected values; `--max-turns` | resolved: R3 expects `error_max_turns` with `num_turns ≤ 3`, R4 `error_max_budget_usd`, (d) a last `result` line. The fallback is moot (hidden option)                     |
+| 7   | sandbox lifecycle                      | resolved: `scripts/worktree.sh` from the app checkout on origin/main; removed with `worktree remove --force`, `branch -D` and a schema prune; next-task expectation stated |
+| 8   | nested env, 120 s timeout              | resolved: `env -u` clears the three variables, runs go to the background, and `spike.md` records the desktop origin                                                        |
+
+### Checklist
+
+| Check                                                                             | Result                                                                                                                                                           |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: tooling, so there is no § and no map row. All four files are under `backlog/work/B1.42/`, and the sandbox and logs are outside the repo                    |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass (n/a): no TypeScript, action or Prisma                                                                                                                      |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: there is no `advice.md` (quick tier, stated). The deviation from the brief's stop rule is stated for the lead                                              |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | fail: the (b) verdict cannot tell a hook block from a `dontAsk` denial (reason 1)                                                                                |
+| verification lists exact commands with expected numbers                           | fail: the (d) command errors instead of printing `result` (reason 3), and the `ls` (b) check passes without any hook (reason 1)                                  |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: no § means no skeleton, red, green or map (stated). Both subjects are `docs(backlog): …`                                                                   |
+| `Lead approves spec` box ticked only by a human                                   | pass (n/a): there is no section. `Plan approved by:` is empty                                                                                                    |
+| no settled D-n contradicted                                                       | pass: D-25 (follow-ups), D-26 (the lead's machine and login) and D-27 to D-29 (PR #150) are respected. No `bypassPermissions`, no push, nothing on Actions       |
+| `scripts/next-task.sh --check B1.42` says no overlap                              | pass: `[next-task] B1.42: no overlap with any Doing or Review card` (exit 0). `scripts/ci/check-backlog.sh` gives `[check-backlog] OK: README matches the cards` |
+
+Not blocking: the plan is 75 lines against the ≈ 40 in `planning.md`. Recent plans on main run 59 to 69 lines, so
+this follows practice.
+
+### Reasons (numbered)
+
+1. **Under `--permission-mode dontAsk`, a write that no hook stops is still not written, so (b) has no clean
+   negative.**
+   - WHERE: plan.md "Interfaces touched" (the run line) and "Verification" (the `grep -o … (b)` line and the
+     `ls … No such file (b)` line).
+   - DEFECT: `dontAsk` denies any tool use that no allow rule covers. The project `settings.json` allows only
+     `Bash(scripts/pr-step.sh *)`, and neither `tee.json` nor `tee-guard.json` adds an allow rule for Write.
+   - TRIGGER: R1 where the frontmatter `path-guard.sh` is skipped, which is the outcome the card expects.
+   - WRONG BEHAVIOUR:
+     - `spec/spike-r1.md` comes back "permission denied", not "written". The plan names only two outcomes,
+       "path-guard.sh or written", so the dev-lead has to guess at the branch that decides whether R2, a paid run,
+       is spent.
+     - `ls <sandbox>/src/spike-r*.txt → No such file` passes even if no hook ran.
+     - If the user-level settings already allow Write, the result also depends on whose machine runs it, which
+       B1.44 will not reproduce.
+   - FIX, either of these:
+     - Add `"permissions":{"allow":["Edit(src/spike-r*.txt)","Edit(spec/spike-r*.md)"]}` (Write obeys Edit rules)
+       to `tee.json` and `tee-guard.json`. A hook is then the only thing that can stop the write: written means no
+       hook blocked it, absent means a hook did.
+     - State that b1 ✓ only if the `spec/` tool_result contains `BLOCKED by .claude/hooks/path-guard.sh`, that any
+       other refusal is b1 ✗, and drop the `ls` line from (b).
+   - CONFIDENCE: confirmed for the confound (`settings.json` permissions plus the `dontAsk` contract). Plausible for
+     how it shows in R1 (not run).
+2. **`$L` in the hook command is empty unless it is exported or expanded into the JSON.**
+   - WHERE: plan.md "`tee.json` = PreToolUse `*` → `{ cat; echo; } >> $L/hook-input.jsonl`".
+   - DEFECT: the hook shell inherits the child's environment, but `L=~/…` is a plain assignment that is not
+     exported, and Bash-tool calls do not keep shell variables from one call to the next.
+   - TRIGGER: `tee.json` is written with a literal `$L` and the run line does not export `L`.
+   - WRONG BEHAVIOUR: the hook appends to `/hook-input.jsonl`, which fails without blocking. Then
+     `grep -c '"agent_type":"dev-lead"'` returns 0, which reads as (a) ✗, and the card stops after R1 on a false
+     failure.
+   - FIX: write the absolute path of `hook-input.jsonl` under `~/.level-up-lab/runs/B1.42-spike/` into both JSON
+     files, already expanded.
+   - CONFIDENCE: plausible (it depends on how the file is written, which the plan does not say).
+3. **The (d) command fails on more than one file.**
+   - WHERE: plan.md Verification, `tail -1 $L/R*.jsonl | jq -r .type`.
+   - DEFECT: with two or more files, `tail` prints `==> file <==` headers.
+   - TRIGGER: any spike that has at least R1 and R3.
+   - WRONG BEHAVIOUR: `jq: parse error: Invalid numeric literal at line 1, column 4`, and no type is printed. I
+     reproduced this in the scratchpad with two files.
+   - FIX: `for f in $L/R*.jsonl; do printf '%s ' "$f"; tail -n1 "$f" | jq -r .type; done` → `result` for each run.
+   - CONFIDENCE: confirmed.
+
+Verdict: changes requested
+
+Riskiest unfalsified: hook order under `dontAsk`. If the permission denial is decided before PreToolUse hooks run,
+neither `plan-scope.sh` nor `path-guard.sh` fires on Write, and R1 reports a false (a) ✗. The allow-rule fix in
+reason 1 also removes this risk. The next round is the third; if it still requests changes, it goes to "Waiting on
+human".
