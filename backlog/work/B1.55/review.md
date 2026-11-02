@@ -316,3 +316,69 @@ Verdict: back to test-writer (finding 1's committed probe fix, then red probes f
 Riskiest unfalsified: CI's job token on `issues/<n>/events --paginate` and `collaborators/<actor>/permission` under
 `permissions: {contents: read, issues: read}`. The placeholder and gh 2.23 are proven, but the token's permission
 only shows in this PR's first `guards` run.
+
+## Diff review (pass 2)
+
+SCOPE: all (tooling, no §). HEAD 6f5b702. New since pass 1: c61f0ac (test), d4b1b00 (test, red), a6b1ccf (fix),
+6f5b702 (review). Base origin/main 5f656ff (merge-base 7f2e214). I ran the gates on a clone of 6f5b702 on macOS
+`/bin/bash` 3.2. Lint, typecheck, e2e and check-plan-scope ran in the worktree itself, because they need its `.env` and
+`gh` remote. All of them are read-only, and `git status` was clean afterwards.
+
+| Command                                                            | Last line                                                                                                              |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint` · `pnpm typecheck`                                     | `All matched files use Prettier code style!` · exit 0                                                                  |
+| `pnpm test`                                                        | `Tests  202 passed (202)`                                                                                              |
+| `pnpm test:e2e`                                                    | `43 passed (56.7s)`                                                                                                    |
+| `pnpm test:mutation`                                               | `Final mutation score of 93.40 is greater than or equal to break threshold 70`                                         |
+| `check-suppressions` · `check-feat-commits`                        | `OK: no new suppressions` · `OK: no feat commit touches tests`                                                         |
+| `check-config-change`                                              | protected-config error, as expected locally (the PR carries `config-change-approved`, D-19)                            |
+| `check-ac-coverage` · `check-spec-sections` · `check-features-map` | `OK: every criterion of a shipped section has a test` · `OK: sections cited: 1 … 22` · `OK`                            |
+| `check-plan-scope`                                                 | `OK: chore/B1.55-agent-gate stays inside the approved plan of B1.55`                                                   |
+| `verify-red.sh B1.55`                                              | `no 'test(<pkg>): B1.55 … (red)' commit` (expected: the red is smoke-only, as in pass 1)                               |
+| `git diff --stat origin/main...HEAD`                               | `16 files changed, 866 insertions(+), 31 deletions(-)`                                                                 |
+| smokes at 6f5b702, bash 3.2                                        | `hook-smoke: 511 probes OK` · `[metrics-smoke] 27 ok, 0 FAIL` · `11 probes OK` (matches the dispatch)                  |
+| red d4b1b00, bash 3.2                                              | exactly 1 FAIL: `plan-scope exit 0 (want 2)  S27 …`. The red is on behavior, and S28 passes on the old code, as stated |
+
+Pass 1 findings:
+
+| #   | Disposition | Check                                                                                                                                                                                                  |
+| --- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | closed      | c61f0ac pins `!backlog/work/*/review.md` in dev-lead's list and adds the probe `2 backlog/work/B1.2/review.md`. hook-smoke is green. The commit only extends a probe list, so no assertion is loosened |
+| 2   | closed      | `plan-files.sh:81` `/^## Plan review([[:space:](]                                                                                                                                                      | $)/`. BSD awk, mawk 1.3.4 and gawk (debian:bookworm) give the same result for 8 heading forms. "(phase B amendment)", a bare "## Plan review", a tab and CRLF all open a section, so the later "changes requested" decides |
+| 3   | closed      | mutant `if (in_pr) v = ""` deleted → 3 FAIL (S27 and both S28 probes). Mutant on the old regex → S27 FAIL (the red commit)                                                                             |
+
+Checklist:
+
+| Check                                       | Result                                                                                                                                                                                                                                                |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| no test weakened after red                  | pass. `git log --first-parent --no-merges bc11ca9..HEAD -- '*.test.*' e2e/ 'scripts/*smoke*' 'scripts/*/*smoke*'` shows c61f0ac and d4b1b00 only, both `test(scripts): … review pass 1 -- …`, and both add or extend probes. The branch has no merges |
+| every changed file in `plan.md`             | pass: the fix touches only `scripts/ci/plan-files.sh`, which is a Files row                                                                                                                                                                           |
+| interfaces match the plan                   | pass on signatures and exit codes. One wording drift, note g                                                                                                                                                                                          |
+| no secret, suppression, raw SQL, `src/`     | pass                                                                                                                                                                                                                                                  |
+| would a test fail if one line were reverted | yes for the reset and the regex (above). `v == "" &&` deleted (last Verdict line of a section wins) → 511 OK. That mutant is equivalent for any section with one Verdict line, so it does not block                                                   |
+
+Findings: none blocking.
+
+Pass 1 notes a–e, re-read at 6f5b702. None of them blocks. a, b and e are costs the lead accepted at the plan gate
+(r2 #2, decision 2). c only fails stricter. d is metric-only, and `run.sh` always names `-agent`. The fix touched none
+of them.
+
+New notes (not blocking):
+
+- f. The heading match is still an allow-list, not a fail-closed rule. With round 1 approved, a later section with
+  "Verdict: changes requested" is skipped, and round 1's approval counts, when its heading is `## Plan review: phase B`,
+  `## Plan Review (round 2)` or `### Plan review (round 2)`. I confirmed this with BSD awk, mawk and gawk. None of the
+  93 plan review headings under `backlog/work/` takes such a form, and `reviewer.md:39` pins `## Plan review (round N)`,
+  so this is plausible, not observed. A follow-up could refuse any `^#+ *[Pp]lan[- ][Rr]eview` heading the rule does
+  not read.
+- g. The plan and the PR body's copy of it still say "review.md's last `## Plan review (round N)`". The code now reads
+  every `## Plan review…` heading, which is what pass 1 asked for. So a later approved amendment section now counts
+  over an earlier round that requested changes. That is stricter against a forged pass and looser than the plan's
+  literal words. `pr-body.md` still shows "Review: pending", "plan deviations: none" and an empty approval line in its
+  plan copy. Before the PR, dev-lead should record a6b1ccf there as a reviewed refinement, so the lead sees it.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: same as pass 1. CI's job token on `issues/<n>/events --paginate` and
+`collaborators/<actor>/permission` under `permissions: {contents: read, issues: read}` shows only in this PR's first
+`guards` run.
