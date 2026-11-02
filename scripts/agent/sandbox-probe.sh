@@ -6,7 +6,7 @@
 #   S1 refused: example.com, 1.1.1.1:443, IPv6, the host gateway's Postgres port, a DNS server other than Docker's
 #   S2 reachable: GitHub, the npm registry, Anthropic          S3 claude --version is the Dockerfile's pin
 #   S4 run.sh --mode is bypassPermissions here, dontAsk when the network looks open or dead (curl shims)
-#   S5 uid node, no sudo, an empty capability bounding set; iptables and init-firewall.sh change nothing
+#   S5 uid node, no sudo, no effective capability, no-new-privileges; iptables and init-firewall.sh change nothing
 #   S6 the claude and gh config dirs are mounts, no credential file in the clone      S7 no Postgres host to reach
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd -P)"
@@ -60,8 +60,10 @@ done
 r=0
 [[ "$(id -un)" == node && "$(id -u)" != 0 ]] || { say "user $(id -un) uid $(id -u)"; r=1; }
 command -v sudo >/dev/null && { say "sudo is installed"; r=1; }
-cap="$(awk '/^CapBnd:/ {print $2}' /proc/self/status 2>/dev/null)"
-[[ "$cap" =~ ^0+$ ]] || { say "CapBnd '${cap:-no /proc}'"; r=1; }
+# an exec gets the container's bounding set (NET_ADMIN among it), so what holds is no effective capability and no way
+# to gain one through a setuid binary
+cap="$(awk '/^CapEff:/ {print $2}' /proc/self/status 2>/dev/null)"; nnp="$(awk '/^NoNewPrivs:/ {print $2}' /proc/self/status 2>/dev/null)"
+[[ "$cap" =~ ^0+$ && "$nnp" == 1 ]] || { say "CapEff '${cap:-no /proc}', NoNewPrivs '${nnp:-no /proc}'"; r=1; }
 iptables -F >/dev/null 2>&1 && { say "iptables -F succeeded"; r=1; }
 if [[ -x /usr/local/bin/init-firewall.sh ]]; then
   /usr/local/bin/init-firewall.sh >/dev/null 2>&1 && { say "init-firewall.sh ran again"; r=1; }
