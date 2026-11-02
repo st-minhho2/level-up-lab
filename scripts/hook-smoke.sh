@@ -401,15 +401,16 @@ if [[ $rc -eq 3 ]]; then echo "ok   plan-files exit 3  C8 an approval phrase in 
 else echo "FAIL plan-files exit $rc (want 3)  C8 an approval phrase in a commit body is not an approval (review pass 1)"; fail=1; fi
 rm -rf "$CO"
 
-echo "== plan rows with [ ] (B1.20): a Files token matches its own path literally, then as a glob, per layout"
-# Fixture: the plan lists src/app/[id]/page.tsx (as a glob, a bracket expression that never matches itself) and the
-# glob src/app/*/layout.tsx. plan-scope.sh runs from every layout (L1–L3); check-plan-scope.sh on a card branch checked
-# out in every layout of a clone with an origin (L4–L6). Explicit `git add` paths keep nested worktrees unstaged.
+echo "== plan rows with [ ] and * (B1.20, B1.32): a row names its own path; only * is a wildcard, within one segment, per layout"
+# Fixture: the plan lists src/app/[id]/page.tsx (read as a glob, a bracket expression that never matches itself), the
+# glob src/app/*/layout.tsx and, for B1.32, src/app/[id]/*.css, src/app/x?.ts and prisma/migrations/*. plan-scope.sh
+# runs from every layout (L1–L3, L7, L8, L12–L15); check-plan-scope.sh on a card branch checked out in every layout of a
+# clone with an origin (L4–L6, L9–L11). Explicit `git add` paths keep nested worktrees unstaged.
 LS="$(mktemp -d)"; LC="$LS/c"
 git init -q --bare "$LS/origin.git" && git clone -q "$LS/origin.git" "$LC" 2>/dev/null
 gs "$LC" checkout -q -b main && gs "$LC" commit -q --allow-empty -m init && gs "$LC" push -q origin main
 gs "$LC" checkout -q -b feat/B9.10-main
-plan_md "$LC" B9.10 "src/app/[id]/page.tsx" "src/app/*/layout.tsx" && gs "$LC" add backlog
+plan_md "$LC" B9.10 "src/app/[id]/page.tsx" "src/app/*/layout.tsx" "src/app/[id]/*.css" "src/app/x?.ts" "prisma/migrations/*" && gs "$LC" add backlog
 gs "$LC" commit -q -m "docs(backlog): B9.10 plan approved"
 i=0; for lay in $LAYOUTS; do [[ "$lay" == . ]] || { i=$((i+1)); gs "$LC" worktree add -q -b "feat/B9.10-l$i" "$LC/$lay" feat/B9.10-main; }; done
 for lay in $LAYOUTS; do
@@ -424,6 +425,22 @@ for lay in $LAYOUTS; do
   cps 0 "$w" "L5 $lay listed path with [ ] in the diff"
   echo s > "$w/src/app/[slug]/page.tsx" && gs "$w" add "src/app/[slug]" && gs "$w" commit -q -m "feat(todos): B9.10 slug"
   cps 1 "$w" "L6 $lay unlisted path with [ ] in the diff"
+  ps 2 "$LC" "$w/src/app/i/page.tsx" - "L7 $lay a row without * names only itself"
+  ps 2 "$LC" "$w/src/app/xy.ts" - "L15 $lay a row without * names only itself, ? included"
+  ps 2 "$LC" "$w/src/app/a/b/layout.tsx" - "L8 $lay * stays within one path segment"
+  ps 2 "$LC" "$w/src/app/i/x.css" - "L12 $lay in a row with *, [id] is literal"
+  ps 0 "$LC" "$w/src/app/[id]/x.css" - "L13 $lay in a row with *, [id] names itself"
+  ps 2 "$LC" "$w/src/app/layout.tsx" - "L14 $lay * stands for one whole segment, never none"
+  gs "$w" revert --no-edit HEAD # each of L9–L11 judges its own commit alone; L11's 0 proves the reverts
+  mkdir -p "$w/src/app/i" && echo i > "$w/src/app/i/page.tsx" && gs "$w" add src/app/i && gs "$w" commit -q -m "feat(todos): B9.10 i"
+  cps 1 "$w" "L9 $lay a row without * names only itself, in the diff"
+  gs "$w" revert --no-edit HEAD
+  mkdir -p "$w/src/app/a/b" && echo b > "$w/src/app/a/b/layout.tsx" && gs "$w" add src/app/a && gs "$w" commit -q -m "feat(todos): B9.10 a/b"
+  cps 1 "$w" "L10 $lay * stays within one path segment, in the diff"
+  gs "$w" revert --no-edit HEAD
+  mkdir -p "$w/prisma/migrations/1_x" && echo m > "$w/prisma/migrations/1_x/migration.sql" && echo l > "$w/prisma/migrations/migration_lock.toml"
+  gs "$w" add prisma && gs "$w" commit -q -m "feat(todos): B9.10 migration"
+  cps 0 "$w" "L11 $lay prisma/migrations/* covers every migration file"
 done
 rm -rf "$LS"
 
