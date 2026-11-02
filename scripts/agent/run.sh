@@ -78,7 +78,8 @@ stamp_base() { # stamp_base <dir>: a fresh <UTC timestamp>-<pid> path, never one
 
 init_problem() { # init_problem <jsonl> <worktree>: why the run's init must stop it, empty when it may go on
   local f="$1" extra want got
-  extra="$(jq -r 'select(.type == "system" and .subtype == "init") | .tools[]' "$f" 2>/dev/null \
+  # 2.1.309's init names the Agent tool Task and does not list Skill (live run 4)
+  extra="$(jq -r 'select(.type == "system" and .subtype == "init") | .tools[] | if . == "Task" then "Agent" else . end' "$f" 2>/dev/null \
     | grep -vxE "$(printf '%s' "$EXPECT,Grep,Glob" | tr ',' '|')" | tr '\n' ' ')"
   [[ -z "$extra" ]] || { echo "tools-mismatch: init tools outside --tools: $extra"; return; }
   # cc-plugin-*@builtin ship inside the binary (path "builtin") and load whatever the setting sources (live run 1)
@@ -185,7 +186,7 @@ run_issue() { # run_issue <issue>: 0 ran or skipped, 1 refused
     wt="$(printf '%s\n' "$why" | awk '$1 == "dir" { sub(/^[[:space:]]*dir[[:space:]]+/, ""); print; exit }')"
     [[ -d "$wt" ]] || { say "#$n: worktree.sh $branch made no worktree: $(printf '%s\n' "$why" | tail -2)"; rm -rf "$dir/lock"; return 1; }
   fi
-  prompt="Issue #$n is labeled agent-ready (D-27): run card $card as dev-lead with the work-next skill. The worktree $wt
+  prompt="Issue #$n is labeled agent-ready (D-27): run card $card as dev-lead: follow .claude/agents/dev-lead.md and .claude/skills/work-next/SKILL.md. The worktree $wt
 on branch $branch is claimed and is yours; resume from the first Loop step whose artifact is missing. This run is
 headless: nobody answers inside it. At the plan gate print the gate line and stop; a question only the lead can answer
 goes to backlog/README.md \"Waiting on human\", then stop."
