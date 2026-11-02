@@ -3,12 +3,13 @@
 # branch `<prefix>/B<e>.<n>[-…]`, lanes on `docs/` included — a write stays inside the card's approved plan:
 #   paperwork (backlog/*, spec/*, docs/metrics.md, docs/mistake-log.md)  always (role path-guards and lanes own it)
 #   prisma/migrations/*                                                  never by Edit/Write (pnpm db:migrate)
-#   any other path   only when it is in the plan's `## Files` as approved (scripts/ci/plan-files.sh)
+#   any other path   only when it is in the plan's `## Files` as approved (scripts/ci/plan-files.sh, plan_lists)
 #   test files       also only as test-writer (`agent_type` of the subagent; the main thread carries none)
 # Other branches, detached heads and files outside the project pass: path-guard.sh scopes the roles there.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 . "$HERE/lib.sh"
+. "$HERE/../../scripts/ci/lib.sh"
 FILE="$(json_field tool_input.file_path)"
 [[ -z "$FILE" ]] && exit 0
 repo_rel "$FILE"
@@ -32,8 +33,8 @@ case $? in
   4) block "plan-scope.sh" "$branch has no $PLAN at its approval commit." ;;
   *) block "plan-scope.sh" "could not read the Files of $PLAN on $branch." ;;
 esac
-listed=0 # literal first: a row with [ ] (src/app/[id]/page.tsx) never glob-matches itself
-while IFS= read -r p; do [[ -n "$p" && ( "$REL" == "$p" || "$REL" == $p ) ]] && listed=1; done <<< "$pats"
+listed=0
+while IFS= read -r p; do [[ -n "$p" ]] && plan_lists "$REL" "$p" && listed=1; done <<< "$pats"
 [[ $listed -eq 1 ]] || block "plan-scope.sh" "'$REL' is not in the Files table of $PLAN as approved. Stop: dev-lead revises the plan and the lead approves it again."
 case "$REL" in *.test.ts | *.test.tsx | e2e/*)
   [[ "$(json_field agent_type)" == test-writer ]] \
