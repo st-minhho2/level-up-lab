@@ -1,7 +1,8 @@
 # B1.31 plan — root and src guides cite the sections their packages implement (no §)
 
 Docs only; contract = card Acceptance. Cite per package = union of the § its guide names (heading, rows) and the §
-its module headers name (leading comment of each non-test `.ts(x)`). `lib/`: nothing names §8, so it is skipped.
+its module headers name (leading comment of each non-test `.ts(x)`); a heading range counts only the § a row or a
+header names, so `lib/` skips §8 (`06-change-requests.md`; `grep -rn '§8' src/` → none) though its heading reads §3–§22.
 
 | Package       | Guide names                             | Module headers name                 | Cite (both tables)             |
 | ------------- | --------------------------------------- | ----------------------------------- | ------------------------------ |
@@ -45,7 +46,7 @@ scripts/ci/check-plan-scope.sh | tail -1; scripts/ci/check-backlog.sh | tail -1;
 | 3    | `.claude/hooks/mark-reviewed.sh` (`src/CLAUDE.md` trips gate)   | Stop gate cleared (lint, tsc, test) | —                                                          |
 
 Red/green: Test command "before" is the red; no `test(...)` commit. No protected path → no label. Out of scope (D-25
-follow-up): `src/components/CLAUDE.md` heading omits §6, §9; `src/app/CLAUDE.md` heading cites §7 only; root Map
-`src/components/` says "client components" though `remaining-count.tsx`, `todo-search-form.tsx` are Server Components.
+follow-up): `src/lib/CLAUDE.md` heading `§3–§22` → `§3–§7, §9–§22`; `src/components/CLAUDE.md` heading omits §6,
+§9; `src/app/CLAUDE.md` heading cites §7 only; root Map `src/components/` says "client components" though `remaining-count.tsx`, `todo-search-form.tsx` are Server Components.
 
 Plan review: pending · Plan approved by: · Rounds: 1
