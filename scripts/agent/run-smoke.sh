@@ -142,7 +142,7 @@ reset; mkdir -p "$RUNS/7/lock"; echo "$dead" > "$RUNS/7/lock/pid"; run 7
 reset; { start; echo SLEEP; } > "$FIX/stream.jsonl"
 (cd "$ROOT" && SMOKE_LOG="$LOG" SMOKE_FIX="$FIX" SMOKE_WT="$WT" SMOKE_ROOT="$ROOT" PATH="$TMP/bin:$PATH" \
   RUNNER_CLAUDE="$TMP/bin/claude" RUNNER_RUNS="$RUNS" RUNNER_ELIGIBLE="$TMP/bin/fake-eligible" \
-  RUNNER_CLAIM="$TMP/bin/fake-claim" RUNNER_WORKTREE="$TMP/bin/fake-worktree" "$SRC" 7) > "$TMP/out" 2>&1 &
+  RUNNER_CLAIM="$TMP/bin/fake-claim" RUNNER_WORKTREE="$TMP/bin/fake-worktree" exec "$SRC" 7) > "$TMP/out" 2>&1 &
 bg=$!; i=0; while [[ ! -d "$RUNS/7/lock" || $(calls) -eq 0 ]] && [[ $i -lt 20 ]]; do sleep 1; i=$((i + 1)); done
 kill -TERM "$bg" 2>/dev/null; wait "$bg" 2>/dev/null
 [[ ! -e "$RUNS/7/lock" ]] || { say "TERM left the lock"; r=1; }
