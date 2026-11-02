@@ -4,7 +4,8 @@ B1.42 — Spike: a headless dev-lead run keeps the hooks and limits (tooling, no
 
 - spec: none — tooling (D-27, D-28, D-29); no `src/` change, no section
 - test: `backlog/work/B1.42/spike.md` records each run (command, exit code, log path, hook evidence) — red before: no headless run had been made
-- acceptance: (a) `settings.json` PreToolUse hooks fire under `claude -p --agent dev-lead` with `agent_type`; (b) `path-guard.sh` blocks an out-of-scope write; (c) `--max-turns` and a budget limit stop the run; (d) the full stream-JSON log is captured to a file — verdicts: pending
+- acceptance: (a) proven — 7 PreToolUse inputs with `"agent_type":"dev-lead"`, `plan-scope.sh` and `guard-read.sh` from `.claude/settings.json` fired · (b) proven — `dev-lead.md`'s frontmatter `path-guard.sh` blocked `spec/spike-r1.md` (plan-scope blocked `src/`), no file written · (c) proven — `--max-turns 2` → `error_max_turns`; `--max-budget-usd 0.01` → `error_max_budget_usd` after USD 0.043 (one-turn overshoot) · (d) proven — stream-json per run in `~/.level-up-lab/runs/B1.42-spike/`; two overlapping runs corrupted one shared file
+- runs: 5 of 6, USD 0.53 measured (+ ≈ 0.15 unverified for the run started from the lead's terminal); sandbox removed, schema dropped, nothing committed from it
 
 ## Plan
 
@@ -83,7 +84,7 @@ scripts/ci/check-backlog.sh | tail -1; git diff --stat origin/main...HEAD  # OK;
 No skeleton, test or map step (no §); no `config-change-approved` (no protected path). `spike.md` records that the
 runs were started from a desktop session (env unset as above). Findings that widen the card (D-25) → follow-ups.
 
-Plan review: round 2 changes requested (3), fixed in round 3, not re-reviewed (cap 2) · Plan approved by: · Rounds: 1
+Plan review: round 2 changes requested (3), fixed in round 3, not re-reviewed (cap 2) · Plan approved by: lead (session reply "approve", incl. the b1 deviation), 2026-11-02 · Rounds: 1
 
 ## Map delta
 
@@ -91,15 +92,24 @@ None (tooling: no `spec/features-map.md` row).
 
 ## Review
 
-Plan review: round 1 changes requested (8 reasons), round 2 changes requested (3), all fixed in plan round 3 (cap 2, not re-reviewed). Diff review: pending.
+Plan review: round 1 changes requested (8), round 2 changes requested (3), all fixed in plan round 3 (cap 2), approved by the lead with the b1 deviation. Diff review: **round 3/3, ready for PR, 0 findings** (round 1: 7 findings, round 2: 1; full sections in `backlog/work/B1.42/review.md`).
+
+- Suites (reviewer, round 1; only `backlog/work/B1.42/` changed since): vitest 202 passed · playwright 43 passed · stryker 93.40 % · every `scripts/ci/*` guard OK.
+- Riskiest unfalsified: run 2 (started from the lead's terminal) lost its stream when it overlapped run 3, so (b) rests on run 3 alone; B1.44 should treat any `is_error`/`subtype` combination not seen here as a failure.
+
+| Disposition              | Count                                                             |
+| ------------------------ | ----------------------------------------------------------------- |
+| fix now                  | 7 (round 1: 1–5, 7; round 2: 1)                                   |
+| no change needed         | 0                                                                 |
+| out of scope (follow-up) | 1 (round 1 #6: B1.44 card text — devcontainer binary, lock scope) |
 
 ## Checklist
 
-- [ ] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
+- [x] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list (4 files under `backlog/work/B1.42/`).
 - [x] Red commit precedes the feat commit; no `feat(` commit touches `*.test.*` or `e2e/**` (n/a: no test or feat commit).
-- [x] Every `AC-§.n` of the section is a test title; mutation on `src/lib` + `src/actions` ≥ 70 % (n/a: no `src/` change).
+- [x] Every `AC-§.n` of the section is a test title; mutation on `src/lib` + `src/actions` ≥ 70 % (n/a: no `src/` change; 93.40 unchanged).
 - [x] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; no protected config change.
 - [x] Migrations reviewed as SQL; `prisma/seed.ts` updated if a table changed (n/a).
-- [ ] `spec/features-map.md` row moved (n/a); `docs/metrics.md` per-card row filled; mistake-log updated if a known mistake repeated.
+- [x] `spec/features-map.md` row moved (n/a); `docs/metrics.md`: batch measurement by the lead; mistake-log: none repeated.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
