@@ -786,3 +786,25 @@ _tooling · no §_
 - **Acceptance:** `scripts/metrics/unattended.sh [<issue>…]` prints per `agent-ready` issue the label time, the ready time, the human messages in between (issue and PR comments and reviews, the approve comment of an expected gate excepted) and the share; `scripts/metrics/no-rework.sh [<pr>…]` prints per agent PR the commits after ready not made by a run and the lead's change requests, and the share; every commit a run makes is told apart from a human's by a mark the runner adds (for example an `Agent-Run:` trailer), with a probe; `docs/metrics.md` gains the two rows with how to re-measure; the PR carries `config-change-approved` (D-19) if it touches protected paths
 - **Tier:** quick · **Depends on:** B1.44 · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.57/`
+
+### B1.58 · The runner's devcontainer: a firewall that allows only GitHub, npm and Anthropic, and the Linux claude build
+
+_tooling · no §_
+**Status: Open** — B1.44's Acceptance named a devcontainer whose firewall allows only GitHub, the npm registry and Anthropic, and B1.47 added that the Linux build (`claude-code-vm`) is verified there; the lead's decision 1 at B1.44's plan gate (`work/B1.44/plan.md`) moved both here. `.devcontainer/devcontainer.json` and `.devcontainer/docker-compose.yml` set no firewall (`grep -c iptables .devcontainer/*` → 0 each) and install no `claude`, and B1.42's spike ran only the macOS build
+
+- **Spec:** none — tooling (D-26, D-27); no `src/` change, no section
+- **Test:** a probe script run inside the container (new) — red because: from the container today `curl` reaches any host, and `claude --version` is not found
+- **Acceptance:** the devcontainer applies an allow-list firewall at start (GitHub, the npm registry, Anthropic; everything else refused, probed both ways); a pinned Linux `claude` build is installed and `scripts/agent/run.sh --check-binary` passes inside; the lead's own login is made inside the container and no credential is baked into the image or the repository; `run.sh` may drop `--permission-mode dontAsk` for `bypassPermissions` only when it detects this firewalled container, never on the host (a probe on the host proves it refuses)
+- **Tier:** quick · **Depends on:** B1.44 · **Owner:** Lead · **Size:** M [estimate]
+- **Work:** `work/B1.58/`
+
+### B1.59 · A launchd job runs the runner's poll every 15 minutes, inside the sandbox
+
+_tooling · no §_
+**Status: Open** — B1.44's Acceptance named a launchd job that polls every 15 min; the lead's decision 1 at B1.44's plan gate (`work/B1.44/plan.md`) moved it here, after B1.58, so that no unattended run happens outside the firewalled container. No plist and no installer exist (`git ls-files '*.plist'` → none); until this lands the lead starts `scripts/agent/run.sh` by hand
+
+- **Spec:** none — tooling (D-26, D-27); no `src/` change, no section
+- **Test:** `scripts/agent/launchd-smoke.sh` (new) — red because: the plist and its install script do not exist
+- **Acceptance:** a LaunchAgent plist (`StartInterval` 900) and an install / uninstall script the lead runs by hand; each tick runs `scripts/agent/run.sh --poll` inside B1.58's container, never on the host; a tick never overlaps the previous one; output goes to `~/.level-up-lab/runs/poll.log`; `plutil -lint` clean
+- **Tier:** quick · **Depends on:** B1.44, B1.58 · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.59/`
