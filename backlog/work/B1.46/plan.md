@@ -81,4 +81,4 @@ No skeleton, no map row, no `test(` commit (no test file; `verify-red.sh` judges
 `scripts/ci/`). Guides naming the protected list or the CI guards (`.claude/docs/git-workflow.md`, `scripts/CLAUDE.md`)
 are the orchestrator's after the batch.
 
-Plan review: round 2 changes requested, 1 finding (P14 control could not fail), fixed in round 3 without a third review (dev-lead: ≤ 2 rounds, then the lead) · Plan approved by: · Rounds: 1
+Plan review: round 2 changes requested, 1 finding (P14 control could not fail), fixed in round 3 without a third review (dev-lead: ≤ 2 rounds, then the lead) · Plan approved by: lead (session reply "approve"), 2026-11-02 · Rounds: 1
