@@ -45,6 +45,11 @@ removes the volumes (r2 #5). Host and container keep separate locks and stop mar
 - S4 also expects `dontAsk` with an `id` shim printing 0 and a `uname` shim printing Darwin (diff review 1 #2).
 - The lead's commands check out `chore/B1.58-sandbox` after the clone until this merges (diff review 1 #3); git's
   global config lives in `runner-runs` (`GIT_CONFIG_GLOBAL`); `init: true` on both services.
+- The ready mark lives on a tmpfs `/run` and is removed at every start, so a stop and `up -d` waits for the check
+  again (diff review 2 #1, `50bfcc7`); the lead's commands end with stop, `up -d` and `sandbox-probe.sh` again.
+- New cost: `runner-runs` holds git's global config and `verified-versions`, and a run under `bypassPermissions` can
+  write both (an alias or hook path for later runs, a version line); like the clone, they stay inside the firewall,
+  and `down -v` clears them.
 - New cost: an allowed CDN address (npm, claude.ai) also serves other sites behind the same edge; IPs stay pinned
   until a restart. A root exec into `firewall` can still change the rules: only the lead uses that service.
 

@@ -25,11 +25,14 @@ docker compose -f .devcontainer/runner/docker-compose.yml exec runner git checko
 docker compose -f .devcontainer/runner/docker-compose.yml exec runner claude auth login
 docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh
 docker compose -f .devcontainer/runner/docker-compose.yml exec -e RUNNER_BUDGET_USD=1 runner scripts/agent/run.sh --check-binary
+docker compose -f .devcontainer/runner/docker-compose.yml stop
+docker compose -f .devcontainer/runner/docker-compose.yml up -d
+docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh
 ```
 
 Expected: `up` prints the firewall's "allow list applied: N entries" in `docker compose … logs firewall` and starts
 `runner` once `firewall` is healthy; `sandbox-probe.sh` → "7 probes OK"; `--check-binary` → "claude '2.1.303 (Claude
-Code)' verified" (2 turns, under USD 1). gh: a fine-grained token for this repo with a short expiry. After a suspect
+Code)' verified" (2 turns, under USD 1); after stop and `up -d`, the probe again → "7 probes OK". gh: a fine-grained token for this repo with a short expiry. After a suspect
 run: `docker compose -f .devcontainer/runner/docker-compose.yml down -v`.
 
 ## Plan
@@ -84,6 +87,11 @@ removes the volumes (r2 #5). Host and container keep separate locks and stop mar
 - S4 also expects `dontAsk` with an `id` shim printing 0 and a `uname` shim printing Darwin (diff review 1 #2).
 - The lead's commands check out `chore/B1.58-sandbox` after the clone until this merges (diff review 1 #3); git's
   global config lives in `runner-runs` (`GIT_CONFIG_GLOBAL`); `init: true` on both services.
+- The ready mark lives on a tmpfs `/run` and is removed at every start, so a stop and `up -d` waits for the check
+  again (diff review 2 #1, `50bfcc7`); the lead's commands end with stop, `up -d` and `sandbox-probe.sh` again.
+- New cost: `runner-runs` holds git's global config and `verified-versions`, and a run under `bypassPermissions` can
+  write both (an alias or hook path for later runs, a version line); like the clone, they stay inside the firewall,
+  and `down -v` clears them.
 - New cost: an allowed CDN address (npm, claude.ai) also serves other sites behind the same edge; IPs stay pinned
   until a restart. A root exec into `firewall` can still change the rules: only the lead uses that service.
 
@@ -148,7 +156,10 @@ Plan review: r1 7 reasons, r2 6 reasons, round 3 not re-reviewed (2-round cap). 
 | 1    | n1  | PID 1 `sleep` without init; `~/.gitconfig` not persisted                         | fix now      | `5057810`            |
 | 1    | n2  | no git identity in the image, so `run.sh <issue>` cannot commit inside yet       | out of scope | B1.59 / B1.62 plan   |
 
-Pass 2: pending.
+| 2 | 1 | the ready mark survived a stop, so runner started before the new namespace had rules | fix now | `50bfcc7` |
+| 2 | n | two image tags from two `build: .`; Evidence "plan deviations: none" | no change needed | same Dockerfile and cache; no file outside Files |
+
+Pass 3: pending.
 
 ## Evidence
 
