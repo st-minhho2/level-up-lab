@@ -196,3 +196,125 @@ probe that tells it apart, because the marker already fails on the host; that is
 `--disallowedTools` under `bypassPermissions` stays [unverified], as the plan says. Per the reviewer's rules, a
 third round goes to "Waiting on human": each reason above is a stated cost or a one-line fix that the lead can settle
 at the gate.
+
+## Diff review (pass 1)
+
+SCOPE: all (tooling: `.devcontainer/runner/`, `scripts/agent/`, `scripts/ci/lib.sh`; no `src/`, `prisma/`, `e2e/`
+change). Range `origin/main...HEAD` (12 files). Container never built or started by anyone: everything about
+`Dockerfile`, `init-firewall.sh` and `sandbox-probe.sh` inside the container below is judged by reading and is
+[unverified].
+
+### Commands (run by the reviewer, host macOS)
+
+| Command                                                          | Last line                                                                                                 |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                                      | `All matched files use Prettier code style!`                                                              |
+| `pnpm typecheck`                                                 | `> tsc --noEmit` (exit 0)                                                                                 |
+| `pnpm test`                                                      | `Tests  202 passed (202)`                                                                                 |
+| `pnpm test:e2e`                                                  | `43 passed (1.2m)`                                                                                        |
+| `pnpm test:mutation`                                             | `Final mutation score of 93.40 is greater than or equal to break threshold 70`                            |
+| `scripts/ci/check-suppressions.sh`                               | `OK: no new suppressions`                                                                                 |
+| `scripts/ci/check-config-change.sh`                              | exit 1: 8 protected files without `config-change-approved` (expected: label at PR, D-19, plan decision 4) |
+| `scripts/ci/check-feat-commits.sh`                               | `OK: no feat commit touches tests`                                                                        |
+| `scripts/ci/check-ac-coverage.sh`                                | `OK: every criterion of a shipped section has a test`                                                     |
+| `scripts/ci/check-spec-sections.sh`                              | `OK: sections cited: 1 … 22`                                                                              |
+| `scripts/ci/check-features-map.sh`                               | `OK`                                                                                                      |
+| `scripts/ci/check-plan-scope.sh`, `check-backlog.sh`             | `OK: … stays inside the approved plan of B1.58`, `OK: README matches the cards`                           |
+| `scripts/verify-red.sh B1.58`                                    | exit 1 `no 'test(<pkg>): B1.58 … (red)' commit` (expected for a shell-only red, B1.45 precedent)          |
+| `scripts/verify-red.sh --auto`, also with `BASE_SHA=origin/main` | `nothing to verify`, exit 0 (CI's shape)                                                                  |
+| `scripts/agent/run-smoke.sh` · `tier-smoke.sh`                   | `15 probes OK` · `9 probes OK`                                                                            |
+| `scripts/agent/sandbox-probe.sh` (host)                          | `6 of 7 probes FAILED` (S2 only ok): the host red still holds                                             |
+| `scripts/next-task.sh --check B1.58`                             | `B1.58: no overlap with any Doing or Review card`                                                         |
+| `git diff --stat origin/main...HEAD`                             | `12 files changed, 683 insertions(+), 15 deletions(-)`                                                    |
+
+### Checklist
+
+| Check                                                      | Result                                                                                                                                                                                                                                                                                                                                |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every acceptance clause has a probe                        | pass by text: firewall both ways S1/S2 + entrypoint self-check; pin S3 + `--check-binary`; login S6; bypass only here S4 + R15. All in-container probes [unverified]                                                                                                                                                                  |
+| no test changed after the red without a `test(...)` commit | `0258b7f test(scripts): B1.58 S5 judges CapEff and NoNewPrivs` loosens S5 (CapBnd 0 → CapEff 0 ∧ NoNewPrivs 1), explained, but landed before the plan change and is not re-approved: finding 1. No merge commits in range                                                                                                             |
+| green commit touches no probe file                         | pass: `52fe21a` touches no `*-smoke.sh`, no `sandbox-probe.sh`                                                                                                                                                                                                                                                                        |
+| every changed file in `plan.md` Files                      | pass (10 rows cover all 12 files)                                                                                                                                                                                                                                                                                                     |
+| interfaces match the plan                                  | fail: compose `cap_drop`/`cap_add` SETUID/SETGID/SETPCAP/`no-new-privileges` and S5 are outside the approved Interfaces; awaits the lead (finding 1)                                                                                                                                                                                  |
+| Zod / Prisma / raw SQL / migration                         | n/a (no `src/`, `prisma/`)                                                                                                                                                                                                                                                                                                            |
+| no secret, no suppression                                  | pass: build context is `.devcontainer/runner/` (Dockerfile + script only); no credential at build time                                                                                                                                                                                                                                |
+| features map row                                           | n/a (tooling, no §)                                                                                                                                                                                                                                                                                                                   |
+| would a test fail if one changed line were reverted        | probed on a scratch clone, run-smoke only (host): dropping the marker conjunct → R15 FAIL; dropping the uid conjunct, the uname conjunct, the example.com refusal, or hard-coding `dontAsk` in `run_issue` → 15/15 still. The curl conjuncts are covered by S4 in the container [unverified]; the uid conjunct by nothing (finding 2) |
+
+### Findings
+
+```
+[1] KIND: plan-mismatch
+    WHERE: .devcontainer/runner/docker-compose.yml:20-22, scripts/agent/sandbox-probe.sh:65-66 (0258b7f)
+    DEFECT: the build went green on an interface the lead has not approved: S5 loosened from "CapBnd 0" to
+            "CapEff 0 and NoNewPrivs 1", and the compose file adds SETUID/SETGID/SETPCAP and no-new-privileges,
+            with the plan amended (8f7be7b) only after the green commit (52fe21a).
+    TRIGGER: `docker compose -f .devcontainer/runner/docker-compose.yml exec runner <cmd>` with no `-u node` (the
+            default, since the Dockerfile sets no USER): the process is root with NET_ADMIN in its effective set
+            and can run `iptables -P OUTPUT ACCEPT; iptables -F`. The approved S5 (empty bounding set) would have
+            ruled this out for every process; the loosened S5 holds only for execs that remember `-u node`.
+    WRONG BEHAVIOUR: planning.md says stop, re-plan and get re-approval, then continue. Here the code continued
+            first. The amended plan also does not offer the lead the design that keeps the approved S5: a separate
+            `firewall` service holding NET_ADMIN that applies the rules, and `runner` with
+            `network_mode: service:firewall`, `cap_drop: [ALL]` and no `cap_add`. Then CapBnd is 0 for every exec,
+            root included, and B1.59's launchd line cannot drop the firewall by forgetting `-u node`.
+    CONFIDENCE: confirmed (commit order and plan text traced). The sidecar alternative is plausible: not built.
+[2] KIND: coverage
+    WHERE: scripts/agent/run.sh:52 (`"$(id -u)" != 0` in sandboxed()); scripts/agent/sandbox-probe.sh S4
+    DEFECT: the uid conjunct is the only thing that keeps a root exec in the container out of bypassPermissions,
+            and no probe fails when it is removed.
+    TRIGGER: on a scratch clone, delete ` && "$(id -u)" != 0` from sandboxed(): run-smoke prints 15 probes OK.
+            In the container S4 runs as node and shims only curl, so it passes as well. A regression there followed by
+            `docker compose exec runner scripts/agent/run.sh <n>` (root, the default) gives a run with
+            bypassPermissions and NET_ADMIN.
+    WRONG BEHAVIOUR: the card says bypass "only when it detects this firewalled container"; a root process
+            inside it is not held by the firewall (finding 1), yet no test pins it to dontAsk.
+    CONFIDENCE: confirmed (mutation run on the copy). Fix for test-writer: S4 adds an `id` shim that prints 0 (and
+            a `uname` shim that prints Darwin) and expects dontAsk.
+[3] KIND: correctness
+    WHERE: .devcontainer/runner/docker-compose.yml:5-11 (the lead's commands); backlog/work/B1.58/pr-body.md
+    DEFECT: the lead's verification clones `main`, where `scripts/agent/sandbox-probe.sh` does not exist and
+            `run.sh --check-binary` hard-codes `--permission-mode dontAsk`.
+    TRIGGER: run the header's commands verbatim before merge: `git clone …level-up-lab.git .` then
+            `scripts/agent/sandbox-probe.sh` gives "No such file or directory". `scripts/agent/run.sh --check-binary` passes
+            under dontAsk (origin/main run.sh:225), so it proves nothing about the hook under bypassPermissions.
+    WRONG BEHAVIOUR: the plan says "exact commands in the PR body" and the AC evidence ("--check-binary passes
+            inside") must come before merge. The PR body has no commands, and the header's commands collect the
+            evidence from the wrong code. Fix: after the push, add `git checkout chore/B1.58-sandbox` to the
+            pre-merge steps and copy them into the PR body. Also refresh the PR body's Plan copy: it still says
+            "CapBnd 0" and "Plan approved by:" blank, and it has no "Changed after approval" block.
+    CONFIDENCE: confirmed (`git show origin/main:scripts/agent/sandbox-probe.sh` → not in origin/main;
+            origin/main run.sh:203,225).
+```
+
+### Not blocking, for the lead (answers to the dev-lead's six doubts, all [unverified] until the lead's `up`)
+
+1. iptables-nft, ipset, `-m state` with cap_drop ALL + NET_ADMIN/NET_RAW: this is the same toolset Anthropic's
+   reference devcontainer uses on Docker Desktop's kernel. If it fails, the script runs under `set -e` and the
+   container exits (fail-closed).
+2. setpriv under no-new-privileges: NNP gates only execve gains, not setresuid/PR_CAPBSET_DROP. util-linux sets
+   KEEPCAPS and restores effective caps across the uid change, and SETPCAP is present. A failure here exits PID 1,
+   so this also fails closed.
+3. Docker builds an exec's process from the container's OCI spec, so NoNewPrivileges and the bounding set carry
+   over. For uid ≠ 0, execve leaves CapEff 0. S5 measures both at run time.
+4. `claude auth login` (claude.ai, platform/console, api.anthropic.com) and `gh auth login` (github.com device flow)
+   fall inside the list. corepack fetches pnpm from registry.npmjs.org. Prisma engines and Playwright do not
+   (B1.62, stated).
+5. R6 is a lint, not proof: it catches a second literal `bypassPermissions` but not a computed mode. The behaviour
+   proof is R15 on the host plus S4 inside, and S4 lacks the uid case (finding 2).
+6. DNS: flushing filter only leaves Docker's nat DNAT for 127.0.0.11, and `-o lo` covers it. The open risk is where
+   dockerd sends the upstream query from. If it goes out from the container's netns (older engines), it hits
+   REJECT, the self-check `curl https://api.github.com` fails, and the container exits. That is fail-closed, but
+   the runner is then unusable. Engine here: 29.9.2.
+
+Other notes: PID 1 is `sleep` with no `init: true`, so orphans of runs are never reaped and `down` waits 10 s for
+SIGKILL. `gh auth setup-git` writes `~/.gitconfig`, which no volume holds, so it is lost on a recreate. There is no
+git identity in the image, so `run.sh <issue>` cannot commit inside until someone sets one (B1.59/B1.62's concern,
+because only `--check-binary` is in scope here).
+
+Verdict: back to test-writer (finding 2), then the lead's re-approval of the changed plan (finding 1, with the
+sidecar alternative stated). The dev-lead fixes the lead's commands and the PR body (finding 3).
+
+Riskiest unfalsified: whether init-firewall.sh starts at all on Docker Desktop. That depends on DNS forwarding
+through 127.0.0.11 with OUTPUT open only on lo, and on setpriv dropping the bounding set. Both fail closed, and
+nobody has run either.
