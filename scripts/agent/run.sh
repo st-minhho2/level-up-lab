@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # The agent runner (B1.44; D-26, D-27): runs dev-lead headless on an `agent-ready` issue's card, on the lead's machine
-# with the lead's own Claude login, never on GitHub Actions. Until B1.58 there is no sandbox: the run is held by
-# `--permission-mode dontAsk`, the allow list below and the repo's hooks. Until B1.55 every run stops at the plan gate.
+# with the lead's own Claude login, never on GitHub Actions. On the host the run is held by `--permission-mode
+# dontAsk`, the allow list below and the repo's hooks, which is no sandbox. Inside the runner container
+# (.devcontainer/runner/, B1.58) its firewall is the boundary and the run gets bypassPermissions; nowhere else (mode()).
+# Until B1.55 every run stops at the plan gate.
 #   scripts/agent/run.sh <issue>          run that issue now (a stopped mark from an earlier run is replaced)
 #   scripts/agent/run.sh --poll           every open agent-ready issue, oldest first, skipping stopped and locked ones
 #   scripts/agent/run.sh --check-binary   prove dev-lead's frontmatter hooks fire under this claude; record its version
+#   scripts/agent/run.sh --mode           print the permission mode a run here would get (bypassPermissions | dontAsk)
 #   exit 0 ran to an end, or skipped with the reason · 1 refused (stderr "[run] <why>")
 # Each run: auth status → a verified version → eligible.sh → under 3 agent branches in flight → a per-issue lock →
 # next-task.sh --claim → worktree.sh <chore|feat>/<card>-agent → claude -p with the outcome read from the stream's last
@@ -42,6 +45,21 @@ say() { echo "[run] $*" >&2; }
 die() { say "$*"; exit 1; }
 gh_() { env -u GH_REPO -u GH_HOST gh "$@" </dev/null; }
 child() { env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_SESSION_ID "$CLAUDE" "$@"; }
+USAGE="usage: scripts/agent/run.sh <issue> | --poll | --check-binary | --mode"
+
+sandboxed() { # the runner container (B1.58): Linux, not root, the image's marker, and a network that refuses
+  # example.com but reaches GitHub. On the host one of them fails, and no variable or flag can stand in for any of them.
+  [[ "$(uname -s)" == Linux && "$(id -u)" != 0 && -e /etc/level-up-lab-runner ]] || return 1
+  ! curl -sS -o /dev/null --max-time 5 https://example.com </dev/null 2>/dev/null \
+    && curl -sS -o /dev/null --max-time 5 https://api.github.com </dev/null 2>/dev/null
+}
+mode() { # the permission mode of a run here
+  if sandboxed; then echo bypassPermissions; else echo dontAsk; fi
+}
+if [[ "${1:-}" == --mode ]]; then # needs no claude binary and no login: it only reads where it runs
+  [[ $# -eq 1 ]] || die "$USAGE"
+  mode; exit 0
+fi
 
 default_claude() { # the newest macOS app build on the host, else claude on PATH (the devcontainer, B1.58)
   local base="$HOME/Library/Application Support/Claude/claude-code" bin v
@@ -175,7 +193,7 @@ on_signal() { # on_signal <exit code>: stop the claude run (or --poll's issue su
 }
 
 run_issue() { # run_issue <issue>: 0 ran or skipped, 1 refused
-  local n="$1" card branch wt base out attempt=1 prompt dir="$RUNS/$1"
+  local n="$1" card branch wt base out attempt=1 prompt dir="$RUNS/$1" perm
   local why
   trap 'on_signal 143' TERM; trap 'on_signal 130' INT # --poll runs this in a subshell, which starts with default traps
   why="$("$ELIGIBLE" "$n" 2>&1 >/dev/null)" || { say "skip #$n: ${why:-not eligible}"; return 0; }
@@ -192,6 +210,7 @@ run_issue() { # run_issue <issue>: 0 ran or skipped, 1 refused
     wt="$(printf '%s\n' "$why" | awk '$1 == "dir" { sub(/^[[:space:]]*dir[[:space:]]+/, ""); print; exit }')"
     [[ -d "$wt" ]] || { say "#$n: worktree.sh $branch made no worktree: $(printf '%s\n' "$why" | tail -2)"; rm -rf "$dir/lock"; return 1; }
   fi
+  perm="$(mode)"
   prompt="Issue #$n is labeled agent-ready (D-27): run card $card as dev-lead: follow .claude/agents/dev-lead.md and .claude/skills/work-next/SKILL.md. The worktree $wt
 on branch $branch is claimed and is yours; resume from the first Loop step whose artifact is missing. This run is
 headless: nobody answers inside it. At the plan gate print the gate line and stop; a question only the lead can answer
@@ -200,7 +219,7 @@ goes to backlog/README.md \"Waiting on human\", then stop."
     base="$(stamp_base "$dir")"
     claude_run "$base" "$wt" "$prompt" -p --agent dev-lead --model "$MODEL" --max-turns "$TURNS" \
       --max-budget-usd "$(awk -v b="$BUDGET" -v t="$TURN_USD" 'BEGIN { printf "%.2f", b - t }')" \
-      --setting-sources project --strict-mcp-config --permission-mode dontAsk --include-hook-events \
+      --setting-sources project --strict-mcp-config --permission-mode "$perm" --include-hook-events \
       --output-format stream-json --verbose --tools "$TOOLS" --allowedTools "${ALLOW[@]}" --disallowedTools "${DENY[@]}"
     if [[ -n "$PROBLEM" ]]; then out="${PROBLEM%%:*}"; why="${PROBLEM#*: }"; else out="$(outcome "$base.jsonl" "$card")"; why=""; fi
     [[ "$out" == error:* && $attempt -eq 1 ]] || break
@@ -213,7 +232,8 @@ goes to backlog/README.md \"Waiting on human\", then stop."
 }
 
 check_binary() { # dev-lead's path-guard must block a write to spec/ under -p --agent dev-lead (B1.42 finding 8)
-  local tmp base ok=0
+  local tmp base ok=0 perm
+  perm="$(mode)" # the mode the runs here get, so the hook is proven under it
   tmp="$(mktemp -d)"; base="$(stamp_base "$RUNS/check-binary")"
   git worktree add -q --detach "$tmp/wt" HEAD >/dev/null 2>&1 || { rm -rf "$tmp"; die "git worktree add failed"; }
   EXPECT=Write
@@ -222,7 +242,7 @@ check_binary() { # dev-lead's path-guard must block a write to spec/ under -p --
   claude_run "$base" "$tmp/wt" "This is the runner's hook test (scripts/agent/run.sh --check-binary, B1.44), not a task: call the Write tool exactly once, with file_path spec/agent-probe.md and content probe. Your role's path-guard hook is expected to block it: a hook that blocks it is the pass, so make the call even though the path is outside your paths. Then stop without retrying." \
     -p --agent dev-lead --model "$MODEL" --max-turns 2 \
     --max-budget-usd "$(awk -v b="$BUDGET" -v t="$TURN_USD" 'BEGIN { printf "%.2f", b - t }')" \
-    --setting-sources project --strict-mcp-config --permission-mode dontAsk --include-hook-events \
+    --setting-sources project --strict-mcp-config --permission-mode "$perm" --include-hook-events \
     --output-format stream-json --verbose --tools Write --allowedTools Write
   jq -e 'select(.type == "system" and .subtype == "hook_response" and .hook_event == "PreToolUse" and .exit_code == 2
     and ((.stderr // "") | startswith("BLOCKED by .claude/hooks/path-guard.sh")))' "$base.jsonl" >/dev/null 2>&1 && ok=1
@@ -239,10 +259,10 @@ trap 'on_signal 143' TERM
 trap 'on_signal 130' INT
 case "${1:-}" in
   --check-binary)
-    [[ $# -eq 1 ]] || die "usage: scripts/agent/run.sh <issue> | --poll | --check-binary"
+    [[ $# -eq 1 ]] || die "$USAGE"
     preflight binary; check_binary ;;
   --poll)
-    [[ $# -eq 1 ]] || die "usage: scripts/agent/run.sh <issue> | --poll | --check-binary"
+    [[ $# -eq 1 ]] || die "$USAGE"
     preflight
     issues="$(gh_ issue list --label agent-ready --state open --limit 100 --json number --jq '.[].number' | sort -n)" \
       || die "gh issue list failed"
@@ -253,7 +273,7 @@ case "${1:-}" in
       CHILD_PID=""
     done ;;
   *)
-    [[ $# -eq 1 && "$1" =~ ^[1-9][0-9]*$ ]] || die "usage: scripts/agent/run.sh <issue> | --poll | --check-binary"
+    [[ $# -eq 1 && "$1" =~ ^[1-9][0-9]*$ ]] || die "$USAGE"
     preflight
     run_issue "$1" ;;
 esac
