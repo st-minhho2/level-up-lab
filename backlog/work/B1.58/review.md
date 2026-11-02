@@ -515,3 +515,153 @@ block, and the lead's in-container steps (the only proof of S1–S7 and `--check
 Riskiest unfalsified: whether init-firewall.sh completes on Docker Desktop in the real image (ipset `hash:net` and
 iptables-nft with only NET_ADMIN/NET_RAW, `dig` through 127.0.0.11 before the rules, then upstream DNS for a run once
 OUTPUT is open only on lo and the allow set); nobody has built the image.
+
+## Diff review pass 4 (live check 1)
+
+SCOPE: all (tooling only: `scripts/agent/run.sh`, `scripts/agent/run-smoke.sh`,
+`.devcontainer/runner/docker-compose.yml`; no `src/`, `prisma/`, `e2e/` change). Range `ba1920c..6033237`: live
+check 1 (`fcfb54a` plan, `cb00eab` red, `ed388a1` fix) and, added mid-review, live check 2 (`6d4fc55` trust line,
+`4ef8744` red, `e6a5002` fix, `4b94426`, `6033237` plan notes). Probes ran on independent clones in the reviewer's
+scratch directory (`git clone`, never a copy of this worktree's `.git` file), a `node:24-bookworm` container with
+Debian's real jq 1.6, and a static trace of the trust code in the `@anthropic-ai/claude-code-linux-arm64@2.1.303`
+npm package (the image's pin). Live checks 2 and 3 are the lead's results as reported; the reviewer did not run them.
+
+### Commands (run by the reviewer at `4b94426`/`6033237`; the later commits touch only `plan.md`)
+
+| Command                                                                | Last line                                                                      |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `pnpm lint`                                                            | `All matched files use Prettier code style!`                                   |
+| `pnpm typecheck`                                                       | exit 0                                                                         |
+| `pnpm test`                                                            | `Tests  202 passed (202)`                                                      |
+| `pnpm test:e2e` (three runs)                                           | `41 passed (1.1m)`, exit 1 (failure not captured); then `43 passed` twice      |
+| `pnpm test:mutation`                                                   | `Final mutation score of 93.40 is greater than or equal to break threshold 70` |
+| `scripts/ci/check-suppressions.sh` · `check-feat-commits.sh`           | `OK: no new suppressions` · `OK: no feat commit touches tests`                 |
+| `scripts/ci/check-config-change.sh`                                    | lists the protected files, last `scripts/ci/lib.sh` (label at PR, D-19)        |
+| `scripts/ci/check-ac-coverage.sh` · `check-spec-sections.sh`           | `OK: every criterion …` · `OK: sections cited: 1 … 22`                         |
+| `scripts/ci/check-features-map.sh` · `check-backlog.sh`                | `OK` · `OK: README matches the cards`                                          |
+| `scripts/ci/check-plan-scope.sh`                                       | `OK: chore/B1.58-sandbox stays inside the approved plan of B1.58`              |
+| `scripts/verify-red.sh B1.58`                                          | `no 'test(<pkg>): B1.58 … (red)' commit` (shell-only red, as in passes 1–3)    |
+| `scripts/agent/run-smoke.sh` at `cb00eab` · `ed388a1` (host, jq 1.7.1) | `FAIL R14` `1 of 15 probes FAILED` · `15 probes OK`                            |
+| `run-smoke.sh` at `4ef8744` · `e6a5002` (host, jq 1.7.1 + the shim)    | `FAIL R14` (`jq 1.6: rc=1 … did not block`) · `15 probes OK`                   |
+| `run-smoke.sh` at `ed388a1` · `4ef8744` · `e6a5002` (bookworm, jq-1.6) | `FAIL R14` · `FAIL R14` · `15 probes OK`                                       |
+| `run-smoke.sh` at `6033237` (this worktree)                            | `15 probes OK`; no `check-binary-*` left before or after                       |
+| `bash -n run.sh` · `docker compose -f … config -q`                     | exit 0 · exit 0                                                                |
+| `scripts/next-task.sh --check B1.58`                                   | `B1.58: no overlap with any Doing or Review card`                              |
+| `git diff --stat ba1920c..ed388a1 -- <3 files>` · `origin/main...HEAD` | `3 files changed, 11 insertions(+), 1 deletion(-)` · `12 files changed, …`     |
+
+The e2e failure in run 1 could not be reproduced in two reruns; nothing under `src/` or `e2e/` changed since pass 3.
+
+### Checklist
+
+| Check                                               | Result                                                                                                                                              |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| red before green                                    | pass: R14 fails at `cb00eab` and passes at `ed388a1`; fails at `4ef8744`, both under the shim and under real jq 1.6, and passes at `e6a5002`        |
+| no test weakened after the red                      | pass: after `cb00eab` only `4ef8744` (a `test(...)` commit, +17 lines, nothing removed) touches `run-smoke.sh`; no merge commit after `cb00eab`     |
+| fix commits touch no probe file                     | pass: `ed388a1` touches `run.sh` and the compose header, `e6a5002` touches only `run.sh`                                                            |
+| would a test fail if one changed line were reverted | pass: reverting the `$tmp` removal, the `mkdir -p`, `$HOME_CHECKOUT` → `$ROOT`, or `\| grep -q .` (to a bare `jq -c`, always exit 0) each fails R14 |
+| every changed file in `plan.md` Files               | pass (`check-plan-scope` OK)                                                                                                                        |
+| no secret, no suppression                           | pass                                                                                                                                                |
+| Zod / Prisma / raw SQL / migration / features map   | n/a                                                                                                                                                 |
+
+### The three questions
+
+1. **Does trust on `/home/node/level-up-lab` cover `.worktrees/check-binary-X/wt` under 2.1.303?** Yes, but not
+   because of where the worktree is. In 2.1.303 a main-thread agent's frontmatter hooks are registered only when
+   `ASe(agent)` holds, which is `projects[<canonical root of the definition's folder>].hasTrustDialogAccepted === true`
+   as an exact key, with no walk up the parents. The canonical root of a linked worktree is read from its `.git` file
+   (`gitdir:` → `commondir` → `gitdir` back-pointer, `Er()`), so it is the main checkout wherever the worktree lives.
+   Live check 3 is consistent with this. See finding 1.
+2. **Does an interrupted check leave an orphan, and does `worktree-prune.sh` handle it?** It leaves one, and
+   `worktree-prune.sh` does not handle it. See finding 2.
+3. **Can a probe worktree affect `run_issue` or the board?** No, falsified on every path: `in_flight` counts
+   `refs/heads/` and open PRs, and a detached worktree adds neither. `run_issue`'s lookup matches only a
+   `branch refs/heads/<branch>` line, and a detached record has none. `next-task.sh` never reads worktrees (0
+   matches). `worktree.sh` slugs (`chore-b1-58-agent`) cannot collide with `check-binary-XXXXXX`. Vitest, ESLint,
+   tsc and Prettier exclude `.worktrees/`. path-guard resolves the worktree with `git rev-parse` (TOP = `wt`), so
+   `spec/agent-probe.md` is still `spec/…`.
+
+### Scope extension (live check 2): jq 1.6
+
+- **The shim matches jq 1.6 for this call.** jq 1.6 takes `-e`'s status from the last input it processed. The shim
+  prints the full output, then computes the status from `tail -n 1` of the file, and it engages only for `-e` with a
+  file as the last argument, which is check_binary's call shape. Real jq-1.6 in bookworm agrees with the shim:
+  `ed388a1`'s first R14 case (block line, then a result line) fails there too.
+- **No other construct in the runner path behaves differently under 1.6.** I listed every system `jq` in `run.sh`,
+  `sandbox-probe.sh` (none) and `init-firewall.sh` (one; hooks use node, `--jq` is gh's gojq):
+  - line 80 `-e` reads a single input;
+  - line 100's `if` has an `else`;
+  - `//`, `join`, `@tsv`, `length`, `select` and `(.web + .api + .git)[]` all exist in 1.6;
+  - no 1.7-only construct is used (`pick`, `abs`, `toarray`, `ltrimstr`, `splits`, `if` without `else`, `?//`,
+    `$__loc__`, `--raw-output0`).
+
+  The whole of `run-smoke.sh` (R1–R15, including init_problem, outcome and comment over the fixtures) passes under
+  real jq 1.6 at `e6a5002`.
+
+- **New expression under `pipefail`.** If jq exits non-zero after printing a match (for example a parse error on a
+  later line), the pipeline fails, `ok` stays 0, and the check fails closed, never open.
+- **Trust line.** Replayed under dash and jq 1.6 in bookworm, it adds `projects["/home/node/level-up-lab"]` and keeps
+  the other keys. It also changes `.claude.json` from mode 600 to 644 (umask 022 on the `> "$f.tmp"`). This is not
+  blocking in a single-user container; it is a note for the lead.
+
+### Findings
+
+```
+[1] KIND: correctness (rationale)
+    WHERE: scripts/agent/run.sh:237-238, scripts/agent/run-smoke.sh:280-281, backlog/work/B1.58/plan.md "Live check 1"
+    DEFECT: the comments say the worktree under .worktrees/ is what gives the check the workspace trust; under
+            2.1.303 the location plays no part, only the trust record of the main checkout does
+    TRIGGER: worktree at /tmp/tmp.X/wt of /home/node/level-up-lab, with
+             projects["/home/node/level-up-lab"].hasTrustDialogAccepted = true: Er() resolves its canonical root to
+             /home/node/level-up-lab, ASe() is true and the frontmatter path-guard is registered, exactly as for
+             .worktrees/check-binary-X/wt. Live check 1 failed because nothing was trusted; checks 2 and 3 changed
+             location and trust together, so they cannot tell which one fixed it
+    WRONG BEHAVIOUR: the code keeps a move whose stated reason does not hold, and the move costs finding 2
+    CONFIDENCE: plausible (static trace of the 2.1.303 linux-arm64 binary: ASe, Ofn, MJe, Xk, aF, Et, Er, PWe; not run
+                in the container)
+```
+
+```
+[2] KIND: correctness
+    WHERE: scripts/agent/run.sh:239-254 (no cleanup on a signal); scripts/worktree-prune.sh:95-99, 189-192
+    DEFECT: a TERM or INT during --check-binary leaves <checkout>/.worktrees/check-binary-X/wt as a registered,
+            detached worktree that worktree-prune.sh neither removes nor lists, inside the runner-repo volume
+    TRIGGER: probe clone, sleeping claude shim, kill -TERM <run.sh> during the claude run:
+             `.worktrees/check-binary-pmckvk/wt  ed388a1 (detached HEAD)` remains; `worktree-prune.sh --dry-run
+             --no-fetch` prints no line for it and "0 worktree(s) removed" (is_card_worktree rejects slug
+             `check-binary-pmckvk/wt`); run-smoke.sh in that clone then fails "FAIL R14 … probe worktree left"
+    WRONG BEHAVIOUR: before ed388a1 the orphan sat in the container's /tmp, which a recreate drops, and `git worktree
+            prune` then cleared its record; now it survives stop, rebuild and prune until removed by hand, and turns
+            R14 red on that machine for every later smoke run
+    CONFIDENCE: confirmed (ran it)
+```
+
+```
+[3] KIND: plan-mismatch (text)
+    WHERE: backlog/work/B1.58/plan.md, end of "Live check 2"
+    DEFECT: a stale clause survives the live check 3 edit: "(that trust covering subfolders is [unverified] until
+            live check 2, the last live run)."; "Live check 1" also lacks its closing period
+    TRIGGER: read plan.md lines 55-66 at 6033237
+    WRONG BEHAVIOUR: the plan says the trust is unverified and that check 2 was the last live run, in the same
+            bullet that records check 3 verifying 2.1.303
+    CONFIDENCE: confirmed (read)
+```
+
+### Not blocking, for the lead
+
+1. `run-smoke.sh:18-19` still says the probes "never touch the real repository". R14 now creates and removes
+   directories under the real checkout's `.worktrees/` (git metadata still goes to the scratch `$REPO` through
+   `GIT_DIR`). A smoke run beside a live `--check-binary` in the same checkout would fail R14 on the other run's
+   directory.
+2. Findings 1 and 2 are one decision. Either keep the location for layout parity with `run_issue` and add a signal
+   cleanup (or make `worktree-prune.sh` aware of `check-binary-*`), or go back to `mktemp -d`, since the trust line
+   alone carries the fix.
+3. The trust line changes `.claude.json` from mode 600 to 644 (see the scope extension).
+
+Verdict: ready for PR. No finding changes what `--check-binary` verifies: an orphan can never make a check pass,
+and every probe fails closed. Findings 1–3 need the lead's disposition (accept, follow-up card, or a fix before the
+PR).
+
+Riskiest unfalsified: finding 1's trace. It was read from the 2.1.303 binary, not run. If `Er()` declines the
+worktree's `.git` file in the container (a symlinked path component, a relative `gitdir` from
+`worktree.useRelativePaths`), the canonical root falls back to the worktree itself. Live check 3 shows that the record
+covers `.worktrees/check-binary-*/wt`. Nobody has run the `/tmp` case under the same trust record.
