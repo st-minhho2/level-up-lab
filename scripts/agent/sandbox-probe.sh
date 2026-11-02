@@ -5,8 +5,10 @@
 #   scripts/agent/sandbox-probe.sh      exit 0 all ok · 1 any FAIL
 #   S1 refused: example.com, 1.1.1.1:443, IPv6, the host gateway's Postgres port, a DNS server other than Docker's
 #   S2 reachable: GitHub, the npm registry, Anthropic          S3 claude --version is the Dockerfile's pin
-#   S4 run.sh --mode is bypassPermissions here, dontAsk when the network looks open or dead (curl shims)
-#   S5 uid node, no sudo, no effective capability, no-new-privileges; iptables and init-firewall.sh change nothing
+#   S4 run.sh --mode is bypassPermissions here, dontAsk when the network looks open or dead (curl shims), as root,
+#      or on another OS (id, uname shims)
+#   S5 uid node, no sudo, an empty capability bounding set, no-new-privileges; iptables and init-firewall.sh change
+#      nothing (the firewall lives in the firewall service; the runner container holds no capability at all)
 #   S6 the claude and gh config dirs are mounts, no credential file in the clone      S7 no Postgres host to reach
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd -P)"
@@ -55,15 +57,21 @@ for d in open dead; do
   m="$(PATH="$TMP/$d:$PATH" "$HERE/run.sh" --mode 2>&1)"
   [[ "$m" == dontAsk ]] || { say "--mode with every host $d: '$m'"; r=1; }
 done
+mkdir -p "$TMP/root" "$TMP/darwin"
+printf '#!/bin/sh\n[ "$1" = -u ] && { echo 0; exit 0; }\nexec /usr/bin/id "$@"\n' > "$TMP/root/id"
+printf '#!/bin/sh\necho Darwin\n' > "$TMP/darwin/uname"
+chmod +x "$TMP/root/id" "$TMP/darwin/uname"
+for d in root darwin; do
+  m="$(PATH="$TMP/$d:$PATH" "$HERE/run.sh" --mode 2>&1)"
+  [[ "$m" == dontAsk ]] || { say "--mode with the $d shim: '$m'"; r=1; }
+done
 [[ $r -eq 0 ]] && ok S4 || fail S4
 # S5
 r=0
 [[ "$(id -un)" == node && "$(id -u)" != 0 ]] || { say "user $(id -un) uid $(id -u)"; r=1; }
 command -v sudo >/dev/null && { say "sudo is installed"; r=1; }
-# an exec gets the container's bounding set (NET_ADMIN among it), so what holds is no effective capability and no way
-# to gain one through a setuid binary
-cap="$(awk '/^CapEff:/ {print $2}' /proc/self/status 2>/dev/null)"; nnp="$(awk '/^NoNewPrivs:/ {print $2}' /proc/self/status 2>/dev/null)"
-[[ "$cap" =~ ^0+$ && "$nnp" == 1 ]] || { say "CapEff '${cap:-no /proc}', NoNewPrivs '${nnp:-no /proc}'"; r=1; }
+cap="$(awk '/^CapBnd:/ {print $2}' /proc/self/status 2>/dev/null)"; nnp="$(awk '/^NoNewPrivs:/ {print $2}' /proc/self/status 2>/dev/null)"
+[[ "$cap" =~ ^0+$ && "$nnp" == 1 ]] || { say "CapBnd '${cap:-no /proc}', NoNewPrivs '${nnp:-no /proc}'"; r=1; }
 iptables -F >/dev/null 2>&1 && { say "iptables -F succeeded"; r=1; }
 if [[ -x /usr/local/bin/init-firewall.sh ]]; then
   /usr/local/bin/init-firewall.sh >/dev/null 2>&1 && { say "init-firewall.sh ran again"; r=1; }
