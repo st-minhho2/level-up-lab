@@ -1,0 +1,40 @@
+# An issue for the runner (B1.43, D-27). The form applies no label: only the lead adds `agent-ready`, and that label is
+# the spec approval. scripts/agent/eligible.sh accepts the issue only when the labeler and the author have write access.
+name: Agent task
+description: A backlog card for dev-lead to run headless once the lead labels it agent-ready.
+title: 'B<e>.<n> '
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One card per issue. The lead's `agent-ready` label approves what is written here (D-27), so edit nothing after
+        it. Only an issue whose author has write access is eligible. A high-tier plan (D-28) still stops for the lead.
+  - type: input
+    id: card
+    attributes:
+      label: Card id
+      description: The backlog card this issue runs, as in `backlog/plan/` (for example B1.44).
+      placeholder: B<e>.<n>
+    validations:
+      required: true
+  - type: textarea
+    id: spec
+    attributes:
+      label: Spec section or change
+      description: The numbered section the card implements (`spec/contracts/<file>` §n, unchanged), or the change to it and the D-n that allows it; "none — tooling" for a tooling card.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance
+      description: The criteria the card closes (AC-§.n ids, or the measurable checks of a tooling card).
+    validations:
+      required: true
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+      description: What this issue must not change; anything else found goes to a follow-up card (D-25).
+    validations:
+      required: true
