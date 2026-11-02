@@ -9,7 +9,9 @@
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec runner git clone https://github.com/st-minhho2/level-up-lab.git .
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec runner git checkout chore/B1.58-sandbox
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec runner claude auth login
-#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner claude   (accept the trust dialog, then /exit)
+#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner sh -c 'f=~/.claude/.claude.json; jq ".projects[\"/home/node/level-up-lab\"].hasTrustDialogAccepted = true" "$f" > "$f.tmp" && mv "$f.tmp" "$f"'
+# (that line trusts the clone, as claude's own "workspace has not been trusted" message suggests; an interactive
+# `claude` asks for the organization's managed settings first, a separate decision the runner does not need)
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec -e RUNNER_BUDGET_USD=1 runner scripts/agent/run.sh --check-binary
 #   docker compose -f .devcontainer/runner/docker-compose.yml stop
