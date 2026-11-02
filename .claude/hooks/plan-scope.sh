@@ -3,7 +3,8 @@
 # branch `<prefix>/B<e>.<n>[-…]`, lanes on `docs/` included — a write stays inside the card's approved plan:
 #   paperwork (backlog/*, spec/*, docs/metrics.md, docs/mistake-log.md)  always (role path-guards and lanes own it)
 #   prisma/migrations/*                                                  never by Edit/Write (pnpm db:migrate)
-#   any other path   only when it is in the plan's `## Files` as approved (scripts/ci/plan-files.sh, plan_lists)
+#   any other path   only when it is in the plan's `## Files` as approved (scripts/ci/plan-files.sh, plan_lists);
+#                    on a runner's path the approval must be a valid D-27 one (plan-files.sh --run, B1.55)
 #   test files       also only as test-writer (`agent_type` of the subagent; the main thread carries none)
 # Other branches, detached heads and files outside the project pass: path-guard.sh scopes the roles there.
 set -uo pipefail
@@ -26,11 +27,15 @@ case "$REL" in prisma/migrations/*)
   block "plan-scope.sh" "'$REL' is a migration: create it with pnpm db:migrate (add-migration skill), never by Edit/Write." ;;
 esac
 PLAN="backlog/work/$card/plan.md"
-pats="$(cd "$TOP" && "$HERE/../../scripts/ci/plan-files.sh" "$card")"
+# a runner's path (D-27, B1.55): its branch <prefix>/<card>-agent, or RUNNER_CHILD from run.sh in this hook's env
+run=""; [[ "${branch#*/}" == "$card-agent" || -n "${RUNNER_CHILD:-}" ]] && run=--run
+err="$(mktemp)"; trap 'rm -f -- "$err"' EXIT
+pats="$(cd "$TOP" && "$HERE/../../scripts/ci/plan-files.sh" $run "$card" 2> "$err")"
 case $? in
   0) ;;
   3) block "plan-scope.sh" "$PLAN is not approved on $branch (no 'docs(backlog): $card plan approved' commit): nothing outside backlog/ and spec/ changes before the lead approves." ;;
   4) block "plan-scope.sh" "$branch has no $PLAN at its approval commit." ;;
+  5) block "plan-scope.sh" "$(head -1 "$err"). Stop: on a runner's path only a reviewer-approved low or medium plan of an eligible agent-ready issue proceeds (D-27); otherwise the lead approves." ;;
   *) block "plan-scope.sh" "could not read the Files of $PLAN on $branch." ;;
 esac
 listed=0

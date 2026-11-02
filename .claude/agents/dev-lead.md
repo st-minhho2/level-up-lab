@@ -8,11 +8,12 @@ hooks:
     - matcher: 'Edit|Write|MultiEdit'
       hooks:
         - type: command
-          command: '"$CLAUDE_PROJECT_DIR/.claude/hooks/path-guard.sh" ''backlog/*'' ''docs/metrics.md'' ''docs/mistake-log.md'' ''!backlog/00-decisions.md'''
+          command: '"$CLAUDE_PROJECT_DIR/.claude/hooks/path-guard.sh" ''backlog/*'' ''docs/metrics.md'' ''docs/mistake-log.md'' ''!backlog/00-decisions.md'' ''!backlog/work/*/review.md'''
 ---
 
 You are accountable for what gets built and for keeping the human's time to one decision per card. The human
-approves the plan; roles do the work; you write only `backlog/`, `docs/metrics.md`, `docs/mistake-log.md`.
+approves the plan; roles do the work; you write only `backlog/`, `docs/metrics.md`, `docs/mistake-log.md` (never a
+card's `review.md`: the reviewer's verdict is what a D-27 approval stands on).
 
 ## Control-plane rules (override everything else)
 
@@ -58,7 +59,15 @@ Commit `docs(backlog): <card> plan`.
    around it or wait, never ask the lead to approve over it. Dispatch `reviewer` (plan review) on the unapproved plan, so the lead decides on a plan whose
    costs the review has already surfaced. Changes requested → revise `plan.md`, commit, dispatch again (≤ 2 rounds,
    then Waiting on human). Approved → fill `Plan review: approved, round N`, commit.
-5. **Gate.** Print the plan and the review verdict and stop with exactly: "Plan for <card> is ready. Reply `approve`
+5. **Gate.** In a run of `scripts/agent/run.sh` for an `agent-ready` issue (D-27: its prompt opens
+   `Issue #<n> is labeled agent-ready (D-27)` and `echo "$RUNNER_CHILD"` prints `1`), once the plan review is
+   `Verdict: approved`: `scripts/agent/tier.sh backlog/work/<card>/plan.md` prints `low` or `medium` and
+   `scripts/agent/eligible.sh <n> <card>` exits 0 → set the status line's field to
+   `Plan approved by: reviewer (D-27, tier <t>, issue #<n>)`, commit `docs(backlog): <card> plan approved` and go on
+   as after `approve` below, with no gate line. `high`, or a refusal (its stderr line into "Waiting on human") → the
+   gate as follows. A run never writes `Plan approved by: lead`; plan-scope.sh and CI re-check the D-27 field and
+   refuse anything else on a runner's path (`scripts/ci/plan-files.sh --run`). Every other session (interactive):
+   print the plan and the review verdict and stop with exactly: "Plan for <card> is ready. Reply `approve`
    or list changes." Changes → revise, `Rounds` +1, back to step 4. `approve` → write the line, commit
    `docs(backlog): <card> plan approved`. `Rounds` counts the lead's rounds only; review rounds stay in `review.md`.
    Then at once (B1.21, B1.23): write the template (Item, Plan = plan.md, Map delta and Review "pending") to

@@ -118,5 +118,6 @@ as in batch 3. CFR is the 14-day mechanical bound; re-measure on 2026-11-16 for 
 | B4.1  | §20         | 6               | 6 (100 %) | 93.07 (todo-created 100)          | 0              | a5475db                               | e898d17 |
 | B4.2  | §21         | 7               | 7 (100 %) | 93.20 (clear-search 100)          | 0              | b5fc079                               | ddae9e8 |
 | B4.3  | §22         | 7               | 7 (100 %) | 93.05 (todo-count.ts 100)         | 0              | acf989d                               | bac26da |
+| B1.55 | — (tooling) | 0               | n/a       | 93.40 (unchanged, no src/ change) | 0              | bc11ca9: 22 FAIL; d4b1b00: 1 FAIL     | 57b351e |
 
 A value below target for two consecutive measurements opens a row in `docs/mistake-log.md` and a fix in `.claude/`.

@@ -2,6 +2,7 @@
 # Session wait time for the lead (B1.22, B1.21 option (b)), read from git and gh, whole minutes.
 #   plan gate  Σ over the card's approval commits ("docs(backlog): <card> plan [round N ]approved", first-parent) of
 #              (approval commit − its first parent), author dates; a commit made while waiting shortens it
+#              an approval whose field is a reviewer's D-27 approval (B1.55) is no lead wait and is left out
 #   PR         merge − the first green `ci` run completed on the card's last own commit (first-parent, not a merge, not
 #              chore(ci)) or any later commit; no green run → n/a. Bias: a run that was red for a missing label anchors
 #              on the next green one. Upper bound: PR created → merge.
@@ -22,6 +23,10 @@ median() { printf '%s\n' "$@" | awk 'NF { v[++n] = $1 }
         for (i = 1; i <= n; i++) for (j = i + 1; j <= n; j++) if (v[j] < v[i]) { t = v[i]; v[i] = v[j]; v[j] = t }
         print (n % 2) ? v[(n + 1) / 2] : int((v[n / 2] + v[n / 2 + 1]) / 2) }'; }
 count() { printf '%s\n' "$@" | awk 'NF' | wc -l | tr -d ' '; }
+d27() { # d27 <sha> <card>: the plan's approval field at <sha> is a reviewer's D-27 approval (plan-files.sh's field)
+  git show "$1:backlog/work/$2/plan.md" 2>/dev/null | awk '/^Plan review:/ { line = $0 }
+    END { i = index(line, "Plan approved by:"); if (i) print substr(line, i + 17) }' | grep -q '^[[:space:]]*reviewer (D-27,'
+}
 
 printf 'card\tpr\tgate_min\tpr_min\tupper_min\n'
 gates=""; prs=""; uppers=""
@@ -32,7 +37,10 @@ while read -r card pr; do
   esc="${card//./[.]}" # awk -v would read \. as a plain dot
   gate="$(git log --first-parent --no-merges --format='%H %at %s' "$head" \
     | awk -v re="^docs\\\\(backlog\\\\): $esc plan (round [0-9]+ )?approved" '{ s = $0; sub(/^[0-9a-f]+ [0-9]+ /, "", s) } s ~ re { print $1, $2 }' \
-    | while read -r sha at; do echo $((at - $(git log -1 --format=%at "$sha^1"))); done \
+    | while read -r sha at; do
+        d27 "$sha" "$card" && continue # the reviewer approved under D-27: no lead waited (B1.55)
+        echo $((at - $(git log -1 --format=%at "$sha^1")))
+      done \
     | awk 'NF { t += $1; n++ } END { if (n) print int(t / 60) }')"
   merged="$(gh pr view "$pr" --json mergedAt --jq '.mergedAt | fromdateiso8601' </dev/null)"
   created="$(gh pr view "$pr" --json createdAt --jq '.createdAt | fromdateiso8601' </dev/null)"
