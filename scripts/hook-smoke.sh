@@ -223,7 +223,7 @@ role_patterns() { # the patterns each role's path-guard.sh must receive, in orde
   case "$1" in
     advisor) echo "backlog/work/*" ;;
     code-writer) echo "src/* prisma/* spec/features-map.md docs/metrics.md !*.test.ts !*.test.tsx !e2e/* !src/lib/prisma.ts" ;;
-    dev-lead) echo "backlog/* docs/metrics.md docs/mistake-log.md !backlog/00-decisions.md" ;;
+    dev-lead) echo "backlog/* docs/metrics.md docs/mistake-log.md !backlog/00-decisions.md !backlog/work/*/review.md" ;;
     reviewer) echo "backlog/work/*/review.md" ;;
     spec-analyst) echo "spec/contracts/* backlog/* !spec/features-map.md !backlog/00-decisions.md" ;;
     test-writer) echo "*.test.ts *.test.tsx e2e/*" ;;
@@ -233,7 +233,7 @@ role_probes() { # <exit> <path> pairs: one write the role may make, one it may n
   case "$1" in
     advisor) echo "0 backlog/work/B1.2/advice.md 2 src/lib/todos.ts" ;;
     code-writer) echo "0 src/lib/todos.ts 2 src/lib/todos.test.ts 2 e2e/x.spec.ts" ;;
-    dev-lead) echo "0 backlog/work/B1.2/plan.md 2 src/lib/todos.ts 2 backlog/00-decisions.md" ;;
+    dev-lead) echo "0 backlog/work/B1.2/plan.md 2 src/lib/todos.ts 2 backlog/00-decisions.md 2 backlog/work/B1.2/review.md" ;;
     reviewer) echo "0 backlog/work/B1.2/review.md 2 backlog/work/B1.2/plan.md" ;;
     spec-analyst) echo "0 spec/contracts/04-edit-title.md 2 src/lib/todos.ts 2 spec/features-map.md" ;;
     test-writer) echo "0 src/lib/todos.test.ts 0 e2e/x.spec.ts 2 src/lib/todos.ts" ;;
