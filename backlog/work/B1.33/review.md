@@ -71,3 +71,62 @@ Riskiest unfalsified: CI's container specifics, which I could not run. Under Act
 checkout's global `safe.directory`, and mktemp fixture repos owned by root might change a git verdict. The plan's
 `node:24-bookworm` prototype covers most of this but not the Actions-mounted workspace. The 57 s cost is also
 `[unverified]` until the PR run.
+
+## Plan review (round 2)
+
+Plan at `114ac55 docs(backlog): B1.33 plan round 2 (test job, plan review r1)`.
+
+| Check                                                                             | Result                                                                                                                                                                                |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: unchanged from round 1. Still two non-paperwork files, `ci.yml` and `scripts/CLAUDE.md`, and no sibling's file.                                                                 |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass (n/a): the step is pasted verbatim (`if: ${{ !cancelled() && env.HOTFIX != 'true' }}`, `run: scripts/hook-smoke.sh`), and no script changes.                                     |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: there is no `advice.md`, and the skip is stated (tier quick).                                                                                                                   |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: 3 Acceptance clauses. "A CI job runs it on every PR and fails on its exit 1": `test` is required in `.github/rulesets/main.json`, and the hotfix exemption is stated as a cost. |
+| verification lists exact commands with expected numbers                           | pass: grep before/after, "440 probes OK", OK/OK. The simulation line is prose, not a command (note a).                                                                                |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: the skeleton, map and test commits now have stated reasons, step 1 runs in the lead's main session, and `ci(scripts): …` passes commit-msg.                                     |
+| the section has a `Lead approves spec` box, ticked only by a human                | pass (n/a): no section, and nothing is ticked.                                                                                                                                        |
+| no settled D-n contradicted                                                       | pass: D-19 label; D-25 follow-ups for the two `hook-smoke.sh` defects, filed in the closing PR as B1.20's closing PR `a221ea2` filed B1.32/B1.33.                                     |
+| `scripts/next-task.sh --check B1.33` on the committed plan says no overlap        | pass: `[next-task] B1.33: no overlap with any Doing or Review card`                                                                                                                   |
+
+**Round-1 reasons:**
+
+1. **Answered.** The step moves to `test`, whose depth-1 checkout has no `origin/main` and no `HEAD_SHA`. I re-ran the
+   dev-lead's simulation myself on /bin/bash 3.2 (`scratchpad/r2-check.sh`). It uses the same `sim-pr` commit
+   `309cdd6` (a committed `src/lib/todos.ts` change on `a733c7b`), checked out detached as `refs/remotes/pull/1/merge`
+   in fresh repos:
+   - Depth 1 (`origin/main` absent, `git status` empty): `hook-smoke: 440 probes OK`, rc 0.
+   - All heads fetched (`origin/main` present): rc 1, `FAIL require-review.sh spoke on a clean tree`, and nothing else.
+
+   Both of the plan's claims reproduce. For a push to main, checkout's depth-1 fetch lands the pushed SHA as
+   `origin/main` = HEAD, so the merge-base diff is empty and the gate stays silent (traced, not run). The two
+   `hook-smoke.sh` defects are named for follow-up under D-25, and the step's own comment says why it is not in
+   `guards`.
+
+2. **Answered.** The lead's main session runs step 1.
+3. **Answered.** The skeleton, map and test omissions each have a reason.
+4. **Answered.** `!cancelled()` runs hook-smoke after a unit-test failure. Nothing after it in `test` depends on it
+   (the coverage upload is `always()`), so no verdict is hidden.
+5. **Answered.** The plan gives the merge order: if B1.32 merges first, the row takes its ids at Loop 9; if B1.32
+   merges after, its new ids become a follow-up.
+
+**Costs checked:**
+
+- Run 41371867185 (`gh run view`): `test` took 49 s (01:19:15 → 01:20:04) and `guards` 38 s, as the plan says.
+  Adding ≈ 19 s brings `test` to ≈ 68 s, which bills 2 min instead of 1. That is `[unverified]` on x86, and the plan
+  marks it so.
+- Wall clock is unchanged: `mutation` ran 5 min 3 s.
+
+**Notes (not blocking):**
+
+- (a) The simulation step in Verification names no script. Keep `sim-checkout.sh` with the PR, or name it in
+  `pr-body.md`, so the diff reviewer can rerun it. This PR's own `test` run changes no `src/`, so it cannot show the
+  probe staying silent on a feature PR.
+- (b) `plan.md` is 61 lines against the ≈ 40-line screen in `planning.md`. Tables and the YAML block account for
+  most of it. Its scope is still one change.
+
+Verdict: approved. This means the plan is ready for the lead's gate; it is not approved for build. The `Plan approved
+by:` line stays the lead's.
+
+Riskiest unfalsified: that `actions/checkout` v4 at depth 1 on a real `pull_request` creates no
+`refs/remotes/origin/*`. My simulation reproduces its fetch refspec by hand. The first feature PR after merge is the
+first real proof, because this PR changes no `src/`.
