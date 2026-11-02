@@ -753,3 +753,36 @@ _tooling · no §_
 - **Acceptance:** the card id comes from the form's card answer when present, else the title; a list that returns exactly the limit prints a warning on stderr; control characters are folded before trimming, so a value of only control characters prints `?`; every existing probe still passes
 - **Tier:** quick · **Depends on:** ~~B1.45~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.54/`
+
+### B1.55 · dev-lead carries an agent-ready card past a reviewed low or medium plan
+
+_tooling · no §_
+**Status: Open** — D-27 lets a reviewer-approved low- or medium-tier plan on an `agent-ready` issue proceed without the lead, but `.claude/agents/dev-lead.md` and `.claude/skills/work-next/SKILL.md` stop every card at the plan gate, and `plan-scope.sh`, `scripts/ci/plan-files.sh` and the metrics read the approval only from a lead's `Plan approved by: lead` line and the `docs(backlog): <card> plan approved` commit; a headless run (B1.44) would stop at every card
+
+- **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
+- **Test:** `grep -n agent-ready .claude/agents/dev-lead.md .claude/skills/work-next/SKILL.md` and new probes in `scripts/hook-smoke.sh` — red because: no match, and a plan approved by the reviewer under D-27 is refused by `plan-scope.sh`
+- **Acceptance:** in a run started for an `agent-ready` issue (the runner names it), `dev-lead` takes the reviewer's approval, computes the tier with `scripts/agent/tier.sh` and, for low or medium, commits the approval itself (`docs(backlog): <card> plan approved`, a `Plan approved by: reviewer (D-27, tier <t>, issue #<n>)` line) and continues; for high it stops at the gate as today; interactive sessions keep the lead's gate; `plan-scope.sh`, `check-plan-scope.sh`, `plan-files.sh` and the metrics scripts accept the D-27 approval and nothing looser (a probe each); the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** B1.44 · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.55/`
+
+### B1.56 · A high-tier gate stop resumes when the lead approves on the issue
+
+_tooling · no §_
+**Status: Open** — at a high-tier plan the runner (B1.44) comments on the issue and stops (D-27); nothing turns the lead's approval on the issue back into a run, so every high-tier card would need an interactive session
+
+- **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
+- **Test:** new probes in `scripts/agent/run-smoke.sh` — red because: a gate-stopped issue with a later `approve` comment from a collaborator with write access is not resumed
+- **Acceptance:** the lead approves by an issue comment reading exactly `approve` from an actor with write access (the permission rule of `scripts/agent/eligible.sh`), posted after the runner's gate comment; the next poll records the approval on the card's branch (`docs(backlog): <card> plan approved`, the comment's URL as evidence) and resumes the run in the same worktree; a comment by anyone else, or before the gate, is ignored and reported; the stop counts as expected for D-29; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** B1.44, B1.55 · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.56/`
+
+### B1.57 · Scripts measure unattended runs and PRs merged with no rework
+
+_tooling · no §_
+**Status: Open** — D-29 defines unattended (no lead message between the `agent-ready` label and PR ready, an expected high-tier gate excepted) and no-rework (after ready, no human-authored commit and no lead change request) and says the scripts come with the runner cards; none exists, and a run's commits carry the lead's git identity, so a human commit cannot be told from an agent's today
+
+- **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
+- **Test:** new probes in `scripts/metrics-smoke.sh` — red because: `scripts/metrics/unattended.sh` and `scripts/metrics/no-rework.sh` do not exist
+- **Acceptance:** `scripts/metrics/unattended.sh [<issue>…]` prints per `agent-ready` issue the label time, the ready time, the human messages in between (issue and PR comments and reviews, the approve comment of an expected gate excepted) and the share; `scripts/metrics/no-rework.sh [<pr>…]` prints per agent PR the commits after ready not made by a run and the lead's change requests, and the share; every commit a run makes is told apart from a human's by a mark the runner adds (for example an `Agent-Run:` trailer), with a probe; `docs/metrics.md` gains the two rows with how to re-measure; the PR carries `config-change-approved` (D-19) if it touches protected paths
+- **Tier:** quick · **Depends on:** B1.44 · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.57/`
