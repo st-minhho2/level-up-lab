@@ -8,6 +8,7 @@
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 HERE="$(cd "$(dirname "$0")" && pwd)"
+. "$HERE/lib.sh" # plan_lists
 branch="${GITHUB_HEAD_REF:-$(git symbolic-ref --short -q HEAD || true)}"
 if [[ ! "$branch" =~ ^[a-z]+/(B[0-9]+\.[0-9]+)(-|$) ]]; then
   echo "[check-plan-scope] ${branch:-detached HEAD}: no card id: skipped"; exit 0
@@ -21,8 +22,8 @@ fail=0
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
   case "$f" in backlog/* | spec/* | docs/metrics.md | docs/mistake-log.md) continue ;; esac
-  listed=0 # literal first: a row with [ ] (src/app/[id]/page.tsx) never glob-matches itself
-  if [[ $rc -eq 0 ]]; then while IFS= read -r p; do [[ -n "$p" && ( "$f" == "$p" || "$f" == $p ) ]] && listed=1; done <<< "$pats"; fi
+  listed=0
+  if [[ $rc -eq 0 ]]; then while IFS= read -r p; do [[ -n "$p" ]] && plan_lists "$f" "$p" && listed=1; done <<< "$pats"; fi
   if [[ $listed -eq 0 ]]; then
     [[ $fail -eq 0 ]] && echo "::error::$branch changes files outside backlog/work/$card/plan.md as approved (plan-files exit $rc):"
     echo "  $f"; fail=1
