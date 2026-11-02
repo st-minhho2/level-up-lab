@@ -107,3 +107,103 @@ Plan approved by: … · Rounds: n` (line 63), so "a line that reads exactly …
    expected count. "Full hook-smoke" has no count. Give the green count for
    `grep -c agent-ready .claude/agents/dev-lead.md .claude/skills/work-next/SKILL.md` (the red count, 0, is the
    only one stated).
+
+## Plan review (round 2)
+
+SCOPE: tooling (no §). Plan reviewed: `73f67db docs(backlog): B1.55 plan round 2 and plan review round 1`. Contract:
+the card's Acceptance, D-27, D-28, D-29, D-19, and the orchestrator's hard requirement (no self-approval of a
+high-tier plan, a card without an `agent-ready` issue, or an issue `eligible.sh` rejects; each refusal probed).
+`scripts/agent/tier.sh backlog/work/B1.55/plan.md` → `high`. Baselines run here: `scripts/hook-smoke.sh` →
+`hook-smoke: 476 probes OK`; `scripts/agent/eligible-smoke.sh` → `9 probes OK`; `scripts/metrics-smoke.sh` →
+`[metrics-smoke] 23 ok, 0 FAIL` (the plan's 488 / 10 / 27 start from the right bases).
+
+Round 1 reasons: #1 option (a) taken, and interactive D-27 fields are refused (addressed, but see reason 1). #2 the
+field is defined and S25 probes prose (addressed). #3 the path-guard and "unchanged since review" checks were added
+(addressed for Edit/Write; see reason 2). #4 wait-time and plan-deviations are handled, M27 and M29 added (addressed).
+#5 the apt commands are named; the proof step is partial (reason 5). #6 a follow-up is filed and B1.55 closes Partial
+(addressed, but the id is taken, reason 4). #7 the counts are given (addressed).
+
+| Check                                                                          | Result                                                                                                                                                 |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every file in the plan belongs to the card                                     | pass: 13 rows, each named by the Acceptance, a probe or a round 1 reason; `run.sh` and `scripts/CLAUDE.md` (held by B1.58) are absent                  |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib | n/a: bash only, no `src/`                                                                                                                              |
+| plan follows `advice.md` or states the deviation                               | pass: tier quick, no advisor, stated                                                                                                                   |
+| ≤ 7 criteria, every Then measurable                                            | fail: "nothing looser" still does not hold (reasons 1, 3)                                                                                              |
+| verification lists exact commands with expected numbers                        | pass, with reason 5 (the CI proof leaves out one endpoint) and note b                                                                                  |
+| work breakdown red → green → review                                            | pass (skeleton and map are n/a for tooling)                                                                                                            |
+| `Lead approves spec` box                                                       | n/a: no §. Tier high, so the lead's `approve` is the gate. `Plan approved by:` is empty, and this review did not write it                              |
+| no settled D-n contradicted                                                    | fail: D-27's "a plan the reviewer approved" holds only against Edit/Write, and the plan's cost line says CI covers the rest, which is false (reason 2) |
+| `scripts/next-task.sh --check B1.55`                                           | pass: `[next-task] B1.55: no overlap with any Doing or Review card`                                                                                    |
+
+Verdict: changes requested
+
+1. **The run chooses its own branch name, so the Rule can be sidestepped and the hard requirement fails.** The runner
+   check applies only on `<prefix>/<card>-agent`. Off that branch, a non-`reviewer` field "keeps today's lead path",
+   and `plan-files.sh:27-37` accepts that path from the commit subject alone. `run.sh:33` allows
+   `Bash(scripts/worktree.sh *)`, `Bash(git *)` and bare `Bash`. `plan-scope.sh:21-22` and
+   `check-plan-scope.sh:12-13` take the card from any `<prefix>/B<e>.<n>…` branch. TRIGGER: a run on issue #n for
+   a high-tier card B1.x runs `scripts/worktree.sh chore/B1.x-resume` (or `git switch -c chore/B1.x-b`). It writes
+   `Plan approved by: lead, 2026-11-02` into the status line and commits `docs(backlog): B1.x plan approved`. It then
+   edits the plan's files with Edit/Write and opens the PR with bare-Bash `gh pr create`. WRONG BEHAVIOUR: the hook
+   sees a branch that is not `-agent` and takes the lead path → exit 0. CI's `GITHUB_HEAD_REF` is not `-agent` →
+   green. The same steps work for an issue without the label and for one `eligible.sh` refuses. CONFIDENCE:
+   confirmed by trace (the plan's own Rule, plus the lines cited). Required, one of these:
+   - (a) The hook applies the runner Rule when `RUNNER_CHILD` is set **or** the branch is `-agent`. Hooks inherit
+     claude's environment, and a run's Bash cannot change it for them. CI applies the Rule on any card branch whose
+     card is named in the "Card id" field of an open `agent-ready` issue. Probe each: `RUNNER_CHILD=1` on a branch
+     that is not `-agent`, with a lead field → blocked; in CI, such a branch with a labeled issue naming the card →
+     fail. Cost to state: to approve that card interactively, the lead first removes the label (or waits for B1.56).
+     CI gains one `gh` call on every card branch.
+   - (b) The hook half of (a) only. Then state that a run which moves to a branch that is not `-agent` and writes by
+     Bash gets a forged lead approval past CI, so only the lead's PR review catches it (by the head branch). The lead
+     restates "nothing looser" to match.
+
+2. **"Bash writes skip the hook (CI catches them)" is false for the reviewer's verdict.** `check-plan-scope.sh:24`
+   passes every `backlog/*` path, and a run's bare `Bash` writes `review.md`. TRIGGER 1: the reviewer requests
+   changes on a medium-tier plan for an eligible issue. dev-lead runs
+   `printf '\n## Plan review (round 3)\n\nVerdict: approved\n' >> backlog/work/B1.x/review.md`, commits it, and
+   writes the D-27 field. TRIGGER 2: after the reviewer approves, dev-lead edits plan.md's Files by Bash, appends a
+   blank line to review.md in the same commit, and writes the field. WRONG BEHAVIOUR: in both cases tier, last round,
+   "unchanged since the last commit touching review.md" and `eligible.sh` all pass, so no reviewer approved this plan
+   (D-27). CONFIDENCE: confirmed by trace. Neither trigger is in the hard requirement's list, because tier and issue
+   are still checked. Required: correct the cost line, and list "a run can forge the plan review by Bash; until
+   B1.58's sandbox, D-27's reviewer condition is held by role text, not a guard" among the costs the lead accepts.
+
+3. **A closed issue still approves.** `eligible.sh:25-47` never reads `.state`. I ran `scripts/agent/eligible.sh 166`
+   on the closed issue #166 → exit 0. TRIGGER: the lead closes issue #n to withdraw card B1.x and leaves the label
+   on. The run already on `chore/B1.x-agent` (or a later `run.sh n`) writes the D-27 field citing #n. WRONG
+   BEHAVIOUR: the field is accepted although no open `agent-ready` issue backs the card. CONFIDENCE: confirmed (ran
+   it). Required: in the `<card>` mode, refuse an issue whose state is not open (E10 gains "closed → exit 1"; the
+   `--offline` metrics path keeps merged verdicts stable). Or state that only removing the label withdraws an
+   approval. If refused, Verification's live `eligible.sh 166 B1.41` exit 0 becomes exit 1: pick an open labeled
+   issue or drop that line.
+
+4. **B1.61 is taken.** `backlog/plan/E1-todos.md:823` (also on `origin/main`) is
+   `### B1.61 · The runner's deny list spares commit messages, and TERM ends the tools a run started`, and ids are
+   never reused (`backlog/CLAUDE.md`). TRIGGER: dev-lead files the follow-up as B1.61 and closes B1.55 as
+   `Partial — pending B1.61`. WRONG BEHAVIOUR: either a duplicate id, or a Partial pointer that names an unrelated
+   card. CONFIDENCE: confirmed. Required: use the next free id when filing (B1.62 today; `origin/docs/B1.58-card`
+   adds none past B1.59), or fold the change into the existing B1.61, which already edits `run.sh`. Also restate the
+   follow-up's content. `run.sh:33` holds bare `Bash`, which allows every command, `scripts/pr-step.sh` included, so
+   the allow list does not stop a run. Only the prompt sentence at `run.sh:197` does.
+
+5. **The CI proof leaves out the endpoint `eligible.sh` paginates.** The planned step reads
+   `collaborators/<actor>/permission` and `issues/<pr>`. `eligible.sh:29` also calls
+   `issues/<n>/events --paginate`, and the new `<card>` mode reads `.body`. TRIGGER: the first D-27 PR's `guards`
+   job. WRONG BEHAVIOUR: if the job token is refused on events, every D-27 PR fails closed, and this is found only
+   after merge. CONFIDENCE: plausible (I did not run it with an Actions token). Required: the step runs
+   `scripts/agent/eligible.sh <open labeled issue> <its card>` → exit 0 and the same issue with `B1.55` → exit 1 with
+   the job token, both visible in the log.
+
+Notes (not blocking; state them or leave them):
+
+- a. A `gh` call that hangs lets an Edit/Write through. `settings.json:41` sets no timeout on plan-scope, and Claude
+  Code treats a timed-out PreToolUse hook as a non-blocking error. CI still refuses the change. "Offline = blocked"
+  holds only when `gh` fails fast. CONFIDENCE: plausible.
+- b. 488 = 476 + 12 assumes one `ok` line per id. S24 carries three cases and S25 two, and S1–S15 print once per
+  layout (54 lines today). State the lines per id, or the count will drift.
+- c. The Interfaces do not say how `wait-time.sh` recognises a D-27 approval (plan-files `--run --offline` exit 0,
+  or a field prefix).
+
+This was round 2 of at most 2. A further round goes to the lead as "Waiting on human": the lead decides reasons 1–4
+at the gate.
