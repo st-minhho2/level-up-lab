@@ -101,3 +101,69 @@ Not blocking:
   elements do not render into the body. This holds as long as B1.43 keeps that order.
 
 Verdict: changes requested
+
+## Plan review (round 2)
+
+Reviewed `e55dea1 docs(backlog): B1.45 plan round 2` (73 lines). Contract: the card's Acceptance
+(`backlog/plan/E1-todos.md` ### B1.45), D-19, D-25 to D-29. Read-only facts checked for this round:
+
+- `scripts/ci/check-config-change.sh:10` protects `\.github/.*`, so the Files table makes the tier high (D-28) and the
+  lead's gate stays (D-27), as the plan says.
+- Lane branches on origin end in `-done`, `-partial`, `-card`, `-file-card` and once `-B1.30-cards`
+  (`docs/B1.29-B1.30-cards`); card work branches `docs/B1.28-package-guides` and `docs/B1.31-guide-ranges` exist.
+- Nothing in `scripts/` or `.claude/` parses the PR template's sections; `dev-lead.md:64` writes Item, Plan, Map delta
+  and Review only, so today's PRs carry no Evidence section (the plan's F4 and follow-up (b) cover that).
+- `scripts/ci/plan-files.sh` reads a plan's Files "as of its approval commit"; the map reads the PR head's plan.md.
+
+| Check                                                                             | Result                                                                                                                                                                                                                                                                              |
+| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: tooling, no § and no map row. Three non-paperwork files, exactly what the Acceptance names. No overlap with B1.43 (`agent-task.yml`, `eligible*.sh`) or B1.46 (`package.json`, lockfile, `.dependency-cruiser.cjs`, `ci.yml`); `scripts/agent/` is shared as a directory only |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass (n/a): no TypeScript, action or Prisma. bash 3.2, gh `--jq` without `jq`                                                                                                                                                                                                       |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: no `advice.md`; quick tier skips the advisor, stated                                                                                                                                                                                                                          |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass with a ruling: "daily" and "posts it to the agent board" are now an explicit gate question (A/B), with "no ruling → Partial" stated; "trace link" is defined as the `playwright-report` artifact URL or `n/a`, and the plan states a trace exists only after a retry           |
+| verification lists exact commands with expected numbers                           | pass: red = exit 1 with 15 FAIL; green = "feature-map-smoke: 15 probes OK", `denied.log` empty, same on `/bin/bash`; plan-scope, backlog, lint, and the live empty-state run each have an expected line                                                                             |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: no § means no skeleton, map or mutation step. `test(scripts): … (red)` → `chore(scripts): …` → review, as B1.42. The approval commit must be titled `docs(backlog): B1.45 plan approved` (or `plan round 2 approved`) for `plan-files.sh`                                     |
+| `Lead approves spec` box ticked only by a human                                   | pass (n/a): no section; `Plan approved by:` empty                                                                                                                                                                                                                                   |
+| no settled D-n contradicted                                                       | pass: D-19 (label), D-25 (follow-ups filed in the closing PR), D-26 (nothing on Actions), D-27 (high tier keeps the gate), D-28 (rank comes from `tier.sh`, never the body's word)                                                                                                  |
+| `scripts/next-task.sh --check B1.45` says no overlap                              | pass: `[next-task] B1.45: no overlap with any Doing or Review card` (exit 0)                                                                                                                                                                                                        |
+
+### Round 1 reasons
+
+1. Addressed: the posting and "daily" are a lead ruling at the gate (A recommended, B stated), and no ruling closes
+   the card Partial.
+2. Addressed: follow-ups (a) runner fills `tier:` and posts, (b) `dev-lead.md` Loop 9 / `pr-body.md` fill Evidence after
+   CI, (c) smoke in CI are named, filed in the closing PR under D-25. The plan states the map has no real row until
+   B1.44 runs.
+3. Addressed: rank comes from `tier.sh` on the PR's plan.md; a differing body word is shown, not ranked (F14); no
+   `tier.sh` → `unknown`, ranked second (F15). Residual cost below (cost 2).
+4. Addressed: only lane suffixes are excluded and `docs/B9.1-guides` counts (F5). Residual cost below (cost 3).
+5. Addressed: the value is the `playwright-report` artifact URL (uploaded on every run, `ci.yml:88-93`) or `n/a`, the
+   writer after CI is follow-up (b), and the plan says the report holds a trace only after a retry.
+6. Addressed: one-line format in the template, empty value → `?` (F13).
+
+### Costs the lead approves with (not blocking)
+
+1. **Option A's follow-up (a) contradicts the plan's own premise.** The ruling text says the board is written only by
+   an agent tool and "a headless runner has none", yet follow-up (a) has the runner post the map daily. Trigger: the
+   lead rules A; (a) is filed as written; B1.44's `claude -p` run cannot reach a claude.ai artifact. Result: the post
+   stays manual from an attended session, or (a) must redefine "the board" (a file, an issue comment, which is option
+   B). Filing (a) should say which. Confidence: plausible (the artifact claim is the plan's, not run).
+2. **The tier source is the PR head's plan.md, not the approved one.** `check-plan-scope.sh` bounds the diff by the
+   Files at the approval commit (`plan-files.sh`); the map reads `git show FETCH_HEAD:backlog/work/<card>/plan.md`.
+   Trigger: the approved plan lists `.github/x.yml`; a later `docs(backlog)` commit on the branch drops that row
+   (paperwork passes plan-scope); the diff still touches `.github/x.yml`. Result: `tier.sh` prints medium or low and
+   the PR ranks below every high PR, while the merged change is high by D-28. A row added after approval errs the safe
+   way (higher). Cheap fix the lead can take at approval: feed `tier.sh` the plan.md at the latest
+   `docs(backlog): <card> plan [round N ]approved` commit on the fetched head (the `plan-files.sh` regex), head's only
+   when none exists. Confidence: plausible (traced; nothing exists to run).
+3. **The lane-suffix rule is wider and narrower than the probes.** "`-…card(s)`" as a suffix match also drops a work
+   branch whose name happens to end in `card` (`docs/B1.50-scorecard`), and F5 probes `-done` and `-card` but not
+   `-file-card` or `-partial`, which exist on origin. Trigger: an open ready PR on `docs/B1.50-scorecard` → row
+   `queued`. Fix at build: match the exact suffixes `-done`, `-partial`, `-card`, `-file-card`, `-<card>-cards` and add
+   `-file-card`, `-partial` inputs to F5. Confidence: plausible.
+4. The plan is 73 lines (> ≈ 40 in `planning.md`; B1.24, B1.29, B1.42 ran 64 to 76). The footer still says
+   `Rounds: 1`.
+
+Riskiest unfalsified: cost 2, the map ranking a PR by a head-of-branch plan.md that no longer matches what was approved.
+
+Verdict: approved (ready for the lead's gate; the gate also takes the A/B ruling)
