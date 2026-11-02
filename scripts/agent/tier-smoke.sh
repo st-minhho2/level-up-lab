@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Probes T1–T9 of scripts/agent/tier.sh (B1.44, D-28): fixture plans in a temp folder, no network.
 #   scripts/agent/tier-smoke.sh
-#   T1 prisma/ high            T2 dependency and environment files high   T3 protected paths high (scripts/agent, .claude)
+#   T1 prisma/ high            T2 dependency and environment files high   T3 protected paths high (scripts/agent, .claude, .devcontainer)
 #   T4 globs judged by what they can cover                                 T5 src/ e2e/ spec/ scripts/ medium
 #   T6 docs and backlog low, the highest row wins                          T7 usage, unreadable plan, no Files token
 #   T8 the protected regex is read from scripts/ci/lib.sh, not copied      T9 called as feature-map.sh calls it
@@ -40,7 +40,8 @@ probe T1 high 'prisma/schema.prisma' 'prisma/migrations/20260101000000_x/migrati
 probe T2 high 'package.json' 'pnpm-lock.yaml' '.env.example' 'src/lib/env.ts' 'docs/x.md src/lib/env.ts'
 probe T3 high '.github/workflows/ci.yml' 'scripts/ci/check-x.sh' '.claude/agents/dev-lead.md' 'lefthook.yml' \
   'scripts/agent/run.sh' 'scripts/agent/new.sh' '.claude/settings.local.json' '.claude/commands/x.md' '.mcp.json' \
-  'scripts/pr-step.sh' 'eslint.config.mjs' 'tsconfig.json'
+  'scripts/pr-step.sh' 'eslint.config.mjs' 'tsconfig.json' '.devcontainer/runner/init-firewall.sh' \
+  '.devcontainer/runner/Dockerfile' '.devcontainer/devcontainer.json'
 r=0
 set -f
 for t in '.claude/*/evil.md' '*/ci/new.sh' 'package*' '.env*' 'scripts/*' 'src/lib/*' 'src/*' 'prisma/migrations/*' \
