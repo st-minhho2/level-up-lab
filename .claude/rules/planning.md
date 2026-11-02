@@ -31,6 +31,10 @@ A plan that does not fit on one screen is two tasks; split it before asking for 
 ## Approval and changes
 
 - A person approves the plan before any code is written. "Approved" is a reply in the session or a tick in the PR.
+- Exception for an `agent-ready` issue (D-27): the lead's label is the spec approval, so a plan the `reviewer`
+  approved proceeds without the lead unless its risk tier is high (D-28: a script derives it from the Files table;
+  `prisma/`, dependencies, environment, CI, hooks or `.claude/` make it high). A high-tier plan stops for the lead's
+  `approve` as above. Cards run interactively in a session keep the gate.
 - If the direction changes while coding (a file not in the list is needed, an interface changes shape), stop,
   update the plan, get it re-approved, then continue. Never silently extend the Files list.
 - The approved plan goes into the PR body (template section "Plan"). Reviewers compare the diff against it: a file
@@ -39,7 +43,8 @@ A plan that does not fit on one screen is two tasks; split it before asking for 
 ## In the agent pipeline
 
 `backlog/work/<card>/plan.md`, written by the `dev-lead` role, _is_ the plan: same three parts, same one-screen limit,
-and the human's `Plan approved by: lead, <date>` line is the approval. The `reviewer`'s plan review runs before the
+and the human's `Plan approved by: lead, <date>` line is the approval (for a low- or medium-tier `agent-ready` card,
+the reviewer's approval and the issue's label stand in for it, D-27). The `reviewer`'s plan review runs before the
 lead is asked, so the lead approves a reviewed plan, with every cost the review found already stated. `/work-next`
 stops at that line and nothing under `src/` changes before it exists. The PR body copies `plan.md` into the
 template's Plan section.
