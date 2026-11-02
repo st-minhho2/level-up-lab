@@ -21,7 +21,7 @@ VERSION='2.1.309 (Claude Code)'
 
 cat > "$TMP/bin/claude" <<'SHIM'
 #!/bin/bash
-echo "CLAUDE cwd=$(pwd -P) CLAUDECODE=${CLAUDECODE-unset} ENTRY=${CLAUDE_CODE_ENTRYPOINT-unset} SID=${CLAUDE_CODE_SESSION_ID-unset} ARGS=$*" >> "$SMOKE_LOG"
+echo "CLAUDE cwd=$(pwd -P) CHILD=${RUNNER_CHILD-unset} CLAUDECODE=${CLAUDECODE-unset} ENTRY=${CLAUDE_CODE_ENTRYPOINT-unset} SID=${CLAUDE_CODE_SESSION_ID-unset} ARGS=$*" >> "$SMOKE_LOG"
 case "$1" in
   --version) echo "${SMOKE_VERSION:-2.1.309} (Claude Code)"; exit 0 ;;
   auth) if [[ "${SMOKE_AUTH:-true}" == true ]]; then echo '{"loggedIn":true,"authMethod":"claude.ai"}'; else echo '{"loggedIn":false,"authMethod":"none"}'; fi; exit 0 ;;
@@ -65,6 +65,8 @@ SHIM
 cat > "$TMP/bin/fake-worktree" <<'SHIM'
 #!/bin/bash
 echo "WORKTREE $*" >> "$SMOKE_LOG"
+echo "WORKTREE-CWD $(pwd -P)" >> "$SMOKE_LOG"
+[[ -n "${SMOKE_WT_FAIL:-}" ]] && { echo "[worktree] run this from the main checkout, not from inside a worktree." >&2; exit 1; }
 slug="$(printf '%s' "$1" | tr 'A-Z' 'a-z' | tr -c 'a-z0-9\n' '-')"; card="${1#*/}"; card="${card%-agent}"
 d="$SMOKE_WT/$slug"; mkdir -p "$d/.claude" "$d/backlog/work/$card"
 cp "$SMOKE_ROOT/.claude/settings.json" "$d/.claude/settings.json"
@@ -116,6 +118,9 @@ r=0; [[ $RC -eq 1 ]] && has 'not verified' "$TMP/out" && has '--check-binary' "$
 # R3
 reset; SMOKE_INELIGIBLE=7 run 7
 r=0; [[ $RC -eq 0 ]] && has 'not labeled agent-ready' "$TMP/out" && ! has CLAIM "$LOG" && [[ $(calls) -eq 0 ]] || r=1
+reset; issue 7 'see the card'; run 7
+[[ $RC -eq 0 ]] && has 'no card id' "$TMP/out" && ! has CLAIM "$LOG" && [[ $(calls) -eq 0 ]] \
+  || { say "no card id: rc=$RC $(head -1 "$TMP/out")"; r=1; }
 [[ $r -eq 0 ]] && ok R3 || { say "rc=$RC $(head -2 "$TMP/out")"; fail R3; }
 # R4
 r=0
@@ -134,6 +139,16 @@ kill "$live" 2>/dev/null; wait "$live" 2>/dev/null
 sh -c 'exit 0' & dead=$!; wait "$dead"
 reset; mkdir -p "$RUNS/7/lock"; echo "$dead" > "$RUNS/7/lock/pid"; run 7
 [[ $RC -eq 0 && $(calls) -eq 1 && ! -e "$RUNS/7/lock" ]] || { say "stale lock: rc=$RC calls=$(calls)"; r=1; }
+reset; { start; echo SLEEP; } > "$FIX/stream.jsonl"
+(cd "$ROOT" && SMOKE_LOG="$LOG" SMOKE_FIX="$FIX" SMOKE_WT="$WT" SMOKE_ROOT="$ROOT" PATH="$TMP/bin:$PATH" \
+  RUNNER_CLAUDE="$TMP/bin/claude" RUNNER_RUNS="$RUNS" RUNNER_ELIGIBLE="$TMP/bin/fake-eligible" \
+  RUNNER_CLAIM="$TMP/bin/fake-claim" RUNNER_WORKTREE="$TMP/bin/fake-worktree" "$SRC" 7) > "$TMP/out" 2>&1 &
+bg=$!; i=0; while [[ ! -d "$RUNS/7/lock" || $(calls) -eq 0 ]] && [[ $i -lt 20 ]]; do sleep 1; i=$((i + 1)); done
+kill -TERM "$bg" 2>/dev/null; wait "$bg" 2>/dev/null
+[[ ! -e "$RUNS/7/lock" ]] || { say "TERM left the lock"; r=1; }
+reset; SMOKE_WT_FAIL=1 run 7
+[[ $RC -eq 1 && $(calls) -eq 0 && ! -e "$RUNS/7/lock" ]] && has 'not from inside a worktree' "$TMP/out" && ! has 'unbound' "$TMP/out" \
+  || { say "worktree.sh failing: rc=$RC $(tr '\n' '|' < "$TMP/out")"; r=1; }
 [[ $r -eq 0 ]] && ok R5 || fail R5
 # R6
 r=0
@@ -141,18 +156,24 @@ reset; run 7
 want="-p --agent dev-lead --model claude-opus-5-5 --max-turns 150 --max-budget-usd 9.75 --setting-sources project"
 want="$want --strict-mcp-config --permission-mode dontAsk --include-hook-events --output-format stream-json --verbose"
 want="$want --tools Read,Grep,Glob,Write,Edit,Bash,Agent,Skill --allowedTools Read Grep Glob Write Edit Bash Agent Skill"
-want="$want Bash(git *) Bash(scripts/*) Bash(.claude/hooks/mark-reviewed.sh) Bash(pnpm install --frozen-lockfile)"
+want="$want Bash(git *) Bash(scripts/next-task.sh *) Bash(scripts/worktree.sh *) Bash(scripts/verify-red.sh *)"
+want="$want Bash(scripts/card-status.sh *) Bash(scripts/ci/*) Bash(scripts/agent/tier.sh *) Bash(scripts/agent/eligible.sh *)"
+want="$want Bash(.claude/hooks/mark-reviewed.sh) Bash(pnpm install --frozen-lockfile)"
 want="$want Bash(pnpm lint*) Bash(pnpm typecheck*) Bash(pnpm test*) Bash(pnpm build*) Bash(pnpm exec prettier *)"
-want="$want Bash(docker compose up -d) Bash(cp *) Bash(gh pr edit *) Bash(gh pr checks *) Bash(gh pr view *)"
-want="$want --disallowedTools Bash(scripts/agent/run.sh*)"
+want="$want Bash(docker compose up -d) Bash(gh pr edit *) Bash(gh pr checks *) Bash(gh pr view *)"
+want="$want --disallowedTools Bash(scripts/agent/run.sh*) Bash(git -c*) Bash(git * -c *) Bash(git config*)"
 line="$(grep "^CLAUDE .* ARGS=-p " "$LOG" | head -1)"
 [[ "${line#* ARGS=}" == "$want" ]] || { say "argv: ${line#* ARGS=}"; r=1; }
-[[ "$line" == "CLAUDE cwd=$WT/chore-b1-44-agent CLAUDECODE=unset ENTRY=unset SID=unset ARGS="* ]] \
+[[ "$line" == "CLAUDE cwd=$WT/chore-b1-44-agent CHILD=1 CLAUDECODE=unset ENTRY=unset SID=unset ARGS="* ]] \
   || { say "cwd/env: ${line%% ARGS=*}"; r=1; }
 grep -q "^WORKTREE chore/B1.44-agent$" "$LOG" && grep -q "^CLAIM --claim B1.44$" "$LOG" || { say "claim/worktree: $(grep -E '^(CLAIM|WORKTREE)' "$LOG")"; r=1; }
+grep -qxF "WORKTREE-CWD ${ROOT%%/.worktrees/*}" "$LOG" || { say "worktree.sh not run from the checkout that holds .worktrees/: $(grep '^WORKTREE-CWD' "$LOG")"; r=1; }
 has '#7' "$FIX/stdin-1" && has 'B1.44' "$FIX/stdin-1" && has "$WT/chore-b1-44-agent" "$FIX/stdin-1" || { say "stdin: $(head -3 "$FIX/stdin-1" 2>/dev/null)"; r=1; }
 grep -q 'GH_REPO=evil' "$LOG" && { say "GH_REPO reached gh"; r=1; }
 grep -Eq 'dangerously-skip-permissions|bypassPermissions' "$SRC" && { say "a bypass flag is named in run.sh"; r=1; }
+reset; RUNNER_CHILD=1 run 7
+[[ $RC -eq 1 && $(calls) -eq 0 ]] && has 'inside a runner' "$TMP/out" && ! has ELIGIBLE "$LOG" \
+  || { say "nested run: rc=$RC $(head -1 "$TMP/out")"; r=1; }
 reset; issue 7 B4.4; run 7
 grep -q "^WORKTREE feat/B4.4-agent$" "$LOG" || { say "feature card branch: $(grep '^WORKTREE' "$LOG")"; r=1; }
 [[ $r -eq 0 ]] && ok R6 || fail R6
@@ -242,6 +263,17 @@ reset; : > "$RUNS/verified-versions"
 { init '["Write"]' '[{"name":"caveman","source":"caveman@caveman","path":"/u/x"}]'; echo "$pass"; result false success done; } > "$FIX/stream.jsonl"
 run --check-binary
 [[ $RC -eq 1 && ! -s "$RUNS/verified-versions" ]] && has 'user-settings' "$TMP/out" || { say "user plugin: rc=$RC $(tail -1 "$TMP/out")"; r=1; }
+for bad in '"exit_code":0,"outcome":"success","stderr":"BLOCKED by .claude/hooks/path-guard.sh: x"' \
+  '"exit_code":2,"outcome":"error","stderr":"BLOCKED by .claude/hooks/plan-scope.sh: x"'; do
+  reset; : > "$RUNS/verified-versions"
+  { init '["Write"]'; echo '{"type":"system","subtype":"hook_response","hook_event":"PreToolUse","hook_name":"PreToolUse:Write",'"$bad"'}'
+    result false success done; } > "$FIX/stream.jsonl"
+  run --check-binary
+  [[ $RC -eq 1 && ! -s "$RUNS/verified-versions" ]] || { say "accepted $bad: rc=$RC"; r=1; }
+done
+reset; : > "$RUNS/verified-versions"; { init '["Write","Grep","Glob","Bash"]'; echo "$pass"; result false success done; } > "$FIX/stream.jsonl"
+run --check-binary
+[[ $RC -eq 1 && ! -s "$RUNS/verified-versions" ]] && has 'tools-mismatch' "$TMP/out" || { say "Bash in a Write-only check: rc=$RC"; r=1; }
 [[ $r -eq 0 ]] && ok R14 || fail R14
 
 echo
