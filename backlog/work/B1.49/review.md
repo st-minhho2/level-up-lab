@@ -64,3 +64,63 @@ Notes (not blocking, costs the lead should see before approving):
 
 Riskiest unfalsified: whether issue-event `label.name` is the name at event time or the label's current name. Step 6
 decides it, and with reason 2 resolved the outcome becomes a verdict, not just a record.
+
+## Plan review (round 2)
+
+Plan read at `2e4af51` (`docs(backlog): B1.49 plan round 2`). Contract: card `### B1.49` (Acceptance line),
+`scripts/agent/eligible.sh`, D-25, D-27, D-28. No GitHub write was run for this review.
+
+Round 1 reasons:
+
+1. **Resolved.** "Work breakdown" has 4 rows with role, product and commit subject (`docs(backlog): B1.49 live check`,
+   `… review`, `… pr body`, `docs(backlog): card B1.<n> …`); `live.md` is committed once after step 9; a fix card goes on
+   its own `docs/B1.<n>-card` branch, outside this PR's Files.
+2. **Resolved.** Step 6 now has a pass line that decides: R2's step-5 row reads `b149-probe-renamed` → safe, reads
+   `b149-probe` → fail-open → fix card or D-n request, with the trigger written out. Step 7 says "safe either way: no
+   card" and records the count of `unlabeled` rows and R4's labels. The vacuous "R1 still 0" is gone (R1 is not in
+   either row's Agent column). I traced `eligible.sh:27` (present labels first) and `:29-33` (filter on
+   `.label.name == "agent-ready"`, last row decides): the step-7 verdict holds for both outcomes.
+
+Round 1 notes: note 1 → step 9 now closes before unlabeling and states R1 exit 0 as the known gap (`run.sh:255-258`
+calls `run_issue` with no state filter; `--poll` at `:247` filters `--state open`), follow-up per D-25. Note 3 → step 4's
+R5 pass line now has `created_at` ascending and last `agent-ready` row `labeled`. Note 4 → step 0 and "Issue A stays
+public" are in the Approach. Note 2 → the `ghost`/null actor line states what stays unverified live.
+
+| Check                                                                             | Result                                                                                                                         |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| every file in the plan belongs to the section's features (map)                    | pass: 4 rows, all `backlog/work/B1.49/*`; tooling, no § and no map row                                                         |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass: no `src/`, `prisma/`, `e2e/` change; R1-R6 are GETs or `eligible.sh`; every write is in the Lead column                  |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: quick tier, no advisor, stated                                                                                           |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: 9 steps map to the 1 Acceptance line; every pass line is an exit code, a message or a row count/name                     |
+| verification lists exact commands with expected numbers                           | pass: R1-R6 exact; steps 1-7 and 9 (8 rows) in `live.md`; `check-backlog.sh` OK, `check-plan-scope.sh` OK                      |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass (tooling shape, as B1.47): live check → review → PR body → fix cards, each with a `docs(backlog):` subject                |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7)          | n/a: no section (D-27); nothing ticked by the reviewer                                                                         |
+| no settled D-n contradicted                                                       | pass: D-25 (step 9 gap → follow-up), D-27/D-28: `scripts/agent/tier.sh backlog/work/B1.49/plan.md` → `low`, as the plan states |
+| `scripts/next-task.sh --check B1.49`                                              | pass: `[next-task] B1.49: no overlap with any Doing or Review card` (exit 0)                                                   |
+
+Also run: `scripts/ci/check-plan-scope.sh` → `[check-plan-scope] OK: docs/B1.49-live changes only paperwork (B1.49 has no
+approved plan)`; `scripts/ci/check-backlog.sh` → `[check-backlog] OK: README matches the cards`.
+
+Verdict: approved (ready for the lead's gate; the lead does every GitHub write in steps 1-9)
+
+Notes (not blocking, costs the lead should see before approving):
+
+1. **Length.** `plan.md` is 63 lines against the ≈ 40-line one-screen rule (`planning.md`); the growth is the Work
+   breakdown and pass lines round 1 asked for, and the content is one task. Footer still reads `Rounds: 1`; it is round 2.
+2. **Step 8's pass line pins the role text.** `author <login> has read (read), needs write` assumes a public-repo
+   non-collaborator's `role_name` is `read`. If GitHub returns another `role_name` while R1 still exits 1 on the author,
+   that is not a difference from the rule, so it should not produce a fix card. Judge step 8 on "exit 1, reason starts
+   `author <login> has read`".
+3. **The "safe" branch of step 6 still lets a rename approve.** If events carry the label's current name, renaming any
+   label to `agent-ready` makes every issue whose last labeling with it was by a write user eligible at once, and
+   attributes it to that user. That matches the rule's letter (the last `labeled` event is by a write collaborator), so
+   "safe" is correct against the rule; it is not "no exposure". Both branches need a write user to rename.
+4. **eligible.sh's own pagination stays offline-only.** Issue A will have fewer than 30 events, so R1 never crosses a
+   page; R5 proves the API's page order on the same endpoint with R2, and `eligible-smoke.sh` shims `--paginate`. That is
+   the closest a throwaway issue gets; say so in `live.md`.
+5. **Where fix cards land.** Work breakdown row 4 (own `docs/B1.<n>-card` branch) fits a fix card the Acceptance demands;
+   the step 9 closed-issue gap is a D-25 follow-up, which D-25 files in the card's closing PR. Name the two paths
+   separately in `live.md` so the step 9 card is not opened mid-card.
+
+Riskiest unfalsified: whether issue-event `label.name` is the name at event time or the label's current name; step 6
+decides it live, and the plan now states what each outcome means.

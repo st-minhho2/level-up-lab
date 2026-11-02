@@ -60,4 +60,4 @@ produced live (the `// ""` branch stays covered by the B1.43 smoke only).
 "no second account". `scripts/ci/check-backlog.sh` OK; `scripts/ci/check-plan-scope.sh` OK. No `src/`, `prisma/`,
 `e2e/` change.
 
-Plan review: <pending> · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: · Rounds: 1
