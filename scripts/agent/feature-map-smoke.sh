@@ -60,9 +60,13 @@ branch docs/B9.8-guides; echo h > "$REPO/h.md"; g add -A; g commit -q --no-verif
 branch docs/B9.9-scorecard; plan B9.9 src/i.ts "docs(backlog): B9.9 plan" # never approved
 branch chore/B9.12-l; plan B9.12 docs/l.md "docs(backlog): B9.12 plan approved"
 plan B9.12 .github/l.yml "docs(backlog): B9.12 plan round 2 approved"
-branch chore/B9.13-m; plan B9.13 docs/m.md "docs(backlog): B9.13 plan approved"
-g checkout -q -b side13 main; plan B9.13 .github/m.yml "docs(backlog): B9.13 plan round 2 approved"
-g checkout -q chore/B9.13-m; g merge -q -s ours --no-edit --no-verify side13 # tip and first-parent plan stay low
+# dated so a plain `git log` would list the side branch's approval first
+export GIT_COMMITTER_DATE="@1700000100 +0000"; branch chore/B9.13-m; plan B9.13 docs/m.md "docs(backlog): B9.13 plan approved"
+export GIT_COMMITTER_DATE="@1700000200 +0000"; g checkout -q -b side13 main
+plan B9.13 .github/m.yml "docs(backlog): B9.13 plan round 2 approved"
+export GIT_COMMITTER_DATE="@1700000300 +0000"; g checkout -q chore/B9.13-m
+g merge -q -s ours --no-edit --no-verify side13 # tip and first-parent plan stay low
+unset GIT_COMMITTER_DATE
 for b in docs/B9.1-done docs/B9.1-partial docs/B9.1-card docs/B9.1-file-card docs/B9.1-B9.3-cards feat/B9.10-x; do
   branch "$b"; plan B9.1 docs/lane.md "docs(backlog): B9.1 lane"
 done
