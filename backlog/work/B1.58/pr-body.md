@@ -37,8 +37,8 @@ run: `docker compose -f .devcontainer/runner/docker-compose.yml down -v`.
 
 ## Plan
 
-Approved by the lead 2026-11-02 (decisions 1–5 as proposed); the "Changed after approval" block waits for the lead's
-`approve` again.
+Approved by the lead 2026-11-02 (decisions 1–5 as proposed); the "Changed after approval" block re-approved by the
+lead 2026-11-03.
 
 ### B1.58 plan — The runner's devcontainer: allow-list firewall, Linux claude build (tooling, no §)
 
@@ -76,7 +76,7 @@ removes the volumes (r2 #5). Host and container keep separate locks and stop mar
 `run.sh` only inside (the branch cap still counts open PRs on both). `--disallowedTools` under `bypassPermissions` is
 [unverified] in 2.1.303; hooks are proven by `--check-binary`. CDN IPs resolve at start; restart on a rotated IP.
 
-**Changed after approval** (needs the lead's `approve` again; Files unchanged):
+**Changed after approval** (re-approved by the lead 2026-11-03; Files unchanged):
 
 - **Firewall sidecar** (diff review 1 #1): an exec gets the container's bounding set, not PID 1's, so with the
   entrypoint-plus-setpriv design a plain (root) `exec runner` kept NET_ADMIN and could flush the rules. Now one image,
@@ -138,7 +138,7 @@ Steps: 1 red `test(scripts): B1.58 sandbox probes` · 2 green `chore(scripts): B
 `docs(backlog): B1.58 review`; B1.62 filing PR. All dev-lead (no `src/`). Not in scope: B1.59, a GitHub secret guard.
 
 Plan review: changes requested, round 2 (6 reasons carried into round 3, not re-reviewed: 2-round cap) · Plan approved
-by: lead, 2026-11-02 (decisions 1–5 as proposed) · Rounds: 2 (re-approval pending for "Changed after approval")
+by: lead, 2026-11-02 (decisions 1–5 as proposed) · "Changed after approval" approved by: lead, 2026-11-03 · Rounds: 2
 
 ## Map delta
 
@@ -164,7 +164,7 @@ Pass 3: ready for PR, 0 findings. Not blocking (review.md): after `stop` / `up -
 
 - AC met: 0/4 (host side of clause 4 proven; container side pending the lead's steps)
 - tier: pending
-- plan deviations: none (no file outside Files; the "Changed after approval" block waits for the lead's re-approval)
+- plan deviations: none (no file outside Files; the "Changed after approval" block re-approved by the lead 2026-11-03)
 - trace: n/a
 
 ## Checklist
