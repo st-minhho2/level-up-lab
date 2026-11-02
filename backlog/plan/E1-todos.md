@@ -438,10 +438,7 @@ _tooling · no §_
 ### B1.31 · Root and src guides cite the sections their packages implement
 
 _tooling · no §_
-**Status: Open** — B1.28's plan and diff review (#130, D-25 follow-up) left the overview tables behind the package
-guides: `CLAUDE.md` Map row `src/lib/` cites §3–§6 and `src/components/` §7 while `src/lib/CLAUDE.md` reads §3–§22
-and `src/components/CLAUDE.md` §7, §10, §12–§22; `src/CLAUDE.md` package table cites `lib/` §3, §4, §5, §6,
-`components/` §7 and `actions/` §5, §6, §7
+**Status: Done** — ae9dcf6 (#137), card Test no match (red at a733c7b: 2 matches), 8 Spec § cells match the guides and module headers, check-spec-sections and check-features-map OK; no code (vitest 202, e2e 43, mutation 93.40 % unchanged)
 
 - **Spec:** none — documentation (`CLAUDE.md`, `src/CLAUDE.md`); no `src/` code change, no section
 - **Test:** `git grep -n -e '§3–§6' -e '§3, §4, §5, §6' CLAUDE.md src/CLAUDE.md` — red because: 2 matches today
@@ -449,7 +446,7 @@ and `src/components/CLAUDE.md` §7, §10, §12–§22; `src/CLAUDE.md` package t
   package guide and module headers name (`src/app`, `src/actions`, `src/lib`, `src/components`); the Test command
   has no match; `check-spec-sections.sh` and `check-features-map.sh` stay OK
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.31/`
+- **Work:** `work/B1.31/` (plan, review: plan review 2 rounds, lead rounds 1; diff review 1 of 3 passes, 0 findings)
 
 ### B1.32 · plan-scope reads a Files token as a glob only where the plan says so
 
@@ -483,3 +480,38 @@ runs C1–C8 and L1–L6 (440 probes)
   row names C1–C8 and L1–L6; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.33/`
+
+### B1.34 · Package guide headings and the app page header cite the sections their modules name
+
+_tooling · no §_
+**Status: Open** — B1.31's plan and diff review (#137, D-25 follow-up): the tables in `CLAUDE.md` and `src/CLAUDE.md`
+now cite, per package, the sections its guide rows and module headers name, but the guide headings disagree:
+`src/lib/CLAUDE.md:1` reads `(§3–§22)` (no module names §8), `src/components/CLAUDE.md:1` `(§7, §10, §12–§22)` (omits
+§6 of `todo-item.tsx` and §9 of `clear-completed-button.tsx`), `src/app/CLAUDE.md:1` `(§7)` (omits §12–§14, §16 of
+`page.tsx`); `src/app/page.tsx` cites §9 at line 36 but not in its header; the `CLAUDE.md` Map row `src/components/`
+says "client components (`'use client'`)" though `remaining-count.tsx` and `todo-search-form.tsx` are Server Components
+
+- **Spec:** none — documentation (three package guide headings, the `page.tsx` header comment, one Map row); no behavior change, no section
+- **Test:** `git grep -n -e '(§3–§22)' -e 'route (§7)' -e '(§7, §10, §12–§22)' -e "client components (\`'use client'\`)" -- src/lib/CLAUDE.md src/app/CLAUDE.md src/components/CLAUDE.md CLAUDE.md` — red because: 4 matches today
+- **Acceptance:** each package guide heading cites the same sections as that package's row in `src/CLAUDE.md`; the
+  `page.tsx` header comment names §9 (REQ-9.5 placement); the Map row `src/components/` names client and Server
+  Components; the Test command has no match; `check-spec-sections.sh` and `check-features-map.sh` stay OK
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.34/`
+
+### B1.35 · A guard checks that the guide tables cite the sections their packages name
+
+_tooling · no §_
+**Status: Open** — B1.31's diff review (#137, D-25 follow-up): only the `lib/` cells are caught by a check (B1.31's
+grep); in a copy of `ae9dcf6` with `CLAUDE.md:66` (`src/components/`) set back to `§7`, every gate prints OK
+(`check-spec-sections.sh`, `check-features-map.sh`, lint, CI), so a stale cite on the `app/`, `actions/` or
+`components/` rows of `CLAUDE.md` or `src/CLAUDE.md` merges unnoticed
+
+- **Spec:** none — tooling (`scripts/ci/`, CI `guards` job); no `src/` change, no section
+- **Test:** `scripts/ci/check-guide-sections.sh` — red because: no such script today
+- **Acceptance:** the script derives, per package (`app`, `actions`, `lib`, `components`), the sections its guide rows
+  and module header comments name and exits 1 naming the file and row when a Spec § cell of the `CLAUDE.md` Map or
+  the `src/CLAUDE.md` package table differs (probe: `CLAUDE.md` `src/components/` set to `§7`); it prints OK and exits
+  0 on `main`; CI `guards` runs it; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.35/`
