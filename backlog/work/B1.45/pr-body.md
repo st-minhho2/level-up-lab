@@ -94,7 +94,27 @@ None (tooling, no § and no `spec/features-map.md` row).
 
 ## Review
 
-pending
+`/review-loop`: passes 3/3, verdict **ready for PR** (`backlog/work/B1.45/review.md`, diff reviews and dispositions).
+
+| Pass | Finding                                                   | Disposition                                                                            |
+| ---- | --------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| 1    | `(red)` subject on a commit with no `*.test.ts(x)`        | fix now: unpushed commits replayed on be98af2 (no force push), subject without `(red)` |
+| 1    | a fork's PR on a card's branch name takes the card's row  | fix now: F17 → skip `isCrossRepository`                                                |
+| 1    | 3 + 4 single-line reverts survive the smoke               | fix now: F1, F7, F10, F15, F18 extended or added; each revert now fails                |
+| 1    | template `N/N` default, no Evidence in this body          | fix now                                                                                |
+| 1    | first id in the title wins · `--limit 100` · issue `--jq` | out of scope → follow-ups (d), (e); first live run after B1.43's template              |
+| 2    | draft/ready state and `-cards` lane reverts survive       | fix now: F19, F5                                                                       |
+| 2    | `--json` passes C0 controls raw → JSON.parse fails        | fix now: F7 (CRLF, ESC, SOH) → fold `[[:cntrl:]]`                                      |
+| 2    | `--first-parent`, exact `## Evidence` reverts survive     | fix now: F20 (dated fixture), F4                                                       |
+| 3    | trim runs before the control-character fold               | out of scope → follow-up (f): `<SOH><ESC>` gives blanks, not `?`                       |
+| 3    | `GH_REPO`/`GH_HOST` not unset                             | out of scope → follow-up (a)                                                           |
+
+Verification (reviewer, pass 3): vitest 202 passed · playwright 43 passed · stryker 93.40 % · `feature-map-smoke: 20
+probes OK` on /bin/bash 3.2.57 (and 16 OK on bash 5.2.15 before the review passes) · every guard OK, `verify-red.sh
+--auto` exit 0. Hand mutants: 14 single-line reverts, each fails ≥ 1 probe. Riskiest unfalsified: the Tier column has
+run only against a stub of `scripts/agent/tier.sh` (B1.44). Follow-ups (closing PR, ids from B1.51): (a) runner tier
+line + attended daily post + env unset, (b) dev-lead Loop 9 fills Evidence, (c) smoke in CI, (d) card id from the form
+field, (e) `--limit 100`, (f) fold before trim.
 
 ## Evidence
 
@@ -106,7 +126,7 @@ pending
 Tier by hand from D-28 (`.github/` is protected; `scripts/agent/tier.sh` lands with B1.44). AC: the template's Evidence
 section, `feature-map.sh` riskiest first (posting: ruling A, follow-up), `config-change-approved`. No file outside
 the plan; commit subjects differ from the plan's work breakdown: the smoke commit carries no `(red)` marker (review
-pass 1 finding 1, as B1.29 and B1.32) and review pass 1 added a `test` and a `fix` commit. No e2e run changes.
+pass 1 finding 1, as B1.29 and B1.32), and review passes 1 and 2 added `test` + `fix` commit pairs. No e2e change.
 
 ## Checklist
 
