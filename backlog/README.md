@@ -7,11 +7,11 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open   | Total  |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ------ | ------ |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 38     | 0       | 24     | 62     |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 39     | 0       | 24     | 63     |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0      | 5      |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3      |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4      |
-| **Total**        |                                                      | **49** | **0**   | **25** | **74** |
+| **Total**        |                                                      | **50** | **0**   | **25** | **75** |
 
 ## Execution order
 
@@ -91,7 +91,7 @@ flowchart TD
   S58["58 · layer rules in CI<br/>~~B1.46~~"]
   S59["59 · runner card takes spike findings<br/>~~B1.47~~"]
   S60["60 · CI runs eligibility probes<br/>B1.48"]
-  S61["61 · live eligibility check<br/>B1.49"]
+  S61["61 · live eligibility check<br/>~~B1.49~~"]
   S62["62 · client rule covers prisma client<br/>B1.50"]
   S63["63 · feature map reaches the board<br/>B1.51"]
   S64["64 · dev-lead fills pr evidence<br/>B1.52"]
@@ -105,6 +105,7 @@ flowchart TD
   S72["72 · CI runs the runner probes<br/>B1.60"]
   S73["73 · runner deny list and TERM<br/>B1.61"]
   S74["74 · eligibility by label node id<br/>B1.63"]
+  S75["75 · eligibility refuses a closed issue<br/>B1.64"]
 ```
 
 ## Remaining
@@ -125,7 +126,6 @@ at most 3 cards Doing (B1.18).
 | 52   | B1.41 | Guides state the plan-token rule and name hook-smoke's L1–L15                                                | —      | Open   | —                | Lead  | S [estimate] |
 | 53   | B4.4  | Section 22 criteria measure the reload rule and the no-role rule                                             | —      | Open   | —                | Lead  | S [estimate] |
 | 60   | B1.48 | CI runs the agent-ready eligibility probes                                                                   | —      | Open   | ~~B1.43~~        | Lead  | S [estimate] |
-| 61   | B1.49 | Live check of the eligibility rule on a labeled issue                                                        | —      | Open   | ~~B1.43~~        | Lead  | S [estimate] |
 | 62   | B1.50 | The client layer rule also stops a component reaching @prisma/client                                         | —      | Open   | ~~B1.46~~        | Lead  | S [estimate] |
 | 63   | B1.51 | The daily feature map reaches the agent board and its PRs carry a tier                                       | —      | Open   | ~~B1.44~~        | Lead  | S [estimate] |
 | 64   | B1.52 | dev-lead fills the PR Evidence section after CI is green                                                     | —      | Open   | ~~B1.45~~        | Lead  | S [estimate] |
@@ -139,6 +139,7 @@ at most 3 cards Doing (B1.18).
 | 72   | B1.60 | CI runs the runner and tier probes, under bash 5 as well                                                     | —      | Open   | ~~B1.44~~        | Lead  | S [estimate] |
 | 73   | B1.61 | The runner's deny list spares commit messages, and TERM ends the tools a run started                         | —      | Open   | ~~B1.44~~        | Lead  | S [estimate] |
 | 74   | B1.63 | The eligibility check matches the agent-ready label by its node id, not its name                             | —      | Open   | ~~B1.43~~, B1.55 | Lead  | S [estimate] |
+| 75   | B1.64 | The eligibility check refuses a closed issue, with or without a card id                                      | —      | Open   | ~~B1.43~~, B1.55 | Lead  | S [estimate] |
 
 ## Waiting on human
 

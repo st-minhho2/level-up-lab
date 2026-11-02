@@ -691,13 +691,13 @@ _tooling · no §_
 ### B1.49 · Live check of the eligibility rule on a labeled issue
 
 _tooling · no §_
-**Status: Open** — `scripts/agent/eligible.sh` (B1.43) was run live only on #1 (exit 1, "not labeled agent-ready"): the `agent-ready` label did not exist, so GitHub's event order across `--paginate` pages, whether deleting or renaming a label emits `unlabeled`, and how a deleted actor appears (`ghost` or null) stay unverified (`backlog/work/B1.43/review.md`, "Diff review (pass 2)", riskiest unfalsified)
+**Status: Done** — 9b16008 (#168); `work/B1.49/live.md` on throwaway issue #169: add/remove/re-add exit 0/1/0, event order held across 3 one-event pages, label delete recorded (safe); label rename fails open (REST events keep the old name) → B1.63; closed issue still labeled exits 0 → B1.64; read-only-author clause not run (no second account); no tests (tooling, no code)
 
 - **Spec:** none — tooling (D-27); no `src/` change, no section
 - **Test:** `backlog/work/B1.49/live.md` records each command, its exit code and output — red because: no labeled issue has been checked
 - **Acceptance:** on a throwaway issue filed by the lead: `eligible.sh` exits 0 after the lead adds `agent-ready`, 1 after removing it, 0 after re-adding it; on an issue filed by a read-only account it exits 1 (author), when the lead has such an account; the events of a label renamed and of a label deleted are recorded; any difference from the rule becomes a fix card. Read-only for the agent: the lead files, labels and closes the issues
 - **Tier:** quick · **Depends on:** ~~B1.43~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.49/`
+- **Work:** `work/B1.49/` (plan, live, review: plan review 2 rounds, lead rounds 1; diff review 1 of 3 passes, 0 findings; follow-ups B1.63, B1.64)
 
 ### B1.50 · The client layer rule also stops a component reaching @prisma/client
 
@@ -841,3 +841,14 @@ _tooling · no §_
 - **Acceptance:** `eligible.sh` reads the issue's labeled and unlabeled events with their label node ids and decides on the newest event whose id is the id of the `agent-ready` label the issue carries now; the rename sequence above exits 1 (the labeler of `y` has no write), a label deleted and re-created needs a new `labeled` event, and events across pages keep their order; the PR carries `config-change-approved` (D-19, `scripts/agent/` is protected)
 - **Tier:** quick · **Depends on:** ~~B1.43~~, B1.55 (both change `eligible.sh`) · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.63/`
+
+### B1.64 · The eligibility check refuses a closed issue, with or without a card id
+
+_tooling · no §_
+**Status: Open** — B1.49's live check (`backlog/work/B1.49/live.md`, step 9a): `scripts/agent/eligible.sh 169` exits 0 on the closed issue #169 while it still carries `agent-ready`, because the script never reads the issue's state. `run.sh --poll` lists only open issues, but `run.sh <issue>` (`scripts/agent/run.sh:256-258`) goes straight to the run. B1.55's plan adds the open check only when `eligible.sh` gets a `<card>` argument
+
+- **Spec:** none — tooling (D-27); no `src/` change, no section
+- **Test:** a new probe in `scripts/agent/eligible-smoke.sh` — red because: a closed issue with a valid `agent-ready` history and no `<card>` argument exits 0
+- **Acceptance:** `eligible.sh <issue>` exits 1 with `eligible: #<n> is closed` on a closed issue whether or not `<card>` is given, so `run.sh <issue>` refuses it; the PR carries `config-change-approved` (D-19, `scripts/agent/` is protected)
+- **Tier:** quick · **Depends on:** ~~B1.43~~, B1.55 (both change `eligible.sh`) · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.64/`
