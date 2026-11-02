@@ -1,11 +1,11 @@
 # src/ — layers and where each spec section lives
 
-| Package       | Spec §         | Guide                      | Tests                          |
-| ------------- | -------------- | -------------------------- | ------------------------------ |
-| `app/`        | §7             | `src/app/CLAUDE.md`        | `src/app/**/*.test.ts`, `e2e/` |
-| `actions/`    | §5, §6, §7     | `src/actions/CLAUDE.md`    | `src/actions/*.test.ts`        |
-| `lib/`        | §3, §4, §5, §6 | `src/lib/CLAUDE.md`        | `src/lib/*.test.ts`            |
-| `components/` | §7             | `src/components/CLAUDE.md` | `src/components/*.test.tsx`    |
+| Package       | Spec §                       | Guide                      | Tests                          |
+| ------------- | ---------------------------- | -------------------------- | ------------------------------ |
+| `app/`        | §7, §12–§14, §16             | `src/app/CLAUDE.md`        | `src/app/**/*.test.ts`, `e2e/` |
+| `actions/`    | §5–§7, §9–§11, §14, §15, §19 | `src/actions/CLAUDE.md`    | `src/actions/*.test.ts`        |
+| `lib/`        | §3–§7, §9–§22                | `src/lib/CLAUDE.md`        | `src/lib/*.test.ts`            |
+| `components/` | §6, §7, §9, §10, §12–§22     | `src/components/CLAUDE.md` | `src/components/*.test.tsx`    |
 
 Layering (imports only point down): `app` → `components` → `actions` → `lib` → `prisma`. A client component never
 imports `lib/prisma.ts` or anything that does (`server-only` makes `next build` fail).

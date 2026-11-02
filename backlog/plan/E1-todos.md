@@ -438,10 +438,7 @@ _tooling · no §_
 ### B1.31 · Root and src guides cite the sections their packages implement
 
 _tooling · no §_
-**Status: Open** — B1.28's plan and diff review (#130, D-25 follow-up) left the overview tables behind the package
-guides: `CLAUDE.md` Map row `src/lib/` cites §3–§6 and `src/components/` §7 while `src/lib/CLAUDE.md` reads §3–§22
-and `src/components/CLAUDE.md` §7, §10, §12–§22; `src/CLAUDE.md` package table cites `lib/` §3, §4, §5, §6,
-`components/` §7 and `actions/` §5, §6, §7
+**Status: Done** — ae9dcf6 (#137), card Test no match (red at a733c7b: 2 matches), 8 Spec § cells match the guides and module headers, check-spec-sections and check-features-map OK; no code (vitest 202, e2e 43, mutation 93.40 % unchanged)
 
 - **Spec:** none — documentation (`CLAUDE.md`, `src/CLAUDE.md`); no `src/` code change, no section
 - **Test:** `git grep -n -e '§3–§6' -e '§3, §4, §5, §6' CLAUDE.md src/CLAUDE.md` — red because: 2 matches today
@@ -449,7 +446,7 @@ and `src/components/CLAUDE.md` §7, §10, §12–§22; `src/CLAUDE.md` package t
   package guide and module headers name (`src/app`, `src/actions`, `src/lib`, `src/components`); the Test command
   has no match; `check-spec-sections.sh` and `check-features-map.sh` stay OK
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.31/`
+- **Work:** `work/B1.31/` (plan, review: plan review 2 rounds, lead rounds 1; diff review 1 of 3 passes, 0 findings)
 
 ### B1.32 · plan-scope reads a Files token as a glob only where the plan says so
 
@@ -472,14 +469,98 @@ the row `src/app/[id]/page.tsx` also allows `src/app/i/page.tsx`, `src/app/[...s
 ### B1.33 · CI runs hook-smoke and its guide row names every probe group
 
 _tooling · no §_
-**Status: Open** — B1.20 (#132) plan and diff review, out of scope (D-25): `grep -l hook-smoke .github/workflows/*`
-finds nothing, so "every existing probe still passes" is proven only on a local /bin/bash 3.2 run, never on CI's
-bash 5; `scripts/CLAUDE.md` hook-smoke row still reads "plan-scope S1–S15; check-plan-scope C1–C5" while the script
-runs C1–C8 and L1–L6 (440 probes)
+**Status: Done** — 386e867 (#138), card Test grep finds .github/workflows/ci.yml (red at a733c7b: no match); required `test` job step "Every hook probe passes under CI's bash (hook-smoke.sh)" green on the PR, 440 probes OK on bash 5 (68 s job); scripts/CLAUDE.md row names S1–S15, C1–C8, L1–L6; no src/ change (vitest 202, e2e 43, mutation 93.40 % unchanged)
 
 - **Spec:** none — tooling (`.github/workflows/ci.yml`, `scripts/CLAUDE.md`); no `src/` change, no section
 - **Test:** `grep -l hook-smoke .github/workflows/*` — red because: no match today; expected `ci.yml`
 - **Acceptance:** a CI job runs `scripts/hook-smoke.sh` on every PR and fails on its exit 1; the `scripts/CLAUDE.md`
   row names C1–C8 and L1–L6; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.33/`
+- **Work:** `work/B1.33/` (plan, review: plan review 2 rounds, lead rounds 1; diff review 1 of 3 passes, 0 findings)
+
+### B1.34 · Package guide headings and the app page header cite the sections their modules name
+
+_tooling · no §_
+**Status: Open** — B1.31's plan and diff review (#137, D-25 follow-up): the tables in `CLAUDE.md` and `src/CLAUDE.md`
+now cite, per package, the sections its guide rows and module headers name, but the guide headings disagree:
+`src/lib/CLAUDE.md:1` reads `(§3–§22)` (no module names §8), `src/components/CLAUDE.md:1` `(§7, §10, §12–§22)` (omits
+§6 of `todo-item.tsx` and §9 of `clear-completed-button.tsx`), `src/app/CLAUDE.md:1` `(§7)` (omits §12–§14, §16 of
+`page.tsx`); `src/app/page.tsx` cites §9 at line 36 but not in its header; the `CLAUDE.md` Map row `src/components/`
+says "client components (`'use client'`)" though `remaining-count.tsx` and `todo-search-form.tsx` are Server Components
+
+- **Spec:** none — documentation (three package guide headings, the `page.tsx` header comment, one Map row); no behavior change, no section
+- **Test:** `git grep -n -e '(§3–§22)' -e 'route (§7)' -e '(§7, §10, §12–§22)' -e "client components (\`'use client'\`)" -- src/lib/CLAUDE.md src/app/CLAUDE.md src/components/CLAUDE.md CLAUDE.md` — red because: 4 matches today
+- **Acceptance:** each package guide heading cites the same sections as that package's row in `src/CLAUDE.md`; the
+  `page.tsx` header comment names §9 (REQ-9.5 placement); the Map row `src/components/` names client and Server
+  Components; the Test command has no match; `check-spec-sections.sh` and `check-features-map.sh` stay OK
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.34/`
+
+### B1.35 · A guard checks that the guide tables cite the sections their packages name
+
+_tooling · no §_
+**Status: Open** — B1.31's diff review (#137, D-25 follow-up): only the `lib/` cells are caught by a check (B1.31's
+grep); in a copy of `ae9dcf6` with `CLAUDE.md:66` (`src/components/`) set back to `§7`, every gate prints OK
+(`check-spec-sections.sh`, `check-features-map.sh`, lint, CI), so a stale cite on the `app/`, `actions/` or
+`components/` rows of `CLAUDE.md` or `src/CLAUDE.md` merges unnoticed
+
+- **Spec:** none — tooling (`scripts/ci/`, CI `guards` job); no `src/` change, no section
+- **Test:** `scripts/ci/check-guide-sections.sh` — red because: no such script today
+- **Acceptance:** the script derives, per package (`app`, `actions`, `lib`, `components`), the sections its guide rows
+  and module header comments name and exits 1 naming the file and row when a Spec § cell of the `CLAUDE.md` Map or
+  the `src/CLAUDE.md` package table differs (probe: `CLAUDE.md` `src/components/` set to `§7`); it prints OK and exits
+  0 on `main`; CI `guards` runs it; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.35/`
+
+### B1.36 · hook-smoke's review-gate probe judges "clean" from the gate's own base
+
+_tooling · no §_
+**Status: Open** — B1.33's plan review (#138, D-25 follow-up): the review-gate block of `scripts/hook-smoke.sh` calls the
+tree clean when `git diff --quiet HEAD` holds and nothing is untracked, but `require-review.sh` diffs from
+`review_base` (`git merge-base origin/main HEAD`, `.claude/hooks/review-lib.sh`); in a checkout where `origin/main`
+exists and HEAD commits a `src/lib/todos.ts` change on top of it (the shape of CI `guards`' `fetch-depth: 0` checkout of
+a feature PR), hook-smoke exits 1 with `FAIL require-review.sh spoke on a clean tree`; a depth-1 checkout (CI `test`)
+passes, which is why #138 runs it in `test`
+
+- **Spec:** none — tooling (`scripts/hook-smoke.sh` review-gate block); no `src/` change, no section
+- **Test:** `scripts/hook-smoke.sh` in a clone whose HEAD commits a `src/` change on top of `origin/main` — red because:
+  exit 1 with that FAIL line today; expected `hook-smoke: N probes OK`
+- **Acceptance:** the probe expects silence only when the gate's own base (`review_change_exists`) finds no change, and
+  otherwise expects the block for an unrecorded fingerprint; hook-smoke prints OK on a depth-1 and on a full checkout of
+  a branch with a committed `src/` change; every S, C, L probe keeps its verdict
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.36/`
+
+### B1.37 · hook-smoke's check-plan-scope probes ignore an exported HEAD_SHA and BASE_SHA
+
+_tooling · no §_
+**Status: Open** — B1.33's plan (#138, D-25 follow-up): `cps` in `scripts/hook-smoke.sh` runs `check-plan-scope.sh`
+under `env -u GITHUB_HEAD_REF -u GITHUB_BASE_REF` only, and `check-plan-scope.sh` reads `head="${HEAD_SHA:-HEAD}"`;
+with `HEAD_SHA` and `BASE_SHA` exported as CI `guards` exports them, the fixture repos get the PR's sha: 18 FAIL
+(C1–C4, C6, C7 and L4–L6 in each of 4 layouts, all `exit 128`), so hook-smoke cannot run in `guards` or in a shell that
+exported them
+
+- **Spec:** none — tooling (`scripts/hook-smoke.sh` `cps`); no `src/` change, no section
+- **Test:** `HEAD_SHA=$(git rev-parse HEAD) BASE_SHA=$(git rev-parse HEAD) scripts/hook-smoke.sh` — red because: exit 1,
+  18 FAIL today; expected `hook-smoke: N probes OK`
+- **Acceptance:** every probe that runs `check-plan-scope.sh` on a fixture repo unsets `HEAD_SHA` and `BASE_SHA` as
+  well; the Test command prints OK; every S, C, L probe keeps its verdict
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.37/`
+
+### B1.38 · pr-step accepts the ci type that commit-msg accepts
+
+_tooling · no §_
+**Status: Open** — B1.33 (#138, D-25 follow-up): `scripts/pr-step.sh draft "ci(scripts): B1.33 CI runs hook-smoke"`
+exits 3 with `title must read '<type>(<pkg>): B1.33 <summary>[ (§<n>)]'`: `scripts/pr-step.sh:44` allows
+`feat|fix|chore|test|docs`, while the `lefthook.yml` commit-msg job accepts `ci` (and build, perf, refactor, style,
+revert), so a CI card's squash title cannot carry its commit's type; #138 merged as `chore(scripts)`
+
+- **Spec:** none — tooling (`scripts/pr-step.sh` title rule, `scripts/pr-step-smoke.sh`); no `src/` change, no section
+- **Test:** a new probe in `scripts/pr-step-smoke.sh` — red because: `draft "ci(scripts): B9.1 x"` exits 3 today;
+  expected 0
+- **Acceptance:** `draft` accepts a `ci(<pkg>)` title (the plan states whether the whole commit-msg type list follows);
+  the branch-name rule and R1–R14 keep their verdicts; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.38/`
