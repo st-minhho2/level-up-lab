@@ -790,13 +790,13 @@ _tooling · no §_
 ### B1.58 · The runner's devcontainer: a firewall that allows only GitHub, npm and Anthropic, and the Linux claude build
 
 _tooling · no §_
-**Status: Open** — B1.44's Acceptance named a devcontainer whose firewall allows only GitHub, the npm registry and Anthropic, and B1.47 added that the Linux build (`claude-code-vm`) is verified there; the lead's decision 1 at B1.44's plan gate (`work/B1.44/plan.md`) moved both here. `.devcontainer/devcontainer.json` and `.devcontainer/docker-compose.yml` set no firewall (`grep -c iptables .devcontainer/*` → 0 each) and install no `claude`, and B1.42's spike ran only the macOS build
+**Status: Done** — b5ce00d (#170), run-smoke 15/15, tier-smoke 9/9, sandbox-probe 7/7 inside the container twice, --check-binary verified 2.1.303; mutation n/a (no src/)
 
 - **Spec:** none — tooling (D-26, D-27); no `src/` change, no section
 - **Test:** a probe script run inside the container (new) — red because: from the container today `curl` reaches any host, and `claude --version` is not found
 - **Acceptance:** the devcontainer applies an allow-list firewall at start (GitHub, the npm registry, Anthropic; everything else refused, probed both ways); a pinned Linux `claude` build is installed and `scripts/agent/run.sh --check-binary` passes inside; the lead's own login is made inside the container and no credential is baked into the image or the repository; `run.sh` may drop `--permission-mode dontAsk` for `bypassPermissions` only when it detects this firewalled container, never on the host (a probe on the host proves it refuses)
 - **Tier:** quick · **Depends on:** ~~B1.44~~ · **Owner:** Lead · **Size:** M [estimate]
-- **Work:** `work/B1.58/`
+- **Work:** `work/B1.58/` (plan review 2 rounds + round 3; diff review 4 passes, 3 + 1 + 0 + 3 findings fixed; 3 live `--check-binary` runs inside, about USD 0.08 each: workspace trust, jq 1.6, verified; follow-ups B1.62, B1.65)
 
 ### B1.59 · A launchd job runs the runner's poll every 15 minutes, inside the sandbox
 
@@ -806,7 +806,7 @@ _tooling · no §_
 - **Spec:** none — tooling (D-26, D-27); no `src/` change, no section
 - **Test:** `scripts/agent/launchd-smoke.sh` (new) — red because: the plist and its install script do not exist
 - **Acceptance:** a LaunchAgent plist (`StartInterval` 900) and an install / uninstall script the lead runs by hand; each tick runs `scripts/agent/run.sh --poll` inside B1.58's container, never on the host; a tick never overlaps the previous one; output goes to `~/.level-up-lab/runs/poll.log`; `plutil -lint` clean
-- **Tier:** quick · **Depends on:** ~~B1.44~~, B1.58 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** quick · **Depends on:** ~~B1.44~~, ~~B1.58~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.59/`
 
 ### B1.60 · CI runs the runner and tier probes, under bash 5 as well
@@ -861,5 +861,5 @@ _tooling · no §_
 - **Spec:** none — tooling (D-27); no `src/` change, no section
 - **Test:** a new probe in `scripts/agent/run-smoke.sh` — red because: the prompt the `claude` shim receives still says "At the plan gate print the gate line and stop"
 - **Acceptance:** the run's prompt tells dev-lead to follow Loop 5's D-27 path (a reviewed low or medium plan of the issue it names proceeds; a high-tier plan or a refusal prints the gate line and stops) and the header says the same; run-smoke asserts the exact prompt; one live run on a low-tier test card passes the gate with the D-27 field (`docs(backlog): <card> plan approved`) and reaches a draft PR; B1.55's card moves from Partial to Done; the PR carries `config-change-approved` (D-19, `scripts/agent/` is protected)
-- **Tier:** quick · **Depends on:** B1.55, B1.58 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** quick · **Depends on:** B1.55, ~~B1.58~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.65/`
