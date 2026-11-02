@@ -69,4 +69,4 @@ with `attributes.label` and `validations.required: true`.
 Not in scope (follow-ups): the smoke in CI (`ci.yml` is B1.46's), `scripts/CLAUDE.md` rows (orchestrator), skipping
 pull requests and closed issues (the runner's poll, B1.44), creating the `agent-ready` label (the lead).
 
-Plan review: approved, round 2 · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: lead, 2026-11-02 · Rounds: 1
