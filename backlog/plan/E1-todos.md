@@ -647,7 +647,7 @@ _tooling · no §_
 ### B1.45 · Evidence section in the PR and a daily feature map
 
 _tooling · no §_
-**Status: Open** — D-28 sets the lead's review depth by tier, so each agent PR must state its own evidence and the lead needs one table ranking open work by risk
+**Status: Done** — a1f7865 (#154), feature-map-smoke 20 probes OK (bash 3.2.57; 16 OK on bash 5.2.15 before review), vitest 202, e2e 43, mutation 93.40 % (unchanged, no src/); posting to the board by the lead's ruling A is follow-up B1.51
 
 - **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
 - **Test:** `scripts/agent/feature-map-smoke.sh` (new) — red because: `scripts/agent/feature-map.sh` does not exist
@@ -709,3 +709,47 @@ _tooling · no §_
 - **Acceptance:** `components-reach-db-only-through-actions` also targets `node_modules/@prisma/client/` (and `.prisma/client`); the probe pair above fails `check-layers.sh` naming the rule; today's tree still has 0 violations; the type-only control still passes; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** ~~B1.46~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.50/`
+
+### B1.51 · The daily feature map reaches the agent board and its PRs carry a tier
+
+_tooling · no §_
+**Status: Open** — `scripts/agent/feature-map.sh` (B1.45, #154) only prints (the lead's ruling A at B1.45's plan gate): nothing runs it daily or publishes it to the agent board (a claude.ai artifact; a headless run has no artifact tool), nothing writes the Evidence `tier:` line it shows (`grep -rn "tier:" scripts/ .claude/` outside `feature-map*` → no output), and unlike `scripts/agent/eligible.sh` it leaves `GH_REPO`/`GH_HOST` set (`backlog/work/B1.45/review.md`, pass 3 note 2)
+
+- **Spec:** none — tooling (D-27, D-28); no `src/` change, no section
+- **Test:** `scripts/agent/feature-map-smoke.sh` gains a probe with `GH_REPO` pointing elsewhere — red because: the script honours it
+- **Acceptance:** the runner (B1.44) writes `- tier: <tier.sh word>` into each agent PR's Evidence; an attended orchestrator session runs `feature-map.sh` once a day and publishes the table to the agent board (how it is triggered is written down); `feature-map.sh` unsets `GH_REPO` and `GH_HOST`; the PR carries `config-change-approved` when it touches a protected path (D-19)
+- **Tier:** quick · **Depends on:** B1.44 · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.51/`
+
+### B1.52 · dev-lead fills the PR Evidence section after CI is green
+
+_tooling · no §_
+**Status: Open** — the PR template's `## Evidence` (B1.45, #154) has four lines that `scripts/agent/feature-map.sh` reads, but `.claude/agents/dev-lead.md` Loop 5 writes Item, Plan, Map delta and Review only and Loop 9 fills Map delta and Review (`grep -c Evidence .claude/agents/dev-lead.md` → 0), so an agent PR shows "AC met ?" or the template placeholder in the map
+
+- **Spec:** none — tooling (D-27, D-28); no `src/` change, no section
+- **Test:** `grep -c Evidence .claude/agents/dev-lead.md` — red because: it prints 0
+- **Acceptance:** `dev-lead.md` Loop 5 writes the Evidence section from the template, and Loop 9 fills `AC met` (green / total criteria, a tooling card counting its Acceptance clauses), `plan deviations` (files outside the approved Files table, each with why) and `trace` (the e2e job's `playwright-report` artifact URL, or `n/a`) after CI is green and before the PR is marked ready; the PR carries `config-change-approved` (D-19, `.claude/agents/`)
+- **Tier:** quick · **Depends on:** ~~B1.45~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.52/`
+
+### B1.53 · CI runs the feature-map probes
+
+_tooling · no §_
+**Status: Open** — `scripts/agent/feature-map-smoke.sh` (B1.45, #154) runs only by hand: `grep -c feature-map .github/workflows/ci.yml` → 0; B1.45 left `ci.yml` to B1.46 in the same batch
+
+- **Spec:** none — tooling (D-27); no `src/` change, no section
+- **Test:** the PR's `ci` run shows the step "feature-map-smoke: 20 probes OK" — red because: no CI step runs it
+- **Acceptance:** a `test`-job step runs `scripts/agent/feature-map-smoke.sh` and fails the job on a failed probe (next to B1.48's eligibility step if that lands first); a deliberately broken copy of `feature-map.sh` on a throwaway branch turns the step red; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** ~~B1.45~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.53/`
+
+### B1.54 · The feature map reads the issue form's card field, warns when it truncates, and folds before it trims
+
+_tooling · no §_
+**Status: Open** — `scripts/agent/feature-map.sh` (B1.45, #154) takes the first `B<e>.<n>` in an issue title (`:67`), so a title "Follow-up to B1.42 runner" filed for B1.47 gets B1.42's row although `.github/ISSUE_TEMPLATE/agent-task.yml:13` has a required `card` field; both `gh` lists stop at `--limit 100` (`:29`, `:64`) without a warning; and `:34` trims before it folds control characters, so `- AC met: <SOH><ESC>` prints two blanks instead of `?` (`backlog/work/B1.45/review.md`, pass 1 c1 and c3, pass 3 finding 1)
+
+- **Spec:** none — tooling (D-27, D-28); no `src/` change, no section
+- **Test:** three new probes in `scripts/agent/feature-map-smoke.sh` — red because: the title's first id wins, a list of exactly 100 gives no warning, and a control-only value is not `?`
+- **Acceptance:** the card id comes from the form's card answer when present, else the title; a list that returns exactly the limit prints a warning on stderr; control characters are folded before trimming, so a value of only control characters prints `?`; every existing probe still passes
+- **Tier:** quick · **Depends on:** ~~B1.45~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.54/`
