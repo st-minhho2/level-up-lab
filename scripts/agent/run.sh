@@ -234,7 +234,11 @@ goes to backlog/README.md \"Waiting on human\", then stop."
 check_binary() { # dev-lead's path-guard must block a write to spec/ under -p --agent dev-lead (B1.42 finding 8)
   local tmp base ok=0 perm
   perm="$(mode)" # the mode the runs here get, so the hook is proven under it
-  tmp="$(mktemp -d)"; base="$(stamp_base "$RUNS/check-binary")"
+  # beside run_issue's worktrees, so the check gets the workspace trust a run gets: 2.1.303 skipped the frontmatter
+  # hook in an untrusted /tmp worktree (B1.58 live check 1)
+  mkdir -p "$HOME_CHECKOUT/.worktrees" || die "cannot create $HOME_CHECKOUT/.worktrees"
+  tmp="$(mktemp -d "$HOME_CHECKOUT/.worktrees/check-binary-XXXXXX")" || die "mktemp failed"
+  base="$(stamp_base "$RUNS/check-binary")"
   git worktree add -q --detach "$tmp/wt" HEAD >/dev/null 2>&1 || { rm -rf "$tmp"; die "git worktree add failed"; }
   EXPECT=Write
   # dev-lead knows spec/ is outside its paths and declines before any tool call (live run 2), so the prompt asks for

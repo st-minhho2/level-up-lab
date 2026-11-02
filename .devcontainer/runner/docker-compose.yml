@@ -9,6 +9,7 @@
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec runner git clone https://github.com/st-minhho2/level-up-lab.git .
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec runner git checkout chore/B1.58-sandbox
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec runner claude auth login
+#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner claude   (accept the trust dialog, then /exit)
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec -e RUNNER_BUDGET_USD=1 runner scripts/agent/run.sh --check-binary
 #   docker compose -f .devcontainer/runner/docker-compose.yml stop
