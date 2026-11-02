@@ -436,7 +436,11 @@ status_plan() { # status_plan <dir> <card> <field> <files...>: plan_md and its s
   local d="$1" c="$2" f="$3"; shift 3; plan_md "$d" "$c" "$@"
   printf '\nPlan review: approved, round 1 · Plan approved by: %s · Rounds: 1\n' "$f" >> "$d/backlog/work/$c/plan.md"
 }
-review_md() { mkdir -p "$1/backlog/work/$2"; printf '# review\n\n## Plan review (round 1)\n\nVerdict: %s\n' "$3" > "$1/backlog/work/$2/review.md"; }
+review_md() { # review_md <dir> <card> <verdict | "## …" a whole body, printf %b escapes>
+  mkdir -p "$1/backlog/work/$2"
+  if [[ "$3" == '## '* ]]; then printf '# review\n\n%b\n' "$3" > "$1/backlog/work/$2/review.md"
+  else printf '# review\n\n## Plan review (round 1)\n\nVerdict: %s\n' "$3" > "$1/backlog/work/$2/review.md"; fi
+}
 approve() { # approve <dir> <branch> <card> <field> <verdict> <files...>: plan + review commit, then the approval commit
   local d="$1" br="$2" c="$3" f="$4" v="$5"; shift 5
   gs "$d" checkout -q -b "$br" main
@@ -478,6 +482,15 @@ gh_issue 19 B9.99 open write; approve "$D" chore/B9.19-agent B9.19 "$(d27 low 19
 ps 2 "$D" "$D/docs/x.md" - "S21 the issue names another card"
 gh_issue 20 B9.20 open write; approve "$D" chore/B9.20-agent B9.20 "$(d27 low 20)" "changes requested" docs/x.md
 ps 2 "$D" "$D/docs/x.md" - "S22 the last plan review requested changes"
+gh_issue 26 B9.26 open write; approve "$D" chore/B9.26-agent B9.26 "$(d27 low 26)" \
+  '## Plan review (round 1)\n\nVerdict: approved\n\n## Plan review (phase B amendment)\n\nVerdict: changes requested' docs/x.md
+ps 2 "$D" "$D/docs/x.md" - "S27 a later plan review under another heading requested changes (review pass 1)"
+gh_issue 27 B9.27 open write; approve "$D" chore/B9.27-agent B9.27 "$(d27 low 27)" \
+  '## Plan review (round 1)\n\nVerdict: changes requested\n\n## Plan review (round 2)\n\nVerdict: approved\n\n## Diff review (pass 1)\n\nVerdict: back to code-writer' docs/x.md
+ps 0 "$D" "$D/docs/x.md" - "S28 round 1 changes requested, round 2 approved, a diff review after (review pass 1)"
+gh_issue 28 B9.28 open write; approve "$D" chore/B9.28-agent B9.28 "$(d27 low 28)" \
+  '## Plan review (round 1)\n\nVerdict: approved\n\n## Plan review (round 2)\n\nVerdict: changes requested' docs/x.md
+ps 2 "$D" "$D/docs/x.md" - "S28 round 1 approved, round 2 changes requested (review pass 1)"
 gh_issue 21 B9.21 open write; gs "$D" checkout -q -b chore/B9.21-agent main
 status_plan "$D" B9.21 "" docs/x.md; review_md "$D" B9.21 approved; gs "$D" add backlog && gs "$D" commit -q -m "docs(backlog): B9.21 plan"
 status_plan "$D" B9.21 "" docs/x.md docs/y.md; gs "$D" add backlog && gs "$D" commit -q -m "docs(backlog): B9.21 plan adds y"
