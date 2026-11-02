@@ -216,3 +216,131 @@ the project's SessionStart `session-mark.sh`. `require-hooks.sh` needs that hook
 first exercised in the live run.
 
 Verdict: changes requested
+
+## Plan review (round 2)
+
+SCOPE: tooling (no §; `scripts/agent/`, `scripts/ci/`). Plan reviewed: `71d0883 docs(backlog): B1.44 plan round 2`.
+Same contract as round 1. PR #162 (B1.47) is still OPEN (`gh pr view 162` → `"state":"OPEN"`). I checked these facts
+without editing anything:
+
+- `scripts/next-task.sh --check B1.44` → `[next-task] B1.44: no overlap with any Doing or Review card` (exit 0).
+- Every round 1 reason (r1 #1 to #10) is mapped in the plan. #2, #3, #6, #8, #9 and #10 are resolved as asked.
+  #1 is not consistent with its own probe (reason 1). #4, #5 and #7 are resolved in part (reason 3).
+- I ran `plan_lists` from `scripts/ci/lib.sh` under `/bin/bash` 3.2 against the plan's T4 tokens.
+- I ran the current `PROTECTED` regex against `.claude/` paths that are not covered.
+- `.claude/settings.json` defines 1 SessionStart hook. `dev-lead.md` frontmatter defines only PreToolUse.
+  `worktree.sh` copies only `.env*` files into a new worktree.
+
+| Check                                                                             | Result                                                                                                                                                                              |
+| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: tooling, no map row. Each file traces to an Acceptance clause or to decision 1 or 2. No overlap with B1.51, B1.55–B1.57                                                       |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass (n/a): bash 3.2, system `jq`, no TypeScript or Prisma                                                                                                                          |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: no `advice.md`. The quick tier skips the advisor, and the plan says so                                                                                                        |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | fail: probe T4 contradicts the tier rule it tests (reason 1). The plan says "nothing runs unattended outside the sandbox", which a hand-started 150-turn run contradicts (reason 3) |
+| verification lists exact commands with expected numbers                           | pass: "9 probes OK", "14 probes OK", 202 tests, ≤ 2 live runs at USD 1 / 15 turns. The T4 expectation is wrong (reason 1)                                                           |
+| work breakdown has skeleton → red → green → map → review with convention subjects | fail: the Files row `backlog/plan/E1-todos.md` (the Acceptance amendment, decision 1) has no step and no commit subject (reason 4)                                                  |
+| `Lead approves spec` box ticked only by a human                                   | pass (n/a): there is no section. `Plan approved by:` is empty                                                                                                                       |
+| no settled D-n contradicted                                                       | fail: D-28 says "`.claude/` … make it high", but `.claude/settings.local.json` comes out low, and the run loads that file through `--setting-sources project,local` (reason 2)      |
+| `scripts/next-task.sh --check B1.44` says no overlap                              | pass: `[next-task] B1.44: no overlap with any Doing or Review card` (exit 0)                                                                                                        |
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: backlog/work/B1.44/plan.md:33-34 (glob rule) vs :67-68 (T4 "`src/*` medium")
+    DEFECT: by the plan's own rule `src/*` is high, but T4 asserts medium. plan_lists lets a last-segment `*` cover
+            the whole directory below it, so `src/*` covers src/lib/env.ts, as `src/lib/*` does.
+    TRIGGER: /bin/bash 3.2, `. scripts/ci/lib.sh; plan_lists src/lib/env.ts 'src/*'` → exit 0 ("src/* covers
+             src/lib/env.ts").
+    WRONG BEHAVIOUR: two outcomes, both bad. If the implementer follows the rule, T4 cannot go green. If the
+             implementer makes T4 pass, `src/*` prints medium while plan-scope.sh lets that row write src/lib/env.ts,
+             a D-28 high path. That reopens r1 #1 for the most natural glob, and after B1.55 the plan proceeds
+             without the lead.
+    CONFIDENCE: confirmed (ran plan_lists)
+```
+
+The fix is to change T4 to `src/*` high and keep a medium glob probe such as `src/components/*`, `e2e/*` or
+`src/*/x.ts`.
+
+```
+[2] KIND: security
+    WHERE: plan.md:17-19 (decision 2), :26 (lib.sh row), :43 (`--setting-sources project,local`)
+    DEFECT: the run loads the worktree's `.claude/settings.local.json`. CONFIG_PROTECTED does not match that file,
+            so tier.sh rates a plan that writes it low, and check-config-change.sh passes without the label.
+            `.mcp.json` (tracked, at the root) and `.claude/commands/*` are also unmatched.
+    TRIGGER: an agent-ready card whose Files list `.claude/settings.local.json`. `grep -E "$PROTECTED"` on
+             `.claude/settings.local.json` → NOT (I ran it). By the plan's literal rule that token is not under
+             src/ e2e/ spec/ scripts/, so it is low. The file is not gitignored (`git check-ignore` exit 1).
+    WRONG BEHAVIOUR: after B1.55 a reviewer-approved low plan lets the code-writer commit a local settings file
+             with hooks or `permissions.allow: ["Bash(*)"]`. B1.56 resumes "in the same worktree" with
+             `--setting-sources project,local`, so the next session loads it. After merge, every checkout loads it.
+             D-28 (and planning.md: "`.claude/` make it high") wants this high. This card already edits the regex.
+    CONFIDENCE: confirmed (regex run); the exploit path is plausible (needs B1.55/B1.56)
+```
+
+The lead can decide this as part of decision 2. Two options:
+
+- Add `\.claude/settings\.local\.json` and `\.mcp\.json` to CONFIG_PROTECTED, or match `\.claude/.*` whole.
+- Run with `--setting-sources project` and give a probe that a local file is ignored.
+
+Add a T3 case either way.
+
+```
+[3] KIND: plan-mismatch
+    WHERE: plan.md:12-13 ("nothing runs unattended outside the sandbox"), :43-46 (allow list), :49-50 (canary)
+    DEFECT: three costs that the approach carries are not stated, or are stated wrongly.
+    TRIGGER: (a) the lead starts `run.sh <n>` by hand before B1.58 exists. (b) A host whose user settings have no
+             SessionStart hook, for example the devcontainer of B1.58, or the lead removes the plugin. (c) B1.56
+             resumes past the gate.
+    WRONG BEHAVIOUR:
+      (a) A hand-started run is a headless run of up to 150 turns on the host with no network limit, using the
+          lead's gh token and keychain. `Bash(pnpm *)` permits `pnpm add` / `pnpm dlx`, so package install
+          scripts run on the host. check-plan-scope.sh catches the package.json change only later, in CI.
+          `Bash(scripts/*)` also permits `scripts/agent/run.sh`, so a child can start further runs. r1 #5's third
+          point ("the live runs … happen on the host without a sandbox") is not stated, and the plan's sentence
+          claims the opposite.
+      (b) The user-settings check counts SessionStart hooks only. It detects leaked user settings only when that
+          host's user settings define a SessionStart hook. A user hook on PreToolUse, PostToolUse or Stop alone is
+          never flagged, so the Acceptance's evidence ("no user-level hook event in the stream") holds only on the
+          lead's current host.
+      (c) Under `--permission-mode dontAsk` the following are denied. The reviewer's probe copy (`cp -r . …`,
+          reviewer.md:15). `docker compose up -d`, which `pnpm test:e2e` needs when the database is down
+          (add-migration step 2). `gh pr view`. Until B1.55/B1.56 no run gets past the gate, but those cards
+          inherit roles that cannot do their step.
+    CONFIDENCE: (a) and (b) confirmed (plan text vs Acceptance, settings.json count); (c) plausible (not run headless)
+```
+
+The fix is to state all three under "Costs". Two things are cheap to add:
+
+- For (a), keep `scripts/agent/*` out of the allow list.
+- For (b), add a `--check-binary` assertion that a planted user-level SessionStart hook does not fire.
+
+r1 #7 ("the comment states the retry step") is also only half done: the comment fields at :53 still do not say
+`run.sh <n>` re-runs it.
+
+```
+[4] KIND: plan-mismatch
+    WHERE: plan.md:31 (Files row backlog/plan/E1-todos.md) vs :76-80 (work breakdown)
+    DEFECT: the edit to B1.44's Acceptance (decision 1) appears in no step and has no commit subject. The filing of
+            B1.58 and B1.59, which must merge before "this PR is ready", has no step either.
+    TRIGGER: the lead approves. The steps run: red, then green (`chore(scripts)`), then review.
+    WRONG BEHAVIOUR: the contract change either goes into `chore(scripts): B1.44 agent runner`, mixing code with
+             its own contract, or is left out, so B1.44 cannot close Done against text that still names the
+             devcontainer and launchd. #162 edits the same card block, so the step must also come after #162
+             merges in.
+    CONFIDENCE: confirmed (plan text)
+```
+
+The fix is a step such as `docs(backlog): B1.44 acceptance -- devcontainer and launchd moved to B1.58/B1.59`,
+committed after #162 is merged in and before the review step.
+
+Not blocking: the plan is 92 lines against planning.md's ≈ 40, in line with B1.42–B1.46 (72–84). The lock compares a
+pid that may be reused after a reboot, so a stale lock can look live. Say whether a held lock exits 1 with a reason or
+0 as "skipped".
+
+Riskiest unfalsified: whether `--setting-sources project,local` still runs the project's SessionStart
+`session-mark.sh`, which `require-hooks.sh` needs for the child's commits, and still keeps the keychain login. Neither
+is probed offline; the first evidence is the single live run.
+
+Verdict: changes requested (round 2 of 2: the next step is "Waiting on human". The lead can settle reasons 1–4 at the
+gate, because each has a one-line fix named above.)
