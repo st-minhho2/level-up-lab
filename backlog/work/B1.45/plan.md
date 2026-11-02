@@ -74,4 +74,5 @@ Loop 9 + `pr-body.md` fill AC met, deviations and trace after CI green (r1 #5); 
 (`ci.yml` is B1.46's file this batch). `scripts/CLAUDE.md` row: the orchestrator after the batch.
 
 Plan review: approved, round 2 (costs 2 and 3 carried into the plan, cost 1 into follow-up (a); not re-reviewed, cap 2)
-· Plan approved by: · Rounds: 1
+· Plan approved by: lead (session reply "approve, A": ruling A, the script prints and an attended orchestrator
+session posts daily, follow-up (a); B1.45 closes Done), 2026-11-02 · Rounds: 1
