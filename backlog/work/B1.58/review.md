@@ -318,3 +318,106 @@ sidecar alternative stated). The dev-lead fixes the lead's commands and the PR b
 Riskiest unfalsified: whether init-firewall.sh starts at all on Docker Desktop. That depends on DNS forwarding
 through 127.0.0.11 with OUTPUT open only on lo, and on setpriv dropping the bounding set. Both fail closed, and
 nobody has run either.
+
+## Diff review (pass 2)
+
+SCOPE: all (tooling: `.devcontainer/runner/`, `scripts/agent/`, `scripts/ci/lib.sh`; no `src/`, `prisma/`, `e2e/`
+change). Range `origin/main...HEAD` (12 files), pass-1 fixes `23e7f63`, `5057810`, `53a74f8`, `b0a3f6e`. The runner
+image was not built by anyone. To check the compose mechanics I ran a throwaway stand-in project (`bash:5.2`,
+project `b158-review-probe`, removed afterwards with `down -v`) with the same `firewall`/`runner` shape: `user: root`,
+`init`, `cap_drop ALL` + NET_ADMIN/NET_RAW, `no-new-privileges`, the same `test -e /run/…` healthcheck,
+`network_mode: service:firewall`, `depends_on: service_healthy`. Anything that needs the real image is [unverified].
+
+### Commands (run by the reviewer, host macOS, engine 29.9.2)
+
+| Command                                                               | Last line                                                                                        |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `pnpm lint`                                                           | `All matched files use Prettier code style!`                                                     |
+| `pnpm typecheck`                                                      | `> tsc --noEmit` (exit 0)                                                                        |
+| `pnpm test`                                                           | `Tests  202 passed (202)`                                                                        |
+| `pnpm test:e2e`                                                       | `43 passed (52.5s)`                                                                              |
+| `pnpm test:mutation`                                                  | `Final mutation score of 93.40 is greater than or equal to break threshold 70`                   |
+| `scripts/ci/check-suppressions.sh`                                    | `OK: no new suppressions`                                                                        |
+| `scripts/ci/check-config-change.sh`                                   | lists 8 protected files, last `scripts/ci/lib.sh` (expected: label at PR, D-19, plan decision 4) |
+| `scripts/ci/check-feat-commits.sh`                                    | `OK: no feat commit touches tests`                                                               |
+| `scripts/ci/check-ac-coverage.sh`                                     | `OK: every criterion of a shipped section has a test`                                            |
+| `scripts/ci/check-spec-sections.sh`                                   | `OK: sections cited: 1 … 22`                                                                     |
+| `scripts/ci/check-features-map.sh`                                    | `OK`                                                                                             |
+| `scripts/ci/check-plan-scope.sh`, `check-backlog.sh`                  | `OK: … stays inside the approved plan of B1.58`, `OK: README matches the cards`                  |
+| `scripts/verify-red.sh B1.58`                                         | `no 'test(<pkg>): B1.58 … (red)' commit` (shell-only red, as in pass 1)                          |
+| `scripts/verify-red.sh --auto` (`BASE_SHA=origin/main`)               | `nothing to verify`                                                                              |
+| `scripts/agent/run-smoke.sh` · `tier-smoke.sh`                        | `15 probes OK` · `9 probes OK`                                                                   |
+| `scripts/agent/sandbox-probe.sh` (host)                               | `6 of 7 probes FAILED` (the host red still holds)                                                |
+| `docker compose -f .devcontainer/runner/docker-compose.yml config -q` | exit 0                                                                                           |
+| `scripts/next-task.sh --check B1.58`                                  | `B1.58: no overlap with any Doing or Review card`                                                |
+| `git diff --stat origin/main...HEAD`                                  | `12 files changed, 887 insertions(+), 15 deletions(-)`                                           |
+
+### Pass 1 findings
+
+| #   | Closed? | Evidence                                                                                                                                                                                                                                                                      |
+| --- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | yes     | `runner`: `cap_drop: [ALL]`, no `cap_add`, NNP, `network_mode: service:firewall`. Stand-in: `exec -u root runner` reads `CapEff 0`, `CapBnd 0`, `NoNewPrivs 1`; runner's `/etc/resolv.conf` is `nameserver 127.0.0.11` (shared netns, Docker's DNS). S5 is back to `CapBnd` 0 |
+| 2   | yes     | traced: S4's `id` shim prints 0 for `-u`, so `sandboxed()` fails on the uid conjunct alone (all others hold inside); deleting it gives `bypassPermissions` and S4 FAIL. In the container [unverified]; on the host run-smoke still does not pin it (accepted)                 |
+| 3   | yes     | header and PR body both `git checkout chore/B1.58-sandbox` after the clone; the PR body's Plan copy equals `plan.md` line for line (only heading levels differ)                                                                                                               |
+
+### Checklist
+
+| Check                                                      | Result                                                                                                                                                                                                                                                               |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every acceptance clause has a probe                        | pass by text (S1–S7, R6, R15, `--check-binary`); in-container [unverified]                                                                                                                                                                                           |
+| no test changed after the red without a `test(...)` commit | pass: `0258b7f`, `23e7f63` are `test(scripts)`; `23e7f63` tightens S5 (CapEff → CapBnd) and adds S4 cases; no merge commits in range                                                                                                                                 |
+| green/fix commit touches no probe file                     | pass: `5057810` touches only `.devcontainer/runner/*`                                                                                                                                                                                                                |
+| every changed file in `plan.md` Files                      | pass (`check-plan-scope` OK; Files unchanged)                                                                                                                                                                                                                        |
+| interfaces match the plan                                  | fail on one claim: "(firewall fails → runner never starts)" and "starts only once `firewall` is healthy" hold for the first `up` only (finding 1)                                                                                                                    |
+| "Changed after approval" states every change               | every change of `5057810`/`23e7f63` is named (sidecar, user node, caps, NNP, healthcheck, S4 shims, S5, checkout, `GIT_CONFIG_GLOBAL`, `init`). Missing: the cost that `runner-runs` now holds a run-writable global gitconfig (note 2); one claim false (finding 1) |
+| Zod / Prisma / raw SQL / migration                         | n/a                                                                                                                                                                                                                                                                  |
+| no secret, no suppression                                  | pass                                                                                                                                                                                                                                                                 |
+| features map row                                           | n/a (tooling)                                                                                                                                                                                                                                                        |
+| would a test fail if one changed line were reverted        | `runner` `cap_drop` → S5 CapBnd; `network_mode` → S1; marker `touch` → runner never healthy, lead step 1 fails. Deleting the marker's staleness (finding 1) → nothing fails                                                                                          |
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: .devcontainer/runner/init-firewall.sh:55 (`touch /run/level-up-lab-firewall-ready`, never removed);
+           .devcontainer/runner/docker-compose.yml:31-35 (healthcheck), :39-41 (depends_on service_healthy)
+    DEFECT: the ready marker lives in the firewall container's writable layer (Docker mounts no tmpfs on /run), so
+            from the second start on the healthcheck passes before init-firewall.sh has applied anything.
+    TRIGGER: `up -d --build`, then `docker compose -f .devcontainer/runner/docker-compose.yml stop` (or a Docker
+            Desktop restart; no restart policy), then `up -d`. Stand-in run: first `up` 17 s, runner started 1 s after
+            "ready"; second `up` 3 s, firewall log `init start … marker=stale`, runner started 3 s after init began,
+            12 s before init would have marked ready.
+    WRONG BEHAVIOUR: the plan says "firewall fails → runner never starts" and "starts only once firewall is healthy".
+            Instead, a restarted firewall gets a fresh network namespace with no filter rules, and runner joins it
+            while init-firewall.sh is still resolving (curl meta up to 20 s, five digs, the self-check). Any exec in
+            that window (the lead's `git clone`, `pnpm install`, B1.59's tick) has an open network. If init then dies
+            (meta refused, example.com reachable), runner has already started. It then loses eth0 (stand-in: after
+            `kill firewall`, runner keeps only lo), so it fails closed afterwards, not before. What limits the damage:
+            `run.sh --mode` reads `dontAsk` while example.com answers, so no run gets bypass in the window.
+            Fix: remove the marker first thing in init-firewall.sh (`rm -f` right after the root check), or
+            `tmpfs: [/run]` on `firewall`. Add `stop` + `up -d` + `sandbox-probe.sh` to the lead's steps so a restart
+            is proven, not only the first start. Also fix the stale comment at init-firewall.sh:20: "PID 1 is this
+            script, so nothing else runs yet" is wrong with `init: true` and a sidecar.
+    CONFIDENCE: confirmed on the stand-in (same healthcheck, depends_on, network_mode shape); the real image's init
+            timing [unverified]
+```
+
+### Not blocking, for the lead
+
+1. Two services with `build: .` and no `image:` produce two tags (`level-up-lab-runner-firewall`, `-runner`).
+   BuildKit shares the cache within one `up --build`, so the content matches. "One image" holds in substance only;
+   `image: level-up-lab-runner:local` on both would make it literal. [unverified on the real build]
+2. `runner-runs` now holds `GIT_CONFIG_GLOBAL` and `verified-versions`, and a bypass run can write both. A
+   `core.fsmonitor` or `credential.helper` line then executes in later runs. A future version string appended to
+   `verified-versions` would let a later pin skip `--check-binary`. The cost line names only the clone's
+   `.git/hooks`, `.git/config` and `runner-claude`; it should add `runner-runs`.
+3. The PR body's Evidence says "plan deviations: none" while a "Changed after approval" block waits for re-approval.
+4. The healthcheck has no `start_period`: 30 × 2 s. A slow meta fetch (≤ 20 s) plus five digs fits in the usual case.
+
+Verdict: back to code-writer (finding 1: a one-line marker reset or a tmpfs, the restart step in the lead's commands,
+and the "Changed after approval" block amended to say so plus note 2's cost). After that, the lead's re-approval of
+the block. Pass-1 findings 1–3 are closed.
+
+Riskiest unfalsified: whether init-firewall.sh completes at all on Docker Desktop with root and only NET_ADMIN/NET_RAW
+(ipset kernel module, iptables-nft, upstream DNS through 127.0.0.11 with OUTPUT open only on lo). Nobody has built the
+image, and every in-container probe depends on it.
