@@ -136,3 +136,84 @@ Non-blocking:
 Riskiest unfalsified: B1.32's parallel rewrite of `plan-scope.sh`/`check-plan-scope.sh` could change how the bare
 Files token `CLAUDE.md` matches (root only vs every nested `CLAUDE.md`). If it lands before this PR, Step 1 is not
 probed against it. It is harmless while no nested `CLAUDE.md` is edited.
+
+## Diff review (pass 1)
+
+Range `a733c7b...HEAD` (HEAD `95416be`). Scope: docs (`CLAUDE.md`, `src/CLAUDE.md`); no `src/` code, no test, no §.
+
+### Command results (last line of each)
+
+| Command                             | Last line                                                                                                      |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | All matched files use Prettier code style!                                                                     |
+| `pnpm typecheck`                    | exit 0                                                                                                         |
+| `pnpm test`                         | `Tests  202 passed (202)`                                                                                      |
+| `pnpm test:e2e`                     | `43 passed (58.0s)`                                                                                            |
+| `pnpm test:mutation`                | `Final mutation score of 93.40 is greater than or equal to break threshold 70`                                 |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                                      |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                              |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                             |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test`                                                          |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 2 … 22`                                                                                 |
+| `scripts/ci/check-features-map.sh`  | `[check-features-map] OK`                                                                                      |
+| `scripts/ci/check-plan-scope.sh`    | `OK: docs/B1.31-guide-ranges stays inside the approved plan of B1.31`                                          |
+| `scripts/ci/check-backlog.sh`       | `OK: README matches the cards`                                                                                 |
+| `scripts/verify-red.sh B1.31`       | `::error::no 'test(<pkg>): B1.31 … (red)' commit`. Expected: docs card, the plan's red is the Test grep before |
+| card Test grep (HEAD / `a733c7b`)   | no output, exit 1 / `CLAUDE.md:65`, `src/CLAUDE.md:7`                                                          |
+| `git diff --stat a733c7b...HEAD`    | 5 files changed, 280 insertions(+), 18 deletions(-)                                                            |
+
+### Independent derivation of each Cite
+
+I derived the § sets again myself: leading comment block of each non-test `.ts(x)` (after `'use client'` /
+`'use server'`), unioned with the package guide's rows and heading list.
+
+| Package       | Headers (my run)                           | Guide (heading + rows)                              | Union = diff cell                    |
+| ------------- | ------------------------------------------ | --------------------------------------------------- | ------------------------------------ |
+| `app/`        | 7, 12, 13, 14, 16 (`page.tsx`, `route.ts`) | 7                                                   | `§7, §12–§14, §16` match             |
+| `actions/`    | 5, 6, 9, 10, 11, 14, 15, 19                | 5, 6, 7, 9, 10, 11, 14, 15, 19                      | `§5–§7, §9–§11, §14, §15, §19` match |
+| `lib/`        | 4–7, 9–22 (`prisma.ts`, `errors.ts` none)  | rows 3–7, 9–22 (`prisma.ts` row §3), heading §3–§22 | `§3–§7, §9–§22` match                |
+| `components/` | 6, 7, 9, 10, 12–22                         | 6, 7, 10, 12–22                                     | `§6, §7, §9, §10, §12–§22` match     |
+
+On the caller's two questions:
+
+- **Components §6 and §9.** §9 comes from the `clear-completed-button.tsx` header. §6 comes from the
+  `todo-item.tsx` header and the guide rows. The Acceptance asks for what "its package guide and module headers
+  name", so the union is the literal reading. Leaving them out would break the Acceptance line. The heading that
+  leaves them out is a recorded D-25 follow-up.
+- **Padding.** `git diff --word-diff` shows the only changed tokens are the 4 Spec § cells per table and the
+  separator dashes of that column. Every other row changes only in whitespace, which the plan's Files column
+  covers with "prettier re-pads". This is not a plan deviation.
+
+### Checklist
+
+| Check                                                    | Result                                                                                       |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| every Acceptance clause has a check whose result matches | pass: Test grep exit 1; awk prints 8 lines matching the plan; both scripts OK                |
+| no test weakened after red                               | pass: `git log --first-parent --no-merges a733c7b..HEAD -- '*.test.*' e2e/` empty; no merges |
+| every changed file in `plan.md`                          | pass: 5 files, all in Files; `check-plan-scope` OK                                           |
+| interfaces / Zod / Prisma / raw SQL / migration          | n/a: no code                                                                                 |
+| no secret, no suppression                                | pass                                                                                         |
+| features map row moved                                   | n/a: no §; `check-features-map` OK                                                           |
+| revert probe                                             | see riskiest unfalsified                                                                     |
+| commit subject / body                                    | pass: `docs(src): B1.31 …`, body states the rule, attribution present                        |
+
+### Findings
+
+None blocking.
+
+Out of scope → follow-up (D-25), non-blocking:
+
+- No automated check covers the per-package clause of the Acceptance beyond the `lib/` row. Probe: a copy of HEAD
+  with only `CLAUDE.md:66` reverted to `| §7 |` (components). The Test grep exits 1, and
+  `check-spec-sections.sh` and `check-features-map.sh` both print OK. A future stale cite on the `app/`,
+  `actions/` or `components/` row would pass every gate. A guard would widen the card.
+- The header-only rule leaves out § named only in inline comments: `page.tsx:36` §9,
+  `delete-todo-button.tsx:11` §5, `delete-todo.ts:12` §5. The approved plan records this. It adds nothing to any
+  Cite, because §5 and §9 are already in `actions/`/`components/`, and `app/` misses only §9. The `page.tsx`
+  header follow-up is already listed.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the three non-`lib/` rows are guarded only by this review's derivation. A stale cite there
+passes the Test grep and both scripts (probe above). I re-derived all four cells from the headers and found none
+wrong, but nothing will keep them true after merge.
