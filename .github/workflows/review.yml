@@ -1,7 +1,7 @@
 name: review
 
 # Reviewer agent: runs before any human looks at the PR, read-only on the code, posts blocking findings only.
-# Needs the ANTHROPIC_API_KEY repository secret; without it the job reports "skipped" and never blocks a merge.
+# Needs the ANTHROPIC_API_KEY repository secret; without it every step is skipped, the job ends green and never blocks a merge.
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review]
