@@ -31,7 +31,7 @@ gh issue list --label agent-ready --state open --limit 100 --json number,title -
 
 evidence() { # evidence <key> <body file>: the value of "- <key>: …" inside ## Evidence; "?" when missing or empty
   awk -v k="- $1:" '/^## / { e = ($0 ~ /^## Evidence[[:space:]]*$/); next }
-    e && index($0, k) == 1 { v = substr($0, length(k) + 1); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v); gsub(/\t/, " ", v); print v; exit }' "$2" \
+    e && index($0, k) == 1 { v = substr($0, length(k) + 1); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v); gsub(/[[:cntrl:]]/, " ", v); print v; exit }' "$2" \
     | { IFS= read -r v || true; printf '%s' "${v:-?}"; }
 }
 pr_of() { # pr_of <card>: "<number>\t<branch>\t<isDraft>" of the newest open PR on the card's work branch
