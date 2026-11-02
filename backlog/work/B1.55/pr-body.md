@@ -3,8 +3,8 @@
 B1.55 — dev-lead carries an agent-ready card past a reviewed low or medium plan (tooling, no spec section)
 
 - spec: none — tooling (D-27, D-28, D-29); no `src/` change, no section
-- test: probes in `scripts/hook-smoke.sh`, `scripts/agent/eligible-smoke.sh`, `scripts/metrics-smoke.sh` and `grep -c agent-ready` on dev-lead.md and SKILL.md — red before, green after
-- acceptance: dev-lead's D-27 path in a run; high tier and interactive sessions keep the gate; plan-scope, check-plan-scope, plan-files and the metrics accept the D-27 approval and nothing looser (a probe each); label `config-change-approved` (D-19)
+- test: probes in `scripts/hook-smoke.sh` (S16–S28, C9–C11), `scripts/agent/eligible-smoke.sh` (E10, E11), `scripts/metrics-smoke.sh` (M26–M29) and `grep -c agent-ready` (dev-lead.md 2, SKILL.md 1; red 0) — red before (bc11ca9: 18 + 2 + 2 FAIL; d4b1b00: 1 FAIL), green after
+- acceptance: 4 of 5 clauses. Deferred: "in a run … continues" needs `scripts/agent/run.sh`'s prompt to stop saying "At the plan gate print the gate line and stop" — B1.58 holds run.sh, so it is filed as **B1.65** (the plan said B1.62; that id went to #174 first). B1.55 closes `Partial — pending B1.65` (lead decision 3).
 - risk tier: high (D-28, `.claude/`, `scripts/ci/`, `.github/`)
 
 ## Plan
@@ -89,7 +89,7 @@ dev-lead in a run (prompt "Issue #<n> is labeled agent-ready (D-27)", RUNNER_CHI
 Follow-ups after B1.58 (it holds `scripts/CLAUDE.md`, `scripts/agent/run.sh`): B1.62 above; `scripts/CLAUDE.md` rows
 for plan-files `--run`/`--offline`/exit 5, eligible.sh `[<card>]`, probe ids.
 
-Plan review: changes requested, round 2 (cap; round 3 not re-reviewed) · Plan approved by: · Rounds: 1
+Plan review: changes requested, round 2 (cap; round 3 not re-reviewed) · Plan approved by: lead (session reply "approve"; decisions 1–3 as proposed), 2026-11-02 · Rounds: 1
 
 ## Map delta
 
@@ -97,20 +97,32 @@ none (tooling, no feature row)
 
 ## Review
 
-pending
+`/review-loop`: 2 passes of 3, ready for PR at pass 2 (0 findings). Full text: `backlog/work/B1.55/review.md`.
+
+| Pass | #   | Finding                                                                                                                                         | Source              | Disposition | Evidence                                                                                                        |
+| ---- | --- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ----------- | --------------------------------------------------------------------------------------------------------------- |
+| 1    | 1   | hook-smoke pins dev-lead's path-guard list; the new `!backlog/work/*/review.md` deny broke it and had no probe                                  | reviewer + dev-lead | fix now     | c61f0ac: list updated, probe "dev-lead exit 2 backlog/work/B1.2/review.md"; CI red at 57b351e, green at c61f0ac |
+| 1    | 2   | plan-files read only `## Plan review (round N)`; a later `## Plan review (phase B amendment)` requesting changes was skipped (looser than D-27) | reviewer            | fix now     | red d4b1b00 (S27 FAIL), fix a6b1ccf: every `## Plan review` heading opens a section, the last verdict decides   |
+| 1    | 3   | the per-round verdict reset was untested                                                                                                        | reviewer            | fix now     | S28 (two rounds, both orders); deleting the reset fails S27 + both S28                                          |
+
+Non-blocking notes the review leaves open (review.md a–g): the heading match is still an allow-list (`## Plan Review`, `###`, `: phase` forms skip a later verdict; none of 93 headings uses them, reviewer.md pins the form); a surviving mutant (`v == "" &&`) matters only for a section with two Verdict lines; a run's bare Bash can unlabel or close its own issue with the lead's gh login (the honor floor until B1.58's sandbox); hook latency ≈ 6 gh calls per Edit/Write on a D-27 card, fail-open on a hook timeout (CI still checks).
+
+Riskiest spot, now falsified: the CI job token. guards at c61f0ac: `gh version 2.23.0`, `issues/171` → 171, its events → 1, `collaborators/<actor>/permission` → admin, check-plan-scope OK through gh.
 
 ## Evidence
 
-- AC met: pending
+- AC met: 4/5 (clause 1 pending B1.65)
 - tier: high
-- plan deviations: none
+- plan deviations: none in Files; interface: review.md's "last `## Plan review (round N)`" became "the last `## Plan review…` section" (review pass 1, a6b1ccf); follow-up id B1.62 → B1.65
 - trace: n/a
+
+Verification at the head (macOS /bin/bash 3.2; the reviewer also ran the smokes under bash 5.2 in node:24-bookworm): hook-smoke 511 OK · eligible-smoke 11 OK · metrics-smoke 27 ok · next-task-smoke 26 · tier-smoke 9 · feature-map-smoke 20 · run-smoke 14 · vitest 202 passed · playwright 43 passed · stryker 93.40 (no src/ change) · live read-only `eligible.sh 166 B1.41` → "eligible: #166 is closed, needs open" (exit 1), `eligible.sh 166` exit 0. No headless run.
 
 ## Checklist
 
-- [ ] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
-- [ ] Red commit precedes the change commit.
-- [ ] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected config change carries `config-change-approved`.
-- [ ] `docs/metrics.md` per-card row filled; mistake-log updated if a known mistake repeated.
+- [x] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list (one interface refinement above).
+- [x] Red commit precedes the change commit.
+- [x] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected config change carries `config-change-approved`.
+- [x] `docs/metrics.md` per-card row filled; mistake-log: no known mistake repeated.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
