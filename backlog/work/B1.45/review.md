@@ -272,3 +272,20 @@ probe for finding 2), then code-writer for finding 2.
 
 Riskiest unfalsified: the tier column against the real `scripts/agent/tier.sh` (B1.44, not built): the map assumes
 `tier.sh <plan.md>` exits 0 with the word on line 1; only a stub has run.
+
+### Dispositions (pass 1, dev-lead)
+
+| Pass | #   | Finding (file:line)                                        | Source   | Kind        | Disposition              | Justification                                                                                                                               |
+| ---- | --- | ---------------------------------------------------------- | -------- | ----------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | 1   | red subject `(red)` on a commit touching no `*.test.ts(x)` | reviewer | correctness | fix now                  | unpushed commits replayed on be98af2 (origin's head, no force push): 6df8bb5 `test(scripts): B1.45 feature-map smoke`, same tree as 7990853 |
+| 1    | 2   | `feature-map.sh:63` a fork's PR takes a card's row         | reviewer | security    | fix now                  | b11a96b F17 (fork PR #130 on `chore/B9.1-a`) red, 2d6247f skips `isCrossRepository` true; 18 probes OK                                      |
+| 1    | 3   | three reverts survive (break, `r=4`, round N)              | reviewer | coverage    | fix now                  | b11a96b F1 queued #5, F18 (B9.12 low → high round 2; B9.2 medium); hand mutants: all 3 now FAIL                                             |
+| 1    | n1  | tab gsub, lowercasing, `--json extra`, JSON backslash      | reviewer | coverage    | fix now                  | b11a96b F7 backslash + tab, F15 `Medium`, F10 `--json extra`; hand mutants: all 4 now FAIL (and dropping the fork filter: 3 FAIL)           |
+| 1    | n2  | template default `N/N` reads as a value                    | reviewer | correctness | fix now                  | template line is the plan's `- AC met: <green>/<total>`                                                                                     |
+| 1    | n3  | `pr-body.md` has no Evidence                               | reviewer | process     | fix now                  | Evidence section added to `pr-body.md`                                                                                                      |
+| 1    | c1  | first `B<e>.<n>` in the title wins                         | dev-lead | correctness | out of scope → follow-up | input: title "Follow-up to B1.42 runner" filed for B1.47 → B1.42's row; prefer B1.43's required card field (D-25)                           |
+| 1    | c3  | `--limit 100` truncates silently                           | dev-lead | correctness | out of scope → follow-up | input: 101 open PRs → older cards show queued; B1.44 caps agent PRs at 3 (D-25)                                                             |
+| 1    | c2  | `git fetch` writes the caller's `FETCH_HEAD`               | dev-lead | side effect | no change needed         | no ref, no working-tree change; only a pending `git merge FETCH_HEAD` in that checkout is affected                                          |
+| 1    | c4  | one gh failure ends the table with exit 1                  | dev-lead | interface   | no change needed         | the approved plan's interface ("1 gh failed")                                                                                               |
+| 1    | c5  | the issue `--jq` is unexercised                            | dev-lead | coverage    | out of scope → follow-up | no `agent-ready` label or issue exists yet; first live run after B1.43's template lands                                                     |
+| 1    | own | `pr_of` comment named 2 fields, prints 3                   | dev-lead | docs        | fix now                  | 2d6247f comment names `<number>\t<branch>\t<isDraft>`                                                                                       |

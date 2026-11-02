@@ -96,6 +96,18 @@ None (tooling, no § and no `spec/features-map.md` row).
 
 pending
 
+## Evidence
+
+- AC met: 3/3
+- tier: high
+- plan deviations: none
+- trace: n/a
+
+Tier by hand from D-28 (`.github/` is protected; `scripts/agent/tier.sh` lands with B1.44). AC: the template's Evidence
+section, `feature-map.sh` riskiest first (posting: ruling A, follow-up), `config-change-approved`. No file outside
+the plan; commit subjects differ from the plan's work breakdown: the smoke commit carries no `(red)` marker (review
+pass 1 finding 1, as B1.29 and B1.32) and review pass 1 added a `test` and a `fix` commit. No e2e run changes.
+
 ## Checklist
 
 - [ ] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.

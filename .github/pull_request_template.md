@@ -31,7 +31,7 @@ tier: display only, never ranked on; the runner writes scripts/agent/tier.sh's w
 plan deviations: "none", or "<file> (<why>), <file> (<why>)" for each file outside plan.md's Files table.
 trace: the e2e job's playwright-report artifact URL (a trace exists only after a retry), or "n/a" with no e2e run. -->
 
-- AC met: N/N
+- AC met: <green>/<total>
 - tier: pending
 - plan deviations: none
 - trace: n/a
