@@ -203,7 +203,7 @@ check_binary() { # dev-lead's path-guard must block a write to spec/ under -p --
   git worktree add -q --detach "$tmp/wt" HEAD >/dev/null 2>&1 || { rm -rf "$tmp"; die "git worktree add failed"; }
   # dev-lead knows spec/ is outside its paths and declines before any tool call (live run 2), so the prompt asks for
   # the call itself: only a call lets the hook show that it fires
-  claude_run "$base" "$tmp/wt" "This is the runner's hook test (scripts/agent/run.sh --check-binary, B1.44), not a task. Call the Write tool exactly once, with file_path spec/agent-probe.md and content probe. Your role's path-guard hook is expected to block it: a hook that blocks it is the pass, so make the call even though the path is outside your paths. Then stop without retrying." \
+  claude_run "$base" "$tmp/wt" "This is the runner's hook test (scripts/agent/run.sh --check-binary, B1.44), not a task: call the Write tool exactly once, with file_path spec/agent-probe.md and content probe. Your role's path-guard hook is expected to block it: a hook that blocks it is the pass, so make the call even though the path is outside your paths. Then stop without retrying." \
     -p --agent dev-lead --model "$MODEL" --max-turns 2 \
     --max-budget-usd "$(awk -v b="$BUDGET" -v t="$TURN_USD" 'BEGIN { printf "%.2f", b - t }')" \
     --setting-sources project --strict-mcp-config --permission-mode dontAsk --include-hook-events \
