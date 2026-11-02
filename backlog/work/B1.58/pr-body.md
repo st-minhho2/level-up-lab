@@ -7,10 +7,14 @@ B1.58 — The runner's devcontainer: a firewall that allows only GitHub, npm and
 - test: `scripts/agent/sandbox-probe.sh` S1–S7 (inside the container), `scripts/agent/run-smoke.sh` R6/R15 and
   `scripts/agent/tier-smoke.sh` T3 (offline, host). Red `69ce71a` (run-smoke 13/15, tier-smoke 8/9, sandbox-probe on
   the host 1/7), `0258b7f`, review pass 1 `23e7f63`; green on the host: run-smoke 15/15, tier-smoke 9/9 (bash 3.2).
-  Inside the container: [unverified] until the lead's steps below.
+  Inside the container (2026-11-03, the lead's machine, Docker Desktop arm64): `sandbox-probe.sh` 7 probes OK before
+  and after a stop and `up -d`; `logs firewall` shows "allow list applied: 81 entries" twice; `--check-binary`
+  verified `2.1.303 (Claude Code)` on live check 3 (live checks: 1 failed on workspace trust, `cb00eab`/`ed388a1`;
+  2 failed on jq 1.6, `4ef8744`/`e6a5002`; 3 passed; USD 0.08 and 2 turns each).
 - acceptance: B1.58's four clauses (firewall both ways, pinned Linux build with `--check-binary` inside, the lead's own
   login inside with no credential baked, `bypassPermissions` only in the firewalled container, refused on the host):
-  host side proven (R6, R15); container side pending the lead's steps
+  all four met: S1/S2 (firewall), S3 and `--check-binary` (pin, hooks), S6 and the lead's own logins (no credential
+  baked), S4/R15 (`bypassPermissions` only in the container)
 - risk tier: high (`scripts/agent/`, `scripts/ci/`, `.devcontainer/`); label `config-change-approved` (D-19)
 - follow-up: B1.62 (#174), the image carries the Prisma engines and Playwright's browser
 
@@ -23,6 +27,7 @@ docker compose -f .devcontainer/runner/docker-compose.yml exec runner gh auth se
 docker compose -f .devcontainer/runner/docker-compose.yml exec runner git clone https://github.com/st-minhho2/level-up-lab.git .
 docker compose -f .devcontainer/runner/docker-compose.yml exec runner git checkout chore/B1.58-sandbox
 docker compose -f .devcontainer/runner/docker-compose.yml exec runner claude auth login
+docker compose -f .devcontainer/runner/docker-compose.yml exec runner sh -c 'umask 077; f=~/.claude/.claude.json; jq ".projects[\"/home/node/level-up-lab\"].hasTrustDialogAccepted = true" "$f" > "$f.tmp" && mv "$f.tmp" "$f"'
 docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh
 docker compose -f .devcontainer/runner/docker-compose.yml exec -e RUNNER_BUDGET_USD=1 runner scripts/agent/run.sh --check-binary
 docker compose -f .devcontainer/runner/docker-compose.yml stop
@@ -94,6 +99,20 @@ removes the volumes (r2 #5). Host and container keep separate locks and stop mar
   and `down -v` clears them.
 - New cost: an allowed CDN address (npm, claude.ai) also serves other sites behind the same edge; IPs stay pinned
   until a restart. A root exec into `firewall` can still change the rules: only the lead uses that service.
+- **Live check 1** (2026-11-03; the lead chose option 1, approved in the session): inside the container `--check-binary`
+  failed: 2.1.303 ran `plan-scope.sh` but not dev-lead's frontmatter `path-guard.sh` in a workspace not trusted
+  (`.err`: "this workspace has not been trusted"), so the probe write landed in its `/tmp` worktree. Fix:
+  `check_binary` makes its worktree under `<checkout>/.worktrees/check-binary-*` (where `run_issue`'s worktrees live),
+  so it runs where a real run runs; R14 asserts it, and a TERM removes it (review pass 4 #2). The trust itself is the
+  main checkout's `.claude.json` record, wherever the worktree sits (review pass 4 #1, read in the 2.1.303 package):
+  the lead's steps add one `jq` line (`umask 077`, the file stays 600) that sets `hasTrustDialogAccepted` for the
+  clone (an interactive `claude` first asks to approve the organization's managed telemetry settings: the lead
+  declined, a separate decision).
+- **Live check 2** (USD 0.08, 2 turns): with the trust, path-guard blocked the probe (exit 2) under
+  `bypassPermissions`, yet `run.sh` read no block: Debian's jq 1.6 takes `-e`'s status from the last line. Fix: the
+  check counts matching lines (`jq -c … | grep -q .`); R14 runs it under a jq 1.6 shim. Replayed with the image's jq
+  on both live logs: check 2 matches 1 line, check 1 none. A third live run (the lead's "ok", USD 0.08, 2 turns)
+  verified `2.1.303 (Claude Code)`.
 
 #### Files
 
@@ -148,22 +167,30 @@ None: tooling, no `spec/features-map.md` row.
 
 Plan review: r1 7 reasons, r2 6 reasons, round 3 not re-reviewed (2-round cap). Diff review (`backlog/work/B1.58/review.md`):
 
-| Pass | #   | Finding                                                                              | Disposition      | Commit                                           |
-| ---- | --- | ------------------------------------------------------------------------------------ | ---------------- | ------------------------------------------------ |
-| 1    | 1   | a root `exec runner` kept NET_ADMIN; S5 loosened before re-approval                  | fix now          | `23e7f63`, `5057810`                             |
-| 1    | 2   | deleting sandboxed()'s uid check left every probe green                              | fix now          | `23e7f63`                                        |
-| 1    | 3   | the lead's commands cloned main (old `--check-binary` mode); PR body lacked them     | fix now          | `5057810`, this body                             |
-| 1    | n1  | PID 1 `sleep` without init; `~/.gitconfig` not persisted                             | fix now          | `5057810`                                        |
-| 1    | n2  | no git identity in the image, so `run.sh <issue>` cannot commit inside yet           | out of scope     | B1.59 / B1.62 plan                               |
-| 2    | 1   | the ready mark survived a stop, so runner started before the new namespace had rules | fix now          | `50bfcc7`                                        |
-| 2    | n   | two image tags from two `build: .`; Evidence "plan deviations: none"                 | no change needed | same Dockerfile and cache; no file outside Files |
+| Pass | #   | Finding                                                                                  | Disposition      | Commit                                           |
+| ---- | --- | ---------------------------------------------------------------------------------------- | ---------------- | ------------------------------------------------ |
+| 1    | 1   | a root `exec runner` kept NET_ADMIN; S5 loosened before re-approval                      | fix now          | `23e7f63`, `5057810`                             |
+| 1    | 2   | deleting sandboxed()'s uid check left every probe green                                  | fix now          | `23e7f63`                                        |
+| 1    | 3   | the lead's commands cloned main (old `--check-binary` mode); PR body lacked them         | fix now          | `5057810`, this body                             |
+| 1    | n1  | PID 1 `sleep` without init; `~/.gitconfig` not persisted                                 | fix now          | `5057810`                                        |
+| 1    | n2  | no git identity in the image, so `run.sh <issue>` cannot commit inside yet               | out of scope     | B1.59 / B1.62 plan                               |
+| 2    | 1   | the ready mark survived a stop, so runner started before the new namespace had rules     | fix now          | `50bfcc7`                                        |
+| 2    | n   | two image tags from two `build: .`; Evidence "plan deviations: none"                     | no change needed | same Dockerfile and cache; no file outside Files |
+| 4    | 1   | the trust is the main checkout's record, not the worktree's location; comments said so   | fix now          | `614e60b`, `1c85cbe`, `1d4ea9d`                  |
+| 4    | 2   | a TERM during `--check-binary` left `.worktrees/check-binary-*`, which prune never lists | fix now          | `13c841b` → `614e60b`                            |
+| 4    | 3   | stale "[unverified] until live check 2" in the plan; the trust line left the file 644    | fix now          | `1d4ea9d` (`umask 077`)                          |
 
 Pass 3: ready for PR, 0 findings. Not blocking (review.md): after `stop` / `up -d`, `docker compose -f .devcontainer/runner/docker-compose.yml logs firewall` showing a second "allow list applied" line is steadier evidence than the probe alone; pass 2 notes 2 and 4 (cost line, `start_period`) were acted on in `e7a669d` / `50bfcc7`.
 
+Pass 4 (`f2dc1bf`) reviewed the live-check fixes (`ba1920c..6033237`): ready for PR, 3 findings, all fixed above with a
+red probe first for #2; those three fixes were not re-reviewed (the review cap is 3 passes; pass 4 was the live-check
+addition). Suites at pass 4: vitest 202, playwright 43 (one earlier run of three said 41 and exited 1, uncaptured, no
+`src/` or `e2e/` change), mutation 93.40.
+
 ## Evidence
 
-- AC met: 0/4 (host side of clause 4 proven; container side pending the lead's steps)
-- tier: pending
+- AC met: 4/4
+- tier: high (`scripts/agent/tier.sh backlog/work/B1.58/plan.md`)
 - plan deviations: none (no file outside Files; the "Changed after approval" block re-approved by the lead 2026-11-03)
 - trace: n/a
 
