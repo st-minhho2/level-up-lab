@@ -58,4 +58,4 @@ Not in scope: B1.44's plan and scripts (B1.44 itself), the closing of B1.47 (clo
 Round 3 (plan review r1: 3 reasons, r2: 3 reasons, all addressed; round 3 not re-reviewed, 2-round cap). Not in this card: B1.44's size (S, quick) no longer fits
 its Acceptance; B1.44's own plan puts a split to the lead (r1 note).
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: changes requested, round 2 (3 reasons carried into round 3, not re-reviewed: 2-round cap) · Plan approved by: · Rounds: 1
