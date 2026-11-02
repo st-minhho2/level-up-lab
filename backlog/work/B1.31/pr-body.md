@@ -66,6 +66,17 @@ None: no section; `spec/features-map.md` unchanged (`scripts/ci/check-features-m
 
 ## Review
 
-Pending (`/review-loop`). Plan review: 2 rounds (1 reason in round 1, applied; round 2 approved).
+`/review-loop`: pass 1/3, verdict ready for PR, 0 findings (full table: `backlog/work/B1.31/review.md` "Diff review (pass 1)").
+Plan review: 2 rounds (1 reason in round 1, applied; round 2 approved); the lead approved the reviewed plan.
+
+| Pass | #   | Finding                                                                                                        | Source   | Kind     | Disposition  | Justification                                                                                               |
+| ---- | --- | -------------------------------------------------------------------------------------------------------------- | -------- | -------- | ------------ | ----------------------------------------------------------------------------------------------------------- |
+| 1    | 1   | only the `lib/` cells have an automated check; `CLAUDE.md:66` set back to `§7` passes every gate               | reviewer | coverage | out of scope | D-25: a guard for the guides widens the card; follow-up card in the closing PR                              |
+| 1    | 2   | header-only rule skips inline cites (`page.tsx:36` §9, `delete-todo-button.tsx:11` §5, `delete-todo.ts:12` §5) | reviewer | docs     | out of scope | D-25: the approved plan reads leading comments only; only `app/` loses §9 (header follow-up already listed) |
+
+Gates on `5909bf7`: `pnpm test` → `Tests  202 passed (202)`; `pnpm test:e2e` → `43 passed (58.0s)`; mutation 93.40 (≥ 70);
+lint, typecheck, `check-*` all OK. Card Test: before (a733c7b) 2 matches; after no output, exit 1. The 8 cells match the
+reviewer's own derivation; `git diff --word-diff` changes only the Spec § cells and that column's dashes.
+Riskiest unfalsified: a stale cite on the `app/`, `actions/` or `components/` rows passes every gate.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
