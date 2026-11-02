@@ -3,7 +3,7 @@
 # JSON through the script's own --jq filter (real jq), so the filters are tested without network.
 #   scripts/agent/eligible-smoke.sh
 #   E1 write labeler and author: exit 0, the exact gh lines   E2 read labeler refused     E3 removed and re-added
-#   E4 missing or removed label refused                       E5 maintain, admin accepted E6 bad argument, gh failure
+#   E4 missing, removed, look-alike label; no actor refused   E5 maintain, admin accepted E6 bad argument, gh failure
 #   E7 a caller's GH_REPO/GH_HOST never reach gh              E8 another label's events do not count
 #   E9 read author refused; gh runs in the repo root
 set -uo pipefail
@@ -99,6 +99,10 @@ events labeled:agent-ready:lead unlabeled:agent-ready:lead
 refused 'labeled then removed' 'eligible: #7 not labeled agent-ready' 7 || r=1
 issue alice agent-ready; refused 'present, last event unlabeled' "eligible: #7 label's last event is not labeled" 7 || r=1
 events; refused 'present, no event' "eligible: #7 label's last event is not labeled" 7 || r=1
+issue alice not-agent-ready agent-ready-later; events labeled:agent-ready:lead
+refused 'only look-alike labels' 'eligible: #7 not labeled agent-ready' 7 || r=1
+issue alice agent-ready; printf '[{"event":"labeled","label":{"name":"agent-ready"},"actor":null}]\n' > "$FIX/events.json"
+refused 'deleted actor' "eligible: #7 label's last event has no actor" 7 || r=1
 [[ $r -eq 0 ]] && ok E4 || fail E4
 # E5
 r=0; reset; issue alice agent-ready; perm alice admin admin
