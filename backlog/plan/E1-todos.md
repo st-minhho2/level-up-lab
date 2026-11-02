@@ -757,7 +757,7 @@ _tooling · no §_
 ### B1.55 · dev-lead carries an agent-ready card past a reviewed low or medium plan
 
 _tooling · no §_
-**Status: Open** — D-27 lets a reviewer-approved low- or medium-tier plan on an `agent-ready` issue proceed without the lead, but `.claude/agents/dev-lead.md` and `.claude/skills/work-next/SKILL.md` stop every card at the plan gate, and `plan-scope.sh`, `scripts/ci/plan-files.sh` and the metrics read the approval only from a lead's `Plan approved by: lead` line and the `docs(backlog): <card> plan approved` commit; a headless run (B1.44) would stop at every card
+**Status: Partial** — merged d66fccd (#171); pending B1.65: `scripts/agent/run.sh`'s prompt still says "At the plan gate print the gate line and stop", so no run takes the D-27 path yet (4 of 5 acceptance clauses met). hook-smoke 511, eligible-smoke 11, metrics-smoke 27 on bash 3.2 and 5.2 (red bc11ca9: 18 + 2 + 2 FAIL; d4b1b00: 1 FAIL); vitest 202, playwright 43; no src/ change, mutation 93.40
 
 - **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
 - **Test:** `grep -n agent-ready .claude/agents/dev-lead.md .claude/skills/work-next/SKILL.md` and new probes in `scripts/hook-smoke.sh` — red because: no match, and a plan approved by the reviewer under D-27 is refused by `plan-scope.sh`

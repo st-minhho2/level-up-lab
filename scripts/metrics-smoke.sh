@@ -22,6 +22,9 @@
 #   review pass 2: M21's day 2 starts at a round-2 approval (06:30), after the day's first merge; M23 PR #60 counts;
 #       M24 (lead's ruling (a) on pass-2 finding 1) a selection picks days, each counting every Done card merged on it
 #   review pass 3: M25 a picked day's first and last merge come from every Done card, not the picked one
+#   B1.55: a D-27 approval (`Plan approved by: reviewer (D-27, …)` on a runner branch `<prefix>/<card>-agent`):
+#       M26 lead-time and M28 throughput start at it; M27 wait-time counts no lead wait for it; M29 plan-deviations
+#       reads it offline (no gh issue call) and a lead field on a runner branch leaves every non-paperwork file outside
 set -uo pipefail
 cd "$(git rev-parse --show-toplevel)"
 SRC="$PWD/scripts/metrics"
@@ -112,6 +115,7 @@ for n in 101 102 103 104 105; do echo "$((T0 - 100))" > "$FIX/created.$n"; done
 printf 'scripts/a.sh\nscripts/extra.sh\ndocs/metrics.md\nbacklog/work/B9.1/plan.md\n' > "$FIX/files.101"
 printf 'backlog/README.md\n' > "$FIX/files.102"; printf 'spec/x.md\n' > "$FIX/files.103"
 printf 'docs/mistake-log.md\n' > "$FIX/files.104"; printf 'src/e.ts\n' > "$FIX/files.105"
+for n in 101 102 103 104 105; do echo "feat/B9.$((n - 100))-x" > "$FIX/ref.$n"; done
 H101="$(git -C "$ORIGIN" rev-parse refs/pull/101/head)"; H102="$(git -C "$ORIGIN" rev-parse refs/pull/102/head)"
 H104="$(git -C "$ORIGIN" rev-parse refs/pull/104/head)"; H105="$(git -C "$ORIGIN" rev-parse refs/pull/105/head)"
 echo "$((T0 + 100))" > "$FIX/runs.$H101"
@@ -126,6 +130,7 @@ echo "$((T0 + 100))" > "$FIX/runs.$H105"
 printf '%s' '--json mergedAt --jq .mergedAt | fromdateiso8601' > "$FIX/view.args"
 printf '%s' '--json createdAt --jq .createdAt | fromdateiso8601' > "$FIX/created.args"
 printf '%s' '--json files --jq .files[].path' > "$FIX/files.args"
+printf '%s' '--json headRefName --jq .headRefName' > "$FIX/ref.args"
 printf '%s' '--workflow ci --json conclusion,updatedAt --jq [.[] | select(.conclusion == "success") | .updatedAt | fromdateiso8601] | min // empty' > "$FIX/runs.args"
 printf '%s' 'pr list --state merged --limit 1000 --json number,title,mergedAt,files --jq .[] | [.number, (.mergedAt | fromdateiso8601), .title, ([.files[].path] | join(" "))] | @tsv' > "$FIX/list.args"
 cat > "$TMP/bin/gh" <<SHIM
@@ -133,7 +138,7 @@ cat > "$TMP/bin/gh" <<SHIM
 fix='$FIX'
 deny() { echo "DENIED: \$*" >> "\$fix/denied.log"; echo "gh shim: denied" >&2; exit 99; }
 if [ "\$1 \$2" = "pr view" ]; then
-  for k in view created files; do
+  for k in view created files ref; do
     if [ -f "\$fix/\$k.\$3" ] && [ "\${*:4}" = "\$(cat "\$fix/\$k.args")" ]; then cat "\$fix/\$k.\$3"; exit 0; fi
   done
 fi
@@ -231,10 +236,50 @@ m25b="$(cd "$R2" && PATH="$TMP/bin:$PATH" "$SRC/throughput.sh" B8.9 2>&1 | tail 
 [[ "$m25a" == 'throughput 4.9 cards per 8 h (4 cards, 6.5 h, 1 days)' && "$m25b" == 'throughput 8.0 cards per 8 h (2 cards, 2.0 h, 1 days)' ]] \
   && ok M25 || fail "M25 $m25a | $m25b"
 printf 'src/z.ts\nbacklog/work/B8.4/plan.md\n' > "$FIX/files.304"; printf 'src/y.ts\n' > "$FIX/files.59"; printf 'src/x.ts\n' > "$FIX/files.60"
+echo feat/B8.4-x > "$FIX/ref.304"; echo feat/B8.6-x > "$FIX/ref.59"; echo feat/B8.7-x > "$FIX/ref.60"
 if [[ -x "$SRC/plan-deviations.sh" ]]; then (cd "$R2" && PATH="$TMP/bin:$PATH" "$SRC/plan-deviations.sh" B8.4 B8.6 B8.7) > "$TMP/out" 2>&1; rc=$?; else rc=127; echo missing > "$TMP/out"; fi
 [[ $rc -eq 0 ]] && cut -f3 <<< "$(row B8.4)" | grep -qx 'src/z.ts' && cut -f3 <<< "$(row B8.6)" | grep -qx 'n/a' \
   && cut -f3 <<< "$(row B8.7)" | grep -qx 'src/x.ts' && tail -1 "$TMP/out" | grep -qx 'uncaught plan deviations 2/2' && ok M23 \
   || fail "M23 rc=$rc $(row B8.4) | $(row B8.6) | $(row B8.7) | $(tail -1 "$TMP/out")"
+
+# --- B1.55: D-27 approvals ----------------------------------------------------------------------------------------
+# B7.1 on chore/B7.1-agent: plan + approved review at 01:00 UTC+7, `reviewer (D-27, tier medium, issue #71)` at 02:00,
+# merged 04:00 (day 1). B7.2 the same a day later with a lead field. The shim denies every `gh api` call, so a
+# plan-deviations run that asked eligible.sh about issue #71 would show in denied.log.
+R3="$TMP/r3"; O3="$TMP/o3.git"; mkdir -p "$R3/backlog/plan"
+g3() { git -C "$R3" -c user.name=s -c user.email=s@x -c commit.gpgsign=false "$@" >/dev/null 2>&1; }
+c3() { GIT_AUTHOR_DATE="@$1 +0000" GIT_COMMITTER_DATE="@$1 +0000" g3 commit -q --allow-empty --no-verify -m "$2"; }
+plan3() { # plan3 <card> <field> <file>: the plan with its status line
+  mkdir -p "$R3/backlog/work/$1"
+  printf '## Files\n\n| File | Change |\n| ---- | ------ |\n| `%s` | x |\n\nPlan review: approved, round 1 · Plan approved by: %s · Rounds: 1\n' \
+    "$3" "$2" > "$R3/backlog/work/$1/plan.md"
+}
+printf '### B7.1 · c\n**Status: Done** — x (#401); fixture\n### B7.2 · c\n**Status: Done** — x (#402); fixture\n' > "$R3/backlog/plan/E7-fixture.md"
+g3 init -q -b main && g3 add -A && c3 $((B - 2 * 86400)) "chore: base"
+for c in 1 2; do
+  d=$(((c - 1) * 86400)); g3 checkout -q -b "chore/B7.$c-agent" main
+  [[ $c -eq 1 ]] && f='reviewer (D-27, tier medium, issue #71)' || f='lead, 2026-11-02'
+  plan3 "B7.$c" "" "src/s$c.ts"; printf '## Plan review (round 1)\n\nVerdict: approved\n' > "$R3/backlog/work/B7.$c/review.md"
+  g3 add -A && c3 $((B + d + H)) "docs(backlog): B7.$c plan"
+  plan3 "B7.$c" "$f" "src/s$c.ts"; g3 add -A && c3 $((B + d + 2 * H)) "docs(backlog): B7.$c plan approved"
+  g3 update-ref "refs/pull/40$c/head" HEAD
+  echo $((B + d + 4 * H)) > "$FIX/view.40$c"; echo $((B + d + 3 * H)) > "$FIX/created.40$c"
+  echo "chore/B7.$c-agent" > "$FIX/ref.40$c"; printf 'src/s%s.ts\nbacklog/work/B7.%s/plan.md\n' "$c" "$c" > "$FIX/files.40$c"
+done
+g3 checkout -q main; git clone -q --bare "$R3" "$O3"
+for n in 401 402; do git -C "$O3" update-ref "refs/pull/$n/head" "$(git -C "$R3" rev-parse "refs/pull/$n/head")"; g3 update-ref -d "refs/pull/$n/head"; done
+g3 remote add origin "$O3"
+r3() { (cd "$R3" && PATH="$TMP/bin:$PATH" "$SRC/$1" "${@:2}") > "$TMP/out" 2>&1; }
+r3 lead-time.sh B7.1
+cut -f4 <<< "$(row B7.1)" | grep -qx 120 && ok M26 || fail "M26 $(row B7.1)"
+r3 wait-time.sh B7.1
+cut -f3 <<< "$(row B7.1)" | grep -qx 'n/a' && ok M27 || fail "M27 $(row B7.1)"
+r3 throughput.sh B7.1
+tail -1 "$TMP/out" | grep -qx 'throughput 4.0 cards per 8 h (1 cards, 2.0 h, 1 days)' && ok M28 || fail "M28 $(tail -1 "$TMP/out")"
+r3 plan-deviations.sh B7.1 B7.2
+cut -f3 <<< "$(row B7.1)" | grep -qx -- '-' && cut -f3 <<< "$(row B7.2)" | grep -qx 'src/s2.ts' \
+  && tail -1 "$TMP/out" | grep -qx 'uncaught plan deviations 1/2' && ok M29 \
+  || fail "M29 $(row B7.1) | $(row B7.2) | $(tail -1 "$TMP/out")"
 
 [[ -s "$FIX/denied.log" ]] && { fail "gh shim denied:"; sed 's/^/  /' "$FIX/denied.log"; }
 echo "[metrics-smoke] $oks ok, $fails FAIL"
