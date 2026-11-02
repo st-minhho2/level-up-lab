@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Probes R1–R14 of scripts/agent/run.sh (B1.44) offline: a `claude` shim that replays fixture stream-json, a `gh` shim
+# Probes R1–R15 of scripts/agent/run.sh (B1.44) offline: a `claude` shim that replays fixture stream-json, a `gh` shim
 # that applies run.sh's own --jq to fixture JSON (real jq), and fakes for the eligibility, claim and worktree seams.
 #   scripts/agent/run-smoke.sh
 #   R1 not logged in            R2 unverified version          R3 ineligible issue        R4 three agent branches in flight
-#   R5 live and stale lock      R6 exact argv, env, stdin, branch, no bypass flag         R7 one log per run
+#   R5 live and stale lock      R6 exact argv, env, stdin, branch, bypass only in mode()  R7 one log per run
 #   R8 tools-mismatch kill      R9 user settings in the run    R10 one retry on error     R11 limits not retried
 #   R12 gate comment with tier  R13 --poll order and skips     R14 --check-binary
+#   R15 --mode on the host is dontAsk, whatever uname, curl or the environment say (B1.58)
 set -uo pipefail
 command -v jq >/dev/null || { echo "run-smoke: needs jq" >&2; exit 2; }
 HERE="$(cd "$(dirname "$0")" && pwd -P)"
@@ -178,7 +179,10 @@ grep -q "^WORKTREE chore/B1.44-agent$" "$LOG" && grep -q "^CLAIM --claim B1.44$"
 grep -qxF "WORKTREE-CWD ${ROOT%%/.worktrees/*}" "$LOG" || { say "worktree.sh not run from the checkout that holds .worktrees/: $(grep '^WORKTREE-CWD' "$LOG")"; r=1; }
 has '#7' "$FIX/stdin-1" && has 'B1.44' "$FIX/stdin-1" && has '.claude/skills/work-next/SKILL.md' "$FIX/stdin-1" && has "$WT/chore-b1-44-agent" "$FIX/stdin-1" || { say "stdin: $(head -3 "$FIX/stdin-1" 2>/dev/null)"; r=1; }
 grep -q 'GH_REPO=evil' "$LOG" && { say "GH_REPO reached gh"; r=1; }
-grep -Eq 'dangerously-skip-permissions|bypassPermissions' "$SRC" && { say "a bypass flag is named in run.sh"; r=1; }
+grep -q 'dangerously-skip-permissions' "$SRC" && { say "--dangerously-skip-permissions is named in run.sh"; r=1; }
+bp="$(grep -v '^[[:space:]]*#' "$SRC" | grep 'bypassPermissions')"
+[[ "$bp" =~ ^[[:space:]]*'if sandboxed; then echo bypassPermissions; else echo dontAsk; fi'$ ]] \
+  || { say "bypassPermissions outside mode()'s one gated line: $bp"; r=1; }
 reset; RUNNER_CHILD=1 run 7
 [[ $RC -eq 1 && $(calls) -eq 0 ]] && has 'inside a runner' "$TMP/out" && ! has ELIGIBLE "$LOG" \
   || { say "nested run: rc=$RC $(head -1 "$TMP/out")"; r=1; }
@@ -296,6 +300,22 @@ reset; : > "$RUNS/verified-versions"; { init '["Write","Grep","Glob","Bash"]'; e
 run --check-binary
 [[ $RC -eq 1 && ! -s "$RUNS/verified-versions" ]] && has 'tools-mismatch' "$TMP/out" || { say "Bash in a Write-only check: rc=$RC"; r=1; }
 [[ $r -eq 0 ]] && ok R14 || fail R14
+# R15
+r=0
+mkdir -p "$TMP/linux"
+printf '#!/bin/sh\necho Linux\n' > "$TMP/linux/uname"
+printf '#!/bin/sh\necho "CURL $*" >> "$SMOKE_LOG"\ncase "$*" in *example.com*) exit 7 ;; esac\nexit 0\n' > "$TMP/linux/curl"
+chmod +x "$TMP/linux/uname" "$TMP/linux/curl"
+reset; run --mode
+[[ $RC -eq 0 && "$(cat "$TMP/out")" == dontAsk ]] || { say "host: rc=$RC $(head -2 "$TMP/out")"; r=1; }
+reset; PATH="$TMP/linux:$PATH" run --mode
+[[ $RC -eq 0 && "$(cat "$TMP/out")" == dontAsk ]] || { say "Linux uname, firewall-like curl, no marker: rc=$RC $(head -2 "$TMP/out")"; r=1; }
+reset; RUNNER_MODE=bypassPermissions RUNNER_PERMISSION_MODE=bypassPermissions IS_SANDBOX=1 PATH="$TMP/linux:$PATH" run --mode
+[[ $RC -eq 0 && "$(cat "$TMP/out")" == dontAsk ]] || { say "env asking for bypass: rc=$RC $(head -2 "$TMP/out")"; r=1; }
+reset; run --mode 7
+[[ $RC -eq 1 ]] && has usage "$TMP/out" || { say "--mode with an argument: rc=$RC"; r=1; }
+[[ $(calls) -eq 0 ]] && ! has ELIGIBLE "$LOG" || { say "--mode started a run"; r=1; }
+[[ $r -eq 0 ]] && ok R15 || fail R15
 
 echo
 if [[ $fails -eq 0 ]]; then echo "$oks probes OK"; exit 0; fi
