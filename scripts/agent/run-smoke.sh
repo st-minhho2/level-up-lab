@@ -282,6 +282,23 @@ line="$(grep "^CLAUDE .* ARGS=-p " "$LOG" | head -1)"
 [[ "$line" == *"cwd=${ROOT%%/.worktrees/*}/.worktrees/check-binary-"* ]] || { say "probe worktree: $line"; r=1; }
 left="$(ls -d "${ROOT%%/.worktrees/*}"/.worktrees/check-binary-* 2>/dev/null)"
 [[ -z "$left" ]] || { say "probe worktree left: $left"; r=1; }
+# jq 1.6 (Debian bookworm, the runner image) takes -e's exit status from the last input only, so a block on an
+# earlier line must still verify (B1.58 live check 2)
+{ printf '#!/bin/bash\nreal=%q\n' "$(command -v jq)"; cat <<'SHIM'
+e=0; args=()
+for a in "$@"; do if [[ "$a" == -e ]]; then e=1; else args+=("$a"); fi; done
+if [[ $e -eq 1 && -f "${@: -1}" ]]; then
+  "$real" "${args[@]}"
+  tail -n 1 "${@: -1}" | "$real" -e "${args[@]:0:${#args[@]}-1}" >/dev/null
+  exit $?
+fi
+exec "$real" "$@"
+SHIM
+} > "$TMP/bin/jq"; chmod +x "$TMP/bin/jq"
+reset; : > "$RUNS/verified-versions"; { init '["Write"]'; echo "$pass"; result false success done; } > "$FIX/stream.jsonl"
+run --check-binary
+[[ $RC -eq 0 && "$(cat "$RUNS/verified-versions")" == "$VERSION" ]] || { say "jq 1.6: rc=$RC $(tail -1 "$TMP/out")"; r=1; }
+rm -f "$TMP/bin/jq"
 has 'call the Write tool' "$FIX/stdin-1" && has 'spec/agent-probe.md' "$FIX/stdin-1" && has 'blocks it' "$FIX/stdin-1" \
   || { say "probe prompt: $(head -2 "$FIX/stdin-1" 2>/dev/null)"; r=1; }
 reset; : > "$RUNS/verified-versions"; { init '["Write"]'; result false success done; } > "$FIX/stream.jsonl"; run --check-binary
