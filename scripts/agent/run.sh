@@ -74,8 +74,10 @@ init_problem() { # init_problem <jsonl> <worktree>: why the run's init must stop
   extra="$(jq -r 'select(.type == "system" and .subtype == "init") | .tools[]' "$f" 2>/dev/null \
     | grep -vxE "$(printf '%s' "$TOOLS" | tr ',' '|')" | tr '\n' ' ')"
   [[ -z "$extra" ]] || { echo "tools-mismatch: init tools outside --tools: $extra"; return; }
-  got="$(jq -r 'select(.type == "system" and .subtype == "init") | [(.plugins // [] | length), (.mcp_servers // [] | length)] | @tsv' "$f" 2>/dev/null)"
-  [[ "$got" == "0	0" ]] || { echo "user-settings: plugins and MCP servers loaded ($got)"; return; }
+  # cc-plugin-*@builtin ship inside the binary (path "builtin") and load whatever the setting sources (live run 1)
+  got="$(jq -r 'select(.type == "system" and .subtype == "init")
+    | [(.plugins // [] | map(select(.path != "builtin")) | map(.name) | join(",")), (.mcp_servers // [] | length)] | @tsv' "$f" 2>/dev/null)"
+  [[ "$got" == "	0" ]] || { echo "user-settings: plugins '${got%%	*}', ${got#*	} MCP servers loaded"; return; }
   want="$(jq '[.hooks.SessionStart[]?.hooks[]?] | length' "$2/.claude/settings.json" 2>/dev/null || echo 0)"
   got="$(jq -c 'select(.type == "system" and .subtype == "hook_started" and .hook_event == "SessionStart")' "$f" 2>/dev/null | grep -c .)"
   [[ $got -le $want ]] || echo "user-settings: $got SessionStart hooks, the project defines $want"
@@ -208,6 +210,7 @@ check_binary() { # dev-lead's path-guard must block a write to spec/ under -p --
     and ((.stderr // "") | startswith("BLOCKED by .claude/hooks/path-guard.sh")))' "$base.jsonl" >/dev/null 2>&1 && ok=1
   [[ -e "$tmp/wt/spec/agent-probe.md" ]] && ok=0
   git worktree remove --force "$tmp/wt" >/dev/null 2>&1; rm -rf "$tmp"
+  [[ -z "$PROBLEM" ]] || die "claude '$VERSION': $PROBLEM (log $base.jsonl); not verified"
   [[ $ok -eq 1 ]] || die "claude '$VERSION': dev-lead's path-guard did not block the probe write (log $base.jsonl); not verified"
   echo "$VERSION" >> "$RUNS/verified-versions"
   say "claude '$VERSION' verified: dev-lead's frontmatter hook blocked the probe (log $base.jsonl)"
