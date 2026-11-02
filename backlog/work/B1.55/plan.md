@@ -24,7 +24,6 @@ hook calls `gh` 4–5 times per Edit/Write (≈ 2 s; offline = blocked); the lea
 | `.claude/agents/dev-lead.md`        | Loop 5: the D-27 path in a runner's run; a run never writes the lead's line                |
 | `.claude/skills/work-next/SKILL.md` | "The gate": D-27 exception, high tier and interactive sessions keep it                     |
 | `.claude/docs/hooks.md`             | plan-scope row: the D-27 check                                                             |
-| `scripts/CLAUDE.md`                 | plan-files exit 5; eligible.sh `[<card>]`; probe ids                                       |
 
 ## Interfaces touched
 
@@ -57,7 +56,8 @@ dev-lead (run.sh prompt "Issue #<n> is labeled agent-ready (D-27)" and RUNNER_CH
 | 2 green  | dev-lead        | scripts, hook, ci.yml, role texts | `chore(agents): B1.55 agent-ready plan gate` |
 | 3 review | reviewer (diff) | `review.md`                       | `docs(backlog): B1.55 review`                |
 
-Not in scope (follow-ups, `scripts/agent/run.sh` is B1.58's): its prompt says "At the plan gate … stop" and its header
+Not in scope (follow-ups after B1.58, which holds `scripts/agent/run.sh` and `scripts/CLAUDE.md`): the `scripts/CLAUDE.md` rows
+(plan-files exit 5, eligible.sh `[<card>]`, probe ids); its prompt says "At the plan gate … stop" and its header
 "Until B1.55 every run stops"; its allow list lacks `scripts/pr-step.sh`, so a headless run cannot push or draft.
 
 Plan review: pending · Plan approved by: · Rounds: 1
