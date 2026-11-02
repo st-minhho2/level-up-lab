@@ -1,15 +1,18 @@
 ## Item
 
-B1.44 — Runner: poll agent-ready issues and run dev-lead headless in a sandbox (tooling, no spec section)
+B1.44 — Runner: poll agent-ready issues and run dev-lead headless (tooling, no spec section)
 
-- spec: none — tooling (D-26, D-27, D-28, D-29, D-19); no `src/` change, no section
-- test: `scripts/agent/tier-smoke.sh` T1–T9 and `scripts/agent/run-smoke.sh` R1–R14 — red before (scripts absent), green after
-- acceptance: B1.44's Acceptance as amended by B1.47 (#162); devcontainer and launchd clauses move to B1.58 / B1.59 if the lead approves the split
-- risk tier: high (D-28, `scripts/ci/`); label `config-change-approved` (D-19)
+- spec: none — tooling (D-19, D-26, D-27, D-28, D-29); no `src/` change, no section
+- test: `scripts/agent/tier-smoke.sh` T1–T9 and `scripts/agent/run-smoke.sh` R1–R14, offline with shims — red before
+  (`b1b20db`: 9/9 and 14/14 FAIL), green after; each later fix landed its probe red first
+- acceptance: B1.44's Acceptance as amended by B1.47 (#162), minus the devcontainer, its firewall and the Linux-build
+  check (B1.58) and the launchd poll (B1.59), moved by the lead's decision 1 (`102cabb`, #165)
+- risk tier: high (`scripts/agent/tier.sh backlog/work/B1.44/plan.md` → `high`; `scripts/ci/`); label
+  `config-change-approved` (D-19)
 
 ## Plan
 
-**Status: waiting for the lead's `approve`** (high tier keeps the gate, D-27).
+Approved by the lead 2026-11-02 (round 1), re-approved in round 2 after diff reviews 1–2 and the live runs.
 
 ### B1.44 plan — Runner: poll agent-ready issues and run dev-lead headless (tooling)
 
@@ -30,13 +33,31 @@ dependency). Advisor skipped (tier quick). Risk tier **high** (`scripts/ci/`) �
    high (B1.55 lets an agent pass its own plan by `tier.sh`); the run loads `--setting-sources project` only.
 3. **Model** `claude-opus-5-5` pinned by default; one run's budget USD 10, 150 turns (set by env per run).
 
-Costs (r2 #3): a hand-started `run.sh` is a headless run on the host (up to 150 turns), limited by `dontAsk`, the
-allow list below and the repo's hooks, not by a sandbox; the run may not start `run.sh` itself (`--disallowedTools`)
-or add packages (only named `pnpm` scripts are allowed). The leak check sees plugins, MCP servers and extra
+**Lead round 2 (after diff reviews 1–2 and live runs 1–4):** the changes below the line "Changed after approval"
+need the lead's `approve` again (planning.md); the Files table is unchanged.
+
+Costs (r2 #3, restated by diff review pass 2): a hand-started `run.sh` is a headless run **on the host, with no
+sandbox**: `dontAsk`, the allow list and the repo's hooks narrow what it does by accident, not what it can do. A run
+can still execute any command: through `Bash(git *)` (`git rebase -x`, `git difftool --extcmd`), through a test it
+writes and runs with `pnpm test`, or through a script under `scripts/ci/` it writes. So it can add a package or start
+another run, guards and `RUNNER_CHILD` notwithstanding; such a change still shows in its diff (a dependency or
+`scripts/` change rates high and needs the label). The sandbox is B1.58; until then the lead starts runs by hand and
+reads each one's diff. The leak check sees plugins, MCP servers and extra
 SessionStart hooks; a user hook on another event stays invisible, so `--setting-sources project` is what keeps it out
 (the live run shows plugins `[]`). Commands outside the allow list are denied and counted (`permission_denials` in the
 comment). Until B1.55/B1.56 every run stops at the plan gate: in-flight runs are capped by branch, not by PR (r1 #9);
 an unpushed gate branch shows tier `unknown` in feature-map; runs share next-task's WIP 3.
+
+**Changed after approval** (diff reviews 1–2, live runs 1–4; each landed red probe first):
+
+- allow list: named scripts instead of `scripts/*`, no `cp *`; deny `git -c`, `git * -c *`, `git config`; the run's
+  env carries `RUNNER_CHILD=1` and `run.sh` refuses inside a run (review 1 #1, a speed bump, not a boundary: above)
+- init check: `Task` counts as `Agent` (2.1.309's init name, live run 4b); `--tools …,Skill` gives no `Skill`, so the
+  prompt names `.claude/agents/dev-lead.md` and `.claude/skills/work-next/SKILL.md`; plugins with path `builtin` do
+  not count as user settings (live run 1); `--check-binary` judges `Write` + Grep, Glob only (review 1 #3)
+- `--check-binary`'s prompt asks dev-lead for the Write call (live run 2); it refuses on any init problem
+- worktree.sh runs from the checkout that holds `.worktrees/` and its message is shown (live run 4a); TERM/INT stop
+  the claude run, in `<issue>` and in `--poll` (review 1 #2, review 2 #3)
 
 #### Files
 
@@ -75,12 +96,16 @@ scripts/agent/run.sh <issue> | --poll | --check-binary      exit 0 done or skipp
   run  env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_SESSION_ID (r1 #6), cwd worktree:
        $RUNNER_CLAUDE -p --agent dev-lead --model … --max-turns … --max-budget-usd <BUDGET−TURN> --setting-sources
        project --strict-mcp-config --permission-mode dontAsk --include-hook-events --output-format stream-json
-       --verbose --tools Read,Grep,Glob,Write,Edit,Bash,Agent,Skill --allowedTools <those + Bash(git *) Bash(scripts/*)
-       Bash(.claude/hooks/mark-reviewed.sh) Bash(pnpm install --frozen-lockfile) Bash(pnpm lint*) Bash(pnpm typecheck*)
-       Bash(pnpm test*) Bash(pnpm build*) Bash(pnpm exec prettier *) Bash(docker compose up -d) Bash(cp *)
-       Bash(gh pr edit *) Bash(gh pr checks *) Bash(gh pr view *)> --disallowedTools 'Bash(scripts/agent/run.sh*)' < prompt
+       --verbose --tools Read,Grep,Glob,Write,Edit,Bash,Agent,Skill --allowedTools <those + Bash(git *)
+       Bash(scripts/next-task.sh *) Bash(scripts/worktree.sh *) Bash(scripts/verify-red.sh *) Bash(scripts/card-status.sh *)
+       Bash(scripts/ci/*) Bash(scripts/agent/tier.sh *) Bash(scripts/agent/eligible.sh *) Bash(.claude/hooks/mark-reviewed.sh)
+       Bash(pnpm install --frozen-lockfile) Bash(pnpm lint*) Bash(pnpm typecheck*) Bash(pnpm test*) Bash(pnpm build*)
+       Bash(pnpm exec prettier *) Bash(docker compose up -d) Bash(gh pr edit *) Bash(gh pr checks *) Bash(gh pr view *)>
+       --disallowedTools 'Bash(scripts/agent/run.sh*)' 'Bash(git -c*)' 'Bash(git * -c *)' 'Bash(git config*)' < prompt
+       env RUNNER_CHILD=1 (run.sh exits 1 when it is set)
        log runs/<n>/<%Y%m%dT%H%M%SZ>-<pid>.jsonl + .err (line 1 `--version`) + .exit
-  kill early: init tools ⊄ --tools ∪ {Grep, Glob} → tools-mismatch · init plugins or mcp_servers not empty, or more
+  kill early: init tools (Task read as Agent) ⊄ --tools ∪ {Grep, Glob} → tools-mismatch · init plugins whose path is not
+       `builtin`, or mcp_servers, not empty, or more
        SessionStart hook_started lines than the worktree's .claude/settings.json defines (r1 #4) → user-settings
   outcome (last line): is_error false → gate ("Plan for <card> is ready") | ready ("PR for <card> is ready") | ended;
        is_error true → limit (subtype error_max_turns|error_max_budget_usd) | error (one retry, new log)
@@ -114,7 +139,7 @@ scripts/agent/run.sh <issue> | --poll | --check-binary      exit 0 done or skipp
 
 Not in scope: B1.51, B1.55–B1.57, B1.58/B1.59 (filed here), `scripts/CLAUDE.md` rows (orchestrator, r1 #10).
 
-Plan review: changes requested, round 2 (4 reasons carried into round 3, not re-reviewed: 2-round cap) · Plan approved by: · Rounds: 1
+Plan review: changes requested, round 2 (4 reasons carried into round 3, not re-reviewed: 2-round cap) · Plan approved by: lead, 2026-11-02 (decisions 1–3 as proposed, 4: no further split); round 2: lead, 2026-11-02 (restated cost and the changes after approval) · Rounds: 2
 
 ## Map delta
 
@@ -122,21 +147,54 @@ None (tooling; no feature row).
 
 ## Review
 
-pending
+`/review-loop`: 3 of 3 passes; pass 3 **ready for PR**. Full text: `backlog/work/B1.44/review.md`.
+
+| Pass | Findings                                                                                                                                           | Disposition                                                                                                                                                   |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | 3: allow list escapes (`cp` + `scripts/*`, `git -c` alias, `scripts/../`); 4 surviving mutants; `--check-binary` judged the 8-tool set             | fix now: red `896c8c1` → `0a9b54d`, hardening `7f28d96` (named scripts, deny `git -c`/`git config`, `RUNNER_CHILD`, `EXPECT`; every mutant now fails a probe) |
+| 2    | 3: cost misstated (a run can still execute any command); 4 interfaces changed after approval; TERM in `--poll` left the claude run going           | text: plan restated, lead round 2 `9e9869e`; fix now: red `c575661` → `b801c11`                                                                               |
+| 3    | 1, not blocking: effects outside the worktree (a push of a new branch, a write to `~/.level-up-lab/runs/verified-versions`) never show in the diff | stated here (below); keeping a run away from them is B1.58's sandbox, no new card (D-25)                                                                      |
+
+Live runs (2.1.309 macOS app build, the lead's own login; logs in `~/.level-up-lab/runs/` on the lead's machine):
+
+| #   | Run              | Turns | USD   | Outcome                                                                                                        |
+| --- | ---------------- | ----- | ----- | -------------------------------------------------------------------------------------------------------------- |
+| 1   | `--check-binary` | 0     | 0     | killed at init: `cc-plugin-*@builtin` counted as user settings → builtin plugins pass (`bf8e612` → `a1bc002`)  |
+| 2   | `--check-binary` | 1     | 0.073 | dev-lead declined the spec/ write before any tool call → the prompt asks for the call (`b25c8ac` → `88d8552`)  |
+| 3   | `--check-binary` | 2     | 0.080 | **verified**: path-guard blocked `spec/agent-probe.md` (exit 2), no file                                       |
+| 4a  | `run.sh 166`     | 0     | 0     | worktree.sh refused under `.worktrees/`, message hidden, trap unbound (`896c8c1` → `0a9b54d`)                  |
+| 4b  | `run.sh 166`     | 0     | 0     | killed at init: 2.1.309 names Agent `Task`, lists no Skill (`25b824e` → `f351eeb`)                             |
+| 4c  | `run.sh 166`     | 9     | 0.496 | **gate** on card B1.41: reviewer-approved plan, tier high, 0 permission denials, comment on #166, lock removed |
+
+Residual risk the lead approved (round 2): the run is on the host with no sandbox; `dontAsk`, the allow list and the
+hooks narrow accidents, not intent. A run can execute any command (`git rebase -x`, a test it writes, a script under
+`scripts/ci/`). Effects inside the worktree show in the PR diff; effects outside it do not: a push of another branch,
+or a line appended to `~/.level-up-lab/runs/verified-versions` that would mark an unproven claude version as verified.
+B1.58 (devcontainer, firewall) is the boundary; until B1.59 the lead starts each run by hand.
+
+Corrections: commits `e0da50e`, `a1bc002`, `0a9b54d` and `b801c11` say "bash 5 and 3.2"; this host has only
+`/bin/bash` 3.2, so every smoke ran under 3.2 only and bash 5 is [unverified]. "plugins `[]`" in the plan means no
+plugin other than the binary's `@builtin` ones.
+
+Follow-ups for the closing PR (D-25): the card title still says "in a sandbox" (B1.58 holds the sandbox);
+`Bash(git * -c *)` also denies a commit message containing `-c`; B1.59's wrapper stops the job with TERM and never
+starts `run.sh` with `&` from a script (SIGINT would arrive ignored); whether TERM also ends the process trees a
+run's tools start (`pnpm test`, `pnpm build`) is [unverified]; CI does not run the runner and tier smokes;
+`scripts/CLAUDE.md` rows for `tier.sh` and `run.sh` (orchestrator).
 
 ## Evidence
 
-- AC met: pending
-- tier: pending
+- AC met: 16/16 of B1.44's clauses in this card (tier, worktree, limits and retry, logs, gate comment, cap, label; the eight B1.47 findings with the Linux build moved to B1.58; devcontainer and launchd moved to B1.58/B1.59)
+- tier: high
 - plan deviations: none
 - trace: n/a
 
 ## Checklist
 
-- [ ] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
-- [ ] Red commit precedes the change commit; no `feat(` commit touches `*.test.*` or `e2e/**`.
-- [x] Every `AC-§.n` of the section is a test title; mutation on `src/lib` + `src/actions` ≥ 70 % (n/a: no section, no `src/`).
-- [ ] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected config change carries `config-change-approved`.
+- [x] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list (round 2 lists the changes after approval).
+- [x] Red commit precedes the change commit; no `feat(` commit touches `*.test.*` or `e2e/**`.
+- [x] Every `AC-§.n` of the section is a test title; mutation on `src/lib` + `src/actions` ≥ 70 % (n/a: no section; mutation 93.40 unchanged).
+- [x] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected config change carries `config-change-approved`.
 - [x] Migrations reviewed as SQL; `prisma/seed.ts` updated if a table changed (n/a).
 - [ ] `spec/features-map.md` row moved (n/a); `docs/metrics.md` per-card row filled at closing.
 
