@@ -31,7 +31,7 @@ cat > "$SMOKE_FIX/stdin-$n"
 f="$SMOKE_FIX/stream-$n.jsonl"; [[ -f "$f" ]] || f="$SMOKE_FIX/stream.jsonl"
 while IFS= read -r l; do
   case "$l" in
-    SLEEP) sleep 30 ;;
+    SLEEP) echo $$ > "$SMOKE_FIX/claude.pid"; sleep 30 & wait $! ;;
     WRITE:*) mkdir -p "$(dirname "${l#WRITE:}")"; echo probe > "${l#WRITE:}" ;;
     *) echo "$l" ;;
   esac
@@ -146,6 +146,7 @@ reset; { start; echo SLEEP; } > "$FIX/stream.jsonl"
 bg=$!; i=0; while [[ ! -d "$RUNS/7/lock" || $(calls) -eq 0 ]] && [[ $i -lt 20 ]]; do sleep 1; i=$((i + 1)); done
 kill -TERM "$bg" 2>/dev/null; wait "$bg" 2>/dev/null
 [[ ! -e "$RUNS/7/lock" ]] || { say "TERM left the lock"; r=1; }
+sleep 1; kill -0 "$(cat "$FIX/claude.pid" 2>/dev/null || echo 0)" 2>/dev/null && { say "TERM left the claude run going"; r=1; }
 reset; SMOKE_WT_FAIL=1 run 7
 [[ $RC -eq 1 && $(calls) -eq 0 && ! -e "$RUNS/7/lock" ]] && has 'not from inside a worktree' "$TMP/out" && ! has 'unbound' "$TMP/out" \
   || { say "worktree.sh failing: rc=$RC $(tr '\n' '|' < "$TMP/out")"; r=1; }
