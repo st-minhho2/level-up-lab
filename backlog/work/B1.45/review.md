@@ -409,3 +409,86 @@ Riskiest unfalsified: the tier column against the real `scripts/agent/tier.sh` (
 | 2    | n1  | dropping `--first-parent` survives                            | reviewer | coverage    | fix now                      | 6b3cec9 + dated fixture: F20 (approval only on a merged side branch); revert → 2 FAIL                                       |
 | 2    | n2  | a prefix `## Evidence` match survives                         | reviewer | coverage    | fix now                      | 6b3cec9 F4 body with `## Evidence notes`; revert → 1 FAIL                                                                   |
 | 2    | n3  | an unfilled `<green>/<total>` renders badly in markdown       | reviewer | process     | out of scope → follow-up (b) | the runner / dev-lead fills Evidence (follow-up (b)); input: a body left as the template                                    |
+
+## Diff review (pass 3)
+
+Reviewed b5bfaa6..d627413 (6b3cec9 probes F19, F20, F5 `-cards`, F7 CRLF + ESC/SOH, F4 `## Evidence notes`;
+78009c3 `[[:cntrl:]]` fold; 7fba040 dated F20 fixture; d627413 dispositions) against the approved plan, the card's
+Acceptance, D-19/D-25/D-27/D-28 and the pass-2 dispositions. Probes and mutants ran on a scratch copy (`git archive
+HEAD`, re-initialised), never on this tree. Last pass: only a regression, a broken Acceptance line or a failing probe
+blocks (D-25).
+
+### Commands (last line each)
+
+| Command                                                            | Result                                                                                                            |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint` · `pnpm typecheck`                                     | `All matched files use Prettier code style!` · `tsc --noEmit` exit 0                                              |
+| `pnpm test` · `pnpm test:e2e` · `pnpm test:mutation`               | `Tests  202 passed (202)` · `43 passed (57.7s)` · `Final mutation score of 93.40 … threshold 70`                  |
+| `scripts/agent/feature-map-smoke.sh` · `/bin/bash` 3.2.57          | `feature-map-smoke: 20 probes OK` · same                                                                          |
+| new smoke against b5bfaa6's `feature-map.sh` (copy)                | `feature-map-smoke: 1 FAIL, 19 ok` (F7 only): the fold probe was red before 78009c3                               |
+| `check-suppressions` · `check-feat-commits`                        | `OK: no new suppressions` · `OK: no feat commit touches tests`                                                    |
+| `check-config-change` (`CONFIG_CHANGE_APPROVED=true`)              | `allowed by label config-change-approved: .github/pull_request_template.md`; #154 has the label                   |
+| `check-ac-coverage` · `check-spec-sections` · `check-features-map` | `OK: every criterion …` · `OK: sections cited: 1 … 22` · `OK`                                                     |
+| `check-plan-scope` · `check-backlog`                               | `OK: … stays inside the approved plan of B1.45` · `OK: README matches the cards`                                  |
+| `BASE_SHA=origin/main scripts/verify-red.sh --auto`                | `no test(...): B<e>.<n> … (red) commit in range; nothing to verify` (no `(red)` subject, as planned since pass 1) |
+| `git merge-tree --write-tree origin/main HEAD`                     | clean. origin/main gained B1.43/B1.46 (4 commits); none touches `feature-map*` or the template                    |
+| `git diff --stat main...HEAD`                                      | 6 files, +956: template, 2 scripts, `plan.md`, `pr-body.md`, `review.md`                                          |
+
+### Pass-2 dispositions checked
+
+| #   | Disposition                  | Checked (single-line mutant on the copy → smoke)                                                                                                                              |
+| --- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | fix now                      | `state=review` only → 1 FAIL (F19); drop `\|B[0-9]+\.[0-9]+-cards` → 5 FAIL                                                                                                   |
+| 2   | fix now                      | `[[:cntrl:]]` → `\t` → 1 FAIL (F7). Every C0 byte (001–037 bar LF), DEL, C1 U+0085, `\377` and an em dash in one deviations value: `--json` output passes node's `JSON.parse` |
+| n1  | fix now                      | `git log --first-parent` → `git log` → 2 FAIL (F20 dated, so the side approval sorts first)                                                                                   |
+| n2  | fix now                      | `^## Evidence[[:space:]]*$` → `^## Evidence` → 1 FAIL (F4)                                                                                                                    |
+| n3  | out of scope → follow-up (b) | agreed; input stated                                                                                                                                                          |
+
+Regression sweep: the pass-1 mutants re-run against the new smoke all still FAIL (fork filter 3, `break` 2, `r=4` 2,
+round N 2, lowercasing 1, `$# -le 1` 1, JSON backslash 1, `(unapproved)` 1, markdown `|` escape 1). `[[:cntrl:]]`
+on macOS awk 20200816 keeps UTF-8 bytes under `C` and `en_US.UTF-8` (em dash, CJK intact); gawk/mawk not run here.
+
+### Checklist
+
+| Check                                                | Result                                                                                                                                                                                                                               |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every Acceptance clause has a matching probe         | template Evidence (F11), riskiest-first table (F1, F2, F14–F20), posting by ruling A, label on #154: yes                                                                                                                             |
+| no test weakened after the smoke commit              | `--first-parent --no-merges 6df8bb5..HEAD`: b11a96b, 6b3cec9, 7fba040, all `test(...)`, all add probes; F1/F6 row lists grow with the B9.13 row, F7's `want` grows with the folded bytes, F5's grep widens to `#11[2-68]`. No merges |
+| every changed file in `plan.md`                      | yes (plan-scope OK)                                                                                                                                                                                                                  |
+| interfaces match the plan                            | yes; 78009c3 widens the fold inside `evidence`, no new flag or output                                                                                                                                                                |
+| Zod / Prisma / raw SQL / migration                   | n/a                                                                                                                                                                                                                                  |
+| no secret, no suppression                            | yes                                                                                                                                                                                                                                  |
+| features map row                                     | n/a (tooling, no §)                                                                                                                                                                                                                  |
+| would a probe fail if one changed line were reverted | 78009c3's line: yes (F7). Survivors: trim/fold order swap (finding 1), fetch-failure branch (note)                                                                                                                                   |
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: scripts/agent/feature-map.sh:34 (trim, then fold)
+    DEFECT: the fold runs after the trim, so a value made only of control characters becomes spaces, not "?".
+    TRIGGER: a PR body whose Evidence line is `- AC met: <SOH><ESC>` (copy, `--json`).
+    WRONG BEHAVIOUR: `"ac":"  "` and a blank markdown cell instead of the plan's "empty value → ?" (r1 #6);
+             `- plan deviations: none<ESC>` gives `"none "` with a trailing space. Not a regression (b5bfaa6
+             printed the raw bytes), no Acceptance line broken, no probe fails; swapping the two gsubs survives the
+             smoke. Out of scope → follow-up (D-25, pass 3): fold before trim, probe a control-only value.
+    CONFIDENCE: confirmed (ran it on the copy)
+```
+
+Notes (not blocking):
+
+- Fetch failure: deleting `|| { warn …; echo unknown; return; }` at :50 survives (no fixture branch is missing on
+  origin). Near-equivalent: a stale `FETCH_HEAD` from another card holds no `backlog/work/<card>/plan.md`, so the
+  row still reads unknown; only the stderr warning is lost. Fold into follow-up (c) (smoke in CI) if wanted.
+- `GH_REPO` / `GH_HOST`: origin/main's `scripts/agent/eligible.sh` (B1.43) runs gh under `env -u GH_REPO -u GH_HOST`;
+  `feature-map.sh` does not. Trigger: `GH_REPO=other/repo` in the orchestrator's environment → issues and PRs from
+  that repo, tiers fetched from this checkout's origin (unknown, or a same-named branch's plan). Out of scope →
+  follow-up (a), plausible.
+- `pr-body.md` Evidence prose still says "review pass 1 added a `test` and a `fix` commit"; passes 2–3 added more,
+  and "## Review" reads `pending`. The dev-lead fills both before the PR goes ready.
+- origin's head of #154 is still be98af2; the 18 commits since are unpushed, so CI has not run them yet.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the tier column against the real `scripts/agent/tier.sh` (B1.44, not on origin/main). The map
+assumes `tier.sh <plan.md>` exits 0 with the word on line 1; only the stub has run.
