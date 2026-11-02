@@ -101,4 +101,4 @@ scripts/agent/run.sh <issue> | --poll | --check-binary      exit 0 done or skipp
 
 Not in scope: B1.51, B1.55–B1.57, B1.58/B1.59 (filed here), `scripts/CLAUDE.md` rows (orchestrator, r1 #10).
 
-Plan review: changes requested, round 2 (4 reasons carried into round 3, not re-reviewed: 2-round cap) · Plan approved by: · Rounds: 1
+Plan review: changes requested, round 2 (4 reasons carried into round 3, not re-reviewed: 2-round cap) · Plan approved by: lead, 2026-11-02 (decisions 1–3 as proposed, 4: no further split) · Rounds: 1
