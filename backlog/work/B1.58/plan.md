@@ -58,7 +58,11 @@ removes the volumes (r2 #5). Host and container keep separate locks and stop mar
   `check_binary` makes its worktree under `<checkout>/.worktrees/check-binary-*` (where `run_issue`'s worktrees live),
   so it proves the trust a real run gets; R14 asserts it. The lead's steps add one `jq` line that sets
   `hasTrustDialogAccepted` for the clone (an interactive `claude` first asks to approve the organization's managed
-  telemetry settings: the lead declined, a separate decision) (that trust covering subfolders is [unverified] until live check 2, the last live run).
+  telemetry settings: the lead declined, a separate decision)
+- **Live check 2** (USD 0.08, 2 turns): with the trust, path-guard blocked the probe (exit 2) under
+  `bypassPermissions`, yet `run.sh` read no block: Debian's jq 1.6 takes `-e`'s status from the last line. Fix: the
+  check counts matching lines (`jq -c … | grep -q .`); R14 runs it under a jq 1.6 shim. Replayed with the image's jq
+  on both live logs: check 2 matches 1 line, check 1 none. A third live run writes `verified-versions`. (that trust covering subfolders is [unverified] until live check 2, the last live run).
 
 ## Files
 
