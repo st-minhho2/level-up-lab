@@ -41,7 +41,7 @@ panel; the desktop session's login does not reach a child `claude`. The lead ran
 and 9 do not parse (`{"type{"type":...`); kept as `R1-interleaved.jsonl`, 33 of its 35 lines parse. R2 skipped
 (b1 passed). `init`: model `claude-fable-5-1` (the login's default, `dev-lead` is `model: inherit`), `permissionMode
 dontAsk`. Tools: `--tools Read,Glob` gave `["Read","Glob"]` (R3, R4), but `--tools Read,Write` gave
-`["Read","Write","Grep","Glob"]` (runs 1 and 3): `--tools` is not an exact list. Bash was never present. Run 1's
+`["Read","Write","Grep","Glob"]` (runs 1 and 3): `--tools` is not an exact list. Bash was in none of the four `init` lines that survive (run 2's was overwritten). Run 1's
 result: `subtype success`, `is_error true`, `num_turns 1`.
 
 ## Probes
@@ -88,8 +88,8 @@ line of every run is `"type":"result"`. Runs 2 and 3 show the failure mode of a 
 3. One log per run, never shared: `~/.level-up-lab/runs/<issue>/<UTC timestamp>-<pid>.jsonl` (+ `.err`, `.exit`),
    and one run per issue at a time (a lock), so two runs cannot interleave a stream again.
 4. Budget = what one run may spend minus one turn (R3: two turns of this repo's context cost USD 0.34); read the
-   outcome from the last line (`subtype`: `success`, `error_max_turns`, `error_max_budget_usd`), not only the exit code
-   (1 for both limits).
+   outcome from the last line: `is_error` first (run 1's `api_error` came as `subtype success`, `is_error true`), then
+   `subtype` (`error_max_turns`, `error_max_budget_usd`), not only the exit code (1 for both limits and the error).
 5. Pin `--model`: `model: inherit` resolved to the login's default here.
 6. User-level settings and plugins load in `-p` (a user plugin's SessionStart and UserPromptSubmit hooks ran in every
    run); run under a dedicated config or with `--setting-sources project,local` [unverified].
