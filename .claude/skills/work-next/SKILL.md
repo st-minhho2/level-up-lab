@@ -26,6 +26,10 @@ print the plan with that verdict and stop with exactly "Plan for <card> is ready
 The lead never approves an unreviewed plan; a change the lead asks for goes back through the plan review. After
 `approve`: push and open the draft PR (dev-lead Loop 5).
 Nothing under `src/`, `prisma/`, `e2e/` changes before `plan.md` carries `Plan approved by: lead, <date>`.
+One exception (D-27): in a `scripts/agent/run.sh` run for an `agent-ready` issue, a reviewed plan whose
+`scripts/agent/tier.sh` tier is low or medium, on an issue `scripts/agent/eligible.sh <n> <card>` accepts, carries
+`Plan approved by: reviewer (D-27, tier <t>, issue #<n>)` instead and the run goes on (dev-lead Loop 5). A high tier
+stops at the gate; interactive sessions always keep it.
 
 ## Exit
 

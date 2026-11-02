@@ -124,6 +124,10 @@ jobs:
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'hotfix') }}
     runs-on: ubuntu-latest
     container: node:24-bookworm
+    # issues: read for check-plan-scope.sh's D-27 check (B1.55): the open agent-ready issues and eligible.sh's calls
+    permissions:
+      contents: read
+      issues: read
     env:
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
       HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -144,7 +148,23 @@ jobs:
         run: scripts/ci/check-features-map.sh
       - name: Backlog board matches the cards
         run: scripts/ci/check-backlog.sh
-      - name: Card branches stay inside their approved plan (B1.17)
+      # gh for the D-27 check (B1.55): node:24-bookworm ships none; Debian's package, unpinned (the lead's choice)
+      - name: Install gh
+        if: ${{ github.event_name == 'pull_request' }}
+        run: apt-get update -qq && apt-get install -y -qq gh >/dev/null && gh --version | head -1
+      - name: The job token reads what eligible.sh reads (issue, its events, a collaborator's permission)
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          gh api "repos/{owner}/{repo}/issues/$PR" --jq .number
+          gh api --paginate "repos/{owner}/{repo}/issues/$PR/events" --jq length
+          gh api "repos/{owner}/{repo}/collaborators/$ACTOR/permission" --jq .permission
+      - name: Card branches stay inside their approved plan (B1.17; D-27 approvals, B1.55)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: scripts/ci/check-plan-scope.sh
       - name: Agent and skill frontmatter parses (else Claude Code skips the agent and its path-guard hook)
         run: scripts/ci/check-agent-frontmatter.sh
