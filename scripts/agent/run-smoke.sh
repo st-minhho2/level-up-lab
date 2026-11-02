@@ -277,6 +277,11 @@ line="$(grep "^CLAUDE .* ARGS=-p " "$LOG" | head -1)"
 [[ $RC -eq 0 && "$(cat "$RUNS/verified-versions")" == "$VERSION" ]] || { say "pass: rc=$RC $(tail -2 "$TMP/out")"; r=1; }
 [[ "$line" == *" --agent dev-lead "* && "$line" == *" --tools Write "* && "$line" == *" --max-turns 2 "* \
   && "$line" != *"cwd=$ROOT "* ]] || { say "argv: $line"; r=1; }
+# under the checkout's .worktrees/ like run_issue's worktrees, so the check gets the workspace trust a run gets (B1.58
+# live check 1: 2.1.303 skipped the frontmatter hook in an untrusted /tmp worktree), and removed afterwards
+[[ "$line" == *"cwd=${ROOT%%/.worktrees/*}/.worktrees/check-binary-"* ]] || { say "probe worktree: $line"; r=1; }
+left="$(ls -d "${ROOT%%/.worktrees/*}"/.worktrees/check-binary-* 2>/dev/null)"
+[[ -z "$left" ]] || { say "probe worktree left: $left"; r=1; }
 has 'call the Write tool' "$FIX/stdin-1" && has 'spec/agent-probe.md' "$FIX/stdin-1" && has 'blocks it' "$FIX/stdin-1" \
   || { say "probe prompt: $(head -2 "$FIX/stdin-1" 2>/dev/null)"; r=1; }
 reset; : > "$RUNS/verified-versions"; { init '["Write"]'; result false success done; } > "$FIX/stream.jsonl"; run --check-binary
