@@ -492,3 +492,17 @@ Verdict: ready for PR
 
 Riskiest unfalsified: the tier column against the real `scripts/agent/tier.sh` (B1.44, not on origin/main). The map
 assumes `tier.sh <plan.md>` exits 0 with the word on line 1; only the stub has run.
+
+### Dispositions (pass 3, dev-lead)
+
+| Pass | #   | Finding (file:line)                                         | Source   | Kind        | Disposition              | Justification                                                                                                  |
+| ---- | --- | ----------------------------------------------------------- | -------- | ----------- | ------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| 3    | 1   | `feature-map.sh:34` trims before folding control characters | reviewer | correctness | out of scope → follow-up | input `- AC met: <SOH><ESC>` → `"ac":"  "` not `?`; no regression, no Acceptance line broken (D-25, last pass) |
+| 3    | n1  | the fetch-failure warning is untested                       | reviewer | coverage    | no change needed         | output identical (row reads unknown); only the stderr warning differs                                          |
+| 3    | n2  | `GH_REPO` / `GH_HOST` not unset (as `eligible.sh` does)     | reviewer | hardening   | out of scope → follow-up | the runner's environment (follow-up (a)); the orchestrator runs it from a clean session                        |
+| 3    | n3  | `pr-body.md` Evidence and Review describe pass 1 only       | reviewer | process     | fix now                  | body rewritten in Loop 9 with passes 1–3                                                                       |
+
+Passes 3/3; ready for PR. Follow-ups for the closing PR (ids from B1.51): (a) runner writes `tier:` and an attended
+orchestrator session posts the map daily, unset `GH_REPO`/`GH_HOST`; (b) `dev-lead.md` Loop 9 / `pr-body.md` fill
+Evidence after CI green; (c) feature-map smoke in CI; (d) card id from B1.43's form field, not the first id in the
+title; (e) `--limit 100` truncation; (f) fold control characters before trimming.
