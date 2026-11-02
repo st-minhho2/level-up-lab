@@ -841,3 +841,14 @@ _tooling · no §_
 - **Acceptance:** `eligible.sh` reads the issue's labeled and unlabeled events with their label node ids and decides on the newest event whose id is the id of the `agent-ready` label the issue carries now; the rename sequence above exits 1 (the labeler of `y` has no write), a label deleted and re-created needs a new `labeled` event, and events across pages keep their order; the PR carries `config-change-approved` (D-19, `scripts/agent/` is protected)
 - **Tier:** quick · **Depends on:** ~~B1.43~~, B1.55 (both change `eligible.sh`) · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.63/`
+
+### B1.62 · The runner's image carries the Prisma engines and Playwright's browser for a full run inside
+
+_tooling · no §_
+**Status: Open** — B1.58's plan (`work/B1.58/plan.md`, decision 5) keeps the runner container's allow list to GitHub, the npm registry and Anthropic; `scripts/worktree.sh:101` runs `pnpm install`, whose Prisma postinstall fetches engines from `binaries.prisma.sh`, and `pnpm test:e2e` needs the Playwright browser from its CDN, neither of which the firewall allows, so a full `run.sh <issue>` inside the container stops at worktree setup (B1.58 proves only `run.sh --check-binary` inside)
+
+- **Spec:** none — tooling (D-26, D-27); no `src/` change, no section
+- **Test:** new probes in `scripts/agent/sandbox-probe.sh` — red because: inside the container `pnpm install --frozen-lockfile` in a fresh worktree fails on the engine download and `pnpm exec playwright --version` finds no browser
+- **Acceptance:** the runner image (`.devcontainer/runner/Dockerfile`) holds the Prisma engines for the lockfile's Prisma version and Playwright's chromium with its system libraries, wired through the engine and browser path variables, so `scripts/worktree.sh <branch>` and `pnpm test:e2e` succeed inside with the allow list unchanged; a Prisma or Playwright bump that the image does not match fails a probe instead of reaching the network; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** B1.58 · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.62/`
