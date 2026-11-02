@@ -57,7 +57,7 @@ dev-lead (run.sh prompt "Issue #<n> is labeled agent-ready (D-27)" and RUNNER_CH
 | 3 review | reviewer (diff) | `review.md`                       | `docs(backlog): B1.55 review`                |
 
 Not in scope (follow-ups after B1.58, which holds `scripts/agent/run.sh` and `scripts/CLAUDE.md`): the `scripts/CLAUDE.md` rows
-(plan-files exit 5, eligible.sh `[<card>]`, probe ids); its prompt says "At the plan gate … stop" and its header
+(plan-files exit 5, eligible.sh `[<card>]`, probe ids); `run.sh`'s prompt says "At the plan gate … stop" and its header
 "Until B1.55 every run stops"; its allow list lacks `scripts/pr-step.sh`, so a headless run cannot push or draft.
 
 Plan review: pending · Plan approved by: · Rounds: 1
