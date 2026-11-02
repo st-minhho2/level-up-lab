@@ -169,9 +169,15 @@ comment() { # comment <issue> <outcome> <card> <branch> <worktree> <base> <detai
     || say "#$n: gh issue comment failed"
 }
 
+on_signal() { # on_signal <exit code>: stop the claude run (or --poll's issue subshell) before this process exits
+  [[ -z "$CHILD_PID" ]] || kill -TERM "$CHILD_PID" 2>/dev/null
+  exit "$1"
+}
+
 run_issue() { # run_issue <issue>: 0 ran or skipped, 1 refused
   local n="$1" card branch wt base out attempt=1 prompt dir="$RUNS/$1"
   local why
+  trap 'on_signal 143' TERM; trap 'on_signal 130' INT # --poll runs this in a subshell, which starts with default traps
   why="$("$ELIGIBLE" "$n" 2>&1 >/dev/null)" || { say "skip #$n: ${why:-not eligible}"; return 0; }
   card="$(card_of "$n")"
   [[ "$card" =~ ^B[0-9]+\.[0-9]+$ ]] || { say "skip #$n: no card id in the issue form (got '$card')"; return 0; }
@@ -229,8 +235,8 @@ check_binary() { # dev-lead's path-guard must block a write to spec/ under -p --
 }
 
 CHILD_PID=""
-trap '[[ -z "$CHILD_PID" ]] || kill "$CHILD_PID" 2>/dev/null; exit 143' TERM
-trap '[[ -z "$CHILD_PID" ]] || kill "$CHILD_PID" 2>/dev/null; exit 130' INT
+trap 'on_signal 143' TERM
+trap 'on_signal 130' INT
 case "${1:-}" in
   --check-binary)
     [[ $# -eq 1 ]] || die "usage: scripts/agent/run.sh <issue> | --poll | --check-binary"
@@ -242,7 +248,9 @@ case "${1:-}" in
       || die "gh issue list failed"
     for n in $issues; do
       [[ -e "$RUNS/$n/stopped" ]] && continue
-      (run_issue "$n") || say "#$n refused"
+      (run_issue "$n") & CHILD_PID=$!
+      wait "$CHILD_PID" || say "#$n refused"
+      CHILD_PID=""
     done ;;
   *)
     [[ $# -eq 1 && "$1" =~ ^[1-9][0-9]*$ ]] || die "usage: scripts/agent/run.sh <issue> | --poll | --check-binary"
