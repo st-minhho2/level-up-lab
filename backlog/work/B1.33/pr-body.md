@@ -53,8 +53,8 @@ No script changes; `hook-smoke.sh` arguments, output and exit codes unchanged.
 grep -l hook-smoke .github/workflows/*      # before: no output, exit 1 · after: .github/workflows/ci.yml
 scripts/hook-smoke.sh | tail -1             # "hook-smoke: 440 probes OK" (more if B1.32 merged first); /bin/bash too
 scripts/ci/check-plan-scope.sh | tail -1; scripts/ci/check-backlog.sh | tail -1   # OK; OK
-### node:24-bookworm, PR merge ref with a committed src/ change fetched at depth 1 (test's checkout): 440 probes OK
-### PR CI: test → step "Every hook probe passes under CI's bash (hook-smoke.sh)" green, "hook-smoke: N probes OK"
+# node:24-bookworm, PR merge ref with a committed src/ change fetched at depth 1 (test's checkout): 440 probes OK
+# PR CI: test → step "Every hook probe passes under CI's bash (hook-smoke.sh)" green, "hook-smoke: N probes OK"
 ```
 
 #### Work breakdown
@@ -76,15 +76,34 @@ None (tooling: no `spec/features-map.md` row).
 
 ## Review
 
-Pending: plan review approved in round 2 (round 1: 5 reasons, all answered); diff review not yet run.
+Plan review: approved in round 2 (round 1: 5 reasons, all answered in the plan). Diff review: **pass 1/3, ready for
+PR, 0 findings** (full section in `backlog/work/B1.33/review.md` "Diff review (pass 1)").
+
+- Suites (reviewer): vitest 202 passed · playwright 43 passed · stryker 93.40 % (break 70) · every `scripts/ci/*`
+  guard OK · `check-config-change.sh` rc 0 with the label, `::error::` without.
+- PR run 41374485183: `test` 68 s, step "Every hook probe passes under CI's bash (hook-smoke.sh)" green, log ends
+  `hook-smoke: 440 probes OK`; its checkout fetched only `refs/remotes/pull/138/merge` (no `origin/*`).
+- Negative probe on a CI-shaped copy: one hook made non-executable → rc 1, 6 FAIL.
+- Out of scope → follow-up (D-25), filed in the closing PR: hook-smoke's review-gate probe tests `git diff HEAD`
+  while `require-review.sh` uses `merge-base origin/main` (FAILs under `guards`' depth-0 checkout with a committed
+  `src/` change); `cps` does not unset `HEAD_SHA`/`BASE_SHA` (18 FAIL under `guards`' env); the PR wrapper refuses
+  a `ci(` title that `lefthook.yml` accepts (so this PR is titled `chore(scripts)`).
+- Riskiest unfalsified: the review-gate probe on a real feature PR with a committed `src/` change under the `test`
+  job; simulated (440 OK), first real proof is the next feature PR.
+
+| Disposition              | Count |
+| ------------------------ | ----- |
+| fix now                  | 0     |
+| no change needed         | 0     |
+| out of scope (follow-up) | 3     |
 
 ## Checklist
 
-- [ ] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
+- [x] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
 - [x] Red commit precedes the feat commit; no `feat(` commit touches `*.test.*` or `e2e/**` (n/a: no test or feat commit).
-- [x] Every `AC-§.n` of the section is a test title; mutation on `src/lib` + `src/actions` ≥ 70 % (n/a: no `src/` change).
-- [ ] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected config change carries `config-change-approved` (`.github/workflows/ci.yml`).
+- [x] Every `AC-§.n` of the section is a test title; mutation on `src/lib` + `src/actions` ≥ 70 % (93.40, unchanged).
+- [x] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected config change carries `config-change-approved` (`.github/workflows/ci.yml`).
 - [x] Migrations reviewed as SQL; `prisma/seed.ts` updated if a table changed (n/a).
-- [ ] `spec/features-map.md` row moved (n/a); `docs/metrics.md` per-card row filled; mistake-log updated if a known mistake repeated.
+- [x] `spec/features-map.md` row moved (n/a); `docs/metrics.md`: batch measurement by the lead; mistake-log: none repeated.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)

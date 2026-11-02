@@ -130,3 +130,88 @@ by:` line stays the lead's.
 Riskiest unfalsified: that `actions/checkout` v4 at depth 1 on a real `pull_request` creates no
 `refs/remotes/origin/*`. My simulation reproduces its fetch refspec by hand. The first feature PR after merge is the
 first real proof, because this PR changes no `src/`.
+
+## Diff review (pass 1)
+
+Diff `5c8fe3d ci(scripts): B1.33 CI runs hook-smoke` against `origin/main` (merge base `a733c7b`). `origin/main` has
+moved on by `ae9dcf6` (B1.31: `CLAUDE.md`, `src/CLAUDE.md`, `backlog/work/B1.31/`), which shares no file with this diff.
+Scope: tooling. No `src/`, `prisma/` or `e2e/` change. Spec: none. The card's Acceptance is the contract.
+
+**Commands (run by the reviewer in the card worktree, last line of each):**
+
+| Command                                                  | Last line                                                                                                              |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                              | `All matched files use Prettier code style!`                                                                           |
+| `pnpm typecheck`                                         | `> tsc --noEmit` (exit 0, no diagnostics)                                                                              |
+| `pnpm test`                                              | `Tests  202 passed (202)`                                                                                              |
+| `pnpm test:e2e`                                          | `43 passed (1.1m)`                                                                                                     |
+| `pnpm test:mutation`                                     | `Final mutation score of 93.40 is greater than or equal to break threshold 70`                                         |
+| `scripts/ci/check-suppressions.sh`                       | `OK: no new suppressions`                                                                                              |
+| `scripts/ci/check-config-change.sh` (label true / false) | rc 0 `allowed by label config-change-approved: .github/workflows/ci.yml` / `::error::… without the label`              |
+| `scripts/ci/check-feat-commits.sh`                       | `OK: no feat commit touches tests`                                                                                     |
+| `scripts/ci/check-ac-coverage.sh`                        | `OK: every criterion of a shipped section has a test`                                                                  |
+| `scripts/ci/check-spec-sections.sh`                      | `OK: sections cited: 1 … 22`                                                                                           |
+| `scripts/ci/check-features-map.sh`                       | `OK`                                                                                                                   |
+| `scripts/ci/check-backlog.sh`                            | `OK: README matches the cards`                                                                                         |
+| `scripts/ci/check-plan-scope.sh`                         | `OK: chore/B1.33-hook-smoke-ci stays inside the approved plan of B1.33`                                                |
+| `scripts/verify-red.sh B1.33`                            | `::error::no 'test(<pkg>): B1.33 … (red)' commit`: expected. The plan has no test commit; the card's Test is the grep. |
+| `git diff --stat origin/main...HEAD`                     | 5 files: `ci.yml` +4, `scripts/CLAUDE.md` 1/1, and `plan.md`, `pr-body.md`, `review.md`                                |
+| `grep -l hook-smoke .github/workflows/*`                 | `.github/workflows/ci.yml` (the card's Test; `origin/main`: no match)                                                  |
+
+**Probes run on copies (scratchpad, not the tree):**
+
+- **CI-shaped checkout.** I built a fresh repo with `fetch --no-tags --depth=1 origin +5c8fe3d:refs/remotes/pull/138/merge`
+  and a detached checkout, plus a node_modules symlink, then ran /bin/bash 3.2. Result: rc 0,
+  `hook-smoke: 440 probes OK`, 0 FAIL, 83 s, and `git status` was empty afterwards.
+- **Negative probe on the same copy.** `chmod -x .claude/hooks/guard-read.sh` gave rc 1,
+  `hook-smoke: FAILURES above`, and 6 FAIL lines. The step's exit 1 reaches the runner because `run:` executes the
+  script directly (mode `100755`, `#!/usr/bin/env bash`, last line `exit 1` on any fail).
+- **PR #138 run 41374485183** (`gh run view`). Job `test` ran 01:49:51 → 01:50:59 (68 s; the plan estimated ≈ 68 s).
+  Step "Every hook probe passes under CI's bash (hook-smoke.sh)" ran 01:50:32 → 01:50:56, conclusion success, and its
+  log ends `hook-smoke: 440 probes OK`. All 7 ruleset checks are green: lint, typecheck, test, e2e, mutation,
+  semgrep, guards.
+- **Round-2 riskiest, now confirmed from the real log.** The `test` checkout ran
+  `git … fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +aae08d6…:refs/remotes/pull/138/merge`
+  followed by `checkout --force refs/remotes/pull/138/merge`. It fetched no `refs/remotes/origin/*`, which is exactly
+  the refspec the plan-review simulation reproduced by hand (440 OK with a committed `src/lib/todos.ts` change).
+- **Environment leak check.** `cps` runs `check-plan-scope.sh` under `env -u GITHUB_HEAD_REF -u GITHUB_BASE_REF`, so
+  the `pull_request` event's `GITHUB_HEAD_REF` cannot reach the C/L fixtures. `test` sets no `HEAD_SHA` or `BASE_SHA`,
+  and `CI` is never read as a variable by `hook-smoke.sh` or `check-plan-scope.sh` (it appears only in comments).
+
+**Checklist:**
+
+| Check                                                           | Result                                                                                                                                                                                                                                                                                                 |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Acceptance 1: a CI job runs `hook-smoke.sh` and fails on exit 1 | pass. `test` is a required context in `.github/rulesets/main.json`. The CI run is green, and the negative probe gives rc 1. Hotfix PRs skip the step (`env.HOTFIX != 'true'`), as plan and PR body state and the lead approved. The PR body words it "every non-hotfix PR".                            |
+| Acceptance 2: row names C1–C8 and L1–L6                         | pass. The script's ids are exactly S1–S15, C1–C8 and L1–L6 (`grep -oE '\b[SCL][0-9]{1,2} '`). The row reads `S1–S15; check-plan-scope C1–C8; `[ ]` rows L1–L6`. Its Needs column says `node_modules (js-yaml)`, which is true: probe line 221 calls `check-agent-frontmatter.sh`, which loads js-yaml. |
+| Acceptance 3: `config-change-approved`                          | pass. PR #138 labels: `["config-change-approved"]`. `check-config-change.sh` rc 0 with it and `::error::` without it.                                                                                                                                                                                  |
+| every AC has a test whose assertion matches its Then            | n/a (no §). The card's Test (the grep) matches, and the PR's own `test` run is the behavioral proof.                                                                                                                                                                                                   |
+| no test weakened after red                                      | pass. `git log --first-parent --no-merges a733c7b..HEAD -- '*.test.*' e2e/` is empty, and there are no merge commits in the range.                                                                                                                                                                     |
+| every changed file in `plan.md`                                 | pass. The five files match the plan's Files table, and the YAML step is byte-identical to the plan's Interfaces block.                                                                                                                                                                                 |
+| Zod / Prisma / raw SQL / migration                              | n/a (no `src/`, no `prisma/`).                                                                                                                                                                                                                                                                         |
+| no secret, no suppression                                       | pass (`check-suppressions.sh` OK; semgrep green on the PR).                                                                                                                                                                                                                                            |
+| features map row moved                                          | n/a (no `features-map.md` row, as the plan states).                                                                                                                                                                                                                                                    |
+| revert one changed line, does a check fail?                     | Reverting the `run:` step empties the grep (card Test red). Reverting the `if:` line makes hotfix PRs run the step, and nothing catches that. It is a lane policy, not an Acceptance line, so this is not a finding.                                                                                   |
+
+**Findings:** none blocking.
+
+**Notes (not blocking, no change requested):**
+
+- (a) `pr-body.md` lines 56–57: the plan's `# node:24-bookworm …` and `# PR CI: …` shell comments were demoted to
+  `### …` along with the headings. They sit inside the fenced block, so they render as literal `###` text. The
+  trailer says `Rounds: 1` while the plan review took 2. Both are paperwork in the PR body; fix them only if the body
+  is regenerated.
+- (b) Out of scope → follow-up (D-25, already planned): `cps` does not unset `HEAD_SHA`/`BASE_SHA`, and the
+  review-gate probe's "clean tree" precondition differs from `review_base`. The proving input is the round-2
+  simulation (the `guards` checkout with a committed `src/` change gives `FAIL require-review.sh spoke on a clean tree`).
+  This diff avoids both defects by placing the step in `test`, and the step's comment records why.
+- (c) B1.32 interplay: whichever of B1.32 and B1.33 merges second makes B1.32's new probes run in the required
+  `test` job. A probe that passes on /bin/bash 3.2 but not in CI's container then blocks every PR until it is fixed.
+  The plan states this as the purpose.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the review-gate probe staying silent on a real feature PR that commits a `src/` change. The
+refspec is now confirmed from the run log, but this PR changes no `src/`, so the first such PR after merge is the
+first real CI run of that path. A push to `main` (depth-1 fetch to `refs/remotes/origin/main` = HEAD) is traced, not
+run.
