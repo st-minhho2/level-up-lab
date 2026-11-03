@@ -162,3 +162,114 @@ Notes (not blocking):
 
 Riskiest unfalsified: a host `run.sh` run under `dontAsk` denying the compound block (still not exercised; container
 runs bypass it).
+
+## Diff review (pass 1)
+
+SCOPE: all (tooling, no §: `.claude/agents/dev-lead.md`, `scripts/hook-smoke.sh`, `scripts/CLAUDE.md`,
+`backlog/`). Diff `origin/main...e6230d0`: 8 files, 788 insertions, 47 deletions. Red `10aa7db`, green `e6230d0`,
+card clause `782f0a1`. No merge commits on the branch.
+
+Command results (run by me in this worktree; last line of each):
+
+| Command                                                            | Result                                                                                                                                                                                                         |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                                        | `All matched files use Prettier code style!` (exit 0)                                                                                                                                                          |
+| `pnpm typecheck`                                                   | `tsc --noEmit`, no output (exit 0)                                                                                                                                                                             |
+| `pnpm test`                                                        | `Tests  202 passed (202)`                                                                                                                                                                                      |
+| `pnpm test:e2e`                                                    | `43 passed (1.0m)`                                                                                                                                                                                             |
+| `pnpm test:mutation`                                               | `Final mutation score of 93.40 is greater than or equal to break threshold 70` (no `src/` change)                                                                                                              |
+| `scripts/hook-smoke.sh`                                            | `hook-smoke: 519 probes OK`, FR1–FR8 ok                                                                                                                                                                        |
+| `scripts/agent/run-smoke.sh` · `tier-smoke.sh`                     | `17 probes OK` · `9 probes OK`                                                                                                                                                                                 |
+| `check-suppressions` · `check-feat-commits`                        | `OK: no new suppressions` · `OK: no feat commit touches tests`                                                                                                                                                 |
+| `check-config-change.sh`                                           | `::error::Protected configuration changed without the 'config-change-approved' label: .claude/agents/dev-lead.md`. Expected before the PR exists; the plan and the card commit to the label (D-19)             |
+| `check-ac-coverage` · `check-spec-sections` · `check-features-map` | `OK: every criterion of a shipped section has a test` · `OK: sections cited: 1 … 22` · `OK`                                                                                                                    |
+| `check-plan-scope` · `check-backlog` · `check-agent-frontmatter`   | `OK: … stays inside the approved plan of B1.74` · `OK: README matches the cards` · `OK: 13 files`                                                                                                              |
+| `scripts/verify-red.sh B1.74`                                      | `::error::no 'test(<pkg>): B1.74 … (red)' commit`. Expected: the plan names the red commit without `(red)` (B1.62 #185: a probe-only `(red)` fails `guards`); CI's `--auto` finds no `(red)` commit and passes |
+| red proven by hand                                                 | `10aa7db` exported to a scratch repo: `hook-smoke.sh` → 511 `ok`, `FAIL` FR1–FR8 only (FR2–FR8 rc 99), `hook-smoke: FAILURES above`                                                                            |
+| `git diff --stat main...HEAD`                                      | `8 files changed, 788 insertions(+), 47 deletions(-)`                                                                                                                                                          |
+
+Probes (scratch copies under `$TMPDIR/probe74`, the real block extracted from `dev-lead.md` as hook-smoke does, the
+repo's `.prettierrc`/`.prettierignore`, Prettier through a `pnpm` shim, bash 3.2 + BSD `sed`/`tr`):
+
+- Hand mutants of the block against an FR1–FR8 harness cut from `hook-smoke.sh`: killed: no squeeze (FR2, FR4),
+  no `g` (FR8), no final `git add` (FR2, FR4, FR7, FR8), no worktree restore (FR3), restores swapped (FR3), no
+  `false` (FR3, FR6), `cat "$f"` for `git show ":$f"` (FR3), no first `git add` (FR2–FR5, FR7, FR8), strip any digit
+  run (FR7). **Survived:** `[:alnum:]` → `[:alpha:]` (finding 2), `[.)]` → `[.]` (finding 3), `([[:space:]]|$)` →
+  `[[:space:]]`, `LC_ALL=C` dropped (notes).
+- Edge inputs on the real block: no final newline ending in `.` → exit 0; `1) 2) 4)` → exit 0, staged; CRLF, leading
+  blank lines, `&amp;`, `snake_case`/`__bold__`, tab code block, YAML front matter → exit 0, staged. **No final
+  newline ending in a letter or digit → exit 1** (finding 1).
+- `guard-bash.sh` on the block as written and `cd <wt> && …`-prefixed: exit 0. `run.sh` ALLOW line 40 holds
+  `Bash(pnpm exec prettier *)` (card clause holds).
+- Your concern 2: `.prettierrc` has no `overrides`, so `--stdin-filepath x.md` from the root and the copied config in
+  the scratch repo resolve the same options; FR2's comparison is sound.
+
+Checklist:
+
+| Check                                                | Result                                                                                                                                                        |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every Acceptance clause has a probe matching it      | partial. "Prettier on that file only" FR1; "format only, else stop" FR2–FR8; but "letters **and digits**" and "`N.` **or `N)`**" are unpinned (findings 2, 3) |
+| no test weakened after red                           | pass. `git log --first-parent --no-merges 10aa7db..HEAD -- scripts/hook-smoke.sh '*.test.*' e2e/` empty; no merges, so the `--remerge-diff` check is empty    |
+| every changed file in `plan.md`                      | pass. The five Files rows; `scripts/CLAUDE.md` is fully re-padded by Prettier (`git diff -w` shows the one row and the separator)                             |
+| interfaces match the plan                            | pass. The block in `dev-lead.md` is byte-identical to the plan's Interfaces block (multi-line form); stop line as planned                                     |
+| Zod, Prisma, raw SQL, migration                      | n/a (no `src/`, no `prisma/`)                                                                                                                                 |
+| no secret, no suppression                            | pass (`check-suppressions` OK; no env or key paths touched)                                                                                                   |
+| features map row moved                               | n/a (tooling, no §; `check-features-map` OK)                                                                                                                  |
+| would a probe fail if one changed line were reverted | pass for every line of the block and each pointer (FR1); fails for two tokens inside `w()` (findings 2, 3)                                                    |
+
+Findings:
+
+```
+[1] KIND: correctness
+    WHERE: .claude/agents/dev-lead.md:112
+    DEFECT: w() keeps the final word glued to end-of-input, so a file with no final newline whose last character is a
+            letter or digit never equals Prettier's output, which adds the newline.
+    TRIGGER: review.md = '# R\n\nVerdict: approved' (no trailing \n; a plan review that approves ends on that line);
+             the real block, real Prettier, bash 3.2.
+    WRONG BEHAVIOUR: exit 1, "review.md not committed: …", file restored, nothing staged; the card's Acceptance says a
+                     formatting-only change is committed (adding a final newline is formatting only), and decision 1's
+                     stated costs do not include it. In a run this ends at the review commit with no D-27 line, the
+                     run-3 outcome the card removes. Ending in '.' instead: exit 0.
+    CONFIDENCE: confirmed (ran it)
+```
+
+```
+[2] KIND: coverage
+    WHERE: scripts/hook-smoke.sh:604-643 (FR1–FR8)
+    DEFECT: no probe pins digits in the comparison; the mutant `[:alnum:]` → `[:alpha:]` passes FR1–FR8.
+    TRIGGER: dev-lead.md line 112 with `[:alpha:]`, and a formatter that also turns "519 probes" into "518 probes".
+    WRONG BEHAVIOUR: mutant block exits 0 and stages the changed count (real block: exit 1, restored); the card's
+                     amended Acceptance says "letters and digits in order", so a regression on digits goes unseen.
+    CONFIDENCE: confirmed (ran it)
+```
+
+```
+[3] KIND: coverage
+    WHERE: scripts/hook-smoke.sh:635-643 (FR7, FR8)
+    DEFECT: no probe pins the `)` list marker; the mutant `[.)]` → `[.]` passes FR1–FR8 (FR8's `2)`/`0)` are kept on
+            both sides by that mutant, so its words still match).
+    TRIGGER: dev-lead.md line 112 with `[.]`, review.md '# R\n\n1) a\n2) b\n4) c\n' (Prettier writes `3) c`).
+    WRONG BEHAVIOUR: mutant block exits 1 (false stop) on a renumbered `N)` list, which the Acceptance ("every `N.` or
+                     `N)`") and decision 1 accept; real block: exit 0, staged.
+    CONFIDENCE: confirmed (ran it)
+```
+
+Notes (not blocking):
+
+1. Your concern 1: `$FRR` and its eight scratch repos are never removed, while the section before it ends with
+   `rm -rf "$LS" "$GS"`. Add `rm -rf "$FRR"` at the section end when the probes are touched for findings 1–3.
+2. Your concern 3: two strings (the block's stderr and dev-lead's report line) are fine; the stderr is diagnostic and
+   the report line is what "Waiting on human" carries. They share the "not committed: Prettier failed or changed more
+   than formatting" tail, so a grep finds both.
+3. Surviving low-value mutants: dropping `|$` and dropping `LC_ALL=C` change behaviour only on a line-end `N.` that
+   Prettier moves mid-line, or on non-ASCII text (already a stated blind spot). No probe needed unless you want one.
+
+Verdict: back to test-writer
+
+Order: a `test(scripts): B1.74 …` commit with FR9 (no final newline, last character a letter → exit 0, formatted,
+staged; red today) and hardening probes for findings 2 and 3 (a digit-changing formatter → refused; `1) 2) 4)` →
+accepted), then a `chore(agents)` fix to `w()` for finding 1 (for example, end both sides with a fixed separator),
+then pass 2. `hook-smoke` count and `scripts/CLAUDE.md` (FR1–FR8) change with them.
+
+Riskiest unfalsified: a host `run.sh` run under `dontAsk` denying the compound block (not exercised; container runs
+use bypassPermissions).
