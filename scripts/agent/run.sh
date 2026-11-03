@@ -10,7 +10,7 @@
 #   scripts/agent/run.sh --check-binary   prove dev-lead's frontmatter hooks fire under this claude; record its version
 #   scripts/agent/run.sh --mode           print the permission mode a run here would get (bypassPermissions | dontAsk)
 #   exit 0 ran to an end, or skipped with the reason · 1 refused (stderr "[run] <why>")
-# Each run: auth status → a verified version → eligible.sh → under 3 agent branches in flight → a per-issue lock →
+# Each run: a git identity (B1.69) → auth status → a verified version → eligible.sh → under 3 agent branches in flight → a per-issue lock →
 # next-task.sh --claim → worktree.sh <chore|feat>/<card>-agent → claude -p with the outcome read from the stream's last
 # line (is_error, then subtype; one retry on an error) → a comment on the issue → runs/<issue>/stopped.
 # Logs: $RUNNER_RUNS/<issue>/<UTC timestamp>-<pid>.jsonl, .err (line 1: --version), .exit. bash 3.2-safe; gh, git, jq.
@@ -77,7 +77,21 @@ CLAUDE="${RUNNER_CLAUDE:-$(default_claude)}"
 [[ -n "$CLAUDE" && -x "$CLAUDE" ]] || die "no claude binary: set RUNNER_CLAUDE"
 VERSION="$(child --version 2>/dev/null | head -1)"
 
-preflight() { # the lead's own login and a version whose hooks were proven (B1.42 spike: neither is given)
+identity_problem() { # why git could not commit as a named identity, empty when user.name and user.email are both set
+  local n e
+  n="$(git config --get user.name 2>/dev/null)"; e="$(git config --get user.email 2>/dev/null)"
+  [[ -n "${n//[[:space:]]/}" && -n "${e//[[:space:]]/}" ]] \
+    || echo "no git identity: user.name or user.email is empty; set them once with the runner setup step 'git config --global user.name …' and 'user.email …' (header of .devcontainer/runner/docker-compose.yml, B1.69)"
+}
+
+preflight() { # a git identity, the lead's own login and a version whose hooks were proven (B1.42 spike: neither is given)
+  # a run's first commit needs the identity, and the run may not set one (DENY), so check before any turn (B1.65 live
+  # run 1); --check-binary commits nothing
+  if [[ "${1:-}" != binary ]]; then
+    local why
+    why="$(identity_problem)"
+    [[ -z "$why" ]] || die "$why"
+  fi
   child auth status --json 2>/dev/null | jq -e '.loggedIn == true' >/dev/null \
     || die "claude is not logged in: run '$CLAUDE auth login' in a terminal (the desktop app's login never reaches a child claude)"
   [[ "${1:-}" == binary ]] && return 0

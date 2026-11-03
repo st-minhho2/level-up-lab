@@ -12,11 +12,15 @@
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec runner sh -c 'umask 077; f=~/.claude/.claude.json; jq ".projects[\"/home/node/level-up-lab\"].hasTrustDialogAccepted = true" "$f" > "$f.tmp" && mv "$f.tmp" "$f"'
 # (that line trusts the clone, as claude's own "workspace has not been trusted" message suggests; an interactive
 # `claude` asks for the organization's managed settings first, a separate decision the runner does not need)
-#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh   → "10 probes OK"
+#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner git config --global user.name "level-up-lab runner"
+#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner git config --global user.email "runner@level-up-lab.invalid"
+# (the identity the runner's commits carry: a named bot, not the lead's own; GIT_CONFIG_GLOBAL below keeps it in the
+# runner-runs volume, so it survives a rebuild and is lost only by `down -v`; run.sh refuses a run without it, B1.69)
+#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh   → "11 probes OK"
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec -e RUNNER_BUDGET_USD=1 runner scripts/agent/run.sh --check-binary
 #   docker compose -f .devcontainer/runner/docker-compose.yml stop
 #   docker compose -f .devcontainer/runner/docker-compose.yml up -d --wait
-#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh   → "10 probes OK"
+#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh   → "11 probes OK"
 # Logins live only in the runner-claude and runner-gh volumes (git's global config in runner-runs); after a suspect run
 # remove them (`docker compose -f .devcontainer/runner/docker-compose.yml down -v`) and log in again.
 name: level-up-lab-runner
