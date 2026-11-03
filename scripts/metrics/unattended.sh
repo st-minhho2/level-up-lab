@@ -5,8 +5,8 @@
 #   window   the latest `agent-ready` label at or before ready → ready (the PR's first ready_for_review, else its
 #            creation when it is not a draft; a later ready is the run's own BEHIND round trip)
 #   message  an issue or PR comment or review by a user account (bots out) inside the window, except run.sh's own
-#            comments (posted with the lead's login) and, after each runner `**gate**` comment with `- tier: high`,
-#            one comment starting with the word `approve` (the expected gate)
+#            comments (posted with the lead's login) and one comment starting with the word `approve` after a runner
+#            `**gate**` comment with `- tier: high` and before the next runner comment (the expected gate)
 #   verdict  yes (0 messages) · no (≥ 1, or closed with no ready PR) · pending (open, no ready PR: out of the share)
 #   scripts/metrics/unattended.sh [<issue>…]   default: every issue labeled agent-ready now (a batch: give its ids,
 #                                              an issue unlabeled after a stopped run is not listed)
