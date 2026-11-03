@@ -42,3 +42,15 @@ commit-msg:
         echo "$subject" | grep -Eq '^(Merge|Revert) ' && exit 0
         echo "$subject" | grep -Eq '^(feat|fix|chore|docs|test|refactor|ci|build|perf|style|revert)(\([A-Za-z0-9_./-]+\))?!?: .{1,72}$' \
           || { echo "commit subject must be Conventional Commits: <type>(<scope>): <summary>  (got: $subject)" >&2; exit 1; }
+
+# B1.57 (D-29): a commit made inside a runner's run (scripts/agent/run.sh exports RUNNER_CHILD to every tool call) carries
+# `Agent-Run: <RUNNER_CHILD>`, so scripts/metrics/no-rework.sh tells it from a human's. prepare-commit-msg, not
+# commit-msg: only it also runs for `git revert --no-edit` and `git cherry-pick`. A clean merge's message has no final
+# newline, without which the trailer would join the subject.
+prepare-commit-msg:
+  jobs:
+    - name: agent-run
+      run: |
+        [ -n "${RUNNER_CHILD:-}" ] || exit 0
+        [ -z "$(tail -c 1 {1})" ] || echo >> {1}
+        git interpret-trailers --in-place --if-exists replace --trailer "Agent-Run: $RUNNER_CHILD" {1}
