@@ -6,12 +6,19 @@ clone at `chore/B1.65-run-prompt` 9434993 (the new prompt), issue #184 (Card id 
 `--claim B1.66` printed `may start (WIP 1/3: Doing B1.57)` before run 1. Logs: `runs/184/` in the container's
 runner-runs volume.
 
-| Run | Log                            | Turns | USD   | Denials | Outcome | Where it stopped                                                                                  |
-| --- | ------------------------------ | ----- | ----- | ------- | ------- | ------------------------------------------------------------------------------------------------- |
-| 1   | `20261103T025049Z-17898.jsonl` | 9     | 0.351 | 1       | ended   | Loop 3: `git commit` of `plan.md` → `Author identity unknown` (the container has no git identity) |
-| 2   | `20261103T025259Z-20531.jsonl` | 7     | 0.120 | 0       | ended   | Loop 3: pre-commit `tsc` fails (TS7006 in `e2e/21-clear-search.spec.ts:44`), Prisma client absent |
+| Run | Log                            | Turns | USD   | Denials | Outcome | Where it stopped                                                                                        |
+| --- | ------------------------------ | ----- | ----- | ------- | ------- | ------------------------------------------------------------------------------------------------------- |
+| 1   | `20261103T025049Z-17898.jsonl` | 9     | 0.351 | 1       | ended   | Loop 3: `git commit` of `plan.md` → `Author identity unknown` (the container has no git identity)       |
+| 2   | `20261103T025259Z-20531.jsonl` | 7     | 0.120 | 0       | ended   | Loop 3: pre-commit `tsc` fails (TS7006 in `e2e/21-clear-search.spec.ts:44`), Prisma client absent       |
+| 3   | `20261103T055846Z-34182.jsonl` | 16    | 0.668 | 0       | ended   | Loop 4: the reviewer's `review.md` fails pre-commit Prettier; dev-lead may not edit it, so no D-27 line |
 
 Total: 2 `claude` calls (the plan's cap), 16 turns, USD 0.471.
+
+Run 3 (2026-11-03, after B1.62 #186 and B1.69 #192 merged, image rebuilt, the container's identity set by B1.69's
+header step, `sandbox-probe.sh` "11 probes OK"): the lead chose a fresh start, so the clone moved to `main` 5b30ca2 and
+the old worktree `chore/B1.66-agent` (a7fce59, run 1's staged plan, never pushed) and its branch were removed;
+`run.sh 184` with `RUNNER_MAX_TURNS=15 RUNNER_BUDGET_USD=1` (USD 0.75 for `claude`). First of the two runs the lead
+allows after B1.69.
 
 ## What the runs show
 
@@ -37,6 +44,17 @@ holds it yet (review pass 3).
 - A4 (a run passes the gate with the D-27 field): **not met** within the 2 runs; blocked at the plan commit by the
   container's environment (git identity, then the Prisma engines), before the gate.
 - A5 (draft PR): not reached.
+- Run 3 got past both earlier stops: `worktree.sh` made a fresh worktree with the Prisma client; the plan commit
+  `291724d docs(backlog): B1.66 plan` landed, authored `level-up-lab runner <runner@level-up-lab.invalid>` with the
+  trailer `Agent-Run: 1` (B1.69 and B1.57 in a real run); `tier.sh` → `low`, `next-task.sh --check B1.66` no overlap,
+  `eligible.sh 184 B1.66` exit 0; the reviewer's plan review round 1 `Verdict: approved`, 0 findings. It stopped at
+  the review commit: `review.md` failed lefthook's Prettier check and dev-lead, which never writes a card's
+  `review.md`, took its D-27 line back out of `plan.md` and stopped (USD 0.11 of 0.75 left). A4 still **not met**, now
+  on a process gap, not the environment: B1.74 (the lead chose: dev-lead formats `review.md` with Prettier, format
+  only). The run's plan names its follow-up card "B1.73", an id filed meanwhile (#194); B1.66's reviewer should
+  renumber it to the next free id.
+- State left for run 4: worktree `chore/B1.66-agent` at 291724d (plan committed, not pushed) with
+  `backlog/work/B1.66/review.md` untracked; `runs/184/stopped` = `ended`.
 - State left for a later run: worktree `chore/B1.66-agent` at a7fce59 with `backlog/work/B1.66/plan.md` staged, not
   pushed; `runs/184/stopped` = `ended`.
 - Smaller finding for the reviewer of B1.66: the run's plan names its follow-up card "B1.68", which is right: B1.67 is already a card

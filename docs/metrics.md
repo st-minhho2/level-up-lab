@@ -86,45 +86,46 @@ as in batch 3. CFR is the 14-day mechanical bound; re-measure on 2026-11-16 for 
 
 ## Per card
 
-| Card  | §           | Criteria        | Covered   | Mutation %                        | QA round trips | Red                                                  | Green   |
-| ----- | ----------- | --------------- | --------- | --------------------------------- | -------------- | ---------------------------------------------------- | ------- |
-| B1.1  | §5          | 7               | 7 (100 %) | 78.87 (actions 71.4, lib 80.7)    | 0              | 61cb3f4, 7af9887                                     | c7153b2 |
-| B1.2  | §6          | 7               | 7 (100 %) | 81.40 (actions 85.7, lib 80.0)    | 0              | fa7a3dd, 8ac5f37                                     | fc812e3 |
-| B1.3  | §9          | 3               | 3 (100 %) | 82.22 (actions 86.4, lib 80.9)    | 0              | 74c5a3d                                              | 1ec6cb0 |
-| B1.4  | §10         | 3               | 3 (100 %) | 82.80 (actions 88.0, lib 80.3)    | 0              | 025938b                                              | b605e3f |
-| B1.5  | §10         | 2               | 2 (100 %) | 82.98 (actions 88.5, lib 80.9)    | 0              | 311c8ef                                              | e7b3390 |
-| B1.6  | §11         | 6               | 6 (100 %) | 85.09 (actions 88.5, lib 84.1)    | 0              | 67294c1                                              | f191c34 |
-| B1.7  | §5 §7 §10   | 0 (hardening)   | n/a       | 88.60 (actions 100, lib 85.2)     | 0              | 0af8a79 (no red, D-13)                               | 07f753a |
-| B1.8  | §11         | 6               | 6 (100 %) | 88.89 (actions 100, lib 85.7)     | 0              | 18c1a2c (pin 098e5e2)                                | 287c5a4 |
-| B1.9  | §11         | 6               | 6 (100 %) | 89.47 (actions 100, lib 86.9)     | 0              | 8039100 (pin 45dd8c2)                                | 5387591 |
-| B1.10 | §10         | 1 (AC-10.5 e2e) | 1 (100 %) | 89.47 (unchanged, no src/ change) | 0              | ef5725a (red at 9327a03, D-16)                       | c850ddb |
-| B1.11 | §11         | 6               | 6 (100 %) | 89.02 (actions 100, lib 87.0)     | 0              | 58fe164 (pin dc3ba53)                                | 0b2a6d5 |
-| B1.12 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | probe 24665de: 4 FAIL / 1 PASS                       | 6ae7be3 |
-| B1.13 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | smoke 175dfb0 at 8572cc2: 3 of 10 ok                 | 957780e |
-| B1.14 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | smoke cdb93f1 at 557797e: 13 of 15 ok                | 5400d6a |
-| B1.15 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | smoke 5bf91da at 6663614: 2 of 6 ok                  | 225c4f6 |
-| B1.16 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | smoke 25f66fe: 0 of 10 ok                            | f53fbf4 |
-| B1.17 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | hook-smoke b7fc272: 221 ok, 59 FAIL                  | 25fee24 |
-| B1.18 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | smoke 1e16ba4: 1 ok, 15 FAIL                         | ce47a10 |
-| B1.19 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | smoke 36c0641: 1 ok, 5 FAIL                          | 29ee42c |
-| B1.21 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | smoke f05525b: 2 ok, 2 FAIL                          | b256d60 |
-| B1.22 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | smoke 9a33e93: 11 ok, 7 FAIL                         | 11f50ff |
-| B2.1  | §12         | 7               | 7 (100 %) | 89.94 (todo-filter.ts 100)        | 0              | e0b4e64                                              | 830901d |
-| B2.2  | §13         | 7               | 7 (100 %) | 90.37 (todo-count.ts 100)         | 0              | 09e53b9, f41aa2a                                     | 0af252c |
-| B2.3  | §14         | 6               | 6 (100 %) | 90.67 (complete-all 100)          | 0              | a18a9a9, 05f5fe6                                     | b3339e0 |
-| B2.4  | §15         | 7               | 7 (100 %) | 91.13 (due-date 95.00)            | 0              | 2822ab9                                              | 315b97e |
-| B2.5  | §16         | 7               | 7 (100 %) | 91.82 (todo-search 100)           | 0              | b70450c, 8bfc8e4                                     | 827e4fe |
-| B3.1  | §17         | 7               | 7 (100 %) | 92.14 (todo-overdue 100)          | 0              | fae3314                                              | af3c20f |
-| B3.2  | §18         | 7               | 7 (100 %) | 91.88 (title-count.ts 100)        | 0              | d480a51                                              | 4a496c9 |
-| B3.3  | §19         | 7               | 7 (100 %) | 92.63 (todo-delete 100)           | 0              | 8293598                                              | 02da94e |
-| B4.1  | §20         | 6               | 6 (100 %) | 93.07 (todo-created 100)          | 0              | a5475db                                              | e898d17 |
-| B4.2  | §21         | 7               | 7 (100 %) | 93.20 (clear-search 100)          | 0              | b5fc079                                              | ddae9e8 |
-| B4.3  | §22         | 7               | 7 (100 %) | 93.05 (todo-count.ts 100)         | 0              | acf989d                                              | bac26da |
-| B1.55 | — (tooling) | 0               | n/a       | 93.40 (unchanged, no src/ change) | 0              | bc11ca9: 22 FAIL; d4b1b00: 1 FAIL                    | 57b351e |
-| B1.63 | — (tooling) | 0               | n/a       | 93.40 (unchanged, no src/ change) | 0              | 27f01a0: 7 FAIL + hook-smoke 4 FAIL                  | 90281f7 |
-| B1.64 | — (tooling) | 0               | n/a       | 93.40 (unchanged, no src/ change) | 0              | 27f01a0 (E11, with B1.63)                            | 90281f7 |
-| B1.65 | — (tooling) | 0               | n/a       | 93.40 (unchanged, no src/ change) | 0              | f35f449: 1 FAIL (R16)                                | 5507b90 |
-| B1.57 | — (tooling) | 0               | n/a       | 93.40 (unchanged, no src/ change) | 0              | 920221e: 8 + 1 FAIL (f1b29d0 probe fixes, still red) | a6174ff |
-| B1.69 | — (tooling) | 0               | n/a       | 93.40 (unchanged, no src/ change) | 0              | 738a592: R17 FAIL, host S11 FAIL                     | 6684099 |
+| Card  | §           | Criteria        | Covered   | Mutation %                        | QA round trips | Red                                                  | Green            |
+| ----- | ----------- | --------------- | --------- | --------------------------------- | -------------- | ---------------------------------------------------- | ---------------- |
+| B1.1  | §5          | 7               | 7 (100 %) | 78.87 (actions 71.4, lib 80.7)    | 0              | 61cb3f4, 7af9887                                     | c7153b2          |
+| B1.2  | §6          | 7               | 7 (100 %) | 81.40 (actions 85.7, lib 80.0)    | 0              | fa7a3dd, 8ac5f37                                     | fc812e3          |
+| B1.3  | §9          | 3               | 3 (100 %) | 82.22 (actions 86.4, lib 80.9)    | 0              | 74c5a3d                                              | 1ec6cb0          |
+| B1.4  | §10         | 3               | 3 (100 %) | 82.80 (actions 88.0, lib 80.3)    | 0              | 025938b                                              | b605e3f          |
+| B1.5  | §10         | 2               | 2 (100 %) | 82.98 (actions 88.5, lib 80.9)    | 0              | 311c8ef                                              | e7b3390          |
+| B1.6  | §11         | 6               | 6 (100 %) | 85.09 (actions 88.5, lib 84.1)    | 0              | 67294c1                                              | f191c34          |
+| B1.7  | §5 §7 §10   | 0 (hardening)   | n/a       | 88.60 (actions 100, lib 85.2)     | 0              | 0af8a79 (no red, D-13)                               | 07f753a          |
+| B1.8  | §11         | 6               | 6 (100 %) | 88.89 (actions 100, lib 85.7)     | 0              | 18c1a2c (pin 098e5e2)                                | 287c5a4          |
+| B1.9  | §11         | 6               | 6 (100 %) | 89.47 (actions 100, lib 86.9)     | 0              | 8039100 (pin 45dd8c2)                                | 5387591          |
+| B1.10 | §10         | 1 (AC-10.5 e2e) | 1 (100 %) | 89.47 (unchanged, no src/ change) | 0              | ef5725a (red at 9327a03, D-16)                       | c850ddb          |
+| B1.11 | §11         | 6               | 6 (100 %) | 89.02 (actions 100, lib 87.0)     | 0              | 58fe164 (pin dc3ba53)                                | 0b2a6d5          |
+| B1.12 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | probe 24665de: 4 FAIL / 1 PASS                       | 6ae7be3          |
+| B1.13 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | smoke 175dfb0 at 8572cc2: 3 of 10 ok                 | 957780e          |
+| B1.14 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | smoke cdb93f1 at 557797e: 13 of 15 ok                | 5400d6a          |
+| B1.15 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | smoke 5bf91da at 6663614: 2 of 6 ok                  | 225c4f6          |
+| B1.16 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | smoke 25f66fe: 0 of 10 ok                            | f53fbf4          |
+| B1.17 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | hook-smoke b7fc272: 221 ok, 59 FAIL                  | 25fee24          |
+| B1.18 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | smoke 1e16ba4: 1 ok, 15 FAIL                         | ce47a10          |
+| B1.19 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | smoke 36c0641: 1 ok, 5 FAIL                          | 29ee42c          |
+| B1.21 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | smoke f05525b: 2 ok, 2 FAIL                          | b256d60          |
+| B1.22 | — (tooling) | 0               | n/a       | 89.02 (unchanged, no src/ change) | 0              | smoke 9a33e93: 11 ok, 7 FAIL                         | 11f50ff          |
+| B2.1  | §12         | 7               | 7 (100 %) | 89.94 (todo-filter.ts 100)        | 0              | e0b4e64                                              | 830901d          |
+| B2.2  | §13         | 7               | 7 (100 %) | 90.37 (todo-count.ts 100)         | 0              | 09e53b9, f41aa2a                                     | 0af252c          |
+| B2.3  | §14         | 6               | 6 (100 %) | 90.67 (complete-all 100)          | 0              | a18a9a9, 05f5fe6                                     | b3339e0          |
+| B2.4  | §15         | 7               | 7 (100 %) | 91.13 (due-date 95.00)            | 0              | 2822ab9                                              | 315b97e          |
+| B2.5  | §16         | 7               | 7 (100 %) | 91.82 (todo-search 100)           | 0              | b70450c, 8bfc8e4                                     | 827e4fe          |
+| B3.1  | §17         | 7               | 7 (100 %) | 92.14 (todo-overdue 100)          | 0              | fae3314                                              | af3c20f          |
+| B3.2  | §18         | 7               | 7 (100 %) | 91.88 (title-count.ts 100)        | 0              | d480a51                                              | 4a496c9          |
+| B3.3  | §19         | 7               | 7 (100 %) | 92.63 (todo-delete 100)           | 0              | 8293598                                              | 02da94e          |
+| B4.1  | §20         | 6               | 6 (100 %) | 93.07 (todo-created 100)          | 0              | a5475db                                              | e898d17          |
+| B4.2  | §21         | 7               | 7 (100 %) | 93.20 (clear-search 100)          | 0              | b5fc079                                              | ddae9e8          |
+| B4.3  | §22         | 7               | 7 (100 %) | 93.05 (todo-count.ts 100)         | 0              | acf989d                                              | bac26da          |
+| B1.55 | — (tooling) | 0               | n/a       | 93.40 (unchanged, no src/ change) | 0              | bc11ca9: 22 FAIL; d4b1b00: 1 FAIL                    | 57b351e          |
+| B1.63 | — (tooling) | 0               | n/a       | 93.40 (unchanged, no src/ change) | 0              | 27f01a0: 7 FAIL + hook-smoke 4 FAIL                  | 90281f7          |
+| B1.64 | — (tooling) | 0               | n/a       | 93.40 (unchanged, no src/ change) | 0              | 27f01a0 (E11, with B1.63)                            | 90281f7          |
+| B1.65 | — (tooling) | 0               | n/a       | 93.40 (unchanged, no src/ change) | 0              | f35f449: 1 FAIL (R16)                                | 5507b90          |
+| B1.57 | — (tooling) | 0               | n/a       | 93.40 (unchanged, no src/ change) | 0              | 920221e: 8 + 1 FAIL (f1b29d0 probe fixes, still red) | a6174ff          |
+| B1.69 | — (tooling) | 0               | n/a       | 93.40 (unchanged, no src/ change) | 0              | 738a592: R17 FAIL, host S11 FAIL                     | 6684099          |
+| B1.74 | — (tooling) | 0               | n/a       | 93.40 (unchanged, no src/ change) | 0              | 10aa7db: FR1–FR8 FAIL; 324fcc7: FR9 FAIL             | e6230d0, 0b6a49d |
 
 A value below target for two consecutive measurements opens a row in `docs/mistake-log.md` and a fix in `.claude/`.

@@ -940,3 +940,25 @@ _tooling · no §_
 - **Acceptance:** the row reads S1–S10 and names engines, browser and Postgres; nothing else changes
 - **Tier:** quick · **Depends on:** ~~B1.62~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.72/`
+
+### B1.73 · The runner's setup steps check out a branch that exists
+
+_tooling · no §_
+**Status: Open** — `.devcontainer/runner/docker-compose.yml:10` tells the lead to run `git checkout chore/B1.62-runner-image-probes` in a fresh clone; that branch was merged (#186) and is gone from origin (`git ls-remote --heads origin 'chore/B1.62*'` → empty), so a setup that follows the header from a new volume stops there with "pathspec … did not match", before B1.69's identity lines and the probe (B1.69 diff review pass 1)
+
+- **Spec:** none — tooling; no `src/` change, no section
+- **Test:** none — a one-line header comment fix (`.claude/rules/planning.md`: one-sentence diff); checked by following the header in a throwaway compose project to "11 probes OK"
+- **Acceptance:** the header's setup steps name no branch that can disappear (the clone stays on `main`, or the line goes); every other step unchanged; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** ~~B1.69~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.73/`
+
+### B1.74 · dev-lead commits a reviewer's review.md that Prettier rejects, formatted and unchanged
+
+_tooling · no §_
+**Status: Open** — the live run on #184 after B1.69 (`work/B1.65/live.md`, run 3) stopped before the D-27 approval: the reviewer's `backlog/work/B1.66/review.md` failed lefthook's pre-commit Prettier check, and dev-lead, which never writes a card's `review.md` (`.claude/agents/dev-lead.md`), left it untracked and stopped; without a committed review there is no `Plan approved by: reviewer (D-27, …)` line. `grep -ci prettier .claude/agents/dev-lead.md` → 0. The same happened to every reviewer write in B1.69's interactive session, where `format-after-edit.sh` runs Prettier from `$CLAUDE_PROJECT_DIR` and `.prettierignore` holds `.worktrees` [cause in the container unverified: a subagent's tool calls are not in the run's stream]
+
+- **Spec:** none — tooling (D-27); no `src/` change, no section
+- **Test:** a probe that gives dev-lead's commit step an unformatted `review.md` — red because: dev-lead.md has no step that formats it (`grep -ci prettier .claude/agents/dev-lead.md` → 0)
+- **Acceptance:** before committing a card's `review.md`, dev-lead runs `pnpm exec prettier --write` on that file only; the commit is formatting only (the letters and digits in order of the reviewer's copy and the formatted file are equal once every `N.` or `N)` before a space or line end is dropped; `git diff -w` was measured too strict, lead's option (ii) at B1.74's plan gate), otherwise dev-lead stops and reports; dev-lead still never edits `review.md` with Write or Edit; a run's `ALLOW` already holds `Bash(pnpm exec prettier *)`; the PR carries `config-change-approved` (D-19) (lead's choice A, 2026-11-03)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.74/`
