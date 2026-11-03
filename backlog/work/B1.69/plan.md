@@ -5,16 +5,22 @@ compose file already sets; one documented setup step writes it, S11 proves it, `
 image, service, volume or env change. Risk tier **high** (`scripts/agent/`, `.devcontainer/` are CONFIG_PROTECTED) →
 the lead's `approve`; the PR carries `config-change-approved` (D-19).
 
-**The lead decides at this gate** (defaults proposed):
+Round 2 (plan review r1: 4 reasons, "r1 #n" below). **The lead decides at this gate** (defaults proposed):
 
-1. **Whose identity** (card: "the lead's own or a named bot", the PR says which): **bot** `level-up-lab runner
-<runner@level-up-lab.invalid>` — exact text fits in the repo (artifacts name roles), `.invalid` never maps to a GitHub
-   account, and runner commits differ from the lead's in `git log --author` beside the `Agent-Run:` trailer. Nothing
-   keys on author (metrics read the trailer; CODEOWNERS is paths; ruleset has no author rule). On squash merge `main`
-   shows the PR author (the lead); the bot stays on the branch. Alternative: the lead's own, set by hand, never written
-   in the repo. The container's current hand-set identity is replaced by the header step.
-2. **B1.72 order** (its Acceptance says the guide row "reads S1–S10"; this card adds S11): this PR edits B1.72's
-   Acceptance to S1–S11 and adds B1.69 to its Depends on / Blocked by. Alternative: leave B1.72 as filed.
+1. **Whose identity** (card: "the lead's own or a named bot", the PR says which): **bot**, name `level-up-lab runner`,
+   email `runner@level-up-lab.invalid`. The exact text can sit in the repo (artifacts name roles); `.invalid` never
+   maps to a GitHub account; runner commits differ from the lead's in `git log --author`, beside the `Agent-Run:`
+   trailer. Nothing keys on author (metrics read the trailer, CODEOWNERS is paths, the ruleset has no author rule).
+   Where the bot shows (r1 #2; `main.json:30` allows squash and rebase): **rebase** merge → the bot is the author of
+   those commits on `main`; **squash** → the squash commit's author is the PR author (the lead), and GitHub may add a
+   `Co-authored-by:` trailer naming the bot [unverified]. Alternative: the lead's own, set by hand, never written in
+   the repo. The container's current hand-set identity is replaced by the header step.
+2. **B1.72** (its card and README row say "S1–S10"; this card adds S11, r1 #1): **leave B1.72 as filed** here; its
+   five "S1–S10" places (title, Status, Acceptance, README row and node) are B1.72's own edit when it is picked after
+   B1.69. Alternative: this PR edits all five plus Blocked by (two more Files rows).
+3. **Where the step is written** (r1 #3; card: "`.devcontainer/runner/` README or script"): a reading, not a literal
+   match: the compose file's header is the runner's only setup document today (it already lists every lead step), so
+   the two lines go there. Alternative: a new `.devcontainer/runner/README.md` holding the step (one more file).
 
 ## Files
 
@@ -24,8 +30,6 @@ the lead's `approve`; the PR carries `config-change-approved` (D-19).
 | `scripts/agent/sandbox-probe.sh`          | S11 (red first); header S1–S11                                                                                   |
 | `scripts/agent/run.sh`                    | `identity_problem()`; first step of `preflight` unless `binary`; header line                                     |
 | `.devcontainer/runner/docker-compose.yml` | header only: two `git config --global` lines + one comment line; "10 probes OK" → "11" twice                     |
-| `backlog/plan/E1-todos.md`                | decision 2 only: B1.72 Acceptance S1–S11, Depends on B1.69                                                       |
-| `backlog/README.md`                       | decision 2 only: B1.72 row Blocked by B1.69                                                                      |
 | `backlog/work/B1.69/*`                    | advice, plan, review, pr-body                                                                                    |
 
 ## Interfaces touched
@@ -45,13 +49,20 @@ compose header   exec runner git config --global user.name "level-up-lab runner"
 ## Verification
 
 - Red `test(scripts): B1.69 git identity probes` (no `(red)` marker: no vitest file, B1.62 #185): host
-  `run-smoke.sh` → "1 of 17 probes FAILED" (R17); host `sandbox-probe.sh` → S11 FAIL with the step named.
-- Green `chore(scripts): B1.69 runner git identity` (no probe file): `run-smoke.sh` "17 probes OK"; `tier-smoke.sh`,
-  `hook-smoke.sh`, `pnpm lint && pnpm typecheck && pnpm test` green; `check-plan-scope.sh`, `check-backlog.sh` OK.
-- Container (dev-lead, throwaway `-p b169-verify`, public clone at the pushed branch, no login, `down -v` after):
-  before the step S11 FAIL + `run.sh 184` exit 1 with the line above, no `runs/184` log; after the step "11 probes OK";
-  `up -d --build --force-recreate` → S11 still ok. Hand mutations (advice "Mutation hot spots") each caught.
-- Lead's hands (PR body): rebuild of `level-up-lab-runner`, the two header lines, `sandbox-probe.sh` → "11 probes OK".
+  `run-smoke.sh` → "1 of 17 probes FAILED" (R17); host `sandbox-probe.sh` → "10 of 11 probes FAILED" (today 9 of 10;
+  S11 FAIL names the step).
+- Green `chore(scripts): B1.69 runner git identity` (no probe file): `run-smoke.sh` "17 probes OK"; `tier-smoke.sh`
+  "9 probes OK"; `hook-smoke.sh` "511 probes OK"; `pnpm lint && pnpm typecheck && pnpm test` green;
+  `check-plan-scope.sh`, `check-backlog.sh` OK. R17 runs by hand only: `run-smoke.sh` is not in CI until B1.60 (r1 #4).
+- Container (dev-lead; `P="docker compose -p b169-verify -f .devcontainer/runner/docker-compose.yml"`, no login):
+  `$P up -d --build --wait`; `$P exec runner git clone https://github.com/st-minhho2/level-up-lab.git .`;
+  `$P exec runner git fetch origin chore/B1.69-runner-git-identity`; `$P exec runner git checkout FETCH_HEAD`.
+  Before the step: `$P exec runner scripts/agent/sandbox-probe.sh` → "1 of 11 probes FAILED" (S11);
+  `$P exec runner scripts/agent/run.sh 184` → exit 1, the `[run] no git identity` line, no `runs/184`. The header's two
+  lines, then: probe → "11 probes OK"; `run.sh 184` → "[run] claude is not logged in" (past the identity check).
+  `$P up -d --build --force-recreate --wait` → probe "11 probes OK" (volume kept). `$P down -v`. Hand mutations
+  (advice "Mutation hot spots") each caught.
+- Lead's hands (PR body): rebuild `level-up-lab-runner`, the two header lines, `sandbox-probe.sh` → "11 probes OK".
 
 Steps: 1 red · 2 green · 3 reviewer (diff) · 4 PR. All dev-lead (no `src/`). Not in scope: Dockerfile, B1.70
 (`init-firewall.sh`), B1.71 (`worktree.sh`), `scripts/CLAUDE.md` (B1.72), signing, the `Agent-Run:` hook.
