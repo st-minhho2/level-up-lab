@@ -36,6 +36,7 @@
 #   review pass 1: M38 no-rework's window: a comment before ready, a comment and a commit after the merge → yes
 #       M39 a PR never drafted is ready at its creation (both scripts)   M40 a second `approve` after one gate counts
 #       M41 a relabel after ready keeps the window; the highest-numbered of two agent PRs for a card is its PR
+#   review pass 2: M42 a runner comment after a high-tier gate closes it: a later `approve` counts
 set -uo pipefail
 command -v jq >/dev/null || { echo "metrics-smoke: needs jq (B1.57 probes apply the scripts' --jq)" >&2; exit 2; }
 cd "$(git rev-parse --show-toplevel)"
@@ -409,6 +410,15 @@ pr 616 feat/B6.15-agent MERGED false 06:00; tl 616 "$(ready 03:00)"
 tl 515 "$(label 01:00)" "$(says 01:30 lead User '"also handle Y"')" "$(label 04:00)"
 run unattended.sh 515 > "$TMP/out"
 [[ "$(row 515)" == "$(printf '515\tB6.15\t616\t%s\t%s\t1\tno' "$(ts 01:00)" "$R")" ]] && ok M41 || fail "M41 $(row 515)"
+
+# review pass 2: M42 a runner comment after the high-tier gate closes it: a later `approve` counts
+jq '. + [{"number":617,"headRefName":"chore/B6.16-agent"}]' "$J/prs.json" > "$J/prs.next" && mv "$J/prs.next" "$J/prs.json"
+printf '{"state":"OPEN","body":"### Card id\\n\\nB6.16\\n"}\n' > "$J/issue.516.json"
+pr 617 chore/B6.16-agent MERGED false 06:00; tl 617 "$(ready 03:00)"
+tl 516 "$(label 01:00)" "$(says 01:20 lead User "$GATE_HIGH")" "$(says 01:30 lead User "$(runner error:max_turns high)")" \
+  "$(says 01:40 lead User '"approve"')"
+run unattended.sh 516 > "$TMP/out"
+[[ "$(cut -f6,7 <<< "$(row 516)")" == $'1\tno' ]] && ok M42 || fail "M42 $(row 516)"
 
 [[ -s "$FIX/denied.log" ]] && { fail "gh shim denied:"; sed 's/^/  /' "$FIX/denied.log"; }
 echo "[metrics-smoke] $oks ok, $fails FAIL"
