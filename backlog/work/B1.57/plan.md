@@ -73,4 +73,4 @@ lefthook prepare-commit-msg: RUNNER_CHILD set → message gains "Agent-Run: <RUN
 Follow-ups (not here): `run.sh` sets `RUNNER_CHILD=<issue>` so the trailer names the issue; how a headless run reads
 the lead's `approve` comment on a high-tier gate (Q5).
 
-Plan review: changes requested, round 2 (cap; round 3 not re-reviewed) · Plan approved by: · Rounds: 1
+Plan review: changes requested, round 2 (cap; round 3 not re-reviewed) · Plan approved by: lead (session reply "approve"; Q1–Q10 as proposed), 2026-11-03 · Rounds: 1
