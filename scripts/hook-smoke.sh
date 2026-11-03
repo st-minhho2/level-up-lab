@@ -562,6 +562,86 @@ for lay in $LAYOUTS; do
 done
 rm -rf "$LS" "$GS"; export PATH="$PATH_SAVED"; unset SMOKE_GHF
 
+echo "== dev-lead formats a reviewer's review.md (B1.74)"
+DL=.claude/agents/dev-lead.md
+# the block dev-lead runs: the first bash fence under "## Committing a review", run here exactly as written
+BLOCK="$(awk '/^## Committing a review/ { s = 1; next } s && /^## / { exit } s && /^```bash$/ { b = 1; next }
+  b && /^```$/ { exit } b' "$DL" | sed 's/<card>/B9.9/g')"
+para() { # para <first-line regex>: dev-lead.md from that line to the next numbered Loop item or heading
+  awk -v re="$1" '$0 ~ re { p = 1; print; next } p && (/^[0-9]\. \*\*/ || /^## /) { exit } p' "$DL"
+}
+FRR="$(mktemp -d)"; mkdir -p "$FRR/bin" "$FRR/word"
+printf '#!/bin/sh\n[ "$1" = exec ] && shift\n[ "$1" = prettier ] && shift\nexec %q "$@"\n' "$PWD/node_modules/.bin/prettier" > "$FRR/bin/pnpm"
+# a formatter that formats and also changes one word: the change the block must refuse
+printf '#!/bin/sh\n"%s/bin/pnpm" "$@" || exit $?\nfor a; do case $a in -*|exec|prettier) ;; *) sed "s/approved/rejected/" "$a" > "$a.t" && mv "$a.t" "$a" ;; esac; done\n' "$FRR" > "$FRR/word/pnpm"
+printf '#!/bin/sh\nexit 2\n' > "$FRR/fails"; mkdir -p "$FRR/fail"; cp "$FRR/fails" "$FRR/fail/pnpm"
+chmod +x "$FRR/bin/pnpm" "$FRR/word/pnpm" "$FRR/fail/pnpm"
+fr_repo() { # fr_repo: a scratch repository with the project's Prettier config; prints its path
+  local r; r="$(mktemp -d "$FRR/repo.XXXXXX")"
+  git -C "$r" init -q; cp .prettierrc .prettierignore "$r/"; mkdir -p "$r/backlog/work/B9.9"
+  gs "$r" add -A; gs "$r" commit -q -m init; echo "$r"
+}
+run_block() { # run_block <repo> <pnpm dir>: the extracted block in <repo>; 99 when there is no block
+  [[ -n "$BLOCK" ]] || return 99
+  (cd "$1" && PATH="$2:$PATH" bash -c "$BLOCK") >/dev/null 2>"$FRR/err"
+}
+fr() { # fr <id> <ok?> <label>
+  n=$((n+1)); if [[ "$2" == 0 ]]; then echo "ok   $1 $3"; else echo "FAIL $1 $3"; fail=1; fi
+}
+staged() { [[ -z "$(git -C "$1" diff --name-only -- "$2")" && -n "$(git -C "$1" diff --cached --name-only -- "$2")" ]]; }
+nothing_staged() { [[ -z "$(git -C "$1" diff --cached --name-only -- "$2")" ]]; }
+pretty() { "$PWD/node_modules/.bin/prettier" --stdin-filepath x.md < "$1"; }
+F=backlog/work/B9.9/review.md
+UNF='## Plan review (round 1)
+
+|Check|Result|
+|---|---|
+|Files|ok|
+
+* Verdict: approved
+* two  spaces   here
+'
+# FR1
+r=0
+[[ -n "$BLOCK" ]] || r=1
+[[ "$(printf '%s\n' "$BLOCK" | grep -c 'prettier')" == 1 ]] && printf '%s\n' "$BLOCK" | grep -qF 'prettier --write "$f"' || r=1
+para '^4[.] [*][*]Review the plan' | grep -q 'Committing a review' || r=1
+para '^7[.] [*][*]Review the diff' | grep -q 'Committing a review' || r=1
+sed -n '1,/^## Control-plane rules/p' "$DL" | grep -q 'Committing a review' || r=1
+fr FR1 "$r" "dev-lead.md: the section and its block, Prettier on that one file; Loop 4, Loop 7 and the preamble point to it"
+# FR2
+R="$(fr_repo)"; printf '%s' "$UNF" > "$R/$F"
+run_block "$R" "$FRR/bin"; rc=$?
+[[ $rc -eq 0 ]] && staged "$R" "$F" && [[ "$(cat "$R/$F")" == "$(printf '%s' "$UNF" | pretty /dev/stdin)" ]]; fr FR2 $? "an untracked unformatted review.md is formatted as Prettier does and staged (rc $rc)"
+# FR3
+R="$(fr_repo)"; printf '%s' "$UNF" > "$R/$F"
+run_block "$R" "$FRR/word"; rc=$?
+[[ $rc -ne 0 && $rc -ne 99 ]] && nothing_staged "$R" "$F" && printf '%s' "$UNF" | cmp -s - "$R/$F" && grep -q 'not committed' "$FRR/err"
+fr FR3 $? "a formatter that also changes a word is refused: the reviewer's text restored, nothing staged (rc $rc)"
+# FR4
+R="$(fr_repo)"; printf '%s' "$UNF" | pretty /dev/stdin > "$R/$F"; gs "$R" add -A; gs "$R" commit -q -m r1
+printf '\n## Plan review (round 2)\n\n|Check|Result|\n|---|---|\n|Files|ok|\n' >> "$R/$F"
+run_block "$R" "$FRR/bin"; rc=$?
+[[ $rc -eq 0 ]] && staged "$R" "$F" && grep -q '^| Check | Result |$' "$R/$F" && [[ "$(grep -c '^## Plan review' "$R/$F")" == 2 ]]
+fr FR4 $? "round 2 appended to a committed round 1 is formatted and staged (rc $rc)"
+# FR5
+R="$(fr_repo)"; printf '%s' "$UNF" | pretty /dev/stdin > "$R/$F"; cp "$R/$F" "$FRR/before"
+run_block "$R" "$FRR/bin"; rc=$?
+[[ $rc -eq 0 ]] && cmp -s "$R/$F" "$FRR/before" && staged "$R" "$F"; fr FR5 $? "an already formatted review.md is staged unchanged (rc $rc)"
+# FR6
+R="$(fr_repo)"; printf '%s' "$UNF" > "$R/$F"
+run_block "$R" "$FRR/fail"; rc=$?
+[[ $rc -ne 0 && $rc -ne 99 ]] && nothing_staged "$R" "$F" && printf '%s' "$UNF" | cmp -s - "$R/$F"; fr FR6 $? "Prettier failing leaves the reviewer's text and stages nothing (rc $rc)"
+# FR7
+R="$(fr_repo)"; printf '## Diff review (pass 1)\n\n1. first\n2. second\n4. fourth\n' > "$R/$F"
+run_block "$R" "$FRR/bin"; rc=$?
+[[ $rc -eq 0 ]] && staged "$R" "$F" && grep -q '^3\. fourth$' "$R/$F"; fr FR7 $? "a misnumbered list Prettier renumbers is accepted and staged (rc $rc)"
+# FR8
+R="$(fr_repo)"; printf '## Diff review (pass 1)\n\nThe probe ran in round\n2) as well, with exit\n0) both times.\n' > "$R/$F"
+run_block "$R" "$FRR/bin"; rc=$?
+[[ $rc -eq 0 ]] && staged "$R" "$F" && grep -q 'round 2) as well' "$R/$F"
+fr FR8 $? "a wrapped line starting 2) that Prettier joins upward is accepted and staged (rc $rc)"
+
 echo "== review gate (require-review.sh / mark-reviewed.sh)"
 STATE="node_modules/.cache/level-up-lab"; saved=""; [[ -f "$STATE/reviewed" ]] && saved="$(cat "$STATE/reviewed")"
 rm -f "$STATE/gate-warned"
