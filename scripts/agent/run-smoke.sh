@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Probes R1–R16 of scripts/agent/run.sh (B1.44) offline: a `claude` shim that replays fixture stream-json, a `gh` shim
+# Probes R1–R17 of scripts/agent/run.sh (B1.44) offline: a `claude` shim that replays fixture stream-json, a `gh` shim
 # that applies run.sh's own --jq to fixture JSON (real jq), and fakes for the eligibility, claim and worktree seams.
 #   scripts/agent/run-smoke.sh
 #   R1 not logged in            R2 unverified version          R3 ineligible issue        R4 three agent branches in flight
@@ -8,6 +8,7 @@
 #   R12 gate comment with tier  R13 --poll order and skips     R14 --check-binary
 #   R15 --mode on the host is dontAsk, whatever uname, curl or the environment say (B1.58)
 #   R16 the exact prompt: Loop 5's D-27 path at the plan gate, no unconditional gate stop (B1.65)
+#   R17 a run or --poll without a git identity is refused before any call (B1.69)
 set -uo pipefail
 command -v jq >/dev/null || { echo "run-smoke: needs jq" >&2; exit 2; }
 HERE="$(cd "$(dirname "$0")" && pwd -P)"
@@ -20,6 +21,10 @@ mkdir -p "$TMP/bin" "$FIX" "$WT"
 # the probes never depend on the host's branches; only R14's probe folder lands in the checkout's .worktrees/, removed
 REPO="$TMP/repo"; git init -q "$REPO"
 git -C "$REPO" -c user.name=s -c user.email=s@x commit -q --allow-empty -m s
+# run.sh's identity check reads git's config (B1.69): every call gets this file instead of the host's own, so no probe
+# passes or fails on the host's identity; GITCFG swaps it
+printf '[user]\n\tname = smoke runner\n\temail = smoke@runner.invalid\n' > "$TMP/gitconfig"
+IDENT=(GIT_CONFIG_GLOBAL="$TMP/gitconfig" GIT_CONFIG_NOSYSTEM=1)
 oks=0; fails=0
 ok() { echo "ok   $1"; oks=$((oks + 1)); }
 fail() { echo "FAIL $1"; fails=$((fails + 1)); }
@@ -105,7 +110,8 @@ run() { # run <args…>: run.sh with the shims; stdout+stderr in $TMP/out, exit 
   (cd "${DIR:-$ROOT}" && CLAUDECODE=1 CLAUDE_CODE_ENTRYPOINT=desktop CLAUDE_CODE_SESSION_ID=parent GH_REPO=evil/x \
     SMOKE_LOG="$LOG" SMOKE_FIX="$FIX" SMOKE_WT="$WT" SMOKE_ROOT="$ROOT" PATH="$TMP/bin:$PATH" GIT_DIR="$REPO/.git" \
     RUNNER_CLAUDE="$TMP/bin/claude" RUNNER_RUNS="$RUNS" RUNNER_ELIGIBLE="$TMP/bin/fake-eligible" \
-    RUNNER_CLAIM="$TMP/bin/fake-claim" RUNNER_WORKTREE="$TMP/bin/fake-worktree" "$SRC" "$@") > "$TMP/out" 2>&1
+    RUNNER_CLAIM="$TMP/bin/fake-claim" RUNNER_WORKTREE="$TMP/bin/fake-worktree" \
+    GIT_CONFIG_GLOBAL="${GITCFG:-$TMP/gitconfig}" GIT_CONFIG_NOSYSTEM=1 "$SRC" "$@") > "$TMP/out" 2>&1
   RC=$?
 }
 calls() { grep -c "^CLAUDE .* ARGS=-p " "$LOG"; }
@@ -151,7 +157,7 @@ reset; mkdir -p "$RUNS/7/lock"; echo "$dead" > "$RUNS/7/lock/pid"; run 7
 reset; { start; echo SLEEP; } > "$FIX/stream.jsonl"
 (cd "$ROOT" && SMOKE_LOG="$LOG" SMOKE_FIX="$FIX" SMOKE_WT="$WT" SMOKE_ROOT="$ROOT" PATH="$TMP/bin:$PATH" GIT_DIR="$REPO/.git" \
   RUNNER_CLAUDE="$TMP/bin/claude" RUNNER_RUNS="$RUNS" RUNNER_ELIGIBLE="$TMP/bin/fake-eligible" \
-  RUNNER_CLAIM="$TMP/bin/fake-claim" RUNNER_WORKTREE="$TMP/bin/fake-worktree" exec "$SRC" 7) > "$TMP/out" 2>&1 &
+  RUNNER_CLAIM="$TMP/bin/fake-claim" RUNNER_WORKTREE="$TMP/bin/fake-worktree" exec env "${IDENT[@]}" "$SRC" 7) > "$TMP/out" 2>&1 &
 bg=$!; i=0; while [[ ! -d "$RUNS/7/lock" || $(calls) -eq 0 ]] && [[ $i -lt 20 ]]; do sleep 1; i=$((i + 1)); done
 kill -TERM "$bg" 2>/dev/null; wait "$bg" 2>/dev/null
 [[ ! -e "$RUNS/7/lock" ]] || { say "TERM left the lock"; r=1; }
@@ -261,7 +267,7 @@ mkdir -p "$RUNS/8"; echo gate > "$RUNS/8/stopped"; run --poll
 reset; echo '[{"number":7}]' > "$FIX/issues.json"; { start; echo SLEEP; } > "$FIX/stream.jsonl"
 (cd "$ROOT" && SMOKE_LOG="$LOG" SMOKE_FIX="$FIX" SMOKE_WT="$WT" SMOKE_ROOT="$ROOT" PATH="$TMP/bin:$PATH" GIT_DIR="$REPO/.git" \
   RUNNER_CLAUDE="$TMP/bin/claude" RUNNER_RUNS="$RUNS" RUNNER_ELIGIBLE="$TMP/bin/fake-eligible" \
-  RUNNER_CLAIM="$TMP/bin/fake-claim" RUNNER_WORKTREE="$TMP/bin/fake-worktree" exec "$SRC" --poll) > "$TMP/out" 2>&1 &
+  RUNNER_CLAIM="$TMP/bin/fake-claim" RUNNER_WORKTREE="$TMP/bin/fake-worktree" exec env "${IDENT[@]}" "$SRC" --poll) > "$TMP/out" 2>&1 &
 bg=$!; i=0; while [[ ! -s "$FIX/claude.pid" ]] && [[ $i -lt 20 ]]; do sleep 1; i=$((i + 1)); done
 t0=$(date +%s); kill -TERM "$bg" 2>/dev/null; wait "$bg" 2>/dev/null; t=$(( $(date +%s) - t0 ))
 sleep 1
@@ -366,6 +372,30 @@ grep -q 'Until B1.55' "$SRC" && { say "the header still says every run stops at 
 hdr='# A reviewed low or medium plan of the issue proceeds (D-27, dev-lead Loop 5); a high-tier plan or a refusal stops at'
 [[ "$(grep -A1 -xF -- "$hdr" "$SRC")" == "$hdr"$'\n''# the gate.' ]] || { say "the header does not state the D-27 rule: $(sed -n 6,7p "$SRC" | tr '\n' '|')"; r=1; }
 [[ $r -eq 0 ]] && ok R16 || fail R16
+
+# R17
+r=0
+printf '[user]\n\temail = smoke@runner.invalid\n' > "$TMP/no-name"
+printf '[user]\n\tname = smoke runner\n' > "$TMP/no-email"
+printf '[user]\n\tname = "  "\n\temail = smoke@runner.invalid\n' > "$TMP/blank-name"
+printf '[user]\n\tname = smoke runner\n\temail = "  "\n' > "$TMP/blank-email"
+for g in /dev/null "$TMP/no-name" "$TMP/no-email" "$TMP/blank-name" "$TMP/blank-email"; do
+  reset; GITCFG="$g" run 7
+  [[ $RC -eq 1 && $(calls) -eq 0 && ! -e "$RUNS/7" ]] && has '[run] no git identity' "$TMP/out" \
+    && has "git config --global" "$TMP/out" && has 'docker-compose.yml' "$TMP/out" \
+    && ! grep -qE '^(ELIGIBLE|CLAIM|WORKTREE) |^CLAUDE .* ARGS=auth ' "$LOG" \
+    || { say "$(basename "$g"): rc=$RC calls=$(calls) $(tr '\n' '|' < "$TMP/out")"; r=1; }
+done
+reset; echo '[{"number":7}]' > "$FIX/issues.json"; GITCFG=/dev/null run --poll
+[[ $RC -eq 1 && $(calls) -eq 0 ]] && has '[run] no git identity' "$TMP/out" && ! grep -qE '^GH .* issue list|^ELIGIBLE ' "$LOG" \
+  || { say "--poll: rc=$RC calls=$(calls) $(tr '\n' '|' < "$TMP/out")"; r=1; }
+# --check-binary commits nothing, so it needs no identity: without a login it still stops at the login (plan)
+reset; : > "$RUNS/verified-versions"; SMOKE_AUTH=false GITCFG=/dev/null run --check-binary
+[[ $RC -eq 1 ]] && has 'not logged in' "$TMP/out" && ! has 'no git identity' "$TMP/out" \
+  || { say "--check-binary: rc=$RC $(tr '\n' '|' < "$TMP/out")"; r=1; }
+reset; GITCFG=/dev/null run --mode
+[[ $RC -eq 0 && "$(cat "$TMP/out")" == dontAsk ]] || { say "--mode: rc=$RC $(tr '\n' '|' < "$TMP/out")"; r=1; }
+[[ $r -eq 0 ]] && ok R17 || fail R17
 
 echo
 if [[ $fails -eq 0 ]]; then echo "$oks probes OK"; exit 0; fi
