@@ -757,7 +757,7 @@ _tooling · no §_
 ### B1.55 · dev-lead carries an agent-ready card past a reviewed low or medium plan
 
 _tooling · no §_
-**Status: Partial** — merged d66fccd (#171); pending B1.65: `scripts/agent/run.sh`'s prompt still says "At the plan gate print the gate line and stop", so no run takes the D-27 path yet (4 of 5 acceptance clauses met). hook-smoke 511, eligible-smoke 11, metrics-smoke 27 on bash 3.2 and 5.2 (red bc11ca9: 18 + 2 + 2 FAIL; d4b1b00: 1 FAIL); vitest 202, playwright 43; no src/ change, mutation 93.40
+**Status: Partial** — merged d66fccd (#171); pending a live run that takes the D-27 path: B1.65 (#180, bc6b11a) changed run.sh's prompt, but its two live runs stopped before the gate on the container's environment (`work/B1.65/live.md`), so no run has written the D-27 field yet (4 of 5 acceptance clauses met). hook-smoke 511, eligible-smoke 11, metrics-smoke 27 on bash 3.2 and 5.2 (red bc11ca9: 18 + 2 + 2 FAIL; d4b1b00: 1 FAIL); vitest 202, playwright 43; no src/ change, mutation 93.40
 
 - **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
 - **Test:** `grep -n agent-ready .claude/agents/dev-lead.md .claude/skills/work-next/SKILL.md` and new probes in `scripts/hook-smoke.sh` — red because: no match, and a plan approved by the reviewer under D-27 is refused by `plan-scope.sh`
@@ -856,13 +856,13 @@ _tooling · no §_
 ### B1.65 · The runner's prompt lets a run pass a reviewed low or medium plan (D-27)
 
 _tooling · no §_
-**Status: Open** — `scripts/agent/run.sh:197` tells every run "At the plan gate print the gate line and stop" and its header (`run.sh:4`) says "Until B1.55 every run stops at the plan gate". B1.55 (#171) gives dev-lead the D-27 path (`.claude/agents/dev-lead.md` Loop 5: a reviewed low- or medium-tier plan on an eligible `agent-ready` issue proceeds) and makes the guards check it, but it could not change `run.sh` while B1.58 held it, so a run told to stop at the gate still stops at every card
+**Status: Partial** — merged bc6b11a (#180); pending a live run past the gate: two runs inside the runner container on #184 (B1.66) stopped at the plan commit (no git identity in the container, then no Prisma client for the pre-commit tsc), before the gate (`work/B1.65/live.md`); waits on B1.62 and a git identity kept in the container (A1-A3, A7 met; A4, A5 not; 4 of 7). run-smoke 16 (red f35f449: 1 FAIL, R16), tier-smoke 9 on bash 3.2; vitest 202, playwright 43; no src/ change, mutation 93.40
 
 - **Spec:** none — tooling (D-27); no `src/` change, no section
 - **Test:** a new probe in `scripts/agent/run-smoke.sh` — red because: the prompt the `claude` shim receives still says "At the plan gate print the gate line and stop"
 - **Acceptance:** the run's prompt tells dev-lead to follow Loop 5's D-27 path (a reviewed low or medium plan of the issue it names proceeds; a high-tier plan or a refusal prints the gate line and stops) and the header says the same; run-smoke asserts the exact prompt; one live run on a low-tier test card passes the gate with the D-27 field (`docs(backlog): <card> plan approved`) and reaches a draft PR; B1.55's card moves from Partial to Done; the PR carries `config-change-approved` (D-19, `scripts/agent/` is protected)
 - **Tier:** quick · **Depends on:** ~~B1.55~~ (its code merged in #171; the card stays Partial only for B1.65), ~~B1.58~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.65/`
+- **Work:** `work/B1.65/` (plan review 2 rounds, lead rounds 1; diff review 3 passes: 0 + 1 + 3 text findings fixed; 2 live runs inside the runner container, 16 turns, USD 0.471, both stopped before the gate: `live.md`)
 
 ### B1.62 · The runner's image carries the Prisma engines and Playwright's browser for a full run inside
 
