@@ -273,3 +273,75 @@ then pass 2. `hook-smoke` count and `scripts/CLAUDE.md` (FR1–FR8) change with 
 
 Riskiest unfalsified: a host `run.sh` run under `dontAsk` denying the compound block (not exercised; container runs
 use bypassPermissions).
+
+## Diff review (pass 2)
+
+SCOPE: all (tooling, no §). Diff `origin/main...34555ed`: 8 files, 921 insertions, 47 deletions. Since pass 1
+(`e6230d0..34555ed`): `324fcc7` test FR9–FR11, `0b6a49d` fix `w()` and the `scripts/CLAUDE.md` row, `ba5b1b5` and
+`34555ed` plan "Changed after approval" and its re-approval line. No merge commits on the branch.
+
+Command results (run by me in this worktree; last line of each):
+
+| Command                                                            | Result                                                                                                                                          |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                                        | `All matched files use Prettier code style!`                                                                                                    |
+| `pnpm typecheck`                                                   | exit 0, no output                                                                                                                               |
+| `pnpm test`                                                        | `Tests  202 passed (202)`                                                                                                                       |
+| `pnpm test:e2e`                                                    | `43 passed (54.8s)`                                                                                                                             |
+| `pnpm test:mutation`                                               | `Final mutation score of 93.40 is greater than or equal to break threshold 70` (no `src/` change)                                               |
+| `scripts/hook-smoke.sh`                                            | `hook-smoke: 522 probes OK`, FR1–FR11 ok                                                                                                        |
+| `scripts/agent/run-smoke.sh` · `tier-smoke.sh`                     | `17 probes OK` · `9 probes OK`                                                                                                                  |
+| `check-suppressions` · `check-feat-commits`                        | `OK: no new suppressions` · `OK: no feat commit touches tests`                                                                                  |
+| `check-config-change.sh`                                           | `::error::Protected configuration changed without the 'config-change-approved' label: .claude/agents/dev-lead.md`. Expected until the PR has it |
+| `check-ac-coverage` · `check-spec-sections` · `check-features-map` | `OK: every criterion of a shipped section has a test` · `OK: sections cited: 1 … 22` · `OK`                                                     |
+| `check-plan-scope` · `check-backlog` · `check-agent-frontmatter`   | `OK: … stays inside the approved plan of B1.74` · `OK: README matches the cards` · `OK: 13 files`                                               |
+| `scripts/verify-red.sh B1.74`                                      | `::error::no 'test(<pkg>): B1.74 … (red)' commit …`. Expected, as in pass 1 (no `(red)` marker by plan, B1.62 #185)                             |
+| red of `324fcc7` proven by hand                                    | tree exported to a scratch repo: `hook-smoke.sh` → 521 `ok`, `FAIL FR9` only, `hook-smoke: FAILURES above`                                      |
+| `git diff --stat main...HEAD`                                      | `8 files changed, 921 insertions(+), 47 deletions(-)`                                                                                           |
+
+Probes (scratch copies only; the block extracted from `dev-lead.md` as hook-smoke does; real Prettier via a `pnpm`
+shim; bash 3.2 + BSD `sed`/`tr` unless named):
+
+- Pass-1 findings re-checked. [1] `'## Plan review (round 1)\n\nVerdict: approved'` (no final newline) → exit 0,
+  staged, final `\n` (bash 3.2 and zsh). [2] mutant `[:alnum:]` → `[:alpha:]` on a copy of HEAD: `FAIL FR10`. [3]
+  mutant `[.)]` → `[.]`: `FAIL FR11`. `1) 2) 4)` under zsh → exit 0, staged.
+- Mutants of the new `{ cat; echo; }`: dropped → `FAIL FR9`; `{ echo; cat; }` → `FAIL FR9`; `tr -cs` → `tr -c` →
+  `FAIL FR2 FR4 FR9`. Survivors: `([[:space:]]|$)` → `[[:space:]]` and `LC_ALL=C` dropped (pass-1 note 3, unchanged),
+  `[0-9]+` → `[0-9]*` (equivalent: it only drops `.`/`)` that `tr` drops anyway).
+- Edge inputs on the real block, all exit 0 and staged: a join at end of file with no final newline (`…exit\n0)`), an
+  unclosed ` ```bash ` fence (Prettier closes it), CRLF with no final LF, trailing spaces with no final newline,
+  `- b 12` at end of file, `next is\n10. done`.
+- `guard-bash.sh` on the new block, as written and `cd <wt> && …`-prefixed: exit 0.
+- No test weakened: `git log --first-parent --no-merges 10aa7db..HEAD -- scripts/hook-smoke.sh '*.test.*' e2e/` →
+  `324fcc7` only, a `test(scripts)` commit; its one removed line is the `chmod +x` line, re-added with `"$FRR/digit/pnpm"`.
+  FR1–FR8 untouched. `0b6a49d` touches no probe. Pass-1 note 1 done: `rm -rf "$FRR"` closes the section.
+
+Checklist:
+
+| Check                                                | Result                                                                                                                                                                  |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every Acceptance clause has a probe matching it      | pass. "letters and digits" FR3, FR10; "every `N.` or `N)`" FR7, FR8, FR11; final newline FR9; "that file only" FR1; stop path FR3, FR6, FR10                            |
+| no test weakened after red                           | pass (above); no merges, so `--remerge-diff` is empty                                                                                                                   |
+| every changed file in `plan.md`                      | pass. Same five Files rows; `check-plan-scope` OK. `scripts/CLAUDE.md` again fully re-padded by Prettier: `git diff -w` is the one row, FR1–FR8 → FR1–FR11              |
+| interfaces match the plan                            | pass. `dev-lead.md`'s `w()` is byte-identical to the plan's Interfaces line 44 as changed after approval; the block shape and stop line are unchanged                   |
+| Zod, Prisma, raw SQL, migration                      | n/a (no `src/`, no `prisma/`)                                                                                                                                           |
+| no secret, no suppression                            | pass                                                                                                                                                                    |
+| features map row moved                               | n/a (tooling, no §)                                                                                                                                                     |
+| would a probe fail if one changed line were reverted | pass. Each pass-1 change reverted alone (no echo, `[:alpha:]`, `[.]`) turns exactly one FR red; the three survivors above change behaviour on no realistic review input |
+
+Findings: none blocking.
+
+Notes (not blocking; for the PR step):
+
+1. `pr-body.md` is the pre-pass-1 draft. Line 55 still shows the old `w()` (no `{ cat; echo; }`), lines 6, 45, 46 and
+   69 say FR1–FR8, and line 71 says 519. Copy `plan.md` into it again, with 522 and FR1–FR11, before
+   `pr-step.sh open`. Otherwise the lead reads an interface the branch no longer has.
+2. `plan.md` Files rows (lines 34–35) and Verification (lines 58–60) still say FR1–FR8 and 519. The "Changed after
+   approval" paragraph overrides them, so this does not block. The plan is 75 lines (round-2 note 1).
+3. `dev-lead.md` line 118 is now 171 columns: the sentence was extended without re-wrapping. Prettier leaves it
+   (`proseWrap` preserve). Cosmetic.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: a host `run.sh` run under `dontAsk` denying the compound block (still not exercised; container
+runs use bypassPermissions).
