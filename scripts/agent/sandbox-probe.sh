@@ -10,6 +10,11 @@
 #   S5 uid node, no sudo, an empty capability bounding set, no-new-privileges; iptables and init-firewall.sh change
 #      nothing (the firewall lives in the firewall service; the runner container holds no capability at all)
 #   S6 the claude and gh config dirs are mounts, no credential file in the clone      S7 no Postgres host to reach
+#   S8 the Prisma engines the image points at (PRISMA_*) are the lockfile's commit and version, read-only (B1.62)
+#   S9 the image's Playwright is the lockfile's version, its chromium is under PLAYWRIGHT_BROWSERS_PATH and launches
+#   S10 .env.example's DATABASE_URL reaches a UTF8 Postgres that listens on loopback only and runs as node
+# A lockfile bump the image does not match never reaches the network (the variables stop Prisma's download,
+# Playwright downloads only in `install`): S8/S9 FAIL instead, and the fix is the Dockerfile's ARG and a rebuild.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd -P)"
 ROOT="$(cd "$HERE/../.." && pwd -P)"
@@ -19,7 +24,15 @@ ok() { echo "ok   $1"; oks=$((oks + 1)); }
 fail() { echo "FAIL $1"; fails=$((fails + 1)); }
 say() { echo "     $*"; }
 reach() { curl -sS -o /dev/null --max-time 5 "$@" </dev/null 2>/dev/null; } # 0 = a connection answered
-PIN="$(sed -n 's/^ARG CLAUDE_CODE_VERSION=//p' "$ROOT/.devcontainer/runner/Dockerfile" 2>/dev/null)"
+arg() { sed -n "s/^ARG $1=//p" "$ROOT/.devcontainer/runner/Dockerfile" 2>/dev/null; }
+PIN="$(arg CLAUDE_CODE_VERSION)"
+LOCK="$ROOT/pnpm-lock.yaml"
+# lockv <pkg>: the lockfile's version of <pkg>; each package line appears in packages and snapshots, hence sort -u
+lockv() { sed -n "s/^  $1@\([0-9][0-9.]*\):\$/\1/p" "$LOCK" 2>/dev/null | sort -u; }
+same() { # same <label> <a> <b>: both non-empty and equal, else say why
+  [[ -n "$2" && "$2" == "$3" ]] && return 0
+  say "$1: '${2:-none}' vs '${3:-none}'"; return 1
+}
 
 open_ok() { # open_ok: the allow list still holds (S1's refusals, S2's reaches)
   local r=0 u
@@ -92,6 +105,56 @@ if command -v getent >/dev/null; then
   for h in postgres level-up-lab-postgres-1; do getent hosts "$h" >/dev/null && { say "$h resolves"; r=1; }; done
 else say "no getent"; r=1; fi
 [[ $r -eq 0 ]] && ok S7 || fail S7
+# S8
+r=0
+hash="$(grep -oE '@prisma/engines-version@[0-9.]+-[0-9]+\.[0-9a-f]{40}' "$LOCK" 2>/dev/null | sed 's/.*\.//' | sort -u)"
+[[ "$hash" =~ ^[0-9a-f]{40}$ ]] || { say "lockfile engines hash: '${hash:-none}'"; r=1; }
+lib="${PRISMA_QUERY_ENGINE_LIBRARY:-}"; bin="${PRISMA_SCHEMA_ENGINE_BINARY:-}"
+for f in "$lib" "$bin"; do
+  if [[ -z "$f" || ! -e "$f" ]]; then say "engine '${f:-PRISMA_* unset}' missing"; r=1
+  elif [[ -w "$f" ]]; then say "$f is writable by $(id -un)"; r=1; fi
+done
+if [[ -e "$bin" && -e "$lib" ]]; then
+  same "schema-engine commit" "$("$bin" --version 2>/dev/null | awk '{print $2; exit}')" "$hash" || r=1
+  q="$(node -e 'const m = { exports: {} }; process.dlopen(m, process.argv[1]); console.log(m.exports.version().commit)' "$lib" 2>/dev/null)"
+  same "query-engine commit" "$q" "$hash" || r=1
+  pkg="$(dirname "$(readlink -f "$bin")")/package.json"
+  same "@prisma/engines in the image" "$(jq -r .version "$pkg" 2>/dev/null)" "$(lockv prisma)" || r=1
+fi
+same "ARG PRISMA_VERSION" "$(arg PRISMA_VERSION)" "$(lockv prisma)" || r=1
+[[ $r -eq 0 ]] && ok S8 || fail S8
+# S9
+r=0; pw="$(lockv playwright)"
+same "ARG PLAYWRIGHT_VERSION" "$(arg PLAYWRIGHT_VERSION)" "$pw" || r=1
+same "playwright --version" "$(playwright --version 2>/dev/null | awk '{print $2; exit}')" "$pw" || r=1
+pbp="${PLAYWRIGHT_BROWSERS_PATH:-}"
+if [[ -n "$pbp" && -d "$pbp" ]]; then
+  locs="$(playwright install --dry-run chromium 2>/dev/null | sed -n 's/^ *Install location: *//p')"
+  [[ -n "$locs" ]] || { say "playwright install --dry-run named no location"; r=1; }
+  while IFS= read -r l; do
+    [[ -z "$l" ]] && continue
+    [[ "$l" == "$pbp"/* && -d "$l" ]] || { say "browser '$l' missing or outside $pbp"; r=1; }
+  done <<< "$locs"
+  launch='require("playwright").chromium.launch().then(async (b) => { await (await b.newPage()).goto("about:blank"); await b.close(); })'
+  NODE_PATH="$(npm root -g 2>/dev/null)" timeout 20 node -e "$launch" >/dev/null 2>&1 || { say "headless chromium did not launch in 20 s"; r=1; }
+else say "PLAYWRIGHT_BROWSERS_PATH '${pbp:-unset}' is not a directory"; r=1; fi
+[[ $r -eq 0 ]] && ok S9 || fail S9
+# S10
+r=0
+url="$(sed -n 's/^DATABASE_URL=//p' "$ROOT/.env.example" 2>/dev/null | tr -d "\"'")"; url="${url%%\?*}" # psql refuses ?schema=
+if [[ "$url" =~ ^postgres(ql)?://[^:@/]+(:[^@/]*)?@([^:/]+):([0-9]+)/[^/]+$ ]]; then
+  host="${BASH_REMATCH[3]}"; port="${BASH_REMATCH[4]}"
+  [[ "$host" == localhost || "$host" == 127.0.0.1 ]] || { say ".env.example host '$host' is not loopback"; r=1; }
+  l="$(ss -ltnH "sport = :$port" 2>/dev/null | awk '{print $4}')"
+  [[ -n "$l" ]] || { say "nothing listens on :$port"; r=1; }
+  while IFS= read -r a; do [[ -z "$a" || "$a" == "127.0.0.1:$port" ]] || { say "listens on $a"; r=1; }; done <<< "$l"
+  u="$(ps -o user= -C postgres 2>/dev/null | sort -u)"
+  [[ "$u" == node ]] || { say "postgres processes run as '${u:-none}'"; r=1; }
+  same "select 1" "$(psql "$url" -Atc 'select 1' 2>/dev/null)" 1 || r=1
+  same "database encoding" \
+    "$(psql "$url" -Atc 'select pg_encoding_to_char(encoding) from pg_database where datname = current_database()' 2>/dev/null)" UTF8 || r=1
+else say ".env.example DATABASE_URL '${url:-none}' is not postgresql://user@host:port/db"; r=1; fi
+[[ $r -eq 0 ]] && ok S10 || fail S10
 
 echo
 if [[ $fails -eq 0 ]]; then echo "$oks probes OK"; exit 0; fi
