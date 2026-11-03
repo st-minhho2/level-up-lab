@@ -92,7 +92,7 @@ none (tooling, no feature row)
 
 ## Review
 
-`/review-loop`: 3 passes of 3 (cap). Pass 3's one finding was fixed with a probe only (99a637c, no script change) and not re-reviewed: **the lead accepts or asks for a fourth pass**. Full text: `backlog/work/B1.57/review.md`.
+`/review-loop`: 3 passes of 3 (cap). Pass 3's one finding was fixed with a probe only (99a637c, no script change) and not re-reviewed: the lead accepted it, the Q5 reading and the amend cost (session reply "approve", 2026-11-03). Full text: `backlog/work/B1.57/review.md`.
 
 | Pass | #   | Finding                                                                                          | Source              | Disposition | Evidence                                                                                   |
 | ---- | --- | ------------------------------------------------------------------------------------------------ | ------------------- | ----------- | ------------------------------------------------------------------------------------------ |
