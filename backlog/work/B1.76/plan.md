@@ -60,12 +60,10 @@ R15  control: GIT_CONFIG_GLOBAL with core.hooksPath → a pre-push hook fires on
   clone at the pushed branch, the header's two identity lines first (fresh `runner-runs`, r1 #1), no `gh` login:
   old image → "1 of 12 probes FAILED", S12 naming the missing helper and `/etc/gitconfig`; new image → "1 of 12 probes
   FAILED", S12 naming only the credential fill (no login there). `pnpm lint && pnpm typecheck && pnpm test`;
-  `run-smoke` 17, `hook-smoke` 522, `check-plan-scope`, `check-backlog` OK; `down -v` after. Advice's hand mutants:
-  B, D–F caught by S12 or the build's read-back, C by R10, A equivalent (the loop also clears it).
-- Lead's hands (PR body): `up -d --build --force-recreate --wait`, `git pull --ff-only` in the clone,
-  `sandbox-probe.sh` → "12 probes OK". Then run 5 is the live proof (A5: draft PR).
+  `run-smoke` 17, `hook-smoke` 522, `check-plan-scope`, `check-backlog` OK; `down -v` after. Advice's hand mutants: B, D (the wrapper's clearing) by R15, C by R10,
+  E–G by the build's read-back and S12, A equivalent (the loop also clears it); H–J as the advice says (r2 note).
 
 Steps: 1 red · 2 green · 3 reviewer (diff) · 4 PR. All dev-lead (no `src/`). Not in scope: `scripts/pr-step.sh`, B1.70,
 B1.71, B1.72, B1.73.
 
-Plan review: · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 (round 1: 4 reasons, addressed; r2 notes folded) · Plan approved by: · Rounds: 1

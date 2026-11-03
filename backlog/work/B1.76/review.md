@@ -106,3 +106,71 @@ Verdict: changes requested
 Riskiest unfalsified: `draft`, `ready` and `open` reaching GitHub inside the container rest on `gh` using the
 `runner-gh` mount's token with no git credential (`gh pr create --head` pushing nothing in gh 2.23.0 is from the advice's
 memory, not run); run 5 is the first proof.
+
+## Plan review (round 2)
+
+SCOPE: all (tooling, no §). Plan at `cc89338` (diff against round 1: `plan.md` only, +22 −12). Read again: the card,
+`advice.md` (Approaches, Impact, Mutation hot spots), `scripts/agent/sandbox-probe.sh`, `scripts/pr-step.sh`, runner
+`Dockerfile` and `docker-compose.yml`, `scripts/agent/run.sh` `sandboxed()`, README row 86 and node S86.
+
+Probes run (nothing on the tree; no `git credential fill` anywhere, no container touched):
+
+- `scripts/next-task.sh --check B1.76` → `[next-task] B1.76: no overlap with any Doing or Review card` (exit 0)
+- `scripts/agent/tier.sh backlog/work/B1.76/plan.md` → `high`; `plan-files.sh --any B1.76 HEAD` → 7 tokens (exit 0),
+  all in the table
+- `check-plan-scope.sh` → `OK: chore/B1.76-wrapper-credential changes only paperwork`; `check-backlog.sh` → OK
+- the new build read-back (scratch, git 2.39.5, `GIT_CONFIG_SYSTEM` pointed at a scratch file to stand in for
+  `/etc/gitconfig`): the plan's write → read-back rc 0; mutant E (`--global`) rc 1, empty; mutant F (`!gh auth …`)
+  rc 1; mutant G (`gist.github.com` scope) rc 1, empty. The `RUN` stops the build on E, F and G
+
+Round 1 reasons:
+
+| #   | Round 1 reason                     | Round 2                                                                                                                                                                                                                                                                                                                                                                        |
+| --- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | verification lines                 | resolved: (a) `[pr-step-smoke] 15 ok, 0 FAIL`; (b) the two identity lines run first in the throwaway, so S11 is ok and "1 of 12 probes FAILED" holds on both images; (c) the old image's line given (S12 also prints the fill line there: the marker exists in that image, no helper answers, so the fill fails; note 2); (d) mutants listed, one misattribution left (note 1) |
+| 2   | card lines not pasted              | resolved: Test and Acceptance pasted; title, README row and node kept as filed, stated; the `docs(backlog): B1.76 card lines` commit placed before the red                                                                                                                                                                                                                     |
+| 3   | host S12 pulls the keychain token  | resolved: the fill runs only where `/etc/level-up-lab-runner` exists (the image's root-owned marker, the one `run.sh` `sandboxed()` trusts, line 53); the first two assertions stay unconditional, so the host red holds ("11 of 12 probes FAILED": `--get-urlmatch` reads config and runs no helper, `stat -c` fails on macOS)                                                |
+| 4   | build assertion weaker than advice | resolved: the `RUN` reads back `credential.https://github.com.helper` at system scope; measured above, it catches E, F and G                                                                                                                                                                                                                                                   |
+
+| Check                                                                | Result                                                                                                                                                                                                |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the card                           | pass. 7 rows, each tied to the card's Test, Acceptance or a doc line the change makes stale; `scripts/pr-step.sh` out of scope, stated                                                                |
+| interfaces follow `ts-style.md`; mutations in actions; Prisma in lib | n/a (no TypeScript, no `src/`). Shell forms pasted (Dockerfile `RUN`, S12, R15)                                                                                                                       |
+| follows `advice.md` or states the deviation                          | pass. Approach A; the read-back uses `--get` of the exact key instead of the advice's `--get-urlmatch` (equal or stricter: it catches G as well, measured)                                            |
+| ≤ 7 criteria, every Then measurable                                  | pass. The pasted Acceptance is measurable: S12, R15, `scripts/pr-step.sh` byte-identical, the D-19 label                                                                                              |
+| verification lists exact commands with expected numbers              | pass, one correction (note 1). Host `11 of 12 probes FAILED`, `[pr-step-smoke] 15 ok, 0 FAIL`, throwaway old and new `1 of 12 probes FAILED`, `run-smoke` 17, `hook-smoke` 522, lead's `12 probes OK` |
+| work breakdown skeleton → red → green → map → review                 | pass for a tooling card: card lines → red (S12 red, R15 guard) → green (`chore(scripts)`, no probe file) → reviewer (diff) → PR. No skeleton or map row without a §                                   |
+| `Lead approves spec` box                                             | n/a. No spec section. `Plan approved by:` empty; I write neither                                                                                                                                      |
+| no settled D-n contradicted                                          | pass. D-19 label named; D-28 tier `high` matches `tier.sh`; D-27 lead's `approve` kept                                                                                                                |
+| `next-task.sh --check B1.76`                                         | pass: "[next-task] B1.76: no overlap with any Doing or Review card"                                                                                                                                   |
+
+Costs the lead approves with this plan (each stated in it or in round 1, gathered here):
+
+- one image rebuild and container recreate by the lead; the wrapper stays byte-identical, so run 5's worktree needs no
+  merge;
+- the wrapper's git sees the credential, never the identity (it makes no commit); the card title and README row 86 keep
+  the words "and identity" though the amended Acceptance says none is needed;
+- the red is S12 in `sandbox-probe.sh`, not the card's `pr-step-smoke.sh` probe; R15 lands green as a guard;
+- S12 proves the login only inside the runner (the fill is skipped on any machine without the marker);
+- `draft`, `ready`, `open` in the container rest on `gh`'s own login and on `gh pr create --head` not pushing, which no
+  one has run (run 5 is the first proof).
+
+Notes (not reasons):
+
+1. **Mutant attribution.** "B, D–F caught by S12 or the build's read-back" is wrong for B and D: both mutate the
+   wrapper (the `compgen` loop; the `GIT_CONFIG_GLOBAL` word plus the loop), which S12 never calls (its `clean()` is its
+   own copy of the clearing). The advice's table has them right: B fails R15 case 2, D fails R15 cases 1 and 2. E, F, G
+   fail the build's read-back (measured) and S12's first assertion. G to J are missing from the plan's list: G is caught
+   as above; H, I, J (S12 self-mutants: no clearing, the root-owned check removed, no `GIT_TERMINAL_PROMPT=0`) are not
+   run, which the plan should say rather than leave out. The diff review will expect R15, not S12, to fail under B and D.
+2. Old image in the throwaway: S12 prints three `say` lines (helper `none`, `/etc/gitconfig` not root-owned, the
+   credential fill failed), because the B1.58 marker is in that image and nothing answers for github.com. The plan names
+   two; the count line `1 of 12 probes FAILED` is unaffected.
+3. "First commit on the branch" for the card-lines commit: the branch already holds the advice, plan and review
+   commits; it means the first commit after approval.
+4. The plan is 71 lines (round 1: 61) against `planning.md`'s ≈ 40; not blocked, as in round 1.
+
+Verdict: approved (ready for the lead's gate, not approved for build)
+
+Riskiest unfalsified: `gh pr create --draft --head <branch>` in gh 2.23.0 inside the runner neither pushes nor needs
+git's credential; only run 5 tests it.
