@@ -3,13 +3,35 @@
 B1.76 — The PR wrapper keeps the runner container's git credential and identity (tooling, no spec section)
 
 - spec: none — tooling (D-26, D-27); no `src/` change, no section
-- test: `scripts/agent/sandbox-probe.sh` S12 (red) and `scripts/pr-step-smoke.sh` R15 (guard) — pending
-- acceptance: B1.76's clauses (as amended, ca15cf3) — pending
+- test: `scripts/agent/sandbox-probe.sh` S12 (new, red) and `scripts/pr-step-smoke.sh` R15 (new, guard). Red `894db58`:
+  host "11 of 12 probes FAILED" (S12: no system helper, no `/etc/gitconfig`, fill skipped off-runner); old image: no
+  `/etc/gitconfig`, no helper in the wrapper's view. Green `79b22c5`: throwaway `b176-verify` (new image, public clone,
+  the header's identity lines, no `gh` login): `/etc/gitconfig` root 644 with the helper; the wrapper's view (every
+  `GIT_CONFIG_*` cleared) sees `!/usr/bin/gh auth git-credential` and runs `gh auth git-credential get`; probe "1 of 12
+  probes FAILED", S12 naming only the credential fill (no login there). `[pr-step-smoke] 15 ok, 0 FAIL`; hook-smoke
+  522; run-smoke 17; `pnpm test` 202; `scripts/pr-step.sh` unchanged (empty diff). Wrapper mutants: loop deleted → R15
+  FAIL; GLOBAL/SYSTEM dropped from the unset line alone survives (equivalent: the loop clears them).
+- acceptance: B1.76's clauses as amended (`ca15cf3`), all met but the live push: helper at system scope, root-owned;
+  wrapper unchanged and clearing every `GIT_CONFIG_*` (R15); S12; no identity needed (the wrapper never commits); the
+  label is on this PR. The real push with `gh` logged in is run 5's (riskiest unfalsified)
 - risk tier: high (`.devcontainer/`, `scripts/agent/`); label `config-change-approved` (D-19)
 
 ## For the lead: rebuild and check (from the host checkout, on this branch)
 
-pending (filled after the green commit)
+The Dockerfile gains one layer, so the rebuild is short; volumes (logins, the identity, the clone) survive. The
+`gh auth setup-git` step is no longer needed (its old entry in the runner-runs file is harmless). If `firewall` exits
+with "cannot read api.github.com/meta", the unauthenticated limit is spent (B1.70): wait and rerun the `up` line.
+
+```bash
+docker compose -f .devcontainer/runner/docker-compose.yml up -d --build --force-recreate --wait
+docker compose -f .devcontainer/runner/docker-compose.yml exec runner git pull --ff-only
+docker compose -f .devcontainer/runner/docker-compose.yml exec runner git config --system --list
+docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh
+```
+
+Expected: both containers `Healthy`; `git pull` brings the clone's `main` to this merge; `git config --system --list`
+prints `credential.https://github.com.helper=!/usr/bin/gh auth git-credential`; the probe ends "ok S12" and
+"12 probes OK" (S12's credential fill succeeds with the `gh` login in `runner-gh`; nothing is printed).
 
 ## Plan
 
@@ -89,11 +111,23 @@ none (tooling, no `spec/features-map.md` row)
 
 ## Review
 
-pending
+`/review-loop` pass 1/3 (reviewer: vitest 202, playwright 43, stryker 93.40; every `scripts/ci` guard OK except
+`check-config-change` before this PR's label and `verify-red` finding no `(red)` commit, as the plan says).
+
+| Pass | #   | Finding                                                                                           | Kind     | Disposition      | Justification                                                                          |
+| ---- | --- | ------------------------------------------------------------------------------------------------- | -------- | ---------------- | -------------------------------------------------------------------------------------- |
+| 1    | 1   | R15's `system` case had no control push of its own (a host global `core.hooksPath` could mask it) | coverage | fix now          | `1ac7441`: `GIT_CONFIG_SYSTEM` alone must make a plain push fire the hook first        |
+| 1    | d1  | S12 prints "credential fill skipped: not the runner"                                              | doubt    | no change needed | printed only without the marker, where the fill really is skipped                      |
+| 1    | d2  | R15's control vs a host global `core.hooksPath`                                                   | doubt    | no change needed | `GIT_CONFIG_GLOBAL` replaces `~/.gitconfig` for that push; the gap was the system case |
+| 1    | d3  | old image checked by its two config assertions, not a full probe run                              | doubt    | no change needed | a full run would copy the script into the lead's container                             |
+
+Riskiest unfalsified: a real wrapper push with `gh` logged in (the helper returning the token in the cleared
+environment) and `gh pr create --draft --head` in gh 2.23.0 pushing nothing: run 5 on the rebuilt runner is the first
+proof of both. The fix after pass 1 is a test-only control (no wrapper, image or probe-logic change), so no pass 2.
 
 ## Evidence
 
-- AC met: 0/4
+- AC met: 5/5 (live push pending run 5)
 - tier: high
 - plan deviations: none
 - trace: n/a
