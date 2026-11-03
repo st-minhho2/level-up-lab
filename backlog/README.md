@@ -157,5 +157,6 @@ at most 3 cards Doing (B1.18).
 
 ## Waiting on human
 
-| ID  | What | Blocks |
-| --- | ---- | ------ |
+| ID    | What                                                                                                                                                                                                                                                                                                                                                                      | Blocks                                         |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| B1.66 | The push wrapper exits 128 in the runner container: `fatal: could not read Username for 'https://github.com'` (no git credential for HTTPS). Plan approved via D-27 (e7e9dd0); branch `chore/B1.66-agent` committed, not pushed, no draft PR. Decision: give the container a git credential (e.g. `gh auth setup-git`) or push by hand, then resume Loop 5 (push, draft). | B1.66 draft PR; every runner run past the gate |
