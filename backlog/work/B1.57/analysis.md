@@ -15,7 +15,7 @@ gap carries a proposed decision; the lead settles them at the plan gate (`plan.m
 | F1  | The runner's issue comments are posted with the lead's `gh` login; their body starts ``Runner (`scripts/agent/run.sh`, B1.44): **<outcome>** for <card>.`` and holds `- tier: <t>`    | `run.sh` `comment()`; issue #166: 2 comments by the lead login |
 | F2  | The lead's login opens every PR, so GitHub refuses the lead a `CHANGES_REQUESTED` review on it; #1–#41 and #170 hold 0 reviews                                                        | `gh pr view 170`; `docs/metrics.md` Onboarding row             |
 | F3  | Run and interactive commits look the same: author the lead, co-author `claude` (trailer); nothing marks a run                                                                         | `gh pr view 170 --json commits`                                |
-| F4  | Every Bash call of a run inherits `RUNNER_CHILD=1`; `git commit` and `git merge` run the `commit-msg` hook                                                                            | `run.sh:19`, `run.sh:118`; githooks(5)                         |
+| F4  | Every Bash call of a run inherits `RUNNER_CHILD=1`; `git commit`, `merge`, `revert`, `cherry-pick` run `prepare-commit-msg`                                                           | `run.sh:19`, `run.sh:118`; githooks(5)                         |
 | F5  | Ready = the PR's `ready_for_review` timeline event (pr-step.sh always opens drafts); `pr-step.sh ready <n> --undo` + `ready` can repeat it when a sibling's merge makes the PR BEHIND | PR #171 timeline; `dev-lead.md` Loop 9                         |
 | F6  | An agent branch is `<chore\|feat>/<card>-agent`; the issue form's `### Card id` names the card                                                                                        | `run.sh` `branch_of`, `card_of`, `in_flight`                   |
 | F7  | One `agent-ready` issue so far (#166, B1.41): closed at the gate, no PR; no agent PR exists                                                                                           | `gh issue list --label agent-ready --state all`                |
@@ -23,7 +23,9 @@ gap carries a proposed decision; the lead settles them at the plan gate (`plan.m
 
 ## Open questions (each with a proposed decision)
 
-1. **The mark** (card: "a mark the runner adds"). F3, F8 → proposed: a `commit-msg` job `agent-run` in `lefthook.yml`
+1. **The mark** (card: "a mark the runner adds"). F3, F8 → proposed: a `prepare-commit-msg` job `agent-run` in
+   `lefthook.yml` (it runs for commit, merge, revert and cherry-pick; `commit-msg` skips the last two, plan review r2
+   #2) that first ends the message with a newline (r2 #1) and
    adds the trailer `Agent-Run: $RUNNER_CHILD` (`git interpret-trailers --in-place --if-exists replace`: one trailer, a stale one replaced) when
    `RUNNER_CHILD` is set; nothing otherwise. Cost: `lefthook.yml` is protected (D-19) → tier high, label. A later
    `run.sh` could set `RUNNER_CHILD=<issue>` so the trailer names the issue (follow-up, not here). Honor floor: a

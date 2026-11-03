@@ -92,3 +92,77 @@ probes`, `69ce71a test(scripts): B1.58 sandbox probes` (B1.55 review: "follows t
 Riskiest unfalsified: whether `git merge` (clean, `--no-edit`) and a conflicted merge concluded with `git commit`
 both reach the lefthook `commit-msg` job inside the runner container's fresh clone (B1.58 volume, hooks installed by
 `pnpm install`), so that the BEHIND round trip's merge carries the trailer. G7 probes this on the host only.
+
+## Plan review (round 2)
+
+SCOPE: tooling (no §). Plan reviewed: `fedb423 docs(backlog): B1.57 plan round 2 after plan review` (69 lines; the
+B1.55 precedent from round 1 still applies). `scripts/agent/tier.sh backlog/work/B1.57/plan.md` → `high`, matching
+the plan. Baselines re-run here under `/bin/bash` 3.2: `metrics-smoke: 27 ok, 0 FAIL`, `githooks-smoke: 6 ok, 0
+FAIL`, `hook-smoke: 511 probes OK`. These match the plan's red lines (27 ok + 8 FAIL, 7 ok + 1 FAIL, 511).
+
+Round 1 reasons: 1 (`(red)` dropped), 3 (`state` added, closed unmerged → `no`, M36), 5 (analysis Q1 now says
+`replace`, Q10 is in the summary), 6 (`--limit 1000` in both default sets, M37) and 7 (all three numbers stated) are
+resolved. Reason 4 is resolved (`^approve([^A-Za-z]|$)`, M32). Reason 2 is resolved in the rule but not in the
+probes (reason 3 below).
+
+| Check                                                                          | Result                                                                                                                                                        |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the card                                     | pass: the same 7 rows, each tied to an Acceptance clause; `scripts/agent/*` untouched                                                                         |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib | n/a: bash only, no `src/`                                                                                                                                     |
+| plan follows `advice.md` or states the deviation                               | pass: tier quick, no advisor, stated                                                                                                                          |
+| ≤ 7 criteria, every Then measurable                                            | fail: the clean-merge Then of G7 is met by a commit git does not read as a trailer (reason 1); the bot rule of no-rework has no Then (reason 3)               |
+| verification lists exact commands with expected numbers                        | pass: red `27 ok, 8 FAIL` / `7 ok, 1 FAIL` / `511`, green `35 ok, 0 FAIL` / `8 ok, 0 FAIL` / `511`, denied.log empty; consistent with the baselines run here  |
+| work breakdown skeleton → red → green → map → review                           | pass: red → green → review; skeleton and map n/a for tooling; the red subject carries no `(red)`                                                              |
+| `Lead approves spec` box                                                       | n/a: no §. Tier high, so the lead's `approve` is the approval. `Plan approved by:` is empty; the reviewer did not write it                                    |
+| no settled D-n contradicted                                                    | pass with costs: D-29 "lead" now means a `User` account; D-19 stated; the costs in reasons 2 and 4 bear on D-29's share and are not yet in "The lead decides" |
+| `scripts/next-task.sh --check B1.57`                                           | pass: `[next-task] B1.57: no overlap with any Doing or Review card`                                                                                           |
+
+Verdict: changes requested
+
+1. **The planned `commit-msg` command does not make a git trailer on a clean merge, the exact commit a run makes on
+   a BEHIND PR.** At `commit-msg` time, `git merge` (with `--no-edit`, or headless without a TTY as in dev-lead Loop
+   9's `git merge origin/main`) leaves `.git/MERGE_MSG` without a final newline. `git interpret-trailers --in-place
+--if-exists replace --trailer "Agent-Run: 7"` then appends the line straight under the subject, with no blank line.
+   TRIGGER: in a scratch repo (git 2.39.5, the host's), a `commit-msg` hook running exactly that command with
+   `RUNNER_CHILD=7`, then `git merge --no-edit side` on diverged branches. WRONG BEHAVIOUR: the commit bytes are
+   `Merge branch 't3'\nAgent-Run: 7\n`. `git log --format=%s` prints `Merge branch 't3' Agent-Run: 7`, and
+   `%(trailers:key=Agent-Run)` prints nothing. A plain commit (`-m`) and a conflicted merge concluded by `git commit`
+   do get a real trailer. G7 passes or fails depending on how it reads the commit (a grep passes, git's trailer
+   parser fails). `--if-exists replace` also never finds this line again. Fix: the job adds a final newline when the
+   file lacks one before `interpret-trailers`, and G7 asserts with `git log -1 --format='%(trailers:key=Agent-Run,valueonly)'` = `7`
+   and `%s` unchanged for all three cases. CONFIDENCE: confirmed (ran it: scratchpad `hookprobe4`).
+
+2. **`git revert` and `git cherry-pick` never run `commit-msg`, so a run's revert after ready counts as a human
+   commit.** The sequencer skips `commit-msg` unless the message is edited. TRIGGER: the same scratch hook with
+   `RUNNER_CHILD=7`, then `git revert --no-edit HEAD` or `git cherry-pick side`. WRONG BEHAVIOUR: the hook log stays
+   empty and the commit has no `Agent-Run` line. A run that reverts its own commit after ready (a review fix) makes
+   `no-rework.sh` list that commit as human and mark the PR `no`. `prepare-commit-msg` does run for both (probed:
+   `pcm ran: .git/COMMIT_EDITMSG message`) and for merges. Fix: move the job to `prepare-commit-msg` (the same newline
+   care), with a G7 case for `git revert --no-edit`. Or keep `commit-msg` and add this cost to "The lead decides".
+   CONFIDENCE: confirmed for the hook not running; plausible that a run reverts after ready.
+
+3. **The bot exclusion is probed only where the bot never comments.** `.github/workflows/review.yml` runs on
+   `ready_for_review`, so its `github-actions[bot]` comment always lands after ready. That is no-rework's window, not
+   unattended's. M30 probes "a bot comment → yes" for `unattended.sh` only. M36 has no bot case. TRIGGER: in the
+   green diff, drop the `user.type == "User"` filter from `no-rework.sh` only. WRONG BEHAVIOUR: every planned probe
+   stays green, yet once `ANTHROPIC_API_KEY` is set every agent PR reads `no` (round 1 reason 2's exact trigger).
+   Fix: add to M36 "a `Bot` comment after ready → still `yes`". CONFIDENCE: confirmed (read from the plan's M30 and M36
+   lists).
+
+4. **The default unattended set counts only issues that still carry the label, so a run the lead stopped by
+   unlabeling drops out of the denominator.** `gh issue list --label agent-ready --state all` filters on current
+   labels. `eligible.sh` treats a removed label as "not eligible", so unlabeling is a natural way to keep `--poll`
+   off an issue. TRIGGER: an issue's run stops (gate, error or limit), the lead removes `agent-ready` and closes the
+   issue, then runs `unattended.sh` with no arguments. WRONG BEHAVIOUR: the issue is not listed at all, where Q6 says
+   a closed issue with no ready PR counts as `no`. Each such failure raises the D-29 share. Fix: build the default
+   set from every issue (`--state all --limit 1000`) whose timeline holds a `labeled agent-ready` event, since no
+   `gh` filter reads label history, with a probe. Or state the exclusion in "The lead decides". CONFIDENCE: plausible (the filter semantics are GitHub's documented behaviour; whether the
+   lead unlabels is not known).
+
+Note (not a reason): the timeline's `reviewed` event carries `submitted_at`, not `created_at` (live #171/#166 hold
+no review, so not checked here). The shim fixtures should copy that field shape, or M31/M36's review cases pass on
+a field the API never sends.
+
+Riskiest unfalsified: whether the lefthook `commit-msg` (or `prepare-commit-msg`) job fires inside the runner
+container's clone (B1.58 image, hooks installed by `pnpm install` with the Linux lefthook binary). G7 runs on the
+host only, and so far no run has committed in the container.
