@@ -896,3 +896,47 @@ _tooling · no §_
 - **Acceptance:** the step runs `eligible.sh`'s own query string (same `-F` fields, `--paginate`, `--jq`) under the job token on a number GraphQL resolves as an issue (a PR number does not), and exits 0 on the card's PR; the `scripts/CLAUDE.md` rows for `agent/eligible.sh` and `agent/eligible-smoke.sh` name the open-issue and node-id rules and probes E1–E14; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** ~~B1.63~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.67/`
+
+### B1.69 · The runner container keeps a git identity, and a probe proves it
+
+_tooling · no §_
+**Status: Open** — B1.65's live run 1 (`backlog/work/B1.65/live.md`, issue #184) stopped at the plan commit with `Author identity unknown`: B1.58's setup steps and probes S1–S10 never set or check `user.name`/`user.email` in the runner container, and the run's one try, `git -c user.name=… commit`, was refused by the deny rule `Bash(git -c*)` (correctly). The lead set it by hand (`git config --global`, which `GIT_CONFIG_GLOBAL` puts in the `runner-runs` volume) before run 2; nothing documents or verifies that step, so a fresh volume repeats the stop and every E5 issue counts as attended (D-29)
+
+- **Spec:** none — tooling (D-27, D-29); no `src/` change, no section
+- **Test:** a new probe in `scripts/agent/sandbox-probe.sh` — red because: no probe reads the container's git identity (`grep -c 'user.email' scripts/agent/sandbox-probe.sh` → 0)
+- **Acceptance:** the runner's setup (`.devcontainer/runner/` README or script) sets a git identity once, in the `runner-runs` volume, so it survives a rebuild; the probe fails when `git config user.name` or `user.email` is empty inside the container and names the setup step; `run.sh` refuses to start a run without an identity, before any turn is spent; the identity the agent's commits carry is stated (the lead's own or a named bot) and the PR says which; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** ~~B1.58~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.69/`
+
+### B1.70 · The runner firewall reads GitHub's ranges with a token, so a restart never hits the anonymous rate limit
+
+_tooling · no §_
+**Status: Open** — `.devcontainer/runner/init-firewall.sh:24` reads `https://api.github.com/meta` with an anonymous `curl`; the anonymous limit is 60 requests per hour per IP, shared with everything else on the lead's network, and B1.62's container checks hit it: the script dies with "cannot read api.github.com/meta" and, fail-closed, the runner never starts (B1.62 session report). An unattended batch that restarts the container then stops until the hour resets
+
+- **Spec:** none — tooling (D-27); no `src/` change, no section
+- **Test:** a probe that runs `init-firewall.sh` against a stub `curl` answering 403 for an anonymous call and 200 with an `Authorization` header — red because: the script never sends one (`grep -c Authorization .devcontainer/runner/init-firewall.sh` → 0)
+- **Acceptance:** the firewall service reads `/meta` with the gh token already in the `runner-gh` volume when one exists (never printed, never logged), falls back to anonymous otherwise; on a 403/429 it says "rate limited" with the reset time instead of the generic message; still fail-closed; `sandbox-probe.sh` stays green; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** ~~B1.58~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.70/`
+
+### B1.71 · worktree.sh stops when the Prisma client was not generated
+
+_tooling · no §_
+**Status: Open** — in B1.65's live run 2 (`backlog/work/B1.65/live.md`) `scripts/worktree.sh` printed its `dir` line, so its `pnpm install` exited 0, yet `node_modules/.prisma/client` was never generated (the engines were unreachable); the first sign was the pre-commit `tsc` failing one step later. B1.62 bakes the engines into the image, but an engine/lockfile mismatch would repeat the silent gap
+
+- **Spec:** none — tooling; no `src/` change, no section
+- **Test:** a probe in `scripts/worktree-smoke.sh` with a `pnpm` shim that installs without generating the client — red because: `worktree.sh` exits 0 and prints its summary
+- **Acceptance:** after `pnpm install`, `worktree.sh` checks the generated client exists and, when it does not, exits non-zero with one line naming the cause (engines unreachable or mismatched) and the fix (B1.62's Dockerfile ARG and a rebuild, or network); unchanged behavior when the client is there
+- **Tier:** quick · **Depends on:** ~~B1.62~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.71/`
+
+### B1.72 · The scripts guide lists sandbox probes S1–S10
+
+_tooling · no §_
+**Status: Open** — `scripts/CLAUDE.md:28` says `agent/sandbox-probe.sh` "probes S1–S7"; B1.62 (#186) added S8 (Prisma engines), S9 (Playwright) and S10 (Postgres), so the guide names three probes fewer than the script runs (`grep -c '^#   S10' scripts/agent/sandbox-probe.sh` → 1)
+
+- **Spec:** none — docs; no section
+- **Test:** none — a one-row guide fix (`.claude/rules/planning.md`: one-sentence diff)
+- **Acceptance:** the row reads S1–S10 and names engines, browser and Postgres; nothing else changes
+- **Tier:** quick · **Depends on:** ~~B1.62~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.72/`
