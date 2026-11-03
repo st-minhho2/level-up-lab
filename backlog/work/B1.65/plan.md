@@ -23,7 +23,9 @@ what `runs/<n>/` holds today and proposes a retention rule and the card to build
 form (Card id B1.66), labels it `agent-ready`. If the cap stops the run before the draft, an interactive dev-lead
 session finishes B1.66 from its branch (pr-body, draft); the lead merges it like any tier-0 card; B1.66 closes in
 its own lane. (4) Precondition (r1 #2): WIP is 4 Doing today (B1.57, B1.62, B1.63, B1.65); the live run starts only
-after B1.65's PR is ready (Review) and `scripts/next-task.sh --claim B1.66` prints `may start`. (5) Container before
+after B1.65's PR is ready (Review, kept unmerged until the run), one of B1.57/B1.62/B1.63 has left Doing,
+`scripts/next-task.sh --claim B1.66` prints `may start`, and the container clone's branch has merged `origin/main`
+with B1.66's filing (else `branch_of` names `feat/B1.66-agent`; review r2 notes 1, 2). (5) Container before
 B1.62: `worktree.sh`'s `pnpm install` may fail on Prisma engines → `run.sh` exits 1 before any `claude` call; a
 second `run.sh <n>` finds the worktree. If the run's commits fail on missing `node_modules`, stop and wait for B1.62;
 never the host. (6) B1.55 moves to Done on A4 alone, in its closing lane after this PR merges.
@@ -79,4 +81,4 @@ scripts/agent/run.sh <n>` → on `chore/B1.66-agent`: `docs(backlog): B1.66 plan
 | 5 live   | lead + dev-lead | `live.md` (B1.66 merged, claim may start)  | `docs(backlog): B1.65 live run`                    |
 | 6 review | reviewer (diff) | pass on `live.md`: A4, A5 evidence (r1 #5) | `docs(backlog): B1.65 review`                      |
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 (4 notes, none blocking; notes 1–2 folded into decision 4) · Plan approved by: · Rounds: 1
