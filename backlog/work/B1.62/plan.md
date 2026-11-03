@@ -35,7 +35,6 @@ postinstall fails silently, so `pnpm install` and `worktree.sh` exit 0 without e
 | `.devcontainer/runner/runner-postgres.sh` | new: fresh `initdb`, Postgres on 127.0.0.1:5433 as node, db `level_up_lab`, `exec "$@"`       |
 | `.devcontainer/runner/docker-compose.yml` | `runner`: tmpfs `/home/node/pgdata`, healthcheck `pg_isready`; header: `up -d --build --wait` |
 | `scripts/agent/sandbox-probe.sh`          | S8 Prisma, S9 Playwright, S10 database; header S1–S10                                         |
-| `scripts/CLAUDE.md`                       | `agent/sandbox-probe.sh` row: S1–S10                                                          |
 | `backlog/work/B1.62/*`                    | advice, plan, review, pr-body                                                                 |
 
 ## Interfaces touched
@@ -61,9 +60,11 @@ sandbox-probe.sh  exit 0 all ok · 1 any FAIL; every comparison needs both sides
   bump drill in a scratch clone (lockfile `playwright` / `@prisma/engines-version` edited) → S8, S9 FAIL, no network.
   Host: `pnpm lint && pnpm typecheck && pnpm test` green, `check-plan-scope.sh`, `check-backlog.sh` OK. `down -v` after.
 - Lead's hands (exact commands and expected output in the PR body): `up -d --build --wait` of `level-up-lab-runner`,
-  `sandbox-probe.sh` → "10 probes OK", `worktree.sh` + `pnpm test:e2e` once. The lead's project is never touched by me.
+  `sandbox-probe.sh` → "10 probes OK", `worktree.sh` + `pnpm test:e2e` once. dev-lead never touches the lead's project or its volumes.
 
 Steps: 1 red · 2 green · 3 reviewer (diff) `docs(backlog): B1.62 review` · 4 PR. All dev-lead (no `src/`). Not in scope:
 B1.59, B on any decision above, `worktree.sh`'s silent engine failure (follow-up card if the lead wants it).
+`scripts/CLAUDE.md`'s `agent/sandbox-probe.sh` row ("S1–S7") is left as is: B1.57 (Doing) plans that file
+(`next-task.sh --check`); a one-line fix after both merge.
 
 Plan review: pending · Plan approved by: · Rounds: 1
