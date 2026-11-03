@@ -3,8 +3,8 @@
 B1.57 — Scripts measure unattended runs and PRs merged with no rework (tooling, no spec section)
 
 - spec: none — tooling (D-27, D-28, D-29); no `src/` change, no section
-- test: new probes in `scripts/metrics-smoke.sh` (M30–M37) and `scripts/githooks-smoke.sh` (G7–G8) — red before, green after (pending)
-- acceptance: pending
+- test: new probes in `scripts/metrics-smoke.sh` (M30–M43) and `scripts/githooks-smoke.sh` (G7–G9) — red before (920221e: 8 + 1 FAIL), green after (41 ok, 9 ok)
+- acceptance: 5/5 clauses (see Evidence)
 - risk tier: high (D-28, `lefthook.yml`)
 
 ## Plan
@@ -92,17 +92,54 @@ none (tooling, no feature row)
 
 ## Review
 
-pending
+`/review-loop`: 3 passes of 3 (cap). Pass 3's one finding was fixed with a probe only (99a637c, no script change) and not re-reviewed: **the lead accepts or asks for a fourth pass**. Full text: `backlog/work/B1.57/review.md`.
+
+| Pass | #   | Finding                                                                                          | Source              | Disposition | Evidence                                                                                   |
+| ---- | --- | ------------------------------------------------------------------------------------------------ | ------------------- | ----------- | ------------------------------------------------------------------------------------------ |
+| 1    | 1   | no-rework's window (before ready, after merge) unprobed                                          | reviewer + dev-lead | fix now     | 6747d8f M38; both window mutants fail it                                                   |
+| 1    | 2   | Q2's never-drafted fallback (`createdAt`) unprobed in both scripts                               | reviewer            | fix now     | 6747d8f M39                                                                                |
+| 1    | 3   | Q5 "one approve per gate" unprobed                                                               | reviewer            | fix now     | 6747d8f M40                                                                                |
+| 1    | 4   | Q3 (relabel after ready) and the highest-numbered agent PR unprobed                              | reviewer + dev-lead | fix now     | 6747d8f M41; both mutants fail it                                                          |
+| 1    | 5   | `--if-exists replace` unprobed                                                                   | reviewer            | fix now     | 6747d8f G9                                                                                 |
+| 1    | 6   | live output in this body stale (#184 appeared)                                                   | reviewer            | fix now     | refreshed below                                                                            |
+| 2    | 1   | a later runner comment closing the gate unprobed                                                 | reviewer            | fix now     | eb98c58 M42 (the code's reading of Q5, see Evidence); header and metrics row state it      |
+| 2    | 2   | a human amend, cherry-pick or rebase of a run's commit keeps `Agent-Run:` and reads as the run's | reviewer            | fix now     | stated cost in `docs/metrics.md` (acc5af9); no mechanism tells them apart without `run.sh` |
+| 3    | 1   | `approve`'s start anchor and word end unprobed                                                   | reviewer            | fix now     | 99a637c M43; dropping either part fails it                                                 |
+
+Riskiest spot, not falsified: the `prepare-commit-msg` job inside the runner container (Linux lefthook, B1.58 image). Traced: `worktree.sh`'s `pnpm install` runs `install-hooks.sh`, which installs it; never run there.
 
 ## Evidence
 
-pending
+- AC met: 5/5 clauses (unattended.sh, no-rework.sh, the run's mark with a probe, `docs/metrics.md` rows, `config-change-approved`)
+- tier: high
+- plan deviations: none in Files. Interface refinements: `issue view --json state,body` (plan: `body`); metrics-smoke needs `jq` (its shim applies the scripts' own `--jq`, run-smoke's way); probe ids grew M30–M37 → M30–M43, G7–G8 → G7–G9 (review passes); red commit f1b29d0 fixed two probe bugs found at green (G7 read a trailing newline, M37 read the wrong column), still red, no assertion loosened.
+- Q5 reading (lead to see): an `approve` answers a high-tier gate only while that gate is the run's latest runner comment; it can only lower the share. A batch is measured with its issue ids (an issue unlabeled after a stopped run leaves the default list).
+- trace: n/a
+
+Verification at the head (macOS /bin/bash 3.2): metrics-smoke 41 ok, 0 FAIL · githooks-smoke 9 ok, 0 FAIL · hook-smoke 511 probes OK · eligible-smoke 14 OK (reviewer) · vitest 202 passed · playwright 43 passed · stryker 93.40 (no src/ change) · check-backlog OK. Mutants: 7 + 1 + 2 targeted single-line mutants each fail their probe.
+
+Live, read-only (2026-11-03, gh 2.103.2's gojq):
+
+```
+$ scripts/metrics/unattended.sh
+issue	card	pr	labeled	ready	messages	unattended
+166	B1.41	-	2026-11-02T09:28:01Z	-	0	no
+184	B1.66	-	2026-11-03T01:56:12Z	-	0	pending
+unattended 0/1 = 0.0 % (pending 1)
+$ scripts/metrics/no-rework.sh
+pr	card	ready	merged	human_commits	change_requests	no_rework
+no-rework n/a (pending 0)
+$ scripts/metrics/no-rework.sh 170 171      # interactive PRs, format only
+170	B1.58	2026-11-02T22:06:34Z	2026-11-02T23:22:08Z	cccca86,…,42fa040 (15 commits after ready)	0	no
+171	B1.55	2026-11-02T18:03:51Z	2026-11-02T22:05:57Z	-	0	yes
+no-rework 1/2 = 50.0 % (pending 0)
+```
 
 ## Checklist
 
-- [ ] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
-- [ ] Red commit precedes the change commit.
-- [ ] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected config change carries `config-change-approved`.
-- [ ] `docs/metrics.md` rows filled; mistake-log: no known mistake repeated.
+- [x] **Diff matches the approved plan**: no file outside the Files table; interface refinements above.
+- [x] Red commit precedes the change commit.
+- [x] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected config change (`lefthook.yml`) carries `config-change-approved`.
+- [x] `docs/metrics.md` rows filled (two D-29 rows, the per-card row); mistake-log: no known mistake repeated.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
