@@ -11,6 +11,7 @@ runner-runs volume.
 | 1   | `20261103T025049Z-17898.jsonl` | 9     | 0.351 | 1       | ended   | Loop 3: `git commit` of `plan.md` → `Author identity unknown` (the container has no git identity)       |
 | 2   | `20261103T025259Z-20531.jsonl` | 7     | 0.120 | 0       | ended   | Loop 3: pre-commit `tsc` fails (TS7006 in `e2e/21-clear-search.spec.ts:44`), Prisma client absent       |
 | 3   | `20261103T055846Z-34182.jsonl` | 16    | 0.668 | 0       | ended   | Loop 4: the reviewer's `review.md` fails pre-commit Prettier; dev-lead may not edit it, so no D-27 line |
+| 4   | `20261103T090356Z-77499.jsonl` | 16    | 0.604 | 2       | limit   | Loop 5 passed (D-27 line, e7e9dd0); then `pr-step.sh push` exit 128: no git credential for HTTPS        |
 
 Total: 2 `claude` calls (the plan's cap), 16 turns, USD 0.471.
 
@@ -53,8 +54,21 @@ holds it yet (review pass 3).
   on a process gap, not the environment: B1.74 (the lead chose: dev-lead formats `review.md` with Prettier, format
   only). The run's plan names its follow-up card "B1.73", an id filed meanwhile (#194); B1.66's reviewer should
   renumber it to the next free id.
-- State left for run 4: worktree `chore/B1.66-agent` at 291724d (plan committed, not pushed) with
-  `backlog/work/B1.66/review.md` untracked; `runs/184/stopped` = `ended`.
+- Run 4 (2026-11-03, after B1.74 #196 merged; the second and last run the lead allowed after B1.69): dev-lead, with the
+  lead present, merged `origin/main` (6e6f3d8) into the container worktree `chore/B1.66-agent` (ad17255, the bot's
+  author) so the run read B1.74's dev-lead.md, then `run.sh 184` with `RUNNER_MAX_TURNS=15 RUNNER_BUDGET_USD=1`.
+  The run committed the reviewer's `review.md` through B1.74's step (d0ca8a4), renumbered its follow-up card to
+  B1.75 (79f5487), had round 2 reviewed (0a35605), then wrote and committed
+  `Plan approved by: reviewer (D-27, tier low, issue #184)` (e7e9dd0): **A4 met** — the first run to pass the gate on
+  the D-27 path. Every commit carries `level-up-lab runner <runner@level-up-lab.invalid>` and `Agent-Run: 1`. It wrote
+  `pr-body.md` and called `scripts/pr-step.sh push`: exit 128, `could not read Username for 'https://github.com'`;
+  it recorded that under "Waiting on human" (3b09a57) and ran out of turns (16, `error_max_turns`). The two permission
+  denials were guard-bash refusing a compound command that named the wrapper; the run retried with plain calls.
+  Cause: `scripts/pr-step.sh:13` unsets `GIT_CONFIG_GLOBAL`, the only place the container's credential helper and
+  identity live → B1.76. **A5 not met** (no draft PR). 15 turns did not cover plan → draft PR; the lead allowed one
+  more run after B1.76 with more turns.
+- State left for run 5: worktree `chore/B1.66-agent` at 3b09a57 (not pushed), `backlog/work/B1.66/pr-body.md`
+  untracked; `runs/184/stopped` = `limit:error_max_turns`.
 - State left for a later run: worktree `chore/B1.66-agent` at a7fce59 with `backlog/work/B1.66/plan.md` staged, not
   pushed; `runs/184/stopped` = `ended`.
 - Smaller finding for the reviewer of B1.66: the run's plan names its follow-up card "B1.68", which is right: B1.67 is already a card
