@@ -25,7 +25,16 @@
 #   B1.55: a D-27 approval (`Plan approved by: reviewer (D-27, …)` on a runner branch `<prefix>/<card>-agent`):
 #       M26 lead-time and M28 throughput start at it; M27 wait-time counts no lead wait for it; M29 plan-deviations
 #       reads it offline (no gh issue call) and a lead field on a runner branch leaves every non-paperwork file outside
+#   B1.57 (D-29), issues #501–#508 and PRs #601–#610 served as timeline JSON, the scripts' own --jq applied (real jq):
+#       M30 runner and bot comments only → unattended yes        M31 a user comment between label and ready → no, 1
+#       M32 `approve; …` after a high-tier gate → excepted; after a medium one → counted
+#       M33 relabel: the latest agent-ready label opens the window; a comment after the first ready is out
+#       M34 open without a ready PR → pending, closed → no; the share line
+#       M35 no-rework yes: run commits, a trailer-less commit before ready, a bot comment after ready; any head by number
+#       M36 no: a trailer-less commit after ready (sha listed), a user comment after ready, closed unmerged; open → pending
+#       M37 default sets: every agent-ready issue (--limit 1000), only `<x>/<card>-agent` PRs; ready = the first event
 set -uo pipefail
+command -v jq >/dev/null || { echo "metrics-smoke: needs jq (B1.57 probes apply the scripts' --jq)" >&2; exit 2; }
 cd "$(git rev-parse --show-toplevel)"
 SRC="$PWD/scripts/metrics"
 
@@ -146,6 +155,18 @@ if [ "\$1 \$2 \$3" = "run list --commit" ] && [ "\${*:5}" = "\$(cat "\$fix/runs.
   [ -f "\$fix/runs.\$4" ] && cat "\$fix/runs.\$4"; exit 0
 fi
 [ "\$*" = "\$(cat "\$fix/list.args")" ] && { cat "\$fix/list.tsv"; exit 0; }
+# B1.57: every word but the filter pinned; the call's own --jq runs on the fixture JSON (run-smoke's way)
+jqf=""; prev=""; for a in "\$@"; do [ "\$prev" = --jq ] && jqf="\$a"; prev="\$a"; done
+f=""
+case "\$*" in
+  "issue list --label agent-ready --state all --limit 1000 --json number --jq "*) f=issues.json ;;
+  "issue view "*" --json state,body --jq "*) [ "\$5" = state,body ] && f="issue.\$3.json" ;;
+  "pr list --state all --limit 1000 --json number,headRefName --jq "*) f=prs.json ;;
+  "pr view "*" --json state,headRefName,isDraft,createdAt,mergedAt --jq "*) f="pr.\$3.json" ;;
+  "api --paginate repos/{owner}/{repo}/issues/"*"/timeline --jq "*)
+    n="\${3#repos/\{owner\}/\{repo\}/issues/}"; f="timeline.\${n%/timeline}.json" ;;
+esac
+[ -n "\$f" ] && [ -f "\$fix/j/\$f" ] && [ "\${@: -2:1}" = --jq ] && { jq -r "\$jqf" < "\$fix/j/\$f"; exit \$?; }
 deny "\$@"
 SHIM
 chmod +x "$TMP/bin/gh"
@@ -280,6 +301,80 @@ r3 plan-deviations.sh B7.1 B7.2
 cut -f3 <<< "$(row B7.1)" | grep -qx -- '-' && cut -f3 <<< "$(row B7.2)" | grep -qx 'src/s2.ts' \
   && tail -1 "$TMP/out" | grep -qx 'uncaught plan deviations 1/2' && ok M29 \
   || fail "M29 $(row B7.1) | $(row B7.2) | $(tail -1 "$TMP/out")"
+
+# --- B1.57: unattended and no-rework (D-29) -------------------------------------------------------------------------
+# Issues #501–#508 (cards B6.1–B6.8) and PRs #601–#610 on 2026-11-04 UTC, as the REST timeline returns them. Every PR
+# is created at 00:30 and, unless said otherwise, made ready at 03:00 and merged at 06:00.
+J="$FIX/j"; mkdir -p "$J"
+ts() { printf '2026-11-04T%s:00Z' "$1"; }
+runner() { # runner <outcome> <tier>: the body run.sh's comment() posts with the lead's login (F1)
+  printf '"Runner (`scripts/agent/run.sh`, B1.44): **%s** for B6.x.\\n\\n- outcome: %s\\n- tier: %s\\n- branch: `x`\\n"' "$1" "$1" "$2"
+}
+label() { printf '{"event":"labeled","created_at":"%s","actor":{"login":"lead","type":"User"},"label":{"name":"%s"}}' "$(ts "$1")" "${2:-agent-ready}"; }
+says() { printf '{"event":"commented","created_at":"%s","user":{"login":"%s","type":"%s"},"body":%s}' "$(ts "$1")" "$2" "$3" "$4"; }
+review() { printf '{"event":"reviewed","submitted_at":"%s","state":"commented","user":{"login":"lead","type":"User"},"body":%s}' "$(ts "$1")" "$2"; }
+ready() { printf '{"event":"ready_for_review","created_at":"%s","actor":{"login":"lead","type":"User"}}' "$(ts "$1")"; }
+draft() { printf '{"event":"convert_to_draft","created_at":"%s","actor":{"login":"lead","type":"User"}}' "$(ts "$1")"; }
+commit() { # commit <sha> <time> <message JSON>
+  printf '{"event":"committed","sha":"%s","committer":{"date":"%s","name":"lead"},"author":{"date":"%s","name":"lead"},"message":%s}' \
+    "$1" "$(ts "$2")" "$(ts "$2")" "$3"
+}
+sha() { printf '%s%036d' "$1" 0; }
+tl() { local n="$1" IFS=,; shift; printf '[%s]\n' "$*" > "$J/timeline.$n.json"; }
+issue() { printf '{"state":"%s","body":"### Card id\\n\\nB6.%s\\n\\n### Why\\n\\nfixture\\n"}\n' "$2" "$1" > "$J/issue.50$1.json"; }
+pr() { # pr <n> <head> <state> <isDraft> [mergedAt]
+  local m=null; [[ -n "${5:-}" ]] && m="\"$(ts "$5")\""
+  printf '{"state":"%s","headRefName":"%s","isDraft":%s,"createdAt":"%s","mergedAt":%s}\n' "$3" "$2" "$4" "$(ts 00:30)" "$m" > "$J/pr.$1.json"
+}
+RUN="$(runner ready medium)"; GATE_HIGH="$(runner gate high)"; GATE_MED="$(runner gate medium)"
+AR='"chore(scripts): B6.x step\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nAgent-Run: 1\n"'
+HUMAN='"fix: B6.x by hand\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n"'
+# issues
+for i in 1 2 3 4 5 6 8; do issue "$i" OPEN; done; issue 7 CLOSED
+tl 501 "$(label 01:00)" "$(says 02:00 lead User "$RUN")" "$(says 02:30 'github-actions[bot]' Bot '"review queued"')" '{"event":"closed","created_at":"2026-11-04T09:00:00Z"}'
+tl 502 "$(label 01:00)" "$(says 01:30 lead User '"please also cover the empty case"')" "$(says 02:00 lead User "$RUN")"
+tl 503 "$(label 01:00)" "$(says 01:20 lead User "$GATE_HIGH")" "$(says 01:40 lead User '"  approve; decisions 1-2 as proposed"')" "$(says 02:00 lead User "$RUN")"
+tl 504 "$(label 01:00)" "$(says 01:20 lead User "$GATE_MED")" "$(says 01:40 lead User '"approve"')" "$(says 02:00 lead User "$RUN")"
+tl 505 "$(label 00:10)" "$(says 01:30 lead User '"wait, rethink"')" "$(label 02:00)" "$(label 02:30 bug)" "$(says 02:40 lead User "$RUN")"
+tl 506 "$(label 01:00)"; tl 507 "$(label 01:00)" "$(says 02:00 lead User "$RUN")"; tl 508 "$(label 01:00)"
+printf '[%s]\n' '{"number":501},{"number":502},{"number":503},{"number":504},{"number":505},{"number":506},{"number":507},{"number":508}' > "$J/issues.json"
+# PRs
+printf '[%s]\n' '{"number":601,"headRefName":"chore/B6.1-agent"},{"number":602,"headRefName":"feat/B6.2-agent"},{"number":603,"headRefName":"chore/B6.3-agent"},{"number":604,"headRefName":"chore/B6.4-agent"},{"number":605,"headRefName":"chore/B6.5-agent"},{"number":608,"headRefName":"chore/B6.8-agent"},{"number":609,"headRefName":"chore/B6.9-agent"},{"number":610,"headRefName":"feat/B6.10-by-hand"},{"number":611,"headRefName":"chore/B6.1-agent-old"}' > "$J/prs.json"
+pr 601 chore/B6.1-agent MERGED false 06:00; pr 602 feat/B6.2-agent MERGED false 06:00; pr 603 chore/B6.3-agent MERGED false 06:00
+pr 604 chore/B6.4-agent CLOSED false; pr 605 chore/B6.5-agent MERGED false 06:00; pr 608 chore/B6.8-agent OPEN true
+pr 609 chore/B6.9-agent OPEN false; pr 610 feat/B6.10-by-hand MERGED false 06:00
+tl 601 "$(commit "$(sha a1)" 02:00 "$AR")" "$(commit "$(sha a2)" 02:50 "$HUMAN")" "$(ready 03:00)" \
+  "$(says 03:10 'github-actions[bot]' Bot '"Claude review: looks fine"')" "$(commit "$(sha a3)" 03:30 "$AR")"
+tl 602 "$(commit "$(sha b1)" 02:00 "$AR")" "$(ready 03:00)" "$(commit "$(sha b2)" 03:20 "$HUMAN")"
+tl 603 "$(commit "$(sha c1)" 02:00 "$AR")" "$(ready 03:00)" "$(review 03:30 '"rename the helper"')"
+tl 604 "$(commit "$(sha d1)" 02:00 "$AR")" "$(ready 03:00)"
+tl 605 "$(commit "$(sha e1)" 02:50 "$AR")" "$(ready 03:00)" "$(draft 03:50)" "$(says 04:00 lead User '"one more thing"')" "$(ready 05:00)"
+tl 608 "$(commit "$(sha f1)" 02:00 "$AR")"; tl 609 "$(commit "$(sha g1)" 02:00 "$AR")"
+tl 610 "$(commit "$(sha h1)" 02:00 "$HUMAN")" "$(ready 03:00)"
+R="$(ts 03:00)"; M="$(ts 06:00)"
+script unattended.sh; cp "$TMP/out" "$TMP/u-default"
+r3=0; [[ -x "$SRC/unattended.sh" ]] && { run unattended.sh 501 502 503 504 505 506 507 508 > "$TMP/u-args"; r3=$?; }
+[[ "$(row 501)" == "$(printf '501\tB6.1\t601\t%s\t%s\t0\tyes' "$(ts 01:00)" "$R")" ]] && ok M30 || fail "M30 $(row 501)"
+[[ "$(row 502)" == "$(printf '502\tB6.2\t602\t%s\t%s\t1\tno' "$(ts 01:00)" "$R")" ]] && ok M31 || fail "M31 $(row 502)"
+[[ "$(cut -f6,7 <<< "$(row 503)")" == $'0\tyes' && "$(cut -f6,7 <<< "$(row 504)")" == $'1\tno' ]] && ok M32 \
+  || fail "M32 $(row 503) | $(row 504)"
+[[ "$(row 505)" == "$(printf '505\tB6.5\t605\t%s\t%s\t0\tyes' "$(ts 02:00)" "$R")" ]] && ok M33 || fail "M33 $(row 505)"
+[[ "$(cut -f3-7 <<< "$(row 506)")" == $'-\t'"$(ts 01:00)"$'\t-\t0\tpending' && "$(cut -f3,5,7 <<< "$(row 507)")" == $'-\t-\tno' \
+  && "$(cut -f3,5,7 <<< "$(row 508)")" == $'608\t-\tpending' && $rc -eq 0 ]] \
+  && tail -1 "$TMP/out" | grep -qx 'unattended 3/6 = 50.0 % (pending 2)' && ok M34 \
+  || fail "M34 rc=$rc $(row 506) | $(row 507) | $(row 508) | $(tail -1 "$TMP/out")"
+script no-rework.sh; cp "$TMP/out" "$TMP/n-default"
+[[ "$(row 601)" == "$(printf '601\tB6.1\t%s\t%s\t-\t0\tyes' "$R" "$M")" ]] \
+  && run no-rework.sh 610 > "$TMP/out" && [[ "$(row 610)" == "$(printf '610\tB6.10\t%s\t%s\t-\t0\tyes' "$R" "$M")" ]] \
+  && ok M35 || fail "M35 $(grep -h '^60\{0,1\}1	\|^610	' "$TMP/n-default" "$TMP/out" | tr '\n' '|')"
+cp "$TMP/n-default" "$TMP/out"
+[[ "$(cut -f5-7 <<< "$(row 602)")" == "$(sha b2 | cut -c1-7)"$'\t0\tno' && "$(cut -f5-7 <<< "$(row 603)")" == $'-\t1\tno' \
+  && "$(cut -f4,7 <<< "$(row 604)")" == $'-\tno' && "$(cut -f7 <<< "$(row 609)")" == pending && $rc -eq 0 ]] \
+  && tail -1 "$TMP/out" | grep -qx 'no-rework 1/5 = 20.0 % (pending 2)' && ok M36 \
+  || fail "M36 rc=$rc $(row 602) | $(row 603) | $(row 604) | $(row 609) | $(tail -1 "$TMP/out")"
+[[ $r3 -eq 0 ]] && cmp -s "$TMP/u-default" "$TMP/u-args" && [[ "$(cut -f5 <<< "$(row 605)")" == "$R" ]] \
+  && [[ "$(awk -F'\t' 'NR > 1 && NF > 1 { print $1 }' "$TMP/n-default" | tr '\n' ' ')" == '601 602 603 604 605 608 609 ' ]] && ok M37 \
+  || fail "M37 r3=$r3 $(diff "$TMP/u-default" "$TMP/u-args" | head -3 | tr '\n' '|') $(awk -F'\t' 'NR > 1 { print $1 }' "$TMP/n-default" | tr '\n' ' ')"
 
 [[ -s "$FIX/denied.log" ]] && { fail "gh shim denied:"; sed 's/^/  /' "$FIX/denied.log"; }
 echo "[metrics-smoke] $oks ok, $fails FAIL"
