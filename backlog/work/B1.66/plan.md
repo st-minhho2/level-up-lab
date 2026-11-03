@@ -29,7 +29,7 @@ Approach: tier 0, no advice (dev-lead Loop 2); this plan is the deliverable, no 
 3. `runs/check-binary/`: the newest triple per version in `verified-versions`; older removed after 30 days.
 4. **Who:** a `scripts/agent/run.sh --prune [--dry-run]` mode the lead runs by hand (no cron; the runner never
    deletes on its own turn), printing every path it removes; a cited log is listed in `runs/<issue>/keep`.
-5. Built by a new card, **B1.73 · run.sh prunes run logs past retention** (tier quick, `config-change-approved`,
+5. Built by a new card, **B1.75 · run.sh prunes run logs past retention** (tier quick, `config-change-approved`,
    D-19), filed by the closing lane of this card; probes in `run-smoke.sh` (old log removed, kept log and live lock
    survive, `--dry-run` deletes nothing).
 
@@ -53,4 +53,4 @@ Approach: tier 0, no advice (dev-lead Loop 2); this plan is the deliverable, no 
 | 3    | dev-lead (D-27) | approval line         | `docs(backlog): B1.66 plan approved` |
 | 4    | dev-lead        | draft PR, metrics row | —                                    |
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: pending (round 2: follow-up id B1.73 taken on main, now B1.75) · Plan approved by: · Rounds: 1
