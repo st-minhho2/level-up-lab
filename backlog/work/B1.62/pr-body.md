@@ -4,10 +4,39 @@ B1.62 — The runner's image carries the Prisma engines and Playwright's browser
 spec section)
 
 - spec: none — tooling (D-26, D-27); no `src/` change, no section
-- test: `scripts/agent/sandbox-probe.sh` S8–S10 (new) — red pending, green pending
-- acceptance: B1.62's four clauses (engines for the lockfile's Prisma, chromium with its libraries via the path
-  variables, `worktree.sh` + `pnpm test:e2e` inside with the allow list unchanged, a bump fails a probe) — pending
+- test: `scripts/agent/sandbox-probe.sh` S8–S10 (new). Red `851dc18`: host "9 of 10 probes FAILED", the current
+  image (throwaway project `b162-verify`, public clone, no login) "3 of 10 probes FAILED" (S8, S9, S10). Green
+  `b22d4c0` on the new image (2.77 GB, arm64): "10 probes OK", again after `stop` + `up -d --wait` (0 `wt_` schemas
+  left); `scripts/worktree.sh chore/b162-verify` exit 0 in 151 s, migrations applied (2 tables); `pnpm test` 202
+  passed; `pnpm test:e2e` 43 passed (1.6 m); 200 × `é` into `varchar(200)` → `INSERT 0 1`. Bump drill (lockfile
+  `playwright` 1.65.0 and the engines hash changed, `docker run --network none`): S8 and S9 FAIL naming each pair, 24 s.
+- acceptance: B1.62's four clauses, all met: engines for the lockfile's Prisma (S8), chromium with its libraries via
+  the path variables (S9), `worktree.sh` + `pnpm test:e2e` inside with `init-firewall.sh` unchanged (the run above,
+  S1/S2 OK), a bump fails a probe instead of reaching the network (the drill)
 - risk tier: high (`.devcontainer/`, `scripts/agent/`); label `config-change-approved` (D-19)
+- branch: this PR replaces #185. Its red commit `2144bb0` carried the `(red)` marker without a vitest file, so
+  `verify-red.sh --auto` failed `guards`; history was not rewritten, the card moved to this branch
+  (`docs/mistake-log.md`, 2026-11-03). `chore/B1.62-runner-image` on origin is left for the lead to delete.
+
+## For the lead: rebuild and check (from the host checkout, on this branch)
+
+The runner's logins and clone stay in their volumes; `up -d --build --wait` replaces both containers (the database
+is new at every start anyway). If `firewall` exits with "cannot read api.github.com/meta", GitHub's unauthenticated
+limit (60 per hour) is spent: wait for its reset and run the `up` line again.
+
+```bash
+docker compose -f .devcontainer/runner/docker-compose.yml up -d --build --wait
+docker compose -f .devcontainer/runner/docker-compose.yml exec runner git fetch origin chore/B1.62-runner-image-probes
+docker compose -f .devcontainer/runner/docker-compose.yml exec runner git checkout FETCH_HEAD
+docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh
+docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/worktree.sh chore/b162-lead-check
+docker compose -f .devcontainer/runner/docker-compose.yml exec -w /home/node/level-up-lab/.worktrees/chore-b162-lead-check runner pnpm test:e2e
+```
+
+Expected: build about 5 minutes cold, both containers `Healthy`; the probe ends "10 probes OK"; `worktree.sh` prints
+"[worktree] migrations applied to schema wt_chore_b162_lead_check" and "ready in" about 150 s (cold store); e2e ends
+"43 passed". Afterwards `exec runner git worktree remove .worktrees/chore-b162-lead-check` and
+`exec runner git branch -D chore/b162-lead-check`.
 
 ## Plan
 
@@ -102,13 +131,23 @@ none (tooling, no `spec/features-map.md` row)
 
 ## Review
 
-pending
+`/review-loop` pass 1/3 (reviewer: vitest 202, playwright 43, stryker 93.40 on its own run; lint, typecheck and
+every `scripts/ci` guard OK; `check-config-change` needs this PR's label).
+
+| Pass | #   | Finding                                                                                                 | Kind          | Disposition | Justification                                                                        |
+| ---- | --- | ------------------------------------------------------------------------------------------------------- | ------------- | ----------- | ------------------------------------------------------------------------------------ |
+| 1    | 1   | `docker-compose.yml:10` header checked out the superseded branch (its tree lacks the ARGs: S8, S9 FAIL) | correctness   | fix now     | `3dc9efe` names `chore/B1.62-runner-image-probes`                                    |
+| 1    | 2   | red commit `851dc18` lacks the plan's `(red)` marker; Evidence said "plan deviations: none"             | plan-mismatch | fix now     | this body names the deviation and the replacing evidence (host 9/10, old image 3/10) |
+
+Riskiest unfalsified: no probe compares `@prisma/client` with `prisma` (both 6.19.3 in `package.json` today); a
+client-only bump would load the image's 6.19.3 engine. Untested lines: `listen_addresses=127.0.0.1` (IPv6 is off in
+the namespace, S10 checks the listener), `fsync=off`, the runner healthcheck (`up --wait` used it).
 
 ## Evidence
 
-- AC met: pending/4
+- AC met: 4/4
 - tier: high
-- plan deviations: none
+- plan deviations: `851dc18` red commit without the plan's `(red)` marker (verify-red judges only vitest files; B1.58 precedent)
 - trace: n/a
 
 ## Checklist
