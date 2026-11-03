@@ -8,7 +8,7 @@ Approach: REST events keep a label's name at event time (B1.49 live step 6), so 
 **Costs the lead accepts by approving:** (1) B1.64 rides on B1.63's branch: next-task shows it To do until the closing
 lane (WIP is 4/3, it cannot be claimed alone). (2) A pull-request number now fails (`issue(number:)` does not resolve
 it). (3) CI's token proof step (`ci.yml:155`) still reads REST events, and CI's apt gh 2.23 running this query is
-[unverified]; a failure there refuses (fail-closed) → follow-up card, not this PR.
+[unverified]; a failure there refuses (fail-closed) → follow-up card, not this PR. (4) The `scripts/CLAUDE.md` rows for `eligible*.sh` (already "E1–E9") stay stale: B1.57 holds that file (`next-task.sh --check`) → a row fix after it merges.
 
 ## Files
 
@@ -17,7 +17,6 @@ it). (3) CI's token proof step (`ci.yml:155`) still reads REST events, and CI's 
 | `scripts/agent/eligible.sh`       | state first (B1.64); events from GraphQL, matched by the label's node id (B1.63) |
 | `scripts/agent/eligible-smoke.sh` | shim answers GraphQL in pages; E1, E3–E4, E6, E10 refit; E11 rewritten; E12–E14  |
 | `scripts/hook-smoke.sh`           | its jq-free gh shim and `gh_issue` answer the new calls (S16–S19 unchanged)      |
-| `scripts/CLAUDE.md`               | `eligible*.sh` rows: closed refused, node id, probes E1–E14                      |
 | `backlog/work/B1.63/plan.md`      | this plan                                                                        |
 | `backlog/work/B1.63/review.md`    | plan and diff reviews                                                            |
 | `backlog/work/B1.63/pr-body.md`   | PR body                                                                          |
@@ -55,10 +54,10 @@ scripts/agent/eligible.sh <issue-number> [<card>]   arguments, exit codes, stdou
 
 ## Work breakdown
 
-| Step     | Role / skill    | Produces                   | Commit                                                            |
-| -------- | --------------- | -------------------------- | ----------------------------------------------------------------- |
-| 1 red    | dev-lead        | both smokes                | `test(scripts): B1.63 B1.64 eligibility probes`                   |
-| 2 green  | dev-lead        | `eligible.sh`, `CLAUDE.md` | `chore(scripts): B1.63 B1.64 label node id, closed issue refused` |
-| 3 review | reviewer (diff) | `review.md`                | `docs(backlog): B1.63 review`                                     |
+| Step     | Role / skill    | Produces      | Commit                                                            |
+| -------- | --------------- | ------------- | ----------------------------------------------------------------- |
+| 1 red    | dev-lead        | both smokes   | `test(scripts): B1.63 B1.64 eligibility probes`                   |
+| 2 green  | dev-lead        | `eligible.sh` | `chore(scripts): B1.63 B1.64 label node id, closed issue refused` |
+| 3 review | reviewer (diff) | `review.md`   | `docs(backlog): B1.63 review`                                     |
 
 Plan review: pending · Plan approved by: · Rounds: 1
