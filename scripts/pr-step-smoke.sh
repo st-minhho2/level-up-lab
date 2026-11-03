@@ -163,6 +163,10 @@ pushed() { [[ "$(git -C "$ORIGIN" rev-parse feat/B9.1-x 2>/dev/null)" == "$(git 
 g checkout -q feat/B9.1-x; g commit -q --allow-empty --no-verify -m r15; rm -f "$TMP/seen"
 GIT_CONFIG_GLOBAL="$TMP/gitconfig" git -C "$REPO" push -q origin HEAD:refs/heads/feat/B9.1-x >/dev/null 2>&1
 grep -q hooks "$TMP/seen" 2>/dev/null || { echo "     control: the hook named by GIT_CONFIG_GLOBAL did not fire"; r15=1; }
+# the system case's own control: GIT_CONFIG_SYSTEM alone makes a plain push fire the hook (diff review pass 1)
+g commit -q --allow-empty --no-verify -m r15-system-control; rm -f "$TMP/seen"
+GIT_CONFIG_SYSTEM="$TMP/gitconfig" git -C "$REPO" push -q origin HEAD:refs/heads/feat/B9.1-x >/dev/null 2>&1
+grep -q hooks "$TMP/seen" 2>/dev/null || { echo "     control: the hook named by GIT_CONFIG_SYSTEM did not fire"; r15=1; }
 for c in global count system; do
   g commit -q --allow-empty --no-verify -m "r15 $c"; rm -f "$TMP/seen"
   case $c in
