@@ -13,7 +13,8 @@ hooks:
 
 You are accountable for what gets built and for keeping the human's time to one decision per card. The human
 approves the plan; roles do the work; you write only `backlog/`, `docs/metrics.md`, `docs/mistake-log.md` (never a
-card's `review.md`: the reviewer's verdict is what a D-27 approval stands on).
+card's `review.md`: the reviewer's verdict is what a D-27 approval stands on; the one change you make to it is
+Prettier's, in "Committing a review" below).
 
 ## Control-plane rules (override everything else)
 
@@ -55,7 +56,8 @@ Plan review: <approved, round N> · Plan approved by: <empty until the lead appr
 
 Commit `docs(backlog): <card> plan`.
 
-4. **Review the plan.** Run `scripts/next-task.sh --check <card>` (also before every re-approval); an overlap → re-plan
+4. **Review the plan.** Every commit that holds a `review.md` follows "Committing a review" below. Run
+   `scripts/next-task.sh --check <card>` (also before every re-approval); an overlap → re-plan
    around it or wait, never ask the lead to approve over it. Dispatch `reviewer` (plan review) on the unapproved plan, so the lead decides on a plan whose
    costs the review has already surfaced. Changes requested → revise `plan.md`, commit, dispatch again (≤ 2 rounds,
    then Waiting on human). Approved → fill `Plan review: approved, round N`, commit.
@@ -81,7 +83,8 @@ Commit `docs(backlog): <card> plan`.
    `git log --first-parent --no-merges --stat <red>..HEAD -- '*.test.*' e2e/` empty, and
    `git log --first-parent --merges --remerge-diff --format= <red>..HEAD -- '*.test.*' e2e/` empty or a conflict resolution the
    reviewer read: a merged sibling's tests are not the card's, a resolution that touches the card's tests is). A `DISPUTED` line → `/advise`.
-7. **Review the diff.** `/review-loop` (reviewer diff mode, dispositions, ≤ 3 passes, `mark-reviewed.sh`).
+7. **Review the diff.** `/review-loop` (reviewer diff mode, dispositions, ≤ 3 passes, `mark-reviewed.sh`); each
+   pass's `review.md` is committed as "Committing a review" says.
 8. **Map, card, metrics.** `docs(map): F<n> … [<card>]`; card status `Partial — merged pending` is set by the
    closing commit after merge; `docs/metrics.md` per-card row now.
 9. **Ready.** `git fetch origin && git merge origin/main` (never rebase, never force push). Clean merge →
@@ -95,6 +98,26 @@ Commit `docs(backlog): <card> plan`.
    (`backlog/CLAUDE.md`) on `docs/<card>-done` (or `-partial`), then `scripts/pr-step.sh push` and
    `scripts/pr-step.sh open "docs(backlog): <card> done"` (B1.26), never `draft`; on `-partial` the title is
    `"docs(backlog): <card> partial -- <what is pending>"`.
+
+## Committing a review
+
+The reviewer writes `work/<card>/review.md`; you commit it and never write or edit it. Lefthook runs
+`prettier --check` on it, and `format-after-edit.sh` skips a file under `.worktrees/` when the session opened in the
+parent checkout (`.prettierignore`), so the file can fail the commit (B1.74). Before every commit that holds a
+`review.md` (Loop 4 each round, Loop 7 each pass; Loop 5's D-27 line waits for that commit), from the worktree's top
+level, with the card id in place of `<card>`:
+
+```bash
+f=backlog/work/<card>/review.md
+w() { { cat; echo; } | sed -E 's/[0-9]+[.)]([[:space:]]|$)/ /g' | LC_ALL=C tr -cs '[:alnum:]' ' '; }
+git add "$f" && pnpm exec prettier --write "$f" && [ "$(git show ":$f" | w)" = "$(w < "$f")" ] && git add "$f" \
+  || { git restore -- "$f"; git restore --staged -- "$f"; echo "review.md not committed: Prettier failed or changed more than formatting" >&2; false; }
+```
+
+Exit 0: the file is formatted, its letters and digits in order are the reviewer's (list numbers aside, which Prettier
+renumbers; a final newline Prettier adds counts as formatting), and the formatted copy is staged; commit it as the step says. Not 0: the reviewer's text is back as it was;
+do not commit it and do not fix it by hand. Stop and report "Review for <card> not committed: Prettier failed or
+changed more than formatting." under "Waiting on human".
 
 ## Role brief template
 

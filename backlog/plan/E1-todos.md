@@ -959,6 +959,6 @@ _tooling · no §_
 
 - **Spec:** none — tooling (D-27); no `src/` change, no section
 - **Test:** a probe that gives dev-lead's commit step an unformatted `review.md` — red because: dev-lead.md has no step that formats it (`grep -ci prettier .claude/agents/dev-lead.md` → 0)
-- **Acceptance:** before committing a card's `review.md`, dev-lead runs `pnpm exec prettier --write` on that file only; the commit is formatting only (`git diff -w` of the file before and after shows no word changed), otherwise dev-lead stops and reports; dev-lead still never edits `review.md` with Write or Edit; a run's `ALLOW` already holds `Bash(pnpm exec prettier *)`; the PR carries `config-change-approved` (D-19) (lead's choice A, 2026-11-03)
+- **Acceptance:** before committing a card's `review.md`, dev-lead runs `pnpm exec prettier --write` on that file only; the commit is formatting only (the letters and digits in order of the reviewer's copy and the formatted file are equal once every `N.` or `N)` before a space or line end is dropped; `git diff -w` was measured too strict, lead's option (ii) at B1.74's plan gate), otherwise dev-lead stops and reports; dev-lead still never edits `review.md` with Write or Edit; a run's `ALLOW` already holds `Bash(pnpm exec prettier *)`; the PR carries `config-change-approved` (D-19) (lead's choice A, 2026-11-03)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.74/`
