@@ -358,3 +358,82 @@ because Q5 is silent on it). Finding 2 goes to the dev-lead as a stated cost, wi
 Riskiest unfalsified: the `prepare-commit-msg` job inside the runner container (Linux lefthook, B1.58 image), still
 traced only, never run there. Second, as in round 1: Q8 reads the committer date, so a human commit made on the draft
 and pushed after ready is not counted.
+
+## Diff review (round 3)
+
+SCOPE: tooling (no §; `scripts/metrics/`, `scripts/*-smoke.sh`, `lefthook.yml`, docs). Range `main...a0f0200`. New since
+round 2: `eb98c58 test(scripts)` M42 (10 insertions, 0 deletions), `acc5af9 chore(scripts)` (whitespace-insensitive
+word diff: the `unattended.sh` header gains "and before the next runner comment", `scripts/CLAUDE.md` M1–M42 / G1–G9,
+`docs/metrics.md` the amend sentence; the rest is table realignment), `a0f0200` merge of origin/main (B1.63/B1.64,
+B1.66 filing). This is pass 3, the cap. Same host as round 1.
+
+### Commands (last line of each, run here)
+
+| Command                              | Result                                                                                                           |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                          | `All matched files use Prettier code style!` (rc 0)                                                              |
+| `pnpm typecheck`                     | `tsc --noEmit` (rc 0)                                                                                            |
+| `pnpm test`                          | `Tests  202 passed (202)`                                                                                        |
+| `pnpm test:e2e`                      | `43 passed (55.1s)`                                                                                              |
+| `pnpm test:mutation`                 | `Final mutation score of 93.40 is greater than or equal to break threshold 70`                                   |
+| `scripts/ci/check-suppressions.sh`   | `OK: no new suppressions`                                                                                        |
+| `scripts/ci/check-config-change.sh`  | rc 1, `lefthook.yml` (expected locally; the PR carries `config-change-approved`, D-19)                           |
+| `scripts/ci/check-feat-commits.sh`   | `OK: no feat commit touches tests`                                                                               |
+| `scripts/ci/check-ac-coverage.sh`    | `OK: every criterion of a shipped section has a test`                                                            |
+| `scripts/ci/check-spec-sections.sh`  | `OK: sections cited: 1 … 22`                                                                                     |
+| `scripts/ci/check-features-map.sh`   | `OK`                                                                                                             |
+| `scripts/ci/check-backlog.sh`        | `OK: README matches the cards`                                                                                   |
+| `scripts/verify-red.sh B1.57`        | `::error::no 'test(<pkg>): B1.57 … (red)' commit` (tooling precedent, plan r1 #1); `--auto`: `nothing to verify` |
+| `scripts/metrics-smoke.sh`           | `40 ok, 0 FAIL`                                                                                                  |
+| `scripts/githooks-smoke.sh`          | `9 ok, 0 FAIL`                                                                                                   |
+| `scripts/hook-smoke.sh`              | `511 probes OK`                                                                                                  |
+| `scripts/agent/eligible-smoke.sh`    | `14 probes OK` (merged in; run because `eligible.sh` changed under this branch)                                  |
+| `scripts/next-task.sh --check B1.57` | `no overlap with any Doing or Review card`                                                                       |
+| `git diff --stat main...HEAD`        | 11 files, 935 insertions, 23 deletions                                                                           |
+
+### Checklist
+
+| Check                                                | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| no test weakened after red                           | pass: after `920221e`, `f1b29d0` (explained, round 1), `6747d8f` and `eb98c58` (additions only). `--remerge-diff` of `a0f0200` on the smokes and tests: empty (clean merge, no resolution touches a probe)                                                                                                                                                                                                                                                                                                                                                             |
+| every changed file in `plan.md`                      | pass: the 7 Files rows plus `backlog/work/B1.57/*`; the merge's files are main's, outside `main...HEAD`                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| interfaces match the plan                            | pass: unchanged since round 1                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| M42 and the Q5 reading                               | pass: the `runner → gate = 0` line ships since green `a6174ff`, so M42 pins existing behavior, not a change. The mutant `{ next }` now fails M42 (ran). The reading ("the gate is the latest runner comment") is narrower than the alternative, so it can only lower the unattended share, never inflate it. The input that separates the two readings, a runner comment between a gate and its `approve`, needs a re-run before the approve, and how a run reads an approve is an unfiled follow-up (Q5). Not a reason; the lead must see it in the PR body (note 1)  |
+| merged B1.63/B1.64 vs this card's assumptions        | pass: `run.sh` is untouched by the merge. Prefix ``Runner (`scripts/agent/run.sh`, B1.44): **…**`` (`run.sh:183`), `- tier: $tier` (`:184`), `branch_of` `chore\|feat/<card>-agent` (`:153-158`) and `card_of` `### Card id` (`:148-150`) all still match the scripts. B1.64 (a closed issue is not eligible) agrees with Q6. B1.63 moves `eligible.sh` to label node ids; the metric still reads the REST `label.name` (note 2)                                                                                                                                       |
+| would a test fail if one changed line were reverted? | **fail for 2 of 19**: on a copy, 19 new single-line mutants. M42 mutant, gate set, `**gate**` test, closed → `no`, `head -1` first ready (both scripts) and `MERGED` are killed. These survive at `40 ok`: the `approve` anchor and word boundary (finding 1); `- tier: high` → substring, the timeline `sort`, `<=`/`<` and `>=`/`>` same-second bounds, the card `gsub`, the `esc` escape, the `Agent-Run:` line anchor, and no-rework's runner exclusions. Those are equivalent on every input `run.sh` can produce or are dead (round 1), so they are not findings |
+
+### Findings
+
+```
+[1] KIND: coverage
+    WHERE: scripts/metrics/unattended.sh:25 (`test("\\A\\s*approve([^A-Za-z]|\\z)")`)
+    DEFECT: Q5's two limits on the excepted comment (the body starts with `approve`; `approve` is a whole word) are
+            pinned by no probe; M32/M40/M42 only use bodies that pass both.
+    TRIGGER: on the copy, drop `\\A\\s*` (mutant A) or drop `([^A-Za-z]|\\z)` (mutant B); input: label 01:00, runner
+             `**gate**` + `- tier: high` 01:20, lead comment `I'd approve once you split Q3` (A) or `approved, but redo
+             Q3` (B) 01:40, PR ready 03:00.
+    WRONG BEHAVIOUR: shipped code classes both bodies `-` (traced with the script's filter: messages 1, `no`). Mutant
+                     A classes the first `approve`, mutant B the second, so the comment is excepted: 0 messages, `yes`.
+                     Q5 excepts only a body whose trimmed text starts with the word `approve`. Both mutants keep
+                     metrics-smoke at `40 ok, 0 FAIL`, and each inflates the D-29 unattended share.
+    CONFIDENCE: confirmed (ran both mutants on the suite; traced both bodies through shipped and mutant filters)
+```
+
+Notes (not reasons):
+
+1. `pr-body.md` is still the pre-build draft: M30–M37, `35 ok`/`8 ok`, Review/Evidence/acceptance `pending`. Before
+   the PR opens it must hold the current counts and, in its decisions, the two readings the lead has not seen in a
+   plan: Q5's "the gate is the latest runner comment" (M42) and the amend cost (round 2 finding 2). `docs/metrics.md`'s
+   Unattended row also omits "before the next runner comment", which the script header states.
+2. After B1.63 the runner decides on the `agent-ready` label's node id, and the metric on the REST event's label
+   name. They differ only for a renamed label (B1.49 live: REST keeps the old name). Example: in E12's sequence the
+   issue is listed by the default set but its `labeled` event reads `y`, so `labeled` is `-`. A batch measured with its
+   issue ids is unaffected unless a label was renamed during the batch.
+
+Verdict: back to test-writer (finding 1: one fixture with the two bodies after high-tier gates, expected `no`. The
+shipped code already gives that answer, so no `chore(scripts)` change. This is pass 3, the cap: the probe lands
+without a fourth review only if the lead accepts that in the PR. Otherwise it waits on the lead).
+
+Riskiest unfalsified: the `prepare-commit-msg` job inside the runner container (Linux lefthook, B1.58 image). It is
+traced to be installed by `worktree.sh`'s `pnpm install` and has never run there. Second, as before: Q8 reads the
+committer date, so a human commit made on the draft and pushed after ready is not counted.
