@@ -574,8 +574,10 @@ FRR="$(mktemp -d)"; mkdir -p "$FRR/bin" "$FRR/word"
 printf '#!/bin/sh\n[ "$1" = exec ] && shift\n[ "$1" = prettier ] && shift\nexec %q "$@"\n' "$PWD/node_modules/.bin/prettier" > "$FRR/bin/pnpm"
 # a formatter that formats and also changes one word: the change the block must refuse
 printf '#!/bin/sh\n"%s/bin/pnpm" "$@" || exit $?\nfor a; do case $a in -*|exec|prettier) ;; *) sed "s/approved/rejected/" "$a" > "$a.t" && mv "$a.t" "$a" ;; esac; done\n' "$FRR" > "$FRR/word/pnpm"
+mkdir -p "$FRR/digit"
+printf '#!/bin/sh\n"%s/bin/pnpm" "$@" || exit $?\nfor a; do case $a in -*|exec|prettier) ;; *) sed "s/519/518/" "$a" > "$a.t" && mv "$a.t" "$a" ;; esac; done\n' "$FRR" > "$FRR/digit/pnpm"
 printf '#!/bin/sh\nexit 2\n' > "$FRR/fails"; mkdir -p "$FRR/fail"; cp "$FRR/fails" "$FRR/fail/pnpm"
-chmod +x "$FRR/bin/pnpm" "$FRR/word/pnpm" "$FRR/fail/pnpm"
+chmod +x "$FRR/bin/pnpm" "$FRR/word/pnpm" "$FRR/digit/pnpm" "$FRR/fail/pnpm"
 fr_repo() { # fr_repo: a scratch repository with the project's Prettier config; prints its path
   local r; r="$(mktemp -d "$FRR/repo.XXXXXX")"
   git -C "$r" init -q; cp .prettierrc .prettierignore "$r/"; mkdir -p "$r/backlog/work/B9.9"
@@ -641,6 +643,21 @@ R="$(fr_repo)"; printf '## Diff review (pass 1)\n\nThe probe ran in round\n2) as
 run_block "$R" "$FRR/bin"; rc=$?
 [[ $rc -eq 0 ]] && staged "$R" "$F" && grep -q 'round 2) as well' "$R/$F"
 fr FR8 $? "a wrapped line starting 2) that Prettier joins upward is accepted and staged (rc $rc)"
+# FR9 (review pass 1): a plan review ends on "Verdict: approved" with no final newline; Prettier adds only that
+R="$(fr_repo)"; printf '## Plan review (round 1)\n\nVerdict: approved' > "$R/$F"
+run_block "$R" "$FRR/bin"; rc=$?
+[[ $rc -eq 0 ]] && staged "$R" "$F" && [[ "$(tail -c 1 "$R/$F" | od -An -c | tr -d ' ')" == '\n' ]]
+fr FR9 $? "a review.md with no final newline is accepted, given one and staged (rc $rc)"
+# FR10 (review pass 1): digits count, not only letters
+R="$(fr_repo)"; printf '%s\nhook-smoke: 519 probes OK\n' "$UNF" > "$R/$F"
+run_block "$R" "$FRR/digit"; rc=$?
+[[ $rc -ne 0 && $rc -ne 99 ]] && nothing_staged "$R" "$F" && grep -q '519 probes' "$R/$F"
+fr FR10 $? "a formatter that also changes a digit is refused, the reviewer's text restored (rc $rc)"
+# FR11 (review pass 1): a misnumbered list written with ")" is renumbered and accepted
+R="$(fr_repo)"; printf '## Diff review (pass 1)\n\n1) first\n2) second\n4) fourth\n' > "$R/$F"
+run_block "$R" "$FRR/bin"; rc=$?
+[[ $rc -eq 0 ]] && staged "$R" "$F" && grep -q '^3\. fourth$' "$R/$F"; fr FR11 $? "a misnumbered 1) 2) 4) list is accepted and staged (rc $rc)"
+rm -rf "$FRR"
 
 echo "== review gate (require-review.sh / mark-reviewed.sh)"
 STATE="node_modules/.cache/level-up-lab"; saved=""; [[ -f "$STATE/reviewed" ]] && saved="$(cat "$STATE/reviewed")"
