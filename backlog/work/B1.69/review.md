@@ -202,3 +202,63 @@ Riskiest unfalsified: S11's mount test matches only when `dirname "$GIT_CONFIG_G
 mount point. Moving `GIT_CONFIG_GLOBAL` into a subdirectory of the volume would FAIL S11 although the identity
 persists. Only the current layout (`/home/node/.level-up-lab`) was exercised, by the dev-lead's drill and the
 container probes above.
+
+## Diff review (pass 2)
+
+Scope: tooling (`scripts/agent/`, `.devcontainer/runner/`), range `origin/main...HEAD` (merge base `c01273c`). Red
+`738a592`, green `6684099`, pass-1 fix `772ad52` (`test(scripts)`, run-smoke only, +2 −1: a `blank-email` config added
+to R17's loop; nothing removed or loosened).
+
+Command results (last lines, run by the reviewer in the worktree unless noted):
+
+| Command                                                       | Result                                                                                                                               |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm lint` / `pnpm typecheck`                                | rc 0, "All matched files use Prettier code style!" / rc 0                                                                            |
+| `pnpm test`                                                   | "Tests 202 passed (202)"                                                                                                             |
+| `pnpm test:e2e`                                               | "43 passed (51.5s)"                                                                                                                  |
+| `pnpm test:mutation`                                          | "Final mutation score of 93.40 is greater than or equal to break threshold 70" (no `src/` change)                                    |
+| `check-suppressions` / `check-feat-commits`                   | OK / OK                                                                                                                              |
+| `check-config-change.sh`                                      | rc 1, the 4 tooling files "without the 'config-change-approved' label" (expected locally; the PR carries the label, D-19)            |
+| `check-ac-coverage` / `check-spec-sections` / `-features-map` | OK / OK / OK                                                                                                                         |
+| `check-plan-scope` / `check-backlog`                          | "stays inside the approved plan of B1.69" / OK                                                                                       |
+| `scripts/verify-red.sh B1.69`                                 | "no 'test(<pkg>): B1.69 … (red)' commit" (as pass 1: the plan drops the marker for a tooling card, B1.62 #185; red proven in pass 1) |
+| `run-smoke.sh` / `tier-smoke.sh` / `hook-smoke.sh`            | "17 probes OK" / "9 probes OK" / "hook-smoke: 511 probes OK"                                                                         |
+| `git diff --stat origin/main...HEAD`                          | 8 files, +746 −9 (4 tooling files, 4 under `backlog/work/B1.69/`)                                                                    |
+
+Checklist:
+
+- Pass-1 finding [1] closed. On a `git archive HEAD` copy, the email-strip mutant (`-n "${e//[[:space:]]/}"` →
+  `-n "$e"`) gives "1 of 17 probes FAILED [R17]". Pass.
+- No probe weakened after the red. `git log --first-parent --no-merges 738a592..HEAD` on the probe files lists only
+  `772ad52`, a `test(scripts)` commit that only adds a case. The range has no merges. Pass.
+- Every changed file is in `plan.md` Files (`check-plan-scope` agrees). Interfaces match the plan: the refusal text
+  is verbatim; `--check-binary` and `--mode` skip the check. Pass.
+- No secret, no suppression, no `src/`, `prisma/` or `e2e/` change. Pass.
+- Revert probes on the copy (`run.sh`, then run-smoke). These 8 are caught, each by R17 alone: email strip, name strip,
+  `&&` → `||` in the check, `die` → `say`, refusal with `exit 0`, `user.email` read as `user.name`, `!= binary`
+  inverted, check disabled (`if false`), and the compose-header hint removed from the message. 1 survives:
+  `git config --get` → `git config --global --get`. As in pass 1, that is not a defect. The current effective-config
+  read is the stricter and correct one, see "Riskiest unfalsified".
+- Container (`b169-verify`; the clone's `run.sh` and `sandbox-probe.sh` hash-equal HEAD's; env-only probes, no state
+  written):
+  - Probe as is: "11 probes OK".
+  - Clone-level `user.email=other@x` (via `GIT_CONFIG_COUNT`): S11 FAILs on GIT_AUTHOR_IDENT and GIT_COMMITTER_IDENT.
+  - `GIT_CONFIG_GLOBAL=/proc/self/fd/3` (same content, not a mount): S11 FAILs "/proc/self/fd is not a mount".
+  - `run.sh 184` with the identity reaches "[run] claude is not logged in".
+  - `run.sh 184` with an effective blank email: "[run] no git identity …", rc 1, no `runs/` created.
+
+Findings: none.
+
+Notes (none blocks):
+
+1. `pr-body.md` does not yet mention `772ad52` or the pass-1 finding. The dev-lead can add it at the PR step with the
+   evidence numbers above.
+2. Pass 1's doubts 1 and 3 (S11 hint wording; the stale `chore/B1.62-runner-image-probes` checkout line at
+   `docker-compose.yml:10`) stay follow-ups, as the dev-lead decided.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: R17's configs reach `run.sh` only through `GIT_CONFIG_GLOBAL`, so no probe pins that
+`identity_problem` reads the effective config. A switch to `git config --global --get` passes run-smoke. After that
+switch, a clone-level blank `user.email` (which git commits as `<>`, pass 1) would pass the check. Today's code refuses
+it (confirmed in the container through `GIT_CONFIG_COUNT`), but nothing guards that.
