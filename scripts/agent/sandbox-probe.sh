@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Probes S1–S7 of the runner container (B1.58): run inside it, as the user the runs use, from the clone
+# Probes S1–S11 of the runner container (B1.58): run inside it, as the user the runs use, from the clone
 # (`docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh`). On the host
 # every network probe and the binary probe fail, which is the red this card starts from.
 #   scripts/agent/sandbox-probe.sh      exit 0 all ok · 1 any FAIL
@@ -13,6 +13,8 @@
 #   S8 the Prisma engines the image points at (PRISMA_*) are the lockfile's commit and version, read-only (B1.62)
 #   S9 the image's Playwright is the lockfile's version, its chromium is under PLAYWRIGHT_BROWSERS_PATH and launches
 #   S10 .env.example's DATABASE_URL reaches a UTF8 Postgres that listens on loopback only and runs as node
+#   S11 git's global config (GIT_CONFIG_GLOBAL) is a file on a mounted volume (runner-runs) holding user.name and
+#       user.email, and a commit from the clone would carry them (B1.69)
 # A lockfile bump the image does not match never reaches the network (the variables stop Prisma's download,
 # Playwright downloads only in `install`): S8/S9 FAIL instead, and the fix is the Dockerfile's ARG and a rebuild.
 set -uo pipefail
@@ -155,6 +157,30 @@ if [[ "$url" =~ ^postgres(ql)?://[^:@/]+(:[^@/]*)?@([^:/]+):([0-9]+)/[^/]+$ ]]; 
     "$(psql "$url" -Atc 'select pg_encoding_to_char(encoding) from pg_database where datname = current_database()' 2>/dev/null)" UTF8 || r=1
 else say ".env.example DATABASE_URL '${url:-none}' is not postgresql://user@host:port/db"; r=1; fi
 [[ $r -eq 0 ]] && ok S10 || fail S10
+
+# S11
+r=0; g="${GIT_CONFIG_GLOBAL:-}"
+if [[ -z "$g" ]]; then say "GIT_CONFIG_GLOBAL is unset"; r=1
+else
+  awk -v d="$(dirname "$g")" '$5 == d { f = 1 } END { exit !f }' /proc/self/mountinfo 2>/dev/null \
+    || { say "$(dirname "$g") is not a mount"; r=1; }
+  if [[ ! -f "$g" ]]; then say "$g does not exist"; r=1
+  else
+    n="$(git config --file "$g" --get user.name 2>/dev/null)"; e="$(git config --file "$g" --get user.email 2>/dev/null)"
+    [[ -n "${n//[[:space:]]/}" ]] || { say "user.name is empty in $g"; r=1; }
+    [[ -n "${e//[[:space:]]/}" ]] || { say "user.email is empty in $g"; r=1; }
+    if [[ $r -eq 0 ]]; then # what a commit would carry: a clone-local value or GIT_AUTHOR_* would override the volume's
+      for v in GIT_AUTHOR_IDENT GIT_COMMITTER_IDENT; do
+        id="$(cd "$ROOT" && git var "$v" 2>/dev/null)"
+        [[ "$id" == "$n <$e> "* ]] || { say "$v is '${id:-none}', not $n <$e>"; r=1; }
+      done
+    fi
+  fi
+fi
+[[ $r -eq 0 ]] || say "set it once, the setup step in the header of .devcontainer/runner/docker-compose.yml:" \
+  "docker compose -f .devcontainer/runner/docker-compose.yml exec runner git config --global user.name \"level-up-lab runner\"" \
+  "(and user.email \"runner@level-up-lab.invalid\")"
+[[ $r -eq 0 ]] && ok S11 || fail S11
 
 echo
 if [[ $fails -eq 0 ]]; then echo "$oks probes OK"; exit 0; fi
