@@ -3,20 +3,20 @@
 # only) applies init-firewall.sh's allow list to a network namespace that `runner` joins with no capability at all, so
 # no exec into `runner`, root included, can change the rules. The workspace is a clone in the runner-repo volume,
 # never the host's checkout (plan decision 1). The lead's commands, from the host checkout (the branch until merged):
-#   docker compose -f .devcontainer/runner/docker-compose.yml up -d --build
+#   docker compose -f .devcontainer/runner/docker-compose.yml up -d --build --wait     (cold build ~5 min, B1.62)
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec runner gh auth login
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec runner gh auth setup-git
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec runner git clone https://github.com/st-minhho2/level-up-lab.git .
-#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner git checkout chore/B1.58-sandbox
+#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner git checkout chore/B1.62-runner-image
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec runner claude auth login
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec runner sh -c 'umask 077; f=~/.claude/.claude.json; jq ".projects[\"/home/node/level-up-lab\"].hasTrustDialogAccepted = true" "$f" > "$f.tmp" && mv "$f.tmp" "$f"'
 # (that line trusts the clone, as claude's own "workspace has not been trusted" message suggests; an interactive
 # `claude` asks for the organization's managed settings first, a separate decision the runner does not need)
-#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh
+#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh   → "10 probes OK"
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec -e RUNNER_BUDGET_USD=1 runner scripts/agent/run.sh --check-binary
 #   docker compose -f .devcontainer/runner/docker-compose.yml stop
-#   docker compose -f .devcontainer/runner/docker-compose.yml up -d
-#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh
+#   docker compose -f .devcontainer/runner/docker-compose.yml up -d --wait
+#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh   → "10 probes OK"
 # Logins live only in the runner-claude and runner-gh volumes (git's global config in runner-runs); after a suspect run
 # remove them (`docker compose -f .devcontainer/runner/docker-compose.yml down -v`) and log in again.
 name: level-up-lab-runner
@@ -51,6 +51,15 @@ services:
     init: true
     cap_drop: [ALL]
     security_opt: ['no-new-privileges:true']
+    # the image's CMD (runner-postgres.sh) starts a fresh Postgres here at every start: nothing survives a stop
+    # (B1.62); the short form, because the long form has no uid
+    tmpfs: ['/home/node/pgdata:uid=1000,gid=1000,mode=0700,size=512m']
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-q', '-h', '127.0.0.1', '-p', '5433']
+      interval: 2s
+      timeout: 2s
+      retries: 30
+      start_period: 30s
     working_dir: /home/node/level-up-lab
     environment:
       CLAUDE_CONFIG_DIR: /home/node/.claude
