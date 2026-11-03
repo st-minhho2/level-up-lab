@@ -325,7 +325,7 @@ commit() { # commit <sha> <time> <message JSON>
     "$1" "$(ts "$2")" "$(ts "$2")" "$3"
 }
 sha() { printf '%s%036d' "$1" 0; }
-tl() { local n="$1" IFS=,; shift; printf '[%s]\n' "$*" > "$J/timeline.$n.json"; }
+tl() { local n="$1"; shift; printf '[%s]\n' "$(printf '%s\n' "$@" | paste -sd , -)" > "$J/timeline.$n.json"; } # one event per line
 issue() { printf '{"state":"%s","body":"### Card id\\n\\nB6.%s\\n\\n### Why\\n\\nfixture\\n"}\n' "$2" "$1" > "$J/issue.50$1.json"; }
 pr() { # pr <n> <head> <state> <isDraft> [mergedAt]
   local m=null; [[ -n "${5:-}" ]] && m="\"$(ts "$5")\""
