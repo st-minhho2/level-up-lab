@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Probes R1–R15 of scripts/agent/run.sh (B1.44) offline: a `claude` shim that replays fixture stream-json, a `gh` shim
+# Probes R1–R16 of scripts/agent/run.sh (B1.44) offline: a `claude` shim that replays fixture stream-json, a `gh` shim
 # that applies run.sh's own --jq to fixture JSON (real jq), and fakes for the eligibility, claim and worktree seams.
 #   scripts/agent/run-smoke.sh
 #   R1 not logged in            R2 unverified version          R3 ineligible issue        R4 three agent branches in flight
@@ -7,6 +7,7 @@
 #   R8 tools-mismatch kill      R9 user settings in the run    R10 one retry on error     R11 limits not retried
 #   R12 gate comment with tier  R13 --poll order and skips     R14 --check-binary
 #   R15 --mode on the host is dontAsk, whatever uname, curl or the environment say (B1.58)
+#   R16 the exact prompt: Loop 5's D-27 path at the plan gate, no unconditional gate stop (B1.65)
 set -uo pipefail
 command -v jq >/dev/null || { echo "run-smoke: needs jq" >&2; exit 2; }
 HERE="$(cd "$(dirname "$0")" && pwd -P)"
@@ -347,6 +348,22 @@ reset; run --mode 7
 [[ $RC -eq 1 ]] && has usage "$TMP/out" || { say "--mode with an argument: rc=$RC"; r=1; }
 [[ $(calls) -eq 0 ]] && ! has ELIGIBLE "$LOG" || { say "--mode started a run"; r=1; }
 [[ $r -eq 0 ]] && ok R15 || fail R15
+# R16
+r=0
+reset; run 7
+want="Issue #7 is labeled agent-ready (D-27): run card B1.44 as dev-lead: follow .claude/agents/dev-lead.md and .claude/skills/work-next/SKILL.md. The worktree $WT/chore-b1-44-agent
+on branch chore/B1.44-agent is claimed and is yours; resume from the first Loop step whose artifact is missing. This run is
+headless: nobody answers inside it. At the plan gate take dev-lead Loop 5's D-27 path: once the plan review says
+Verdict: approved, a plan that scripts/agent/tier.sh rates low or medium, with scripts/agent/eligible.sh 7 B1.44
+exiting 0, gets the reviewer's D-27 approval line and the run goes on; at tier high or on a refusal print the gate
+line and stop; a question only the lead can answer goes to backlog/README.md \"Waiting on human\", then stop."
+[[ "$(cat "$FIX/stdin-1" 2>/dev/null)" == "$want" ]] || { say "prompt: $(tr '\n' '|' < "$FIX/stdin-1" 2>/dev/null)"; r=1; }
+# the opening is how dev-lead knows a run (Loop 5); a rewording would turn the D-27 path off with no other probe failing
+has 'Issue #7 is labeled agent-ready (D-27): run card' "$FIX/stdin-1" || { say "prompt lost its D-27 opening"; r=1; }
+has 'print the gate line and stop; a question' "$FIX/stdin-1" && { say "the unconditional gate stop is still in the prompt"; r=1; }
+grep -q 'Until B1.55' "$SRC" && { say "the header still says every run stops at the gate"; r=1; }
+sed -n '2,16p' "$SRC" | grep -q 'Loop 5' || { say "the header names no Loop 5"; r=1; }
+[[ $r -eq 0 ]] && ok R16 || fail R16
 
 echo
 if [[ $fails -eq 0 ]]; then echo "$oks probes OK"; exit 0; fi
