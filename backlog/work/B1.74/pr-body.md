@@ -1,11 +1,21 @@
 ## Item
 
-B1.74 — dev-lead commits a reviewer's review.md that Prettier rejects, formatted and unchanged (tooling, no spec section)
+B1.74 — dev-lead commits a reviewer's review.md that Prettier rejects, formatted and unchanged (tooling, no spec
+section)
 
 - spec: none — tooling (D-27); no `src/` change, no section
-- test: `scripts/hook-smoke.sh` FR1–FR8 (new) — pending
-- acceptance: B1.74's clauses — pending
+- test: `scripts/hook-smoke.sh` FR1–FR11 (new). Red `10aa7db`: FR1–FR8 FAIL, every other probe ok (511). Review pass
+  1 `324fcc7`: FR9 FAIL (a review.md with no final newline refused), FR10 and FR11 green on arrival. Green `e6230d0` +
+  `0b6a49d`: "hook-smoke: 522 probes OK"; run-smoke 17 OK; tier-smoke 9 OK; `check-agent-frontmatter` OK; `pnpm test`
+  202; 17 of 17 hand mutants of the block and its pointers each turn an FR red. The reviewer's plan-review harness: the
+  block accepts all 56 existing `review.md` files unformatted and re-wrapped at 80–120 columns, byte-equal to Prettier,
+  under bash 3.2 + BSD sed and bash 5.2 + GNU sed; `guard-bash.sh` passes it.
+- acceptance: B1.74's clauses, all met: Prettier `--write` on that one file before every commit holding a `review.md`
+  (Loop 4, Loop 7); format only, checked by letters and digits in order with `N.`/`N)` dropped (the amended clause,
+  lead's option (ii)), else the reviewer's text restored and a stop; no Write or Edit of `review.md` (path-guard line
+  unchanged); `Bash(pnpm exec prettier *)` already in a run's ALLOW (no `run.sh` change); the label is on this PR
 - risk tier: high (`.claude/`); label `config-change-approved` (D-19)
+- live proof: run 4 on #184 after this merges (plan decision 3)
 
 ## Plan
 
@@ -52,7 +62,7 @@ Round 2 (plan review r1: 1 reason, "r1" below). **The lead decides at this gate*
 ```
 dev-lead.md block (from the worktree top level, before every commit holding a review.md):
   f=backlog/work/<card>/review.md
-  w() { sed -E 's/[0-9]+[.)]([[:space:]]|$)/ /g' | LC_ALL=C tr -cs '[:alnum:]' ' '; }
+  w() { { cat; echo; } | sed -E 's/[0-9]+[.)]([[:space:]]|$)/ /g' | LC_ALL=C tr -cs '[:alnum:]' ' '; }
   git add "$f" && pnpm exec prettier --write "$f" && [ "$(git show ":$f" | w)" = "$(w < "$f")" ] && git add "$f" \
     || { git restore -- "$f"; git restore --staged -- "$f"; echo "review.md not committed: Prettier failed or changed more than formatting" >&2; false; }
   exit 0 = formatted + staged · else reviewer's text restored, nothing staged → stop: "Review for <card> not committed: …"
@@ -80,19 +90,37 @@ Steps: 1 red · 2 green · 3 reviewer (diff) · 4 PR. All dev-lead (no `src/`). 
 
 Plan review: changes requested, round 2 (cap; r1 list renumbering → fixed; r2 wrapped `N)` lines → option (ii) chosen at the gate) · Plan approved by: lead, 2026-11-03 (option (ii); decisions 2–4 as proposed) · Rounds: 1
 
+Changed after approval (diff review pass 1, 3 findings): `w()` reads `{ cat; echo; }` first, so a review.md with no
+final newline (Prettier adds one) is not refused (FR9); FR10 (a changed digit refused) and FR11 (a `1) 2) 4)` list
+accepted) pin `[:alnum:]` and `[.)]`; the scratch repositories are removed; hook-smoke 522 probes, `scripts/CLAUDE.md`
+names FR1–FR11. Same Files, same block shape; re-approved by: lead, 2026-11-03.
+
 ## Map delta
 
 none (tooling, no `spec/features-map.md` row)
 
 ## Review
 
-pending
+`/review-loop` passes 2/3 (reviewer, both passes: vitest 202, playwright 43, stryker 93.40; every `scripts/ci` guard
+OK except `check-config-change` before this PR's label and `verify-red` finding no `(red)` commit, as the plan says).
+
+| Pass | #   | Finding                                                                                        | Kind        | Disposition | Justification                                                                       |
+| ---- | --- | ---------------------------------------------------------------------------------------------- | ----------- | ----------- | ----------------------------------------------------------------------------------- |
+| 1    | 1   | a review.md whose last line has no newline is refused, although Prettier only adds the newline | correctness | fix now     | `324fcc7` FR9 (red), `0b6a49d` `w()` reads `{ cat; echo; }` first; plan re-approved |
+| 1    | 2   | `[:alnum:]` → `[:alpha:]` passed FR1–FR8 (a changed digit would be staged)                     | coverage    | fix now     | `324fcc7` FR10: a formatter changing 519→518 is refused                             |
+| 1    | 3   | `[.)]` → `[.]` passed FR1–FR8 (a `1) 2) 4)` list would stop falsely)                           | coverage    | fix now     | `324fcc7` FR11: `1) 2) 4)` accepted                                                 |
+| 1    | n1  | the FR scratch repositories were never removed                                                 | hygiene     | fix now     | `324fcc7` removes `$FRR`                                                            |
+| 2    | —   | none                                                                                           | —           | —           | ready for PR                                                                        |
+
+Riskiest unfalsified (both passes): a host `run.sh` run under `dontAsk` may deny the compound block (container runs use
+bypassPermissions). Surviving mutants, behavior-equal or known: `|$` dropped, `LC_ALL=C` dropped, `[0-9]+` → `[0-9]*`.
+Cosmetic: `dev-lead.md:118` is 171 columns (not re-wrapped).
 
 ## Evidence
 
-- AC met: 0/5
+- AC met: 5/5
 - tier: high
-- plan deviations: none
+- plan deviations: none (the pass-1 change is recorded in plan.md "Changed after approval", re-approved by the lead)
 - trace: n/a
 
 ## Checklist
