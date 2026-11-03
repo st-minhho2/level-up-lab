@@ -166,3 +166,116 @@ a field the API never sends.
 Riskiest unfalsified: whether the lefthook `commit-msg` (or `prepare-commit-msg`) job fires inside the runner
 container's clone (B1.58 image, hooks installed by `pnpm install` with the Linux lefthook binary). G7 runs on the
 host only, and so far no run has committed in the container.
+
+## Diff review (round 1)
+
+SCOPE: tooling (no §; `scripts/metrics/`, `scripts/*-smoke.sh`, `lefthook.yml`, docs). Range `main...a6174ff`: red
+`920221e`, probe fix `f1b29d0`, green `a6174ff`. Contract: D-29, the card's Acceptance, the analysis rulings Q1–Q10
+(approved by the lead with the plan). Host: `/bin/bash` 3.2.57, git 2.39.5, jq 1.7.1, gh 2.103.2, lefthook 2.2.2.
+
+### Commands (last line of each, run here)
+
+| Command                              | Result                                                                                                                      |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                          | `All matched files use Prettier code style!` (rc 0)                                                                         |
+| `pnpm typecheck`                     | `tsc --noEmit` (rc 0)                                                                                                       |
+| `pnpm test`                          | `Tests  202 passed (202)`                                                                                                   |
+| `pnpm test:e2e`                      | `43 passed (1.1m)`                                                                                                          |
+| `pnpm test:mutation`                 | `Final mutation score of 93.40 is greater than or equal to break threshold 70`                                              |
+| `scripts/ci/check-suppressions.sh`   | `OK: no new suppressions`                                                                                                   |
+| `scripts/ci/check-config-change.sh`  | `::error::… without the 'config-change-approved' label: lefthook.yml` (expected locally; the PR must carry the label, D-19) |
+| `scripts/ci/check-feat-commits.sh`   | `OK: no feat commit touches tests`                                                                                          |
+| `scripts/ci/check-ac-coverage.sh`    | `OK: every criterion of a shipped section has a test`                                                                       |
+| `scripts/ci/check-spec-sections.sh`  | `OK: sections cited: 1 … 22`                                                                                                |
+| `scripts/ci/check-features-map.sh`   | `OK`                                                                                                                        |
+| `scripts/verify-red.sh B1.57`        | `::error::no 'test(<pkg>): B1.57 … (red)' commit` (the plan's stated tooling precedent; `--auto`: `nothing to verify`)      |
+| `scripts/metrics-smoke.sh`           | `35 ok, 0 FAIL` (red `920221e` and `f1b29d0`, run from `git archive`: `27 ok, 8 FAIL`, M30–M37)                             |
+| `scripts/githooks-smoke.sh`          | `8 ok, 0 FAIL` (red, both test commits: `7 ok, 1 FAIL`, G7)                                                                 |
+| `scripts/hook-smoke.sh`              | `511 probes OK`                                                                                                             |
+| `scripts/next-task.sh --check B1.57` | `no overlap with any Doing or Review card`                                                                                  |
+| live `unattended.sh`                 | #166 `no`, #184 (B1.66, new since the plan) `pending`; `unattended 0/1 = 0.0 % (pending 1)`                                 |
+| live `no-rework.sh 170 171`          | #170 `no` (15 shas), #171 `yes`; `no-rework 1/2 = 50.0 % (pending 0)`                                                       |
+| `git diff --stat main...HEAD`        | 11 files, 695 insertions, 23 deletions                                                                                      |
+
+### Checklist
+
+| Check                                                | Result                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every Acceptance clause has a probe matching it      | pass: two scripts (M30–M37), the mark (G7–G8), the metrics rows, D-19 label (stated in the PR body)                                                                                                                                                                                                                                                                                                      |
+| no test weakened after red                           | pass: one test commit after red, `f1b29d0`, explained. G7's `%(trailers:…,valueonly)` ends the value with a newline, so the red probe could never equal `7\|<subject>`; `separator=%x2C` still prints `7,7` for a duplicate. M37 moved from no-rework's column 5 (human_commits) to its column 3 (ready) and added unattended's #505 ready: stronger. No merge in range                                  |
+| every changed file in `plan.md`                      | pass: the 7 Files rows plus `backlog/work/B1.57/*` paperwork                                                                                                                                                                                                                                                                                                                                             |
+| interfaces match the plan                            | pass: argument strings, TSV headers, share lines and the shim's pinned `gh` calls as in "Interfaces touched"                                                                                                                                                                                                                                                                                             |
+| `src/`, Zod, Prisma, SQL, migration                  | n/a: no `src/` or `prisma/` change                                                                                                                                                                                                                                                                                                                                                                       |
+| no secret, no suppression                            | pass                                                                                                                                                                                                                                                                                                                                                                                                     |
+| features map                                         | n/a: tooling, no feature row                                                                                                                                                                                                                                                                                                                                                                             |
+| gh `--jq` (gojq) = jq (smoke)                        | pass: the TL filter through `gh api --paginate --jq` and through `jq` on the slurped raw timeline give byte-identical output for #166, #170, #171; 14 edge strings (`\A`, `\z`, `\s`, CRLF, `approved`, `Approve`, `approve\n`) give the same three booleans in both engines                                                                                                                             |
+| timeline covers every PR commit                      | pass for merges of main: #171's timeline holds 17 `committed` events = `gh pr view --json commits` 17, and its merge of `origin/main` appears once, not the commits it brought in                                                                                                                                                                                                                        |
+| prepare-commit-msg reaches checkouts                 | traced: shared `.git/hooks` has no `prepare-commit-msg` today (`no_auto_install: true`); `worktree.sh:101` runs `pnpm install` → `install-hooks.sh` for every run worktree, and a later `lefthook install` from an older config does not delete it (probed on a scratch repo)                                                                                                                            |
+| would a test fail if one changed line were reverted? | **fail**: on a copy, 12 of 22 single-line mutants keep `metrics-smoke 35 ok` / `githooks-smoke 8 ok` (findings 1–5, plus the dead runner exclusion and unattended's `<=` vs `<` label boundary, not findings). 10 killed: User/Bot filters (both), trailer test, ready lower bound of human commits, closed-unmerged, first-ready (unattended), both window bounds of unattended, gate set, newline line |
+
+### Findings
+
+```
+[1] KIND: coverage
+    WHERE: scripts/metrics/no-rework.sh:43-46
+    DEFECT: the change-request window (after ready, before the merge) and the human-commit merge bound are not
+            pinned by any probe.
+    TRIGGER: on the copy, delete `&& $2 > r` from the asks line, or replace `(m == "-" || $2 < m)` /
+             `(m == "-" || $2 <= m)` by `1`; then a merged agent PR with a lead comment on the draft before ready
+             (the lead watching a run) or a lead "thanks" comment after the merge.
+    WRONG BEHAVIOUR: each mutant prints that PR `no` (D-29: a request counts only after ready; Q7 "after ready"),
+                     yet metrics-smoke stays `35 ok, 0 FAIL`: no PR fixture holds a user comment before ready or after
+                     the merge. The shipped code is correct on both inputs (traced).
+    CONFIDENCE: confirmed (ran the three mutants)
+
+[2] KIND: coverage
+    WHERE: scripts/metrics/unattended.sh:50-51, scripts/metrics/no-rework.sh:38,42
+    DEFECT: Q2's fallback (a PR never drafted: ready = createdAt) is unprobed in both scripts.
+    TRIGGER: on the copy, make the fallback always `-` (unattended: `--jq '"-"'`; no-rework: `ready="${ready:--}"`);
+             input: a merged, non-draft agent PR with no `ready_for_review` event.
+    WRONG BEHAVIOUR: unattended reads the issue `no` (closed) or `pending`; no-rework prints ready `-` and drops
+                     every human commit (`r != "-"` guard), so a reworked PR reads `yes`. Suite stays 35 ok: the only
+                     non-draft PR without a ready event (#609) is OPEN and only its verdict column is asserted.
+    CONFIDENCE: confirmed (ran both mutants)
+
+[3] KIND: coverage
+    WHERE: scripts/metrics/unattended.sh:58-61
+    DEFECT: Q5's "one approve per gate comment" is unprobed.
+    TRIGGER: on the copy, change `$6 == "approve" && gate { gate = 0; next }` to `{ next }`, or
+             `$6 == "runner" { gate = 0; next }` to `{ next }`; input: a high-tier gate comment followed by two lead
+             comments `approve` and `approve, but also add X`.
+    WRONG BEHAVIOUR: the mutants except both comments, messages 0, `yes`; Q5 excepts one, so 1, `no`. Suite stays
+                     35 ok (#503 has one approve).
+    CONFIDENCE: confirmed (ran both mutants)
+
+[4] KIND: coverage
+    WHERE: scripts/metrics/unattended.sh:44, :53
+    DEFECT: Q3's "latest label at or before ready" bound and the "highest-numbered agent PR" pick are unprobed.
+    TRIGGER: on the copy, replace `(r == "-" || $2 <= r)` by `1`, or `sort -n | tail -1` by `head -1`; input: an
+             issue relabeled `agent-ready` after its PR went ready (a re-run), or two `chore/<card>-agent` PRs.
+    WRONG BEHAVIOUR: the first mutant opens the window after ready, so every message between the first label and
+                     ready drops and a `no` reads `yes`; the second measures the stale PR. Suite stays 35 ok (#505's
+                     labels all precede ready; one agent PR per card, #611's head does not match).
+    CONFIDENCE: confirmed (ran both mutants)
+
+[5] KIND: coverage
+    WHERE: lefthook.yml:56
+    DEFECT: Q1's "one trailer, a stale one replaced" (`--if-exists replace`) is unprobed.
+    TRIGGER: on the copy, `--if-exists add`; input: `RUNNER_CHILD=7 git commit --amend --no-edit` on a commit that
+             already carries `Agent-Run: 7`.
+    WRONG BEHAVIOUR: the message carries two `Agent-Run:` lines (`mark` would print `7,7`); githooks-smoke stays
+                     `8 ok, 0 FAIL` because none of G7's five cases starts from a message with the trailer.
+    CONFIDENCE: confirmed (ran the mutant)
+```
+
+Not findings: `no-rework.sh:46` excludes runner comments on a PR, which cannot occur today (`run.sh` comments only on
+the issue; a run's tools allow `gh pr edit|checks|view`, not `gh pr comment`); dead but harmless. `IFS=<tab> read`
+collapses empty fields, but every field of that line is non-empty (`-` placeholders), so no shift. ISO comparisons
+hold: REST, GraphQL and `committer.date` all return `…Z` UTC (live #171).
+
+Verdict: back to test-writer (probes only: add the inputs of findings 1–5 to M33/M35/M36/G7 or new ids; the shipped
+code gives the ruled answer on each, traced, so no `chore(scripts)` change is expected).
+
+Riskiest unfalsified: the `prepare-commit-msg` job inside the runner container (Linux lefthook, B1.58 image): traced
+to be installed by `worktree.sh`'s `pnpm install` for each run, never executed there. Second: Q8 reads the
+committer date, so a human commit made on the draft and pushed after ready is not counted (D-29 literal, accepted).
