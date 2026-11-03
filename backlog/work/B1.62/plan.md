@@ -81,4 +81,4 @@ B1.59, B on any decision above, `worktree.sh`'s silent engine failure (follow-up
 `scripts/CLAUDE.md`'s `agent/sandbox-probe.sh` row ("S1–S7") is left as is: B1.57 (Doing) plans that file
 (`next-task.sh --check`); a one-line fix after both merge.
 
-Plan review: approved, round 2 (round 1: 5 reasons, addressed) · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 (round 1: 5 reasons, addressed) · Plan approved by: lead, 2026-11-03 (decisions 1–3 as proposed: A, PGDG postgresql-17, full chromium, ARG pins) · Rounds: 1
