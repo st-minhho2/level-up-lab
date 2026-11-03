@@ -41,7 +41,7 @@ Round 2 (plan review r1: 1 reason, "r1" below). **The lead decides at this gate*
 ```
 dev-lead.md block (from the worktree top level, before every commit holding a review.md):
   f=backlog/work/<card>/review.md
-  w() { sed -E 's/[0-9]+[.)]([[:space:]]|$)/ /g' | LC_ALL=C tr -cs '[:alnum:]' ' '; }
+  w() { { cat; echo; } | sed -E 's/[0-9]+[.)]([[:space:]]|$)/ /g' | LC_ALL=C tr -cs '[:alnum:]' ' '; }
   git add "$f" && pnpm exec prettier --write "$f" && [ "$(git show ":$f" | w)" = "$(w < "$f")" ] && git add "$f" \
     || { git restore -- "$f"; git restore --staged -- "$f"; echo "review.md not committed: Prettier failed or changed more than formatting" >&2; false; }
   exit 0 = formatted + staged · else reviewer's text restored, nothing staged → stop: "Review for <card> not committed: …"
@@ -68,3 +68,8 @@ Steps: 1 red · 2 green · 3 reviewer (diff) · 4 PR. All dev-lead (no `src/`). 
 (B1.75), `run.sh`/ALLOW, `reviewer.md`, the review-loop skill.
 
 Plan review: changes requested, round 2 (cap; r1 list renumbering → fixed; r2 wrapped `N)` lines → option (ii) chosen at the gate) · Plan approved by: lead, 2026-11-03 (option (ii); decisions 2–4 as proposed) · Rounds: 1
+
+Changed after approval (diff review pass 1, 3 findings): `w()` reads `{ cat; echo; }` first, so a review.md with no
+final newline (Prettier adds one) is not refused (FR9); FR10 (a changed digit refused) and FR11 (a `1) 2) 4)` list
+accepted) pin `[:alnum:]` and `[.)]`; the scratch repositories are removed; hook-smoke 522 probes, `scripts/CLAUDE.md`
+names FR1–FR11. Same Files, same block shape; needs the lead's re-approval before ready.
