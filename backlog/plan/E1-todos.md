@@ -806,7 +806,7 @@ _tooling · no §_
 - **Spec:** none — tooling (D-26, D-27); no `src/` change, no section
 - **Test:** `scripts/agent/launchd-smoke.sh` (new) — red because: the plist and its install script do not exist
 - **Acceptance:** a LaunchAgent plist (`StartInterval` 900) and an install / uninstall script the lead runs by hand; each tick runs `scripts/agent/run.sh --poll` inside B1.58's container, never on the host; a tick never overlaps the previous one; output goes to `~/.level-up-lab/runs/poll.log`; `plutil -lint` clean
-- **Tier:** quick · **Depends on:** ~~B1.44~~, ~~B1.58~~, B1.62 (the lead, 2026-11-03: a full run inside the container needs B1.62's engines and browser) · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** quick · **Depends on:** ~~B1.44~~, ~~B1.58~~, ~~B1.62~~ (the lead, 2026-11-03: a full run inside the container needs B1.62's engines and browser) · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.59/`
 
 ### B1.60 · CI runs the runner and tier probes, under bash 5 as well
@@ -867,13 +867,13 @@ _tooling · no §_
 ### B1.62 · The runner's image carries the Prisma engines and Playwright's browser for a full run inside
 
 _tooling · no §_
-**Status: Open** — B1.58's plan (`work/B1.58/plan.md`, decision 5) keeps the runner container's allow list to GitHub, the npm registry and Anthropic; `scripts/worktree.sh:101` runs `pnpm install`, whose Prisma postinstall fetches engines from `binaries.prisma.sh`, and `pnpm test:e2e` needs the Playwright browser from its CDN, neither of which the firewall allows, so a full `run.sh <issue>` inside the container stops at worktree setup (B1.58 proves only `run.sh --check-binary` inside)
+**Status: Done** — 857c054 (#186); sandbox-probe S8–S10 new: red on the host 9 of 10 FAILED and in the B1.58 image 3 of 10 FAILED (851dc18), green 10 probes OK in the new image (2.77 GB arm64), again after stop and up --wait; inside the firewalled runner with init-firewall.sh unchanged: scripts/worktree.sh exit 0 with migrations applied, pnpm test 202, pnpm test:e2e 43; bump drill (lockfile playwright and engines hash moved, --network none): S8 and S9 FAIL; the lead's own container run 2026-11-03 done; no mutation target (tooling, CI mutation green)
 
 - **Spec:** none — tooling (D-26, D-27); no `src/` change, no section
-- **Test:** new probes in `scripts/agent/sandbox-probe.sh` — red because: inside the container `pnpm install --frozen-lockfile` in a fresh worktree fails on the engine download and `pnpm exec playwright --version` finds no browser
+- **Test:** new probes in `scripts/agent/sandbox-probe.sh` — red because: the image sets no `PRISMA_*` engine paths, holds no Playwright or browser and runs no Postgres, so S8–S10 FAIL (corrected at closing: `@prisma/engines`' postinstall fails silently, so inside the container `pnpm install` and `worktree.sh` exit 0 without engines and the failure shows only at `pnpm db:deploy`, `work/B1.62/advice.md`)
 - **Acceptance:** the runner image (`.devcontainer/runner/Dockerfile`) holds the Prisma engines for the lockfile's Prisma version and Playwright's chromium with its system libraries, wired through the engine and browser path variables, so `scripts/worktree.sh <branch>` and `pnpm test:e2e` succeed inside with the allow list unchanged; a Prisma or Playwright bump that the image does not match fails a probe instead of reaching the network; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** ~~B1.58~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.62/`
+- **Work:** `work/B1.62/` (advice with a throwaway spike; plan review 2 rounds, 5 reasons then approved; lead 1 round, decisions as proposed: Postgres 17 in the image as uid node on loopback, PGDG, full chromium, ARG pins; diff review 1 pass, 2 findings fixed; #185 closed for #186 after a `(red)` marker on the probe commit failed `guards`, `docs/mistake-log.md`; follow-ups not filed: `init-firewall.sh`'s unauthenticated `api.github.com/meta` meets GitHub's 60/h limit, `worktree.sh` hides a missing engine, `scripts/CLAUDE.md` still says S1–S7)
 
 ### B1.66 · A plan for how long the runner keeps its run logs
 
