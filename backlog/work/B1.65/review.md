@@ -241,3 +241,70 @@ Riskiest unfalsified: whether a headless dev-lead, given this prompt, really run
 writes the D-27 field within 15 turns. Inside the container, `eligible.sh` makes 4–5 `gh api` calls. If one fails
 (auth or firewall), it exits 1, the run treats that as a refusal, the run ends as `gate`, and A4 is lost. No probe
 reaches that; only step 5 does.
+
+## Diff review (pass 2)
+
+Scope: the delta `a80a2af..HEAD`, one commit: b72e2cb `test(scripts): B1.65 review pass 1 -- R16 pins the header line`
+(`scripts/agent/run-smoke.sh`, +3 −1). Also checked: whether the dispositions of the pass 1 notes hold. Steps 5–6
+(live run, `live.md`) are still not in this pass.
+
+### Command results (run by the reviewer, host `/bin/bash` 3.2.57)
+
+| Command                             | Last line                                                                                  |
+| ----------------------------------- | ------------------------------------------------------------------------------------------ |
+| `pnpm lint`                         | `All matched files use Prettier code style!`                                               |
+| `pnpm typecheck`                    | `> tsc --noEmit` (exit 0, no output)                                                       |
+| `pnpm test`                         | `Tests  202 passed (202)`                                                                  |
+| `pnpm test:e2e`                     | `43 passed (2.7m)`                                                                         |
+| `pnpm test:mutation`                | `Final mutation score of 93.40 is greater than or equal to break threshold 70`             |
+| `scripts/agent/run-smoke.sh`        | `16 probes OK`                                                                             |
+| `scripts/agent/tier-smoke.sh`       | `9 probes OK`                                                                              |
+| `scripts/ci/check-plan-scope.sh`    | `OK: chore/B1.65-run-prompt stays inside the approved plan of B1.65`                       |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                  |
+| `scripts/ci/check-config-change.sh` | exit 1: `run-smoke.sh`, `run.sh` changed without `config-change-approved` (expected, D-19) |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                         |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test`                                      |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 22`                                                               |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                       |
+| `scripts/verify-red.sh --auto`      | `no test(...): B<e>.<n> … (red) commit in range; nothing to verify` (pass 1 note 5 stands) |
+| `git diff --stat main...HEAD`       | 7 files, 818 insertions, 4 deletions                                                       |
+
+### Checklist (delta)
+
+| Check                                                | Result                                                                                                                                                                                                                                                                                                    |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| test change after the red commit is explained        | pass: the only change in `f35f449..HEAD` to a test file is b72e2cb, a `test(scripts)` commit with a reason in its body. It makes R16 stricter (the `Loop 5` grep becomes a match on the whole two lines). No merge commits in the range                                                                   |
+| changed file in `plan.md`                            | pass: `run-smoke.sh` (Files, A3); `check-plan-scope.sh` OK                                                                                                                                                                                                                                                |
+| bash 3.2-safe                                        | pass: `[[ … == "$hdr"$'\n''# the gate.' ]]`, every part quoted, so it is a literal compare and no glob. `grep -A1 -xF --`. Ran green on 3.2.57                                                                                                                                                            |
+| note 2 fixed: would a probe fail on a header mutant  | pass, 4 of 5 killed on full-repo copies (baseline 16 OK): the pass 1 mutant "…Loop 5); every plan proceeds, whatever its tier." → `1 of 16 FAILED` (R16). Also killed: `# the gate.` → `# the gate, unless the lead is away.`; `low or medium` → `low`; the two-line header duplicated. Survivors: note A |
+| no secret, no suppression, no `src/`/`prisma/` touch | pass                                                                                                                                                                                                                                                                                                      |
+
+### Dispositions of pass 1 notes
+
+1. **"both bashes"** (fix now): holds as stated, but is still owed. The "both bashes" line in `pr-body.md` sits under
+   `## Plan`, which copies the approved plan word for word, and that text should stay. `## Evidence` still reads
+   "AC met: pending", and the real numbers are not in the tree yet. Before the PR is marked ready, Evidence must say
+   host 3.2: run-smoke 16 OK, tier-smoke 9 OK; container 5.2: R6, R15 and T4 fail, as they do at `origin/main`.
+   The reviewer cannot check the container numbers (no bash 5 on the host) [unverified].
+2. **R16 header**: fixed by b72e2cb (above), with the limit in note A.
+3. **Prompt vs Loop 5 drift**: no change. Accepted at plan review r2, note 3. Holds.
+4. **Line wrapping**: judged by the live run (step 5). Holds. The run's prompt is pinned whole by R16, unchanged.
+5. **`verify-red.sh B1.65`**: no change. Holds. The red commit and CI's `--auto` are as in pass 1.
+
+### Findings
+
+None blocking.
+
+A. **The header pin checks that the two lines exist, but not that they are the only thing said or where they are.**
+On copies: (i) after `# the gate.`, add a third line `# (In practice every plan proceeds, whatever its tier.)`.
+Result: 16 OK. (ii) Delete the two lines from lines 6–7 and append them at the end of `run.sh`. Result: 16 OK,
+because `grep -xF` scans the whole file and the old "lines 2–16" bound is gone. The header is a comment the run
+never reads, and the commit closes the case pass 1 named. Not a reason to send this back. If wanted, a follow-up
+could compare `sed -n 6,8p`.
+
+Verdict: ready for PR (still owed: pass 1 note 1 in `pr-body.md` Evidence before the PR is marked ready; steps 5–6,
+the live run, `live.md` and its review pass)
+
+Riskiest unfalsified: unchanged from pass 1. Will a headless dev-lead in the container run `tier.sh` and
+`eligible.sh` (4–5 `gh api` calls through the firewall) and write the D-27 field within 15 turns? Or will an
+`eligible.sh` exit 1 turn the run into `gate` and lose A4? Only step 5 reaches it.
