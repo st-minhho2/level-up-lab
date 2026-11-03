@@ -7,11 +7,11 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open   | Total  |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ------ | ------ |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 44     | 2       | 21     | 67     |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 44     | 2       | 25     | 71     |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0      | 5      |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3      |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4      |
-| **Total**        |                                                      | **55** | **2**   | **22** | **79** |
+| **Total**        |                                                      | **55** | **2**   | **26** | **83** |
 
 ## Execution order
 
@@ -110,6 +110,10 @@ flowchart TD
   S77["77 · runner image engines and browser<br/>~~B1.62~~"]
   S78["78 · plan for run log retention<br/>B1.66"]
   S79["79 · CI token proof runs the timeline query<br/>B1.67"]
+  S80["80 · runner container keeps a git identity<br/>B1.69"]
+  S81["81 · firewall reads GitHub ranges with a token<br/>B1.70"]
+  S82["82 · worktree.sh stops without a Prisma client<br/>B1.71"]
+  S83["83 · scripts guide lists probes S1–S10<br/>B1.72"]
 ```
 
 ## Remaining
@@ -117,32 +121,36 @@ flowchart TD
 Board state (To do · Doing · Review · Closing) is derived, not typed: `scripts/next-task.sh --list` (BOARD column),
 at most 3 cards Doing (B1.18).
 
-| Step | ID    | Title                                                                                                 | Spec § | Status  | Blocked by                      | Owner | Size         |
-| ---- | ----- | ----------------------------------------------------------------------------------------------------- | ------ | ------- | ------------------------------- | ----- | ------------ |
-| 41   | B1.30 | guard-bash reads shell words before matching a push                                                   | —      | Open    | —                               | Lead  | S [estimate] |
-| 45   | B1.34 | Package guide headings and the app page header cite the sections their modules name                   | —      | Open    | —                               | Lead  | S [estimate] |
-| 46   | B1.35 | A guard checks that the guide tables cite the sections their packages name                            | —      | Open    | —                               | Lead  | S [estimate] |
-| 47   | B1.36 | hook-smoke's review-gate probe judges "clean" from the gate's own base                                | —      | Open    | —                               | Lead  | S [estimate] |
-| 48   | B1.37 | hook-smoke's check-plan-scope probes ignore an exported HEAD_SHA and BASE_SHA                         | —      | Open    | —                               | Lead  | S [estimate] |
-| 49   | B1.38 | pr-step accepts the ci type that commit-msg accepts                                                   | —      | Open    | —                               | Lead  | S [estimate] |
-| 50   | B1.39 | plan-deviations judges a merged PR's files by the guard's plan_lists rule                             | —      | Open    | —                               | Lead  | S [estimate] |
-| 51   | B1.40 | next-task --check reads plan tokens by the plan_lists rule                                            | —      | Open    | —                               | Lead  | S [estimate] |
-| 52   | B1.41 | Guides state the plan-token rule and name hook-smoke's L1–L15                                         | —      | Open    | —                               | Lead  | S [estimate] |
-| 53   | B4.4  | Section 22 criteria measure the reload rule and the no-role rule                                      | —      | Open    | —                               | Lead  | S [estimate] |
-| 60   | B1.48 | CI runs the agent-ready eligibility probes                                                            | —      | Open    | ~~B1.43~~                       | Lead  | S [estimate] |
-| 62   | B1.50 | The client layer rule also stops a component reaching @prisma/client                                  | —      | Open    | ~~B1.46~~                       | Lead  | S [estimate] |
-| 63   | B1.51 | The daily feature map reaches the agent board and its PRs carry a tier                                | —      | Open    | ~~B1.44~~                       | Lead  | S [estimate] |
-| 64   | B1.52 | dev-lead fills the PR Evidence section after CI is green                                              | —      | Open    | ~~B1.45~~                       | Lead  | S [estimate] |
-| 65   | B1.53 | CI runs the feature-map probes                                                                        | —      | Open    | ~~B1.45~~                       | Lead  | S [estimate] |
-| 66   | B1.54 | The feature map reads the issue form's card field, warns when it truncates, and folds before it trims | —      | Open    | ~~B1.45~~                       | Lead  | S [estimate] |
-| 67   | B1.55 | dev-lead carries an agent-ready card past a reviewed low or medium plan                               | —      | Partial | ~~B1.44~~                       | Lead  | S [estimate] |
-| 68   | B1.56 | A high-tier gate stop resumes when the lead approves on the issue                                     | —      | Open    | ~~B1.44~~, B1.55                | Lead  | S [estimate] |
-| 71   | B1.59 | A launchd job runs the runner's poll every 15 minutes, inside the sandbox                             | —      | Open    | ~~B1.44~~, ~~B1.58~~, ~~B1.62~~ | Lead  | S [estimate] |
-| 72   | B1.60 | CI runs the runner and tier probes, under bash 5 as well                                              | —      | Open    | ~~B1.44~~                       | Lead  | S [estimate] |
-| 73   | B1.61 | The runner's deny list spares commit messages, and TERM ends the tools a run started                  | —      | Open    | ~~B1.44~~                       | Lead  | S [estimate] |
-| 76   | B1.65 | The runner's prompt lets a run pass a reviewed low or medium plan (D-27)                              | —      | Partial | ~~B1.55~~, ~~B1.58~~            | Lead  | S [estimate] |
-| 78   | B1.66 | A plan for how long the runner keeps its run logs                                                     | —      | Open    | —                               | Lead  | S [estimate] |
-| 79   | B1.67 | CI's token proof runs the eligibility check's timeline query, and the scripts guide states its rules  | —      | Open    | ~~B1.63~~                       | Lead  | S [estimate] |
+| Step | ID    | Title                                                                                                    | Spec § | Status  | Blocked by                      | Owner | Size         |
+| ---- | ----- | -------------------------------------------------------------------------------------------------------- | ------ | ------- | ------------------------------- | ----- | ------------ |
+| 41   | B1.30 | guard-bash reads shell words before matching a push                                                      | —      | Open    | —                               | Lead  | S [estimate] |
+| 45   | B1.34 | Package guide headings and the app page header cite the sections their modules name                      | —      | Open    | —                               | Lead  | S [estimate] |
+| 46   | B1.35 | A guard checks that the guide tables cite the sections their packages name                               | —      | Open    | —                               | Lead  | S [estimate] |
+| 47   | B1.36 | hook-smoke's review-gate probe judges "clean" from the gate's own base                                   | —      | Open    | —                               | Lead  | S [estimate] |
+| 48   | B1.37 | hook-smoke's check-plan-scope probes ignore an exported HEAD_SHA and BASE_SHA                            | —      | Open    | —                               | Lead  | S [estimate] |
+| 49   | B1.38 | pr-step accepts the ci type that commit-msg accepts                                                      | —      | Open    | —                               | Lead  | S [estimate] |
+| 50   | B1.39 | plan-deviations judges a merged PR's files by the guard's plan_lists rule                                | —      | Open    | —                               | Lead  | S [estimate] |
+| 51   | B1.40 | next-task --check reads plan tokens by the plan_lists rule                                               | —      | Open    | —                               | Lead  | S [estimate] |
+| 52   | B1.41 | Guides state the plan-token rule and name hook-smoke's L1–L15                                            | —      | Open    | —                               | Lead  | S [estimate] |
+| 53   | B4.4  | Section 22 criteria measure the reload rule and the no-role rule                                         | —      | Open    | —                               | Lead  | S [estimate] |
+| 60   | B1.48 | CI runs the agent-ready eligibility probes                                                               | —      | Open    | ~~B1.43~~                       | Lead  | S [estimate] |
+| 62   | B1.50 | The client layer rule also stops a component reaching @prisma/client                                     | —      | Open    | ~~B1.46~~                       | Lead  | S [estimate] |
+| 63   | B1.51 | The daily feature map reaches the agent board and its PRs carry a tier                                   | —      | Open    | ~~B1.44~~                       | Lead  | S [estimate] |
+| 64   | B1.52 | dev-lead fills the PR Evidence section after CI is green                                                 | —      | Open    | ~~B1.45~~                       | Lead  | S [estimate] |
+| 65   | B1.53 | CI runs the feature-map probes                                                                           | —      | Open    | ~~B1.45~~                       | Lead  | S [estimate] |
+| 66   | B1.54 | The feature map reads the issue form's card field, warns when it truncates, and folds before it trims    | —      | Open    | ~~B1.45~~                       | Lead  | S [estimate] |
+| 67   | B1.55 | dev-lead carries an agent-ready card past a reviewed low or medium plan                                  | —      | Partial | ~~B1.44~~                       | Lead  | S [estimate] |
+| 68   | B1.56 | A high-tier gate stop resumes when the lead approves on the issue                                        | —      | Open    | ~~B1.44~~, B1.55                | Lead  | S [estimate] |
+| 71   | B1.59 | A launchd job runs the runner's poll every 15 minutes, inside the sandbox                                | —      | Open    | ~~B1.44~~, ~~B1.58~~, ~~B1.62~~ | Lead  | S [estimate] |
+| 72   | B1.60 | CI runs the runner and tier probes, under bash 5 as well                                                 | —      | Open    | ~~B1.44~~                       | Lead  | S [estimate] |
+| 73   | B1.61 | The runner's deny list spares commit messages, and TERM ends the tools a run started                     | —      | Open    | ~~B1.44~~                       | Lead  | S [estimate] |
+| 76   | B1.65 | The runner's prompt lets a run pass a reviewed low or medium plan (D-27)                                 | —      | Partial | ~~B1.55~~, ~~B1.58~~            | Lead  | S [estimate] |
+| 78   | B1.66 | A plan for how long the runner keeps its run logs                                                        | —      | Open    | —                               | Lead  | S [estimate] |
+| 79   | B1.67 | CI's token proof runs the eligibility check's timeline query, and the scripts guide states its rules     | —      | Open    | ~~B1.63~~                       | Lead  | S [estimate] |
+| 80   | B1.69 | The runner container keeps a git identity, and a probe proves it                                         | —      | Open    | ~~B1.58~~                       | Lead  | S [estimate] |
+| 81   | B1.70 | The runner firewall reads GitHub's ranges with a token, so a restart never hits the anonymous rate limit | —      | Open    | ~~B1.58~~                       | Lead  | S [estimate] |
+| 82   | B1.71 | worktree.sh stops when the Prisma client was not generated                                               | —      | Open    | ~~B1.62~~                       | Lead  | S [estimate] |
+| 83   | B1.72 | The scripts guide lists sandbox probes S1–S10                                                            | —      | Open    | ~~B1.62~~                       | Lead  | S [estimate] |
 
 ## Waiting on human
 
