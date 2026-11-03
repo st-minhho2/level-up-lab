@@ -53,4 +53,4 @@ Approach: tier 0, no advice (dev-lead Loop 2); this plan is the deliverable, no 
 | 3    | dev-lead (D-27) | approval line         | `docs(backlog): B1.66 plan approved` |
 | 4    | dev-lead        | draft PR, metrics row | —                                    |
 
-Plan review: pending (round 2: follow-up id B1.73 taken on main, now B1.75) · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: · Rounds: 1

@@ -36,3 +36,21 @@ Non-blocking notes for B1.73 (cost stated for the lead, not a change request):
 Verdict: approved
 
 (approved = ready for the D-27 approval line; not written by the reviewer.)
+
+## Plan review (round 2)
+
+Delta only: `git diff d0ca8a4 79f5487` → 1 file, `plan.md`, 2 lines (follow-up id B1.73 → B1.75, footer note).
+
+| Check                      | pass / fail: reason                                                                                           |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| follow-up id is free       | pass: `git grep 'B1\.7[3-9]' origin/main -- backlog/plan backlog/README.md` → B1.73, B1.74 only; B1.75 unused |
+| no stale B1.73 in the plan | pass: the only remaining B1.73 in `plan.md` is the footer note explaining the rename                          |
+| rest of the plan           | pass: unchanged since round 1; round-1 table stands                                                           |
+| overlap                    | pass: `[next-task] B1.66: no overlap with any Doing or Review card`                                           |
+
+Round-1 notes 1–3 now apply to B1.75 (read "B1.73" there as B1.75). The footer still says `Rounds: 1`; the
+dev-lead updates it with the approval line (not blocking).
+
+Verdict: approved
+
+(approved = ready for the D-27 approval line; not written by the reviewer.)
