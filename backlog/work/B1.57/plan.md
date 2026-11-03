@@ -1,0 +1,66 @@
+# B1.57 plan — scripts measure unattended runs and PRs merged with no rework (tooling, D-29)
+
+Tooling, tier quick (no advisor); the contract is D-29 and the card's Acceptance; gaps and facts in `analysis.md`
+(Q1–Q10, F1–F8). Risk tier **high** (`lefthook.yml`) → the lead's `approve`; the PR carries `config-change-approved`.
+`scripts/agent/*` untouched (B1.63–B1.65 hold it). Read-only scripts, bash 3.2, `gh` only (`--jq`, no `jq`).
+
+**The lead decides at this gate:** analysis Q1–Q10 as proposed, in short: (Q1) the mark is a `commit-msg` job adding
+`Agent-Run: $RUNNER_CHILD` when that variable is set; (Q2) ready = first `ready_for_review`; (Q3) label = latest
+`agent-ready` at or before ready; (Q4) a message = any issue/PR comment or review but the runner's own; (Q5) excepted:
+`approve` after a runner `**gate**` comment with `- tier: high`; (Q6) open, not ready = pending, closed, not ready =
+not unattended; (Q7) a change request = any non-runner PR comment or review after ready; (Q8) a human commit = no
+trailer, committed after ready, an "Update branch" merge included; (Q9) default PR set = merged `<x>/<card>-agent`.
+
+## Files
+
+| File                            | Change                                                                                |
+| ------------------------------- | ------------------------------------------------------------------------------------- |
+| `scripts/metrics/unattended.sh` | new: per `agent-ready` issue label time, ready time, messages, verdict; the share     |
+| `scripts/metrics/no-rework.sh`  | new: per agent PR ready, merge, human commits after ready, change requests; the share |
+| `scripts/metrics-smoke.sh`      | M30–M37 on a fixture issue/PR timeline served by the `gh` shim                        |
+| `lefthook.yml`                  | `commit-msg` job `agent-run`: `git interpret-trailers --in-place --if-exists replace` |
+| `scripts/githooks-smoke.sh`     | G7 trailer with `RUNNER_CHILD=7` (commit and merge), G8 none without it               |
+| `scripts/CLAUDE.md`             | rows for the two scripts; probe ids M1–M37, G1–G8                                     |
+| `docs/metrics.md`               | two "Autonomous delivery" rows (D-29 targets, how to re-measure), values n/a until E5 |
+
+## Interfaces touched
+
+```
+scripts/metrics/unattended.sh [<issue>…]   default: every issue labeled agent-ready (gh issue list --state all)
+  TSV "issue card pr labeled ready messages unattended" (UTC ISO times; yes | no | pending), then
+  "unattended <k>/<n> = <x.y> % (pending <m>)"                            n = 0 → "unattended n/a (pending <m>)"
+scripts/metrics/no-rework.sh [<pr>…]       default: merged PRs whose head is <x>/<card>-agent
+  TSV "pr card ready merged human_commits change_requests no_rework" (short shas, comma-separated, - none;
+  count; yes | no | pending), then "no-rework <k>/<n> = <x.y> % (pending <m>)"
+gh calls (shim-exact): issue list, issue view --json body (Card id), pr list --state all (head ref),
+  api --paginate repos/{owner}/{repo}/issues/<n>/timeline --jq … (labeled, commented, reviewed, ready_for_review,
+  committed with message + committer date), pr view --json mergedAt,isDraft,createdAt
+lefthook commit-msg: RUNNER_CHILD set → message gains "Agent-Run: <RUNNER_CHILD>" (one, replaced if present)
+```
+
+## Verification (`/bin/bash` 3.2)
+
+- Red `test(scripts): B1.57 unattended and no-rework probes (red)`: M30–M37, G7 FAIL (scripts and job absent);
+  M1–M29, G1–G6 still ok.
+- Green: `scripts/metrics-smoke.sh` → 37 ok, 0 FAIL: M30 runner comments only → yes · M31 a lead comment between
+  label and ready → no, 1 · M32 `approve` after a high-tier gate → yes; after a medium one → no · M33 relabel: the
+  latest label starts the window; a comment after ready is out · M34 open not ready → pending, closed → no, share
+  line · M35 no-rework: run commits only, and a trailer-less commit before ready → yes · M36 a trailer-less commit
+  after ready (sha listed) / a PR comment after ready → no; open PR → pending; share line · M37 default sets: only
+  `-agent` heads, the first of two `ready_for_review` events. `scripts/githooks-smoke.sh` → 8 ok. `hook-smoke.sh`
+  OK unchanged count. No `gh` call outside the shim's list (denied.log empty).
+- Live, read-only: `scripts/metrics/unattended.sh` (only #166: closed at its gate, no PR → `no`, 0/1) and
+  `scripts/metrics/no-rework.sh 170 171` (interactive PRs, format only), output pasted into the PR body.
+
+## Work breakdown
+
+| Step     | Role            | Produces                        | Commit                                                       |
+| -------- | --------------- | ------------------------------- | ------------------------------------------------------------ |
+| 1 red    | dev-lead        | M30–M37, G7–G8                  | `test(scripts): B1.57 unattended and no-rework probes (red)` |
+| 2 green  | dev-lead        | two scripts, lefthook job, docs | `chore(scripts): B1.57 unattended and no-rework metrics`     |
+| 3 review | reviewer (diff) | `review.md`                     | `docs(backlog): B1.57 review`                                |
+
+Follow-ups (not here): `run.sh` sets `RUNNER_CHILD=<issue>` so the trailer names the issue; how a headless run reads
+the lead's `approve` comment on a high-tier gate (Q5).
+
+Plan review: pending · Plan approved by: · Rounds: 1
