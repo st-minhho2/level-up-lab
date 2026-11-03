@@ -3,15 +3,43 @@
 B1.69 — The runner container keeps a git identity, and a probe proves it (tooling, no spec section)
 
 - spec: none — tooling (D-27, D-29); no `src/` change, no section
-- test: `scripts/agent/sandbox-probe.sh` S11 and `scripts/agent/run-smoke.sh` R17 (new) — pending
-- acceptance: B1.69's five clauses — pending
+- test: `scripts/agent/run-smoke.sh` R17 and `scripts/agent/sandbox-probe.sh` S11 (new). Red `738a592`: run-smoke
+  "1 of 17 probes FAILED" (R17), host sandbox-probe "10 of 11 probes FAILED" (S11 names the step). Green `6684099`
+  (+ `772ad52`, review pass 1): run-smoke "17 probes OK"; tier-smoke 9 OK; hook-smoke 511 OK; `pnpm test` 202; 6 of 6
+  hand mutants of the check turn R17 red. Throwaway project `b169-verify` (public clone at `6684099`, no login): before
+  the step "1 of 11 probes FAILED" (S11: gitconfig does not exist) and `run.sh 184` exit 1 with the `[run] no git
+identity` line, no `runs/184`; after the header's two lines "11 probes OK" and `run.sh 184` stops later, at "claude
+  is not logged in"; identity only in the clone's `.git/config`, or a clone-local override → S11 FAIL;
+  `up -d --build --force-recreate --wait` → "11 probes OK" (the volume kept it)
+- acceptance: B1.69's five clauses, all met: the setup step in the compose header writes the identity once into the
+  `runner-runs` volume and it survives a recreate (plan decision 3: the header is the runner's setup document); S11
+  fails on an empty or missing identity and names the step; `run.sh` refuses a run or `--poll` before the auth call,
+  `eligible.sh`, the claim, `worktree.sh` or any turn; the identity is stated (below); the label is on this PR
 - identity the runner's commits carry: a named bot, `level-up-lab runner <runner@level-up-lab.invalid>`, not the
   lead's own (plan decision 1)
 - risk tier: high (`.devcontainer/`, `scripts/agent/`); label `config-change-approved` (D-19)
 
 ## For the lead: rebuild and check (from the host checkout, on this branch)
 
-pending (filled after the green commit)
+No image change (the Dockerfile is untouched), so the rebuild reuses every layer. The container's clone keeps the
+worktree `chore/B1.66-agent` (plan staged) for the live run; checking out this branch in the clone does not touch it.
+Today the container's global config holds the identity set by hand before B1.65's run 2; the two `git config` lines
+replace it with the bot. If `firewall` exits with "cannot read api.github.com/meta", GitHub's unauthenticated limit
+(60 per hour) is spent (B1.70): wait for its reset and run the `up` line again.
+
+```bash
+docker compose -f .devcontainer/runner/docker-compose.yml up -d --build --wait
+docker compose -f .devcontainer/runner/docker-compose.yml exec runner git fetch origin chore/B1.69-runner-git-identity
+docker compose -f .devcontainer/runner/docker-compose.yml exec runner git checkout FETCH_HEAD
+docker compose -f .devcontainer/runner/docker-compose.yml exec runner git config --global user.name "level-up-lab runner"
+docker compose -f .devcontainer/runner/docker-compose.yml exec runner git config --global user.email "runner@level-up-lab.invalid"
+docker compose -f .devcontainer/runner/docker-compose.yml exec runner git var GIT_AUTHOR_IDENT
+docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh
+```
+
+Expected: both containers `Healthy`; `git var` prints `level-up-lab runner <runner@level-up-lab.invalid> <time> +0000`;
+the probe ends "ok S11" and "11 probes OK". After the merge, `git checkout main && git pull` in the clone instead of
+`FETCH_HEAD`.
 
 ## Plan
 
@@ -92,11 +120,25 @@ none (tooling, no `spec/features-map.md` row)
 
 ## Review
 
-pending
+`/review-loop` passes 2/3 (reviewer, both passes: vitest 202, playwright 43, stryker 93.40; lint, typecheck and every
+`scripts/ci` guard OK except `check-config-change` before this PR's label and `verify-red` finding no `(red)` commit, as
+the plan says).
+
+| Pass | #   | Finding                                                                                          | Kind     | Disposition      | Justification                                                                                 |
+| ---- | --- | ------------------------------------------------------------------------------------------------ | -------- | ---------------- | --------------------------------------------------------------------------------------------- |
+| 1    | 1   | R17 had no blank `user.email` case: dropping the email's whitespace strip in `run.sh` kept 17 OK | coverage | fix now          | `772ad52` adds the case; that mutant now turns R17 red (6 of 6 caught)                        |
+| 1    | d1  | S11's hint always says "set it once …", also when the cause is a clone-local override            | wording  | out of scope     | the line before names the real cause (`GIT_AUTHOR_IDENT is '…'`); follow-up                   |
+| 1    | d2  | `run.sh` reads effective config from `$ROOT`, a run commits in `.worktrees/<slug>`               | doubt    | no change needed | same repository config, no `extensions.worktreeConfig` anywhere; `GIT_AUTHOR_*` is S11's case |
+| 1    | d3  | header line `git checkout chore/B1.62-runner-image-probes` names a branch gone from origin       | doc      | out of scope     | predates this card, outside the plan; a fresh setup stops there; follow-up card               |
+| 2    | —   | none                                                                                             | —        | —                | ready for PR                                                                                  |
+
+Riskiest unfalsified (pass 2): R17 feeds configs only through `GIT_CONFIG_GLOBAL`, so `git config --global --get` in
+`identity_problem` would keep 17 OK and miss a clone-level blank `user.email`; today's code refuses that case (checked in
+`b169-verify`), no probe pins it.
 
 ## Evidence
 
-- AC met: 0/5
+- AC met: 5/5
 - tier: high
 - plan deviations: none
 - trace: n/a
