@@ -279,3 +279,82 @@ code gives the ruled answer on each, traced, so no `chore(scripts)` change is ex
 Riskiest unfalsified: the `prepare-commit-msg` job inside the runner container (Linux lefthook, B1.58 image): traced
 to be installed by `worktree.sh`'s `pnpm install` for each run, never executed there. Second: Q8 reads the
 committer date, so a human commit made on the draft and pushed after ready is not counted (D-29 literal, accepted).
+
+## Diff review (round 2)
+
+SCOPE: tooling (no §; `scripts/metrics/`, `scripts/*-smoke.sh`, `lefthook.yml`, docs). Range `main...10989e0`. New since
+round 1: `6747d8f test(scripts): B1.57 review pass 1 -- M38-M41, G9` (38 insertions, 0 deletions, only the two smoke
+files); no script, `lefthook.yml` or doc change. Same host as round 1.
+
+### Commands (last line of each, run here)
+
+| Command                              | Result                                                                                                                    |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                          | `All matched files use Prettier code style!` (rc 0; 1 eslint warning in `src/components/todo-form.tsx`, not in this diff) |
+| `pnpm typecheck`                     | `tsc --noEmit` (rc 0)                                                                                                     |
+| `pnpm test`                          | `Tests  202 passed (202)`                                                                                                 |
+| `pnpm test:e2e`                      | `43 passed (1.5m)`                                                                                                        |
+| `pnpm test:mutation`                 | `Final mutation score of 93.40 is greater than or equal to break threshold 70`                                            |
+| `scripts/ci/check-suppressions.sh`   | `OK: no new suppressions`                                                                                                 |
+| `scripts/ci/check-config-change.sh`  | rc 1, `lefthook.yml` (expected locally; the PR carries `config-change-approved`, D-19)                                    |
+| `scripts/ci/check-feat-commits.sh`   | `OK: no feat commit touches tests`                                                                                        |
+| `scripts/ci/check-ac-coverage.sh`    | `OK: every criterion of a shipped section has a test`                                                                     |
+| `scripts/ci/check-spec-sections.sh`  | `OK: sections cited: 1 … 22`                                                                                              |
+| `scripts/ci/check-features-map.sh`   | `OK`                                                                                                                      |
+| `scripts/verify-red.sh B1.57`        | `::error::no 'test(<pkg>): B1.57 … (red)' commit` (tooling precedent, plan r1 #1); `--auto`: `nothing to verify`, rc 0    |
+| `scripts/metrics-smoke.sh`           | `39 ok, 0 FAIL`                                                                                                           |
+| `scripts/githooks-smoke.sh`          | `9 ok, 0 FAIL`                                                                                                            |
+| `scripts/hook-smoke.sh`              | `511 probes OK`                                                                                                           |
+| `scripts/next-task.sh --check B1.57` | `no overlap with any Doing or Review card`                                                                                |
+| `git diff --stat main...HEAD`        | 11 files, 846 insertions, 23 deletions                                                                                    |
+
+### Checklist
+
+| Check                                                | Result                                                                                                                                                                                                                                                                                                                                                                           |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| no test weakened after red                           | pass: after `920221e`, `f1b29d0` (explained in round 1) and `6747d8f` (additions only). No merge in range                                                                                                                                                                                                                                                                        |
+| every changed file in `plan.md`                      | pass: unchanged since round 1                                                                                                                                                                                                                                                                                                                                                    |
+| M34/M36/M37 after the prs.json append                | pass: the append (line 384) comes after `u-default` (358), `n-default` (369) and every read of them (M34–M37, 360–381). No default-set run happens after it, so those three probes assert exactly what they asserted in round 1, and all three still pass. Cost: no default-set run sees #612–#616, which no ruling needs                                                        |
+| G9 setup amending G8's commit                        | pass: G8 is asserted at line 102, before the amend at 103, so G8's verdict does not change. The setup line counts a FAIL if it misses but no ok, and checks "an amend under a run adds the trailer". Harmless                                                                                                                                                                    |
+| would a test fail if one changed line were reverted? | **fail for 1 of 10**: on a copy, I re-ran all ten mutants named in round 1's findings 1–5 plus `--if-exists doNothing`. 10 of 11 are killed: M38 ×3 (it also kills the asks merge bound), M39 ×2, M40, M41 ×2, G9 ×2. `unattended.sh:59` `$6 == "runner" { gate = 0; next }` → `{ next }` still gives `39 ok, 0 FAIL` (finding 1). The fix commit's "7 of 7 checked" left it out |
+| docs                                                 | note: `scripts/CLAUDE.md:29,34` still say M1–M37 and G1–G8, but the smokes now hold M41 and G9. `pr-body.md` says `35 ok`/`8 ok` (the dev-lead refreshes it). On main the range already lagged (M1–M25 with M26–M29 present), so this is not a reason                                                                                                                            |
+
+### Findings
+
+```
+[1] KIND: coverage
+    WHERE: scripts/metrics/unattended.sh:59
+    DEFECT: the rule that a later runner comment closes a high-tier gate (so a following `approve` counts) is pinned
+            by no probe, and Q5 does not rule it either way.
+    TRIGGER: on the copy, `$6 == "runner" { gate = 0; next }` → `$6 == "runner" { next }`; input: label 01:00, runner
+             `**gate**` + `- tier: high` 01:20, runner `**error**` comment 01:30 (a re-run after the gate that errored;
+             run.sh posts one comment per run), lead `approve` 01:40, PR ready 03:00.
+    WRONG BEHAVIOUR: shipped code: messages 1, `no`. Mutant: 0, `yes`. metrics-smoke stays `39 ok, 0 FAIL` for both,
+                     so this line can be reverted unseen. Round 1 finding 3 named this mutant, and M40 kills only its
+                     sibling. Q5 says "excepted only when a runner comment with **gate** and tier high precedes it ... one
+                     per gate comment". The mutant's reading satisfies that wording too, and arguably fits D-29's
+                     "expected gate stop excepted" better.
+    CONFIDENCE: confirmed (ran the mutant)
+
+[2] KIND: correctness
+    WHERE: lefthook.yml:54 (`[ -n "${RUNNER_CHILD:-}" ] || exit 0`), scripts/metrics/no-rework.sh:43-44
+    DEFECT: a human amend (or cherry-pick or rebase) of a run's commit keeps `Agent-Run:`, so no-rework reads the
+            human's rework as the run's.
+    TRIGGER: after ready, the lead edits a file, runs `git commit --amend --no-edit` on the run's last commit (no
+             RUNNER_CHILD) and force-pushes. Scratch repo with the job's exact body: the amended commit has new
+             content, committer date 2030-01-01, and `%(trailers:key=Agent-Run,valueonly)` = `7`.
+    WRONG BEHAVIOUR: the new sha's `committed` event is after ready but classed `agent-run`, so human_commits `-`
+                     and the PR reads `yes`. D-29 counts a human-authored commit after ready as rework. Neither the
+                     analysis nor the plan states this cost. No code change is expected unless the lead rules
+                     otherwise. State it in `docs/metrics.md` and in the PR body's "The lead decides".
+    CONFIDENCE: confirmed mechanism (ran it); plausible occurrence (the lead amending a run's commit is not
+                observed yet)
+```
+
+Verdict: back to test-writer (finding 1: one fixture that pins the answer the dev-lead picks for `gate`, then
+runner, then `approve`. If the pick is the mutant's reading, it is a `chore(scripts)` change with the lead's word,
+because Q5 is silent on it). Finding 2 goes to the dev-lead as a stated cost, with no probe.
+
+Riskiest unfalsified: the `prepare-commit-msg` job inside the runner container (Linux lefthook, B1.58 image), still
+traced only, never run there. Second, as in round 1: Q8 reads the committer date, so a human commit made on the draft
+and pushed after ready is not counted.
