@@ -7,15 +7,21 @@ Measured by the advisor in the runner: the wrapper's environment alone reproduce
 system scope the credential lookup succeeds. Risk tier **high** (`.devcontainer/`, `scripts/agent/`) → the lead's
 `approve`; the PR carries `config-change-approved` (D-19); one image rebuild by the lead.
 
-**The lead decides at this gate** (defaults proposed):
+Round 2 (plan review r1: 4 reasons, "r1 #n"). **The lead decides at this gate** (defaults proposed):
 
 1. **Direction A** over the card's (a) (`git config --global` and `gh auth setup-git` would write `~/.gitconfig`, lost
    on recreate; `--global --get` does not follow includes), (b) and (c) (both change the permission-boundary wrapper,
    and the runner marker cannot be faked honestly in a host smoke test).
-2. **Card deviation**: the wrapper never commits (push, draft, ready, open only), so it needs the credential, not the
-   identity; and the red probe is S12 in `sandbox-probe.sh` (red on the host and in today's container), not a red
-   `pr-step-smoke.sh` probe. R15 there is a hardening guard, green on arrival. This PR amends the card's Test and
-   Acceptance lines (commit `docs(backlog): B1.76 card lines`).
+2. **Card deviation** (r1 #2): the wrapper never commits (push, draft, ready, open only), so it needs the credential,
+   not the identity; the red is S12 in `sandbox-probe.sh`, not a `pr-step-smoke.sh` probe (R15 there is a hardening
+   guard, green on arrival). First commit on the branch, before the red, `docs(backlog): B1.76 card lines`, replaces:
+   Test → "`scripts/agent/sandbox-probe.sh` S12 — red because: with every `GIT_CONFIG_*` cleared, as the wrapper
+   does, git in the runner finds no credential helper for github.com (run 4)"; Acceptance → "inside the runner
+   container the wrapper's push reaches GitHub through GitHub's credential helper set at system scope by the image
+   (root-owned); `scripts/pr-step.sh` unchanged, still clearing every `GIT_CONFIG_*` (R15); `draft`, `ready`, `open`
+   use `gh`'s own login; S12 proves the wrapper's git sees the helper; the wrapper makes no commit, so it needs no
+   identity; the PR carries `config-change-approved` (D-19)". Title, README row and node keep their words (ids and
+   titles stay as filed).
 3. **Run 5** (after merge and rebuild): resume the container worktree `chore/B1.66-agent` at 3b09a57 with
    `RUNNER_MAX_TURNS=25 RUNNER_BUDGET_USD=1`; its stale "Waiting on human" row (3b09a57) is the run's own to drop when
    it resumes, not edited by hand. Merging `origin/main` into it is not needed (no conflict, no step depends on it).
@@ -35,10 +41,13 @@ system scope the credential lookup succeeds. Risk tier **high** (`.devcontainer/
 ## Interfaces touched
 
 ```
-Dockerfile   RUN test -x /usr/bin/gh && git config --system 'credential.https://github.com.helper' '!/usr/bin/gh auth git-credential'
+Dockerfile   RUN test -x /usr/bin/gh && git config --system 'credential.https://github.com.helper' '!/usr/bin/gh auth git-credential' \
+             && [ "$(git config --system --get 'credential.https://github.com.helper')" = '!/usr/bin/gh auth git-credential' ]  (r1 #4)
 S12  with every GIT_CONFIG_* cleared, as the wrapper does: git config --get-urlmatch credential.helper https://github.com
      = '!/usr/bin/gh auth git-credential' · /etc/gitconfig owned by root, not writable by node ·
-     GIT_TERMINAL_PROMPT=0 git credential fill exits 0 (stdout to /dev/null, never printed)
+     only where /etc/level-up-lab-runner exists: GIT_TERMINAL_PROMPT=0 git credential fill exits 0 (stdout to
+     /dev/null, never printed); elsewhere it says "credential fill skipped: not the runner" (r1 #3: on the lead's
+     Mac it would pull the real keychain credential)
 R15  control: GIT_CONFIG_GLOBAL with core.hooksPath → a pre-push hook fires on a plain push; through pr-step.sh push with
      GIT_CONFIG_GLOBAL, then GIT_CONFIG_COUNT/KEY_0/VALUE_0, then GIT_CONFIG_SYSTEM: exit 0, no hook fired, origin updated
 ```
@@ -46,12 +55,13 @@ R15  control: GIT_CONFIG_GLOBAL with core.hooksPath → a pre-push hook fires on
 ## Verification
 
 - Red `test(scripts): B1.76 wrapper credential probes` (no `(red)` marker): host `sandbox-probe.sh` → "11 of 12 probes
-  FAILED" (S12 new); `pr-step-smoke.sh` → "15 probes OK" (R15 green on arrival, hardening).
+  FAILED" (S12 new, its fill skipped); `pr-step-smoke.sh` → "[pr-step-smoke] 15 ok, 0 FAIL" (R15 green on arrival).
 - Green `chore(scripts): B1.76 credential helper at system scope` (no probe file): throwaway `-p b176-verify`, public
-  clone at the pushed branch, no `gh` login: old image → S12 says the helper is missing and `/etc/gitconfig` absent;
-  new image → S12 says only "credential fill failed" (no login there), the other 11 ok. `pnpm lint && pnpm typecheck
-&& pnpm test`; `pr-step-smoke` 15, `run-smoke` 17, `hook-smoke` 522, `check-plan-scope`, `check-backlog` OK. Hand
-  mutants (advice) each caught; `down -v` after.
+  clone at the pushed branch, the header's two identity lines first (fresh `runner-runs`, r1 #1), no `gh` login:
+  old image → "1 of 12 probes FAILED", S12 naming the missing helper and `/etc/gitconfig`; new image → "1 of 12 probes
+  FAILED", S12 naming only the credential fill (no login there). `pnpm lint && pnpm typecheck && pnpm test`;
+  `run-smoke` 17, `hook-smoke` 522, `check-plan-scope`, `check-backlog` OK; `down -v` after. Advice's hand mutants:
+  B, D–F caught by S12 or the build's read-back, C by R10, A equivalent (the loop also clears it).
 - Lead's hands (PR body): `up -d --build --force-recreate --wait`, `git pull --ff-only` in the clone,
   `sandbox-probe.sh` → "12 probes OK". Then run 5 is the live proof (A5: draft PR).
 
