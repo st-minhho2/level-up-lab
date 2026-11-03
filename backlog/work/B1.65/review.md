@@ -92,3 +92,69 @@ Verdict: changes requested
 Riskiest unfalsified: whether 15 turns and a USD 0.75 flag reach the D-27 approval commit at all. The plan review is a
 subagent, whether subagent turns count toward `--max-turns` is [unverified], and a B1.66 run also needs
 `next-task --check`, `tier.sh` and `eligible.sh` calls that B1.44 run 4c (9 turns to the gate) never made.
+
+## Plan review (round 2)
+
+SCOPE: tooling (no §; `scripts/agent/`, `backlog/work/B1.65/`). Plan reviewed: `b46f2f0 docs(backlog): B1.65 plan round 2`.
+Read: the round-2 plan against round 1's five reasons, `scripts/agent/run.sh`, `run-smoke.sh`, `eligible.sh`, `tier.sh`,
+`scripts/ci/plan-files.sh`, `check-plan-scope.sh`, `scripts/next-task.sh`, dev-lead Loop 1–9, `backlog/CLAUDE.md`
+(Tier 0), the B1.56, B1.57, B1.63, B1.64 cards on `origin/main` (9781b14).
+
+Run at `b46f2f0`:
+
+- `scripts/agent/tier.sh backlog/work/B1.65/plan.md` → `high`; `scripts/ci/plan-files.sh --any B1.65 HEAD` →
+  `scripts/agent/run.sh`, `scripts/agent/run-smoke.sh`, `backlog/work/B1.65/*`.
+- `scripts/next-task.sh --list` → Doing: B1.57, B1.63, B1.65, B1.62 (4 against `WIP_LIMIT=3`).
+- A scratch plan whose Files table holds only `` `backlog/work/B1.66/*` `` → `tier.sh` prints `low` (B1.66's Test line
+  holds).
+- `branch_of`'s awk on this checkout for B1.66 → no `_tooling` line (B1.66 is not filed yet and this branch is behind
+  `origin/main`), so `run.sh` would pick `feat/B1.66-agent` (note 1).
+
+Round 1's reasons: #1 fixed (B1.66 is Tier 0, Files `backlog/work/B1.66/*` only, `_tooling · no §_`, `Depends on:` —,
+an interactive dev-lead finishes a capped run; dev-lead may write every path B1.66 needs). #2 fixed (precondition
+named; `--check-binary` and a retry count against the 2 calls). #3 fixed (the sentence names `Verdict: approved`,
+`tier.sh`, `eligible.sh $n $card`; `; a question` is kept; the deviation from advice Q1 is stated). #4 fixed
+("Accepted costs" carries all three). #5 fixed (step 6, a diff review on `live.md`, after step 5).
+
+| Check                                                                          | Result                                                                                                                                                                                                               |
+| ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the card                                     | pass: three rows tied to A1–A7; B1.66's filing is its own lane PR (step 0), not in this Files table; parallel cards and `scripts/CLAUDE.md` named as out                                                             |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib | n/a: bash only, no `src/`                                                                                                                                                                                            |
+| plan follows `advice.md` or states the deviation                               | pass: Approach A; the sentence's deviation from advice Q1 and its reason are stated (decision 1); the Tier 0 test card replaces Q4's docs-only card with the reason (r1 #1); Approach B named as a follow-up at most |
+| ≤ 7 criteria, every Then measurable                                            | pass: A1–A7; R16 pins A1–A3 as a whole literal plus the opening, the old sentence and the header; A4 by the approval commit and `plan-files.sh --run B1.66` exit 0; A5 best effort, `[unverified]` if capped         |
+| verification lists exact commands with expected numbers                        | pass: red `1 of 16 probes FAILED` (matches `run-smoke.sh`'s summary format), green `16 probes OK` on bash 3.2 and 5.2, tier-smoke 9 OK, the live command in full with caps                                           |
+| work breakdown skeleton → red → green → map → review                           | pass: skeleton and map n/a for tooling; red `test(scripts): …`, green `chore(scripts): …` (B1.55/B1.58 precedent), diff review, ready, live, review on `live.md`                                                     |
+| `Lead approves spec` box                                                       | n/a: no §. Tier high, so the lead's `approve` is the approval; `Plan approved by:` is empty and the reviewer did not write it                                                                                        |
+| no settled D-n contradicted                                                    | pass: D-27 (only the runner's prompt changes; interactive sessions keep the gate), D-28 (tier from `tier.sh`), D-19 (label), D-26 (local runner), D-29 untouched                                                     |
+| `scripts/next-task.sh --check B1.65`                                           | pass: `[next-task] B1.65: no overlap with any Doing or Review card`                                                                                                                                                  |
+
+Verdict: approved
+
+Costs and preconditions the lead takes on with this plan (none breaks A4 or leaves a role unable to do its step; each
+is a line the lead may add at the gate):
+
+1. **Which branch B1.66 runs on depends on the container clone's files, not `origin/main`.** `branch_of`
+   (`run.sh:153`) reads `backlog/plan/*.md` in the clone's checkout (`cd "$ROOT"`, line 18). TRIGGER: the filing PR
+   for B1.66 merges after B1.65's branch last merged `origin/main` (Loop 9, step 4), and the clone sits on that
+   branch. Result: the run claims and works on `feat/B1.66-agent`, not the plan's `chore/B1.66-agent`. A4 still
+   holds: `plan-files.sh --run` and `check-plan-scope.sh` accept any `<prefix>/B1.66-agent`. But the evidence lands
+   on a branch the plan does not name, and step 6 would have to read that as a plan mismatch. Confirmed: B1.66 is
+   absent from this checkout and `HEAD` is behind `origin/main`. Fix: a precondition, "the clone's branch contains
+   the B1.66 filing merge", or accept either prefix in the live evidence.
+2. **B1.65 reaching Review does not free a WIP slot by itself.** With B1.65 in Review, Doing is still B1.57, B1.62,
+   B1.63 (3 ≥ 3). So `--claim B1.66` waits until one of them reaches Review or merges. Until then B1.65's PR is
+   ready but must stay unmerged: A4 and A5 are unproven, and step 6 has not run. The plan's conjunction ("ready
+   and `may start`") is correct, but the wait is open-ended, and nothing in the PR body is planned to say "hold the
+   merge".
+3. **The prompt now restates Loop 5's conditions (advice Q1's "two sources of truth").** R16 pins `run.sh`'s text
+   only. A later change to Loop 5's conditions in `.claude/agents/dev-lead.md` fails no probe and leaves the run with
+   two lists. B1.56 (resume on an issue `approve`) is the first card likely to touch both. The guards still refuse a
+   wrong approval (`plan-files.sh --run`), so the cost is turns, not an invalid merge. The plan states the deviation
+   and why. This is named so the lead accepts the drift too.
+4. The plan is 82 lines against `planning.md`'s ≈ 40. Precedent: B1.55 had 81 lines and B1.58 had 113, both approved.
+   Not blocking.
+
+Riskiest unfalsified: whether 15 turns and a USD 0.75 flag reach B1.66's D-27 approval commit inside the container.
+No `run.sh <issue>` has yet made a worktree there (B1.58 proved only `--check-binary`), the effect of a missing
+`node_modules` on the run's commit hooks is [unverified], and whether the plan-review subagent's turns count toward
+`--max-turns` is [unverified].
