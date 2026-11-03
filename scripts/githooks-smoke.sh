@@ -13,6 +13,7 @@
 #   B1.57: G7 RUNNER_CHILD=7 (a run's env) → `Agent-Run: 7`, subject unchanged, on a commit, a clean merge, a conflicted
 #   merge finished with `commit --no-edit`, `revert --no-edit` and `cherry-pick` (this checkout's prepare-commit-msg job)
 #   G8 no RUNNER_CHILD → no `Agent-Run` trailer
+#   review pass 1: G9 an amend under RUNNER_CHILD=9 of a commit carrying `Agent-Run: 7` → one trailer, `9`
 set -uo pipefail
 cd "$(git rev-parse --show-toplevel)"
 REPO="$PWD"
@@ -99,6 +100,10 @@ if [[ "$m1" == '7|chore: g7 plain' && "$m2" == "7|Merge branch 'b7'" && "$m3" ==
   && "$m4" == '7|Revert "chore: r7"' && "$m5" == '7|chore: p7' ]]; then ok G7; else fail "G7 $m1 / $m2 / $m3 / $m4 / $m5"; fi
 (unset RUNNER_CHILD; gc "$M" commit -q --allow-empty -m "chore: g8 plain") > /dev/null 2>&1
 [[ "$(mark)" == '|chore: g8 plain' ]] && ok G8 || fail "G8 $(mark)"
+(export RUNNER_CHILD=9; gc "$M" commit -q --amend --no-edit --allow-empty) > /dev/null 2>&1
+[[ "$(mark)" == '9|chore: g8 plain' ]] || { fail "G9 setup $(mark)"; }
+g7 commit -q --allow-empty -m "chore: g9 plain"; (export RUNNER_CHILD=9; gc "$M" commit -q --amend --no-edit --allow-empty) > /dev/null 2>&1
+[[ "$(mark)" == '9|chore: g9 plain' ]] && ok G9 || fail "G9 $(mark)"
 
 echo "[githooks-smoke] $oks ok, $fails FAIL"
 [[ $fails -eq 0 ]]

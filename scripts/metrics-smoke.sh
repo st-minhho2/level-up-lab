@@ -33,6 +33,9 @@
 #       M35 no-rework yes: run commits, a trailer-less commit before ready, a bot comment after ready; any head by number
 #       M36 no: a trailer-less commit after ready (sha listed), a user comment after ready, closed unmerged; open → pending
 #       M37 default sets: every agent-ready issue (--limit 1000), only `<x>/<card>-agent` PRs; ready = the first event
+#   review pass 1: M38 no-rework's window: a comment before ready, a comment and a commit after the merge → yes
+#       M39 a PR never drafted is ready at its creation (both scripts)   M40 a second `approve` after one gate counts
+#       M41 a relabel after ready keeps the window; the highest-numbered of two agent PRs for a card is its PR
 set -uo pipefail
 command -v jq >/dev/null || { echo "metrics-smoke: needs jq (B1.57 probes apply the scripts' --jq)" >&2; exit 2; }
 cd "$(git rev-parse --show-toplevel)"
@@ -376,6 +379,36 @@ cp "$TMP/n-default" "$TMP/out"
   && [[ "$(awk -F'\t' '$1 == 505 { print $5 }' "$TMP/u-default")" == "$R" ]] \
   && [[ "$(awk -F'\t' 'NR > 1 && NF > 1 { print $1 }' "$TMP/n-default" | tr '\n' ' ')" == '601 602 603 604 605 608 609 ' ]] && ok M37 \
   || fail "M37 r3=$r3 $(diff "$TMP/u-default" "$TMP/u-args" | head -3 | tr '\n' '|') $(awk -F'\t' 'NR > 1 { print $1 }' "$TMP/n-default" | tr '\n' ' ')"
+
+# review pass 1: issues #513–#515 and PRs #612–#616 join after the default sets are read (M34, M36, M37 unchanged)
+jq '. + [{"number":612,"headRefName":"chore/B6.12-agent"},{"number":613,"headRefName":"chore/B6.13-agent"},{"number":614,"headRefName":"chore/B6.14-agent"},{"number":615,"headRefName":"chore/B6.15-agent"},{"number":616,"headRefName":"feat/B6.15-agent"}]' \
+  "$J/prs.json" > "$J/prs.next" && mv "$J/prs.next" "$J/prs.json"
+for i in 13 14 15; do printf '{"state":"OPEN","body":"### Card id\\n\\nB6.%s\\n"}\n' "$i" > "$J/issue.5$i.json"; done
+# M38: a user comment on the draft before ready, and a comment and a trailer-less commit after the merge, are no rework
+pr 612 chore/B6.12-agent MERGED false 06:00
+tl 612 "$(says 02:30 lead User '"still drafting?"')" "$(commit "$(sha i1)" 02:40 "$AR")" "$(ready 03:00)" \
+  "$(says 06:30 lead User '"thanks"')" "$(commit "$(sha i2)" 06:40 "$HUMAN")"
+run no-rework.sh 612 > "$TMP/out"
+[[ "$(row 612)" == "$(printf '612\tB6.12\t%s\t%s\t-\t0\tyes' "$R" "$M")" ]] && ok M38 || fail "M38 $(row 612)"
+# M39: a PR never drafted is ready at its creation (00:30) in both scripts
+pr 613 chore/B6.13-agent MERGED false 06:00
+tl 613 "$(commit "$(sha j1)" 01:00 "$HUMAN")"
+tl 513 "$(label 00:10)" "$(says 00:20 lead User '"note"')" "$(says 01:00 lead User '"after"')"
+run no-rework.sh 613 > "$TMP/out"; m39a="$(row 613)"
+run unattended.sh 513 > "$TMP/out"; m39b="$(row 513)"
+[[ "$m39a" == "$(printf '613\tB6.13\t%s\t%s\t%s\t0\tno' "$(ts 00:30)" "$M" "$(sha j1 | cut -c1-7)")" \
+  && "$m39b" == "$(printf '513\tB6.13\t613\t%s\t%s\t1\tno' "$(ts 00:10)" "$(ts 00:30)")" ]] && ok M39 || fail "M39 $m39a | $m39b"
+# M40: one high-tier gate comment excepts one approve; a second approve counts
+pr 614 chore/B6.14-agent MERGED false 06:00; tl 614 "$(ready 03:00)"
+tl 514 "$(label 01:00)" "$(says 01:20 lead User "$GATE_HIGH")" "$(says 01:40 lead User '"approve"')" "$(says 01:50 lead User '"approve, and also X"')"
+run unattended.sh 514 > "$TMP/out"
+[[ "$(cut -f6,7 <<< "$(row 514)")" == $'1\tno' ]] && ok M40 || fail "M40 $(row 514)"
+# M41: a relabel after ready does not move the window; of two agent PRs for one card, the highest number is the PR
+pr 615 chore/B6.15-agent CLOSED false; tl 615 "$(ready 01:10)"
+pr 616 feat/B6.15-agent MERGED false 06:00; tl 616 "$(ready 03:00)"
+tl 515 "$(label 01:00)" "$(says 01:30 lead User '"also handle Y"')" "$(label 04:00)"
+run unattended.sh 515 > "$TMP/out"
+[[ "$(row 515)" == "$(printf '515\tB6.15\t616\t%s\t%s\t1\tno' "$(ts 01:00)" "$R")" ]] && ok M41 || fail "M41 $(row 515)"
 
 [[ -s "$FIX/denied.log" ]] && { fail "gh shim denied:"; sed 's/^/  /' "$FIX/denied.log"; }
 echo "[metrics-smoke] $oks ok, $fails FAIL"
