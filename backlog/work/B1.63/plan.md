@@ -41,15 +41,21 @@ scripts/agent/eligible.sh <issue-number> [<card>]   arguments, exit codes, stdou
 ## Verification
 
 - Red `test(scripts): B1.63 B1.64 eligibility probes` (no `(red)` marker, as B1.43): eligible-smoke exit 1 with E1 E6
-  E10–E14 FAIL; E12 is the card's red: the rename sequence exits 0 (old name filter). hook-smoke S16 S17 FAIL too
-  (its shim answers only the new calls). Fixtures keep REST events with names at event time, so old code runs on them.
+  E10–E14 FAIL; E12 is the card's red: the rename sequence exits 0 (old name filter). hook-smoke S16 low, S16
+  medium, C9, S28 FAIL too (its shim answers only the new calls; S17 stops at tier high before eligible.sh). Fixtures
+  keep REST events with names at event time, so old code runs on them.
+- The shim pages GraphQL only when the call has `--paginate` and the query holds `$endCursor`, `after: $endCursor`
+  and `pageInfo { hasNextPage endCursor }`; otherwise it answers page 1 alone. E14 also asserts the log holds one
+  `api graphql --paginate` call, so E14 is red on old code (no GraphQL call) and on a query that drops the cursor.
 - Green: `scripts/agent/eligible-smoke.sh` and `/bin/bash` 3.2 → "14 probes OK"; `scripts/hook-smoke.sh` → 511 OK.
   E11 closed, with and without `<card>`, not labeled too → exit 1 `eligible: #7 is closed`, one gh call ·
   E12 lead labels L1 `agent-ready`, L1 renamed `x`, triage labels L2 `y`, L2 renamed `agent-ready` → exit 1 labeler
   triage; L2 by a write user → 0; only `x` left → not labeled · E13 deleted and re-created: old node's events only →
   last event not labeled; new node by read → 1, by write → 0 · E14 one-event pages: E3's sequences, same verdicts.
 - Live, read-only: `scripts/agent/eligible.sh 169` → exit 1 `eligible: #169 is closed`; the script's query on #169
-  with `first: 1` and `first: 100` → equal rows (6). The accepted path live is B1.65's run [no open labeled issue].
+  with `first: 1` and `first: 100` → equal rows (6); `gh api repos/{owner}/{repo}/labels/agent-ready --jq .node_id`
+  and `gh label list --json name,id --jq '.[] | select(.name == "agent-ready") | .id'` → the same id (recorded in
+  `review.md`'s diff section). The accepted path live is B1.65's run [no open labeled issue].
 - `pnpm lint && pnpm typecheck && pnpm test` → 202 green; `check-plan-scope.sh`, `check-backlog.sh` OK.
 
 ## Work breakdown
