@@ -3,7 +3,8 @@
 # with the lead's own Claude login, never on GitHub Actions. On the host the run is held by `--permission-mode
 # dontAsk`, the allow list below and the repo's hooks, which is no sandbox. Inside the runner container
 # (.devcontainer/runner/, B1.58) its firewall is the boundary and the run gets bypassPermissions; nowhere else (mode()).
-# Until B1.55 every run stops at the plan gate.
+# A reviewed low or medium plan of the issue proceeds (D-27, dev-lead Loop 5); a high-tier plan or a refusal stops at
+# the gate.
 #   scripts/agent/run.sh <issue>          run that issue now (a stopped mark from an earlier run is replaced)
 #   scripts/agent/run.sh --poll           every open agent-ready issue, oldest first, skipping stopped and locked ones
 #   scripts/agent/run.sh --check-binary   prove dev-lead's frontmatter hooks fire under this claude; record its version
@@ -215,8 +216,10 @@ run_issue() { # run_issue <issue>: 0 ran or skipped, 1 refused
   perm="$(mode)"
   prompt="Issue #$n is labeled agent-ready (D-27): run card $card as dev-lead: follow .claude/agents/dev-lead.md and .claude/skills/work-next/SKILL.md. The worktree $wt
 on branch $branch is claimed and is yours; resume from the first Loop step whose artifact is missing. This run is
-headless: nobody answers inside it. At the plan gate print the gate line and stop; a question only the lead can answer
-goes to backlog/README.md \"Waiting on human\", then stop."
+headless: nobody answers inside it. At the plan gate take dev-lead Loop 5's D-27 path: once the plan review says
+Verdict: approved, a plan that scripts/agent/tier.sh rates low or medium, with scripts/agent/eligible.sh $n $card
+exiting 0, gets the reviewer's D-27 approval line and the run goes on; at tier high or on a refusal print the gate
+line and stop; a question only the lead can answer goes to backlog/README.md \"Waiting on human\", then stop."
   while :; do
     base="$(stamp_base "$dir")"
     claude_run "$base" "$wt" "$prompt" -p --agent dev-lead --model "$MODEL" --max-turns "$TURNS" \
