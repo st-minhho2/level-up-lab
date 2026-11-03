@@ -81,4 +81,4 @@ scripts/agent/run.sh <n>` → on `chore/B1.66-agent`: `docs(backlog): B1.66 plan
 | 5 live   | lead + dev-lead | `live.md` (B1.66 merged, claim may start)  | `docs(backlog): B1.65 live run`                    |
 | 6 review | reviewer (diff) | pass on `live.md`: A4, A5 evidence (r1 #5) | `docs(backlog): B1.65 review`                      |
 
-Plan review: approved, round 2 (4 notes, none blocking; notes 1–2 folded into decision 4) · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 (4 notes, none blocking; notes 1–2 folded into decision 4) · Plan approved by: lead, 2026-11-03 (decisions 1–6 as proposed) · Rounds: 1
