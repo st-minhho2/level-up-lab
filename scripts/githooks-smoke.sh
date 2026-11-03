@@ -82,7 +82,7 @@ grep -qi 'warning' "$TMP/prep" && grep -q "$X/node_modules/$PLAT/bin/lefthook" "
 # --- B1.57: the run's mark -----------------------------------------------------------------------------------------
 mv "$TMP/m-nm" "$M/node_modules"; prepare "$M" > "$TMP/prep" 2>&1
 g7() { (export RUNNER_CHILD=7; gc "$M" "$@") > /dev/null 2>&1; }
-mark() { gc "$M" log -1 --format='%(trailers:key=Agent-Run,valueonly)|%s' "${1:-HEAD}"; }
+mark() { gc "$M" log -1 --format='%(trailers:key=Agent-Run,valueonly,separator=%x2C)|%s' "${1:-HEAD}"; } # one line
 unset RUNNER_CHILD
 g7 commit -q --allow-empty -m "chore: g7 plain"; m1="$(mark)"
 gc "$M" checkout -q -b b7 && echo b > "$M/b7.txt" && gc "$M" add b7.txt && gc "$M" commit -q --no-verify -m "chore: b7"

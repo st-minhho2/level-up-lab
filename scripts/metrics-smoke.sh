@@ -372,7 +372,8 @@ cp "$TMP/n-default" "$TMP/out"
   && "$(cut -f4,7 <<< "$(row 604)")" == $'-\tno' && "$(cut -f7 <<< "$(row 609)")" == pending && $rc -eq 0 ]] \
   && tail -1 "$TMP/out" | grep -qx 'no-rework 1/5 = 20.0 % (pending 2)' && ok M36 \
   || fail "M36 rc=$rc $(row 602) | $(row 603) | $(row 604) | $(row 609) | $(tail -1 "$TMP/out")"
-[[ $r3 -eq 0 ]] && cmp -s "$TMP/u-default" "$TMP/u-args" && [[ "$(cut -f5 <<< "$(row 605)")" == "$R" ]] \
+[[ $r3 -eq 0 ]] && cmp -s "$TMP/u-default" "$TMP/u-args" && [[ "$(cut -f3 <<< "$(row 605)")" == "$R" ]] \
+  && [[ "$(awk -F'\t' '$1 == 505 { print $5 }' "$TMP/u-default")" == "$R" ]] \
   && [[ "$(awk -F'\t' 'NR > 1 && NF > 1 { print $1 }' "$TMP/n-default" | tr '\n' ' ')" == '601 602 603 604 605 608 609 ' ]] && ok M37 \
   || fail "M37 r3=$r3 $(diff "$TMP/u-default" "$TMP/u-args" | head -3 | tr '\n' '|') $(awk -F'\t' 'NR > 1 { print $1 }' "$TMP/n-default" | tr '\n' ' ')"
 
