@@ -966,10 +966,10 @@ _tooling · no §_
 ### B1.76 · The PR wrapper keeps the runner container's git credential and identity
 
 _tooling · no §_
-**Status: Open** — the live run on #184 after B1.74 (`work/B1.65/live.md`, run 4) passed the plan gate on the D-27 path (`Plan approved by: reviewer (D-27, tier low, issue #184)`, commit e7e9dd0 in the container) and then stopped at `scripts/pr-step.sh push`: exit 128, `fatal: could not read Username for 'https://github.com'`. `scripts/pr-step.sh:13` unsets `GIT_CONFIG_GLOBAL` (B1.23); in the runner container git's global config lives only in the file that variable names (`docker-compose.yml`, the `runner-runs` volume), where `gh auth setup-git` wrote the credential helper and B1.69's step wrote the identity, so the wrapper's git has neither (`~/.gitconfig` does not exist there)
+**Status: Done** — a0e6138 (#199), sandbox-probe 12 probes OK in the rebuilt runner (S12 new; host red 894db58 11 of 12 FAILED), pr-step-smoke 15 ok (R15 new), hook-smoke 522, run-smoke 17, vitest 202, e2e 43, mutation 93.40 (no src/ change); live push pending run 5 on #184
 
 - **Spec:** none — tooling (D-26, D-27); no `src/` change, no section
 - **Test:** `scripts/agent/sandbox-probe.sh` S12 — red because: with every `GIT_CONFIG_*` cleared, as the wrapper does, git in the runner finds no credential helper for github.com (run 4)
 - **Acceptance:** inside the runner container the wrapper's push reaches GitHub through GitHub's credential helper set at system scope by the image (root-owned); `scripts/pr-step.sh` unchanged, still clearing every `GIT_CONFIG_*` (R15); `draft`, `ready`, `open` use `gh`'s own login; S12 proves the wrapper's git sees the helper; the wrapper makes no commit, so it needs no identity; the PR carries `config-change-approved` (D-19) (lead's approval of B1.76's plan, 2026-11-03)
 - **Tier:** quick · **Depends on:** ~~B1.69~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.76/`
+- **Work:** `work/B1.76/` (advice: system-scope helper, the wrapper unchanged; plan: review 2 rounds, lead approve 1, card lines amended ca15cf3; diff review 1 of 3 passes, 1 finding fixed in 1ac7441); the lead rebuilt the runner (12 probes OK)
