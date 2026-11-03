@@ -362,7 +362,9 @@ line and stop; a question only the lead can answer goes to backlog/README.md \"W
 has 'Issue #7 is labeled agent-ready (D-27): run card' "$FIX/stdin-1" || { say "prompt lost its D-27 opening"; r=1; }
 has 'print the gate line and stop; a question' "$FIX/stdin-1" && { say "the unconditional gate stop is still in the prompt"; r=1; }
 grep -q 'Until B1.55' "$SRC" && { say "the header still says every run stops at the gate"; r=1; }
-sed -n '2,16p' "$SRC" | grep -q 'Loop 5' || { say "the header names no Loop 5"; r=1; }
+# the header line whole: "names Loop 5" alone let "every plan proceeds (D-27, dev-lead Loop 5)" pass (review pass 1)
+hdr='# A reviewed low or medium plan of the issue proceeds (D-27, dev-lead Loop 5); a high-tier plan or a refusal stops at'
+[[ "$(grep -A1 -xF -- "$hdr" "$SRC")" == "$hdr"$'\n''# the gate.' ]] || { say "the header does not state the D-27 rule: $(sed -n 6,7p "$SRC" | tr '\n' '|')"; r=1; }
 [[ $r -eq 0 ]] && ok R16 || fail R16
 
 echo
