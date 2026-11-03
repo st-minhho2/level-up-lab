@@ -66,4 +66,4 @@ scripts/agent/eligible.sh <issue-number> [<card>]   arguments, exit codes, stdou
 | 2 green  | dev-lead        | `eligible.sh` | `chore(scripts): B1.63 B1.64 label node id, closed issue refused` |
 | 3 review | reviewer (diff) | `review.md`   | `docs(backlog): B1.63 review`                                     |
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: · Rounds: 1

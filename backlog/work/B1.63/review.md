@@ -66,3 +66,32 @@ Costs the lead also accepts (already stated or follow from the stated ones; no c
   line and plan-files' refusal text change; no probe matches the old text except E11, which the plan rewrites).
 
 Verdict: changes requested
+
+## Plan review (round 2)
+
+Plan at `0538a19` (diff from round 1: `git diff d0ad029 0538a19 -- backlog/work/B1.63/plan.md`, Verification and the
+header only; Files, Interfaces, Costs, Work breakdown unchanged). `scripts/next-task.sh --check B1.63` →
+`[next-task] B1.63: no overlap with any Doing or Review card`. Round 1's text above is unchanged (committed in `243e589`).
+
+| Round 1 reason          | Round 2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 hook-smoke red set    | resolved: "S16 low, S16 medium, C9, S28 FAIL … S17 stops at tier high before eligible.sh" equals the set my probe on a copy produced (4 FAIL)                                                                                                                                                                                                                                                                                                                                          |
+| 2 E14 mechanism and red | resolved: the shim pages only with `--paginate` plus `$endCursor`, `after: $endCursor`, `pageInfo { hasNextPage endCursor }`, else page 1 alone; E14 asserts one `api graphql --paginate` call. Traced on E3's sequences with one-event pages: a dropped cursor leaves page 1 (the first event) deciding, so "write, removed, read" accepts lead and "read, removed, write" refuses bob, both opposite to E3, so E14 fails; old code makes no GraphQL call, so the log assertion fails |
+| 3 node id evidence      | resolved: Live adds `gh api repos/{owner}/{repo}/labels/agent-ready --jq .node_id` against `gh label list --json name,id` (GraphQL-backed) → the same id, recorded at diff time; round 1 already saw both as `LA_kwDOVaUkoc8AAAADAmzjTQ`                                                                                                                                                                                                                                               |
+
+| Check                                                                          | Result                                                                                      |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                 | pass (as round 1)                                                                           |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib | pass (n/a, as round 1)                                                                      |
+| plan follows `advice.md` or states the deviation                               | pass (as round 1)                                                                           |
+| ≤ 7 criteria, every Then measurable                                            | pass (as round 1)                                                                           |
+| verification lists exact commands with expected numbers                        | pass: red sets for both smokes, green "14 probes OK" and 511, live rows (6) and the id pair |
+| work breakdown with convention subjects                                        | pass (as round 1, B1.43 precedent)                                                          |
+| `Lead approves spec` box ticked only by a human                                | pass (n/a); `Plan approved by:` empty                                                       |
+| no settled D-n contradicted                                                    | pass (as round 1)                                                                           |
+| `next-task.sh --check` no overlap                                              | pass: quoted above                                                                          |
+
+The costs listed in round 1 (WIP 4/3, the CI token proof and gh 2.23 [unverified], the changed refusal text on a closed
+unlabeled issue) still stand for the lead's gate. Tier high: this approval is for the lead's gate, not for build.
+
+Verdict: approved
