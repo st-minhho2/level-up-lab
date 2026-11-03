@@ -955,10 +955,10 @@ _tooling · no §_
 ### B1.74 · dev-lead commits a reviewer's review.md that Prettier rejects, formatted and unchanged
 
 _tooling · no §_
-**Status: Open** — the live run on #184 after B1.69 (`work/B1.65/live.md`, run 3) stopped before the D-27 approval: the reviewer's `backlog/work/B1.66/review.md` failed lefthook's pre-commit Prettier check, and dev-lead, which never writes a card's `review.md` (`.claude/agents/dev-lead.md`), left it untracked and stopped; without a committed review there is no `Plan approved by: reviewer (D-27, …)` line. `grep -ci prettier .claude/agents/dev-lead.md` → 0. The same happened to every reviewer write in B1.69's interactive session, where `format-after-edit.sh` runs Prettier from `$CLAUDE_PROJECT_DIR` and `.prettierignore` holds `.worktrees` [cause in the container unverified: a subagent's tool calls are not in the run's stream]
+**Status: Done** — 6e6f3d8 (#196), hook-smoke 522 probes OK (FR1–FR11 new; red 10aa7db FR1–FR8 FAIL, 324fcc7 FR9 FAIL), 17/17 hand mutants caught, run-smoke 17, vitest 202, e2e 43, mutation 93.40 (no src/ change); live proof pending run 4 on #184
 
 - **Spec:** none — tooling (D-27); no `src/` change, no section
 - **Test:** a probe that gives dev-lead's commit step an unformatted `review.md` — red because: dev-lead.md has no step that formats it (`grep -ci prettier .claude/agents/dev-lead.md` → 0)
 - **Acceptance:** before committing a card's `review.md`, dev-lead runs `pnpm exec prettier --write` on that file only; the commit is formatting only (the letters and digits in order of the reviewer's copy and the formatted file are equal once every `N.` or `N)` before a space or line end is dropped; `git diff -w` was measured too strict, lead's option (ii) at B1.74's plan gate), otherwise dev-lead stops and reports; dev-lead still never edits `review.md` with Write or Edit; a run's `ALLOW` already holds `Bash(pnpm exec prettier *)`; the PR carries `config-change-approved` (D-19) (lead's choice A, 2026-11-03)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.74/`
+- **Work:** `work/B1.74/` (advice; plan: review 2 rounds, cap, lead chose option (ii) at the gate; diff review 2 of 3 passes, 3 findings fixed in 324fcc7/0b6a49d, change after approval re-approved); unfiled follow-up: `format-after-edit.sh` runs Prettier from the parent checkout, where `.prettierignore` skips `.worktrees/` (plan decision 2, proposed B1.75)
