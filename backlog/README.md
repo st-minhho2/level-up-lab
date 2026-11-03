@@ -7,11 +7,11 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open   | Total  |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ------ | ------ |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 43     | 2       | 22     | 67     |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 44     | 2       | 21     | 67     |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0      | 5      |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3      |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4      |
-| **Total**        |                                                      | **54** | **2**   | **23** | **79** |
+| **Total**        |                                                      | **55** | **2**   | **22** | **79** |
 
 ## Execution order
 
@@ -99,7 +99,7 @@ flowchart TD
   S66["66 · feature map card field and folds<br/>B1.54"]
   S67["67 · agent-ready plan gate<br/>B1.55"]
   S68["68 · gate resume on the issue<br/>B1.56"]
-  S69["69 · unattended and no-rework metrics<br/>B1.57"]
+  S69["69 · unattended and no-rework metrics<br/>~~B1.57~~"]
   S70["70 · runner devcontainer firewall<br/>~~B1.58~~"]
   S71["71 · launchd poll in the sandbox<br/>B1.59"]
   S72["72 · CI runs the runner probes<br/>B1.60"]
@@ -137,7 +137,6 @@ at most 3 cards Doing (B1.18).
 | 66   | B1.54 | The feature map reads the issue form's card field, warns when it truncates, and folds before it trims | —      | Open    | ~~B1.45~~                       | Lead  | S [estimate] |
 | 67   | B1.55 | dev-lead carries an agent-ready card past a reviewed low or medium plan                               | —      | Partial | ~~B1.44~~                       | Lead  | S [estimate] |
 | 68   | B1.56 | A high-tier gate stop resumes when the lead approves on the issue                                     | —      | Open    | ~~B1.44~~, B1.55                | Lead  | S [estimate] |
-| 69   | B1.57 | Scripts measure unattended runs and PRs merged with no rework                                         | —      | Open    | ~~B1.44~~                       | Lead  | S [estimate] |
 | 71   | B1.59 | A launchd job runs the runner's poll every 15 minutes, inside the sandbox                             | —      | Open    | ~~B1.44~~, ~~B1.58~~, ~~B1.62~~ | Lead  | S [estimate] |
 | 72   | B1.60 | CI runs the runner and tier probes, under bash 5 as well                                              | —      | Open    | ~~B1.44~~                       | Lead  | S [estimate] |
 | 73   | B1.61 | The runner's deny list spares commit messages, and TERM ends the tools a run started                  | —      | Open    | ~~B1.44~~                       | Lead  | S [estimate] |

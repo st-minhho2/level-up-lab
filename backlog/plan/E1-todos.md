@@ -779,7 +779,7 @@ _tooling · no §_
 ### B1.57 · Scripts measure unattended runs and PRs merged with no rework
 
 _tooling · no §_
-**Status: Open** — D-29 defines unattended (no lead message between the `agent-ready` label and PR ready, an expected high-tier gate excepted) and no-rework (after ready, no human-authored commit and no lead change request) and says the scripts come with the runner cards; none exists, and a run's commits carry the lead's git identity, so a human commit cannot be told from an agent's today
+**Status: Done** — fee6a51 (#181), metrics-smoke 41 ok (M30-M43), githooks-smoke 9 ok (G7-G9), hook-smoke 511; mutation n/a (no src/), 93.40 unchanged
 
 - **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
 - **Test:** new probes in `scripts/metrics-smoke.sh` — red because: `scripts/metrics/unattended.sh` and `scripts/metrics/no-rework.sh` do not exist
