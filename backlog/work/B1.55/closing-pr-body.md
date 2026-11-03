@@ -1,18 +1,20 @@
-Closing lane (`backlog/CLAUDE.md`, "Closing a card", step 4): B1.55 is merged (d66fccd, #171) but not yet measured
-in a run, so it closes `Partial`.
+Closing lane (`backlog/CLAUDE.md` "Closing a card") for B1.55 — dev-lead carries an agent-ready card past a reviewed low
+or medium plan, feature PR #171 merged as d66fccd, Partial pending a live run that takes the D-27 path. The checklist is
+the plan; no `Plan approved by` line.
 
-- Pending B1.65: `scripts/agent/run.sh`'s prompt still says "At the plan gate print the gate line and stop", so no
-  headless run takes dev-lead's D-27 path yet. B1.58 held `run.sh` while B1.55 ran; B1.65 rewords the prompt and
-  proves one live low-tier run past the gate, then moves B1.55 to Done.
-- Met: 4 of 5 acceptance clauses (dev-lead and work-next carry the D-27 path; interactive sessions keep the lead's
-  gate; plan-scope, check-plan-scope, plan-files and the metrics accept the D-27 approval and nothing looser, a probe
-  each; `config-change-approved` on #171).
-- Evidence: hook-smoke 511, eligible-smoke 11, metrics-smoke 27 on bash 3.2 and 5.2 (red bc11ca9: 18 + 2 + 2 FAIL;
-  d4b1b00: 1 FAIL); vitest 202, playwright 43; no `src/` change, mutation 93.40.
+Evidence (`backlog/work/B1.65/live.md`, run 4): inside the runner container, on agent-ready issue #184 (card B1.66),
+dev-lead took the reviewer's approval, `scripts/agent/tier.sh` gave `low`, `scripts/agent/eligible.sh 184 B1.66`
+exited 0, and the run committed `Plan approved by: reviewer (D-27, tier low, issue #184)` itself (e7e9dd0), then went
+on; run 5 carried the same branch to PR #200, whose CI (`guards`: check-plan-scope) accepted the D-27 field.
 
-README: row 67 stays (Partial), E1 39/1/23/63, Total 50/1/24/75; no feature-map or section status (tooling, no §).
-Totals: #174 (B1.62) and #175 (B1.65) each add an Open card; whichever merges after this fixes its totals.
+Files:
 
-Files: `backlog/plan/E1-todos.md`, `backlog/README.md`, `backlog/work/B1.55/closing-pr-body.md`.
+- `backlog/plan/E1-todos.md`: B1.55 `**Status: Done**`, 5 of 5
+- `backlog/README.md`: Remaining row 67 out; `~~B1.55~~` in node 67 and in B1.56's Blocked by; totals
+- `backlog/work/B1.55/closing-pr-body.md`: this body
+
+No `spec/` change: B1.55 has no section. B1.56 is now unblocked.
+
+`check-backlog.sh` OK.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)

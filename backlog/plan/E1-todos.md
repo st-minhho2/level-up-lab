@@ -757,7 +757,7 @@ _tooling · no §_
 ### B1.55 · dev-lead carries an agent-ready card past a reviewed low or medium plan
 
 _tooling · no §_
-**Status: Partial** — merged d66fccd (#171); pending a live run that takes the D-27 path: B1.65 (#180, bc6b11a) changed run.sh's prompt, but its two live runs stopped before the gate on the container's environment (`work/B1.65/live.md`), so no run has written the D-27 field yet (4 of 5 acceptance clauses met). hook-smoke 511, eligible-smoke 11, metrics-smoke 27 on bash 3.2 and 5.2 (red bc11ca9: 18 + 2 + 2 FAIL; d4b1b00: 1 FAIL); vitest 202, playwright 43; no src/ change, mutation 93.40
+**Status: Done** — d66fccd (#171); live: run 4 on #184 (B1.66) inside the runner container took the D-27 path — reviewer's approval, `tier.sh` low, `eligible.sh 184 B1.66` exit 0 — and committed `Plan approved by: reviewer (D-27, tier low, issue #184)` itself (e7e9dd0, on PR #200; `work/B1.65/live.md`), which check-plan-scope accepted in #200's CI; 5 of 5. hook-smoke 511, eligible-smoke 11, metrics-smoke 27 on bash 3.2 and 5.2 (red bc11ca9: 18 + 2 + 2 FAIL; d4b1b00: 1 FAIL); vitest 202, playwright 43; no src/ change, mutation 93.40
 
 - **Spec:** none — tooling (D-27, D-28, D-29); no `src/` change, no section
 - **Test:** `grep -n agent-ready .claude/agents/dev-lead.md .claude/skills/work-next/SKILL.md` and new probes in `scripts/hook-smoke.sh` — red because: no match, and a plan approved by the reviewer under D-27 is refused by `plan-scope.sh`
