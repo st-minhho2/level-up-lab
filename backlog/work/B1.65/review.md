@@ -158,3 +158,86 @@ Riskiest unfalsified: whether 15 turns and a USD 0.75 flag reach B1.66's D-27 ap
 No `run.sh <issue>` has yet made a worktree there (B1.58 proved only `--check-binary`), the effect of a missing
 `node_modules` on the run's commit hooks is [unverified], and whether the plan-review subagent's turns count toward
 `--max-turns` is [unverified].
+
+## Diff review (pass 1)
+
+Scope: tooling (`scripts/agent/`), no `src/`. Range `main...HEAD`: red f35f449, green 5507b90, paperwork. Steps 5–6
+(live run, `live.md`) are not in this pass.
+
+### Command results (run by the reviewer, host `/bin/bash` 3.2.57)
+
+| Command                                    | Last line                                                                                  |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| `pnpm lint`                                | `All matched files use Prettier code style!`                                               |
+| `pnpm typecheck`                           | `> tsc --noEmit` (exit 0, no output)                                                       |
+| `pnpm test`                                | `Tests  202 passed (202)`                                                                  |
+| `pnpm test:e2e`                            | `43 passed (1.1m)`                                                                         |
+| `pnpm test:mutation`                       | `Final mutation score of 93.40 is greater than or equal to break threshold 70`             |
+| `scripts/agent/run-smoke.sh`               | `16 probes OK`                                                                             |
+| `scripts/agent/tier-smoke.sh`              | `9 probes OK`                                                                              |
+| `scripts/ci/check-plan-scope.sh`           | `OK: chore/B1.65-run-prompt stays inside the approved plan of B1.65`                       |
+| `scripts/ci/check-suppressions.sh`         | `OK: no new suppressions`                                                                  |
+| `scripts/ci/check-config-change.sh`        | exit 1: `run-smoke.sh`, `run.sh` changed without `config-change-approved` (expected, D-19) |
+| `scripts/ci/check-feat-commits.sh`         | `OK: no feat commit touches tests`                                                         |
+| `scripts/ci/check-ac-coverage.sh`          | `OK: every criterion of a shipped section has a test`                                      |
+| `scripts/ci/check-spec-sections.sh`        | `OK: sections cited: 1 … 22`                                                               |
+| `scripts/ci/check-features-map.sh`         | `OK`                                                                                       |
+| `scripts/verify-red.sh B1.65`              | exit 1: `no 'test(<pkg>): B1.65 … (red)' commit` (see note 5)                              |
+| `scripts/verify-red.sh --auto` (CI's form) | `no test(...): B<e>.<n> … (red) commit in range; nothing to verify`, exit 0                |
+| `git diff --stat main...HEAD`              | 7 files, 733 insertions, 4 deletions (2 scripts, 5 `backlog/work/B1.65/*`)                 |
+
+Red proven by hand on a `git archive f35f449` copy: `1 of 16 probes FAILED` (R16 only; R1–R15 ok), with the three
+messages "the unconditional gate stop is still in the prompt", "the header still says every run stops at the gate",
+"the header names no Loop 5" and the old prompt printed. Matches the plan's red line.
+
+### Checklist
+
+| Check                                                    | Result                                                                                                                                                                                                                                |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A1–A3 each have a probe whose assertion matches the Then | pass: R16 compares stdin-1 to the whole prompt literal (A1, A3), the opening, the old sentence's absence, no `Until B1.55`, `Loop 5` in the header (A2). A4–A7 belong to steps 5–6                                                    |
+| no test weakened after the red commit                    | pass: `git log --first-parent --no-merges f35f449..HEAD -- '*.test.*' e2e/ scripts/agent/run-smoke.sh` empty; no merge commits in the range                                                                                           |
+| every changed file is in `plan.md`                       | pass: `run.sh`, `run-smoke.sh`, `backlog/work/B1.65/*`; `check-plan-scope.sh` OK                                                                                                                                                      |
+| interfaces match the plan                                | pass: header and prompt text equal "Interfaces touched" word for word (line breaks differ only in the header comment); argv, ALLOW, DENY, env, `outcome()`, `comment()` untouched in the diff                                         |
+| prompt matches dev-lead Loop 5 today                     | pass: Verdict approved, `tier.sh` low or medium, `eligible.sh <n> <card>` exit 0 → D-27 line and go on; high or refusal → gate (`dev-lead.md:62-68`); the opening Loop 5 detects is kept and pinned                                   |
+| the conditions are runnable inside a run                 | pass: ALLOW already holds `Bash(scripts/agent/tier.sh *)` and `Bash(scripts/agent/eligible.sh *)` (`run.sh:38-39`), so dontAsk on the host does not deny them                                                                         |
+| Zod, Prisma, raw SQL, migration                          | n/a: no `src/`, no `prisma/`                                                                                                                                                                                                          |
+| no secret, no suppression                                | pass                                                                                                                                                                                                                                  |
+| features map row                                         | n/a: tooling, no F-row                                                                                                                                                                                                                |
+| would a probe fail if one changed line were reverted     | pass, 5 of 6 mutations killed on full-repo copies (baseline 16 OK): header reverted, `Loop 5` dropped, `low or medium` → `low`, `$n $card` swapped, old gate sentence restored → each `1 of 16 probes FAILED` (R16). Survivor: note 2 |
+
+### Findings
+
+None blocking.
+
+Notes (not defects in the diff; the dev-lead carries 1 and 6 into the PR):
+
+1. **"16 probes OK on both bashes" is not true inside the runner container.** `plan.md` and `pr-body.md:72` claim
+   it. The dev-lead's container run (bash 5.2.15, `git archive` copy without `.git`) gave run-smoke 2 of 16 FAILED
+   (R6, R15) and tier-smoke 1 of 9 FAILED (T4), the same three at `origin/main`. So the failures come from the
+   environment: the container is the sandbox, so `mode()` returns bypassPermissions, and the archive has no `.git`.
+   R16 passed there. The reviewer had no bash 5 on the host and did not re-run this [unverified]. Before
+   `ready`, the PR body's Verification/Evidence must state the real numbers. It must not repeat the plan's line.
+2. **R16's header check accepts a header with the wrong meaning.** Mutation tried on a copy: the header's tail
+   rewritten to "every plan proceeds, whatever its tier." while it keeps `(D-27, dev-lead Loop 5)`. Result: 16 probes
+   OK. That is the plan's stated R16 (no `Until B1.55`, `Loop 5` in lines 2–16), and the card pins only the prompt
+   exactly, so the check is within the plan. The header is a comment and the run never reads it. Pinning the header
+   line as a literal would be a one-line follow-up, not a reason to send this back.
+3. **Drift between the prompt and Loop 5 (accepted at plan review r2, note 3).** Today the two agree. The prompt
+   leaves out Loop 5's "refusal's stderr line into Waiting on human", which `dev-lead.md` still carries. A later
+   change to Loop 5 fails no probe. The guards (`plan-files.sh --run`) still refuse a wrong approval field.
+4. **Line wrapping.** The breaks fall mid-phrase ("print the gate\nline and stop"), the same style as the old prompt
+   ("answer\ngoes"). The meaning is unchanged and R16 pins it. Whether the model reads it as intended shows only in
+   the live run (step 5).
+5. **`verify-red.sh B1.65` exits 1 by design here.** It judges only vitest files, under a `(red)` subject. The red
+   commit is `test(scripts): B1.65 exact run prompt probe`, as the plan's work breakdown names it, with the same
+   unmarked form as B1.58's `test(scripts)` commits. CI's `--auto` exits 0. The red was proven by running the red
+   commit's run-smoke on a copy (above).
+6. **`check-config-change.sh` fails until the PR carries `config-change-approved`.** D-19; the plan states it.
+
+Verdict: ready for PR (steps 5–6 still owed: live run, `live.md`, its review pass; note 1 fixed in `pr-body.md`
+before `pr-step.sh ready`)
+
+Riskiest unfalsified: whether a headless dev-lead, given this prompt, really runs `tier.sh` and `eligible.sh` and
+writes the D-27 field within 15 turns. Inside the container, `eligible.sh` makes 4–5 `gh api` calls. If one fails
+(auth or firewall), it exits 1, the run treats that as a refusal, the run ends as `gate`, and A4 is lost. No probe
+reaches that; only step 5 does.
