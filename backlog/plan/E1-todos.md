@@ -900,13 +900,13 @@ _tooling · no §_
 ### B1.69 · The runner container keeps a git identity, and a probe proves it
 
 _tooling · no §_
-**Status: Open** — B1.65's live run 1 (`backlog/work/B1.65/live.md`, issue #184) stopped at the plan commit with `Author identity unknown`: B1.58's setup steps and probes S1–S10 never set or check `user.name`/`user.email` in the runner container, and the run's one try, `git -c user.name=… commit`, was refused by the deny rule `Bash(git -c*)` (correctly). The lead set it by hand (`git config --global`, which `GIT_CONFIG_GLOBAL` puts in the `runner-runs` volume) before run 2; nothing documents or verifies that step, so a fresh volume repeats the stop and every E5 issue counts as attended (D-29)
+**Status: Done** — 0324d02 (#192), run-smoke 17 probes OK (R17 new; red 738a592 1 of 17 FAILED), sandbox-probe 11 probes OK in the runner container (S11 new; host 10 of 11 FAILED), 6/6 hand mutants caught, vitest 202, e2e 43, mutation 93.40 (no src/ change)
 
 - **Spec:** none — tooling (D-27, D-29); no `src/` change, no section
 - **Test:** a new probe in `scripts/agent/sandbox-probe.sh` — red because: no probe reads the container's git identity (`grep -c 'user.email' scripts/agent/sandbox-probe.sh` → 0)
 - **Acceptance:** the runner's setup (`.devcontainer/runner/` README or script) sets a git identity once, in the `runner-runs` volume, so it survives a rebuild; the probe fails when `git config user.name` or `user.email` is empty inside the container and names the setup step; `run.sh` refuses to start a run without an identity, before any turn is spent; the identity the agent's commits carry is stated (the lead's own or a named bot) and the PR says which; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** ~~B1.58~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.69/`
+- **Work:** `work/B1.69/` (advice, plan: review 2 rounds, lead approve 1; diff review 2 of 3 passes, 1 finding fixed in 772ad52); unfiled follow-ups: the compose header still checks out `chore/B1.62-runner-image-probes`, gone from origin, so a fresh setup stops there; S11's hint says "set it once" also when the cause is a clone-local override
 
 ### B1.70 · The runner firewall reads GitHub's ranges with a token, so a restart never hits the anonymous rate limit
 
