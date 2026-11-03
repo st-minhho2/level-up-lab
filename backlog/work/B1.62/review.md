@@ -149,3 +149,88 @@ lockfile. So the claim that the engine path variables stop `@prisma/engines`' po
 `binaries.prisma.sh` rests on Prisma's code, not on a measurement.
 
 Waiting on: the lead's gate (decisions 1–3, the Costs paragraph, notes 1–2 above).
+
+## Diff review (round 1)
+
+SCOPE: all (tooling, no §: `.devcontainer/runner/`, `scripts/agent/`). Diff `origin/main...9ddc915` (9 files, +866 −11).
+Read: plan (approved 2026-11-03), card, the four changed files whole, PR #186 body and labels.
+
+Commands (last line each; `pnpm` gates on the host worktree):
+
+- `pnpm lint` → `All matched files use Prettier code style!` (exit 0) · `pnpm typecheck` → exit 0
+- `pnpm test` → `Tests  202 passed (202)` · `pnpm test:e2e` → `43 passed (2.6m)`
+- `pnpm test:mutation` → `Final mutation score of 93.40 is greater than or equal to break threshold 70` (no `src/` change; run
+  for the record)
+- `check-suppressions` OK · `check-feat-commits` OK · `check-ac-coverage` OK · `check-spec-sections` OK ·
+  `check-features-map` OK · `check-plan-scope` `OK: … stays inside the approved plan of B1.62` · `check-backlog` OK
+- `check-config-change.sh` → exit 1 locally (no label in the local env); PR #186 carries `config-change-approved`
+- `scripts/verify-red.sh B1.62` → exit 1 `no 'test(<pkg>): B1.62 … (red)' commit` (the marker was dropped, finding 2);
+  `--auto` → `nothing to verify`, exit 0
+- `git diff --stat main...HEAD` → `9 files changed, 866 insertions(+), 11 deletions(-)`
+
+Probes (none on the tree; none on `level-up-lab-runner` or its volumes):
+
+- host, `git archive HEAD` copy → `9 of 10 probes FAILED` (S2 ok): the plan's host red holds
+- `docker compose -p b162-verify … exec -T runner` (read-only): clone at `b22d4c0`; `find /opt /usr/local/bin
+/usr/lib/postgresql -writable` → nothing; `ss -ltn` → `127.0.0.1:5433` only (plus Docker's DNS); every postgres
+  process `node`; `show listen_addresses` → `127.0.0.1`; `wt_%` schemas → 0
+- `docker run --rm --network none` of `b162-verify-runner` on `git archive` trees mounted read-only:
+  HEAD → S8 ok, S9 ok (S10 FAIL only because the probe container runs no Postgres) ·
+  `2144bb0` (the old branch) → S8 FAIL, S9 FAIL `ARG PLAYWRIGHT_VERSION: 'none' vs '1.64.1'` (finding 1) ·
+  HEAD with only `prisma@6.19.3` → `6.20.0` in the lockfile (engines hash unchanged) → S8 FAIL naming
+  `@prisma/engines in the image: '6.19.3' vs '6.20.0'` and the ARG pair: a version-only bump is caught too
+- `git log 851dc18..HEAD -- scripts/agent/sandbox-probe.sh` → empty; `git diff 2144bb0 851dc18 -- sandbox-probe.sh` →
+  empty (the probe was not touched between branches or after the red); no merges in range
+
+| Check                                                   | Result                                                                                                                                                                                              |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every acceptance clause has a probe whose check matches | pass. Engines: S8 (both commits = lockfile hash, version = ARG = lockfile). Chromium + libs: S9 launch. `worktree.sh`/e2e: dev-lead's run                                                           |
+| no test weakened after the red commit                   | pass. Probe unchanged after `851dc18`, identical to `2144bb0`'s                                                                                                                                     |
+| every changed file in `plan.md`                         | pass. 4 files in Files; `docs/mistake-log.md` and `backlog/*` are paperwork (`check-plan-scope.sh`)                                                                                                 |
+| interfaces match the plan                               | pass. ENV (7 keys), `runner-postgres.sh <command…>`, S8–S10 contracts as pasted. Commit subject of the red differs (finding 2)                                                                      |
+| Zod / Prisma in lib / raw SQL / migration               | n/a (no `src/`, no `prisma/`)                                                                                                                                                                       |
+| no secret, no suppression                               | pass. `.env.example`'s throwaway `postgres:postgres` only; `check-suppressions` OK                                                                                                                  |
+| features map row                                        | n/a (no §)                                                                                                                                                                                          |
+| would a probe fail if one changed line were reverted    | ARG/ENV/`-E UTF8`/CMD/tmpfs: yes (S8, S9, S10). `listen_addresses=127.0.0.1`, `fsync=off`, `chmod a+rX`: no probe would notice the first two (equivalent behaviour here: IPv6 off in the namespace) |
+
+Findings
+
+```
+[1] KIND: correctness
+    WHERE: .devcontainer/runner/docker-compose.yml:10
+    DEFECT: the lead's command list checks the clone out at chore/B1.62-runner-image, the superseded branch whose
+            only commit (2144bb0) has the probes but not the Dockerfile ARGs, so the header's own expected line
+            "10 probes OK" (lines 15, 19) is unreachable by following it.
+    TRIGGER: lead runs the header verbatim: up -d --build --wait from this PR's host checkout, clone, `git checkout
+             chore/B1.62-runner-image`, `exec runner scripts/agent/sandbox-probe.sh`
+    WRONG BEHAVIOUR: S8 and S9 FAIL (`ARG PRISMA_VERSION: 'none' vs '6.19.3'`, `ARG PLAYWRIGHT_VERSION: 'none' vs
+                     '1.64.1'`) instead of "10 probes OK"; reproduced on b162-verify-runner with 2144bb0's tree
+                     (`--network none`). PR #186's body has no command list yet, so the header is the lead's only one.
+                     Fix: chore/B1.62-runner-image-probes.
+    CONFIDENCE: confirmed (I ran it)
+[2] KIND: plan-mismatch
+    WHERE: 851dc18 subject; backlog/work/B1.62/pr-body.md "plan deviations: none"
+    DEFECT: the approved plan's Verification names the red commit `test(scripts): B1.62 runner image probes (red)`;
+            851dc18 carries no marker (reason in its body and the mistake log), but the PR body states no deviation.
+    TRIGGER: `scripts/verify-red.sh B1.62` → exit 1 "no … (red) commit"; PR #186 Evidence → "plan deviations: none"
+    WRONG BEHAVIOUR: the lead reads "none" while the red proof the plan promised (a `(red)` commit) does not exist;
+                     the red evidence is the host "9 of 10" (I reproduced) and the old image "3 of 10" (dev-lead's,
+                     [unverified] by me). Fix: name the deviation and the replacement evidence in the PR body.
+    CONFIDENCE: confirmed (I ran it)
+```
+
+Not findings (the four "unsure" points):
+
+1. Postgres dying leaves the container up with an unhealthy healthcheck and S10 FAIL: that is the approved plan's
+   Costs paragraph ("fails every later run until `restart runner`"), not a deviation.
+2. = finding 1.
+3. S9's `timeout`/`readlink -f` on the bash 3.2 host: reached only after S8/S9 already failed on the host (no
+   `/opt/prisma-engines`, no global `playwright`); the host result is "9 of 10 FAILED" either way.
+4. `gpg --with-colons` prints each `fpr` record right after its `pub`/`sub`, and the line before it requires exactly
+   one `pub`: the first `fpr` is the primary key's.
+
+Verdict: back to code-writer (dev-lead: one-line header fix, PR body deviation line; no probe change)
+
+Riskiest unfalsified: a bump of `@prisma/client` alone (package.json pins it separately from `prisma`) is compared by
+no probe; the run would load the image's 6.19.3 query engine under a newer client. I could not show that this
+fails silently rather than on Prisma's own version check.
