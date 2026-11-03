@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Probes S1–S11 of the runner container (B1.58): run inside it, as the user the runs use, from the clone
+# Probes S1–S12 of the runner container (B1.58): run inside it, as the user the runs use, from the clone
 # (`docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh`). On the host
 # every network probe and the binary probe fail, which is the red this card starts from.
 #   scripts/agent/sandbox-probe.sh      exit 0 all ok · 1 any FAIL
@@ -15,6 +15,8 @@
 #   S10 .env.example's DATABASE_URL reaches a UTF8 Postgres that listens on loopback only and runs as node
 #   S11 git's global config (GIT_CONFIG_GLOBAL) is a file on a mounted volume (runner-runs) holding user.name and
 #       user.email, and a commit from the clone would carry them (B1.69)
+#   S12 with every GIT_CONFIG_* cleared, as scripts/pr-step.sh does, git still finds GitHub's credential helper at
+#       system scope (/etc/gitconfig, root-owned) and, in the runner only, it answers (B1.76)
 # A lockfile bump the image does not match never reaches the network (the variables stop Prisma's download,
 # Playwright downloads only in `install`): S8/S9 FAIL instead, and the fix is the Dockerfile's ARG and a rebuild.
 set -uo pipefail
@@ -181,6 +183,22 @@ fi
   "docker compose -f .devcontainer/runner/docker-compose.yml exec runner git config --global user.name \"level-up-lab runner\"" \
   "(and user.email \"runner@level-up-lab.invalid\")"
 [[ $r -eq 0 ]] && ok S11 || fail S11
+
+# S12
+r=0; H='!/usr/bin/gh auth git-credential'
+clean() { # runs "$@" the way scripts/pr-step.sh does: every GIT_CONFIG_* variable gone
+  ( cd "$ROOT" && for v in $(compgen -e | grep '^GIT_CONFIG_' || true); do unset "$v"; done; "$@" )
+}
+same "the wrapper's helper for https://github.com" \
+  "$(clean git config --get-urlmatch credential.helper https://github.com 2>/dev/null)" "$H" || r=1
+[[ -f /etc/gitconfig && "$(stat -c %u /etc/gitconfig 2>/dev/null)" == 0 && ! -w /etc/gitconfig ]] \
+  || { say "/etc/gitconfig is not a file owned by root and read-only to $(id -un)"; r=1; }
+# only in the runner: elsewhere the helper would hand over the machine's own GitHub credential (plan review r1 #3)
+if [[ -e /etc/level-up-lab-runner ]]; then
+  printf 'protocol=https\nhost=github.com\n\n' | clean env GIT_TERMINAL_PROMPT=0 git credential fill >/dev/null 2>&1 \
+    || { say "git credential fill failed: gh auth login in the runner (header of .devcontainer/runner/docker-compose.yml)"; r=1; }
+else say "credential fill skipped: not the runner"; fi
+[[ $r -eq 0 ]] && ok S12 || fail S12
 
 echo
 if [[ $fails -eq 0 ]]; then echo "$oks probes OK"; exit 0; fi

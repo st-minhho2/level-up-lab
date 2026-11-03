@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Probes R1–R14 of scripts/pr-step.sh (B1.23, B1.26) on a throwaway repo with a bare origin and a `gh` shim that logs every
+# Probes R1–R15 of scripts/pr-step.sh (B1.23, B1.26) on a throwaway repo with a bare origin and a `gh` shim that logs every
 # call. A refusal must be the wrapper's own: exit 3, a "pr-step:" message, and no gh call and no push.
 #   scripts/pr-step-smoke.sh
 #   R1 push runs the exact git line                    R2 main, detached refused       R3 an argument to push refused
@@ -8,6 +8,7 @@
 #   R9 unknown subcommand, a subdirectory refused      R10 a caller's GH_REPO never reaches gh
 #   R11 open on docs/<card>-done|-partial exact line  R12 open on docs/<card>-card exact line
 #   R13 open: wrong branch, title, body refused        R14 draft on a lane branch refused
+#   R15 a caller's GIT_CONFIG_GLOBAL, GIT_CONFIG_COUNT/KEY/VALUE, GIT_CONFIG_SYSTEM never reach the push (B1.76)
 set -uo pipefail
 SRC="$(cd "$(dirname "$0")" && pwd)/pr-step.sh"
 TMP="$(mktemp -d)"; trap 'rm -f -- "$TMP"/bin/gh; rm -rf -- "$TMP"' EXIT
@@ -152,6 +153,26 @@ done
 g checkout -q main && g checkout -q -b docs/B9.1-done-x; : > "$LOG"; rc="$(run draft 'docs(backlog): B9.1 done')"
 [[ "$rc" == 0 ]] && grep -q -- '--draft' "$LOG" || { echo "     draft on docs/B9.1-done-x (not a lane): rc=$rc"; r14=1; }
 [[ $r14 -eq 0 ]] && ok R14 || fail R14
+
+# R15 (B1.76): a caller's GIT_CONFIG_GLOBAL, GIT_CONFIG_COUNT/KEY/VALUE or GIT_CONFIG_SYSTEM never reaches the push;
+# a pre-push hook named only by that config is the observable, and a plain push with the same config shows it fires
+r15=0; mkdir -p "$TMP/hooks" "$TMP/hooks2"
+for h in hooks hooks2; do printf '#!/bin/sh\necho %s >> "%s/seen"\n' "$h" "$TMP" > "$TMP/$h/pre-push"; chmod +x "$TMP/$h/pre-push"; done
+printf '[core]\n\thooksPath = %s/hooks\n' "$TMP" > "$TMP/gitconfig"
+pushed() { [[ "$(git -C "$ORIGIN" rev-parse feat/B9.1-x 2>/dev/null)" == "$(git -C "$REPO" rev-parse HEAD)" ]]; }
+g checkout -q feat/B9.1-x; g commit -q --allow-empty --no-verify -m r15; rm -f "$TMP/seen"
+GIT_CONFIG_GLOBAL="$TMP/gitconfig" git -C "$REPO" push -q origin HEAD:refs/heads/feat/B9.1-x >/dev/null 2>&1
+grep -q hooks "$TMP/seen" 2>/dev/null || { echo "     control: the hook named by GIT_CONFIG_GLOBAL did not fire"; r15=1; }
+for c in global count system; do
+  g commit -q --allow-empty --no-verify -m "r15 $c"; rm -f "$TMP/seen"
+  case $c in
+    global) rc="$(GIT_CONFIG_GLOBAL="$TMP/gitconfig" run push)" ;;
+    count) rc="$(GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath GIT_CONFIG_VALUE_0="$TMP/hooks2" run push)" ;;
+    system) rc="$(GIT_CONFIG_SYSTEM="$TMP/gitconfig" run push)" ;;
+  esac
+  [[ "$rc" == 0 && ! -e "$TMP/seen" ]] && pushed || { echo "     $c: rc=$rc hook=$(cat "$TMP/seen" 2>/dev/null)"; r15=1; }
+done
+[[ $r15 -eq 0 ]] && ok R15 || fail R15
 
 echo "[pr-step-smoke] $oks ok, $fails FAIL"
 [[ $fails -eq 0 ]]
