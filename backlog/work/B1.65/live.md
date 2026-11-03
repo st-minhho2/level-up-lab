@@ -12,6 +12,7 @@ runner-runs volume.
 | 2   | `20261103T025259Z-20531.jsonl` | 7     | 0.120 | 0       | ended   | Loop 3: pre-commit `tsc` fails (TS7006 in `e2e/21-clear-search.spec.ts:44`), Prisma client absent       |
 | 3   | `20261103T055846Z-34182.jsonl` | 16    | 0.668 | 0       | ended   | Loop 4: the reviewer's `review.md` fails pre-commit Prettier; dev-lead may not edit it, so no D-27 line |
 | 4   | `20261103T090356Z-77499.jsonl` | 16    | 0.604 | 2       | limit   | Loop 5 passed (D-27 line, e7e9dd0); then `pr-step.sh push` exit 128: no git credential for HTTPS        |
+| 5   | `20261103T100949Z-550.jsonl`   | 25    | 0.519 | 1       | ready   | Loop 9: draft PR #200 opened by the run, CI green, ready (already marked ready)                         |
 
 Total: 2 `claude` calls (the plan's cap), 16 turns, USD 0.471.
 
@@ -42,9 +43,9 @@ allows after B1.69.
 The git identity gap is not B1.62's: a later run needs it set in the container and kept across a rebuild; no card
 holds it yet (review pass 3).
 
-- A4 (a run passes the gate with the D-27 field): **not met** within the 2 runs; blocked at the plan commit by the
-  container's environment (git identity, then the Prisma engines), before the gate.
-- A5 (draft PR): not reached.
+- A4 (a run passes the gate with the D-27 field): **met** by run 4 (e7e9dd0, after B1.62, B1.69 and B1.74); runs 1–3
+  stopped before it on the git identity, the Prisma engines and the review commit.
+- A5 (draft PR): **met** by run 5 (#200, after B1.76).
 - Run 3 got past both earlier stops: `worktree.sh` made a fresh worktree with the Prisma client; the plan commit
   `291724d docs(backlog): B1.66 plan` landed, authored `level-up-lab runner <runner@level-up-lab.invalid>` with the
   trailer `Agent-Run: 1` (B1.69 and B1.57 in a real run); `tier.sh` → `low`, `next-task.sh --check B1.66` no overlap,
@@ -67,8 +68,21 @@ holds it yet (review pass 3).
   Cause: `scripts/pr-step.sh:13` unsets `GIT_CONFIG_GLOBAL`, the only place the container's credential helper and
   identity live → B1.76. **A5 not met** (no draft PR). 15 turns did not cover plan → draft PR; the lead allowed one
   more run after B1.76 with more turns.
-- State left for run 5: worktree `chore/B1.66-agent` at 3b09a57 (not pushed), `backlog/work/B1.66/pr-body.md`
-  untracked; `runs/184/stopped` = `limit:error_max_turns`.
+- Run 5 (2026-11-03, after B1.76 #199 merged and the lead rebuilt the runner: GitHub's credential helper at system
+  scope, `sandbox-probe.sh` "12 probes OK"; the third run the lead allowed after B1.69, with
+  `RUNNER_MAX_TURNS=25 RUNNER_BUDGET_USD=1`): the run resumed at Loop 5's push. `scripts/pr-step.sh push` worked;
+  `scripts/pr-step.sh draft "docs(backlog): B1.66 plan for run log retention"` opened **draft PR #200** (**A5 met**);
+  6dd96b5 cleared its own "Waiting on human" row; it merged `origin/main`, filled the PR body (Map delta none, Review =
+  the plan review; `gh pr edit` failed on a GitHub deprecation error, so it used `gh api -X PATCH`), waited for CI
+  (green at db95f93) and called `scripts/pr-step.sh ready 200`, which found the PR already ready. Outcome `ready`,
+  25 turns, USD 0.519; the one permission denial was guard-bash refusing a compound command naming the wrapper.
+  Two actions on #200 were not the run's: `ready_for_review` at 10:11:29Z by the lead's account (the run's one
+  `ready` call came after CI, about 10:20), and db95f93 at 10:15, GitHub's "Update branch" by the lead (no
+  `Agent-Run:` trailer). Measured: `scripts/metrics/unattended.sh 184` → "184 B1.66 200 … 0 messages, yes",
+  "unattended 1/1 = 100.0 %" (its ready time is the lead's click); `scripts/metrics/no-rework.sh 200` → human_commits
+  db95f93, pending until merge. Total after B1.69: 3 runs (3, 4, 5), 57 turns, USD 1.79.
+- State after run 5: PR #200 open, ready, CI green; worktree `chore/B1.66-agent` holds an uncommitted
+  `backlog/work/B1.66/pr-body.md` (used only to fill the PR body); `runs/184/stopped` = `ready`.
 - State left for a later run: worktree `chore/B1.66-agent` at a7fce59 with `backlog/work/B1.66/plan.md` staged, not
   pushed; `runs/184/stopped` = `ended`.
 - Smaller finding for the reviewer of B1.66: the run's plan names its follow-up card "B1.68", which is right: B1.67 is already a card

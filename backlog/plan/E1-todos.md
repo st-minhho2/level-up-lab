@@ -856,13 +856,13 @@ _tooling · no §_
 ### B1.65 · The runner's prompt lets a run pass a reviewed low or medium plan (D-27)
 
 _tooling · no §_
-**Status: Partial** — merged bc6b11a (#180); pending a live run past the gate: two runs inside the runner container on #184 (B1.66) stopped at the plan commit (no git identity in the container, then no Prisma client for the pre-commit tsc), before the gate (`work/B1.65/live.md`); waits on B1.62 and a git identity kept in the container (A1-A3, A7 met; A4, A5 not; 4 of 7). run-smoke 16 (red f35f449: 1 FAIL, R16), tier-smoke 9 on bash 3.2; vitest 202, playwright 43; no src/ change, mutation 93.40
+**Status: Done** — bc6b11a (#180); live runs on #184 (B1.66) inside the runner container: run 4 committed `Plan approved by: reviewer (D-27, tier low, issue #184)` (e7e9dd0, A4) and run 5 opened draft PR #200 and reached `ready` (A5), after B1.62, B1.69, B1.74 and B1.76 closed the gaps runs 1–4 found (`work/B1.65/live.md`); 7 of 7. run-smoke 16 (red f35f449: 1 FAIL, R16), tier-smoke 9 on bash 3.2; vitest 202, playwright 43; no src/ change, mutation 93.40
 
 - **Spec:** none — tooling (D-27); no `src/` change, no section
 - **Test:** a new probe in `scripts/agent/run-smoke.sh` — red because: the prompt the `claude` shim receives still says "At the plan gate print the gate line and stop"
 - **Acceptance:** the run's prompt tells dev-lead to follow Loop 5's D-27 path (a reviewed low or medium plan of the issue it names proceeds; a high-tier plan or a refusal prints the gate line and stops) and the header says the same; run-smoke asserts the exact prompt; one live run on a low-tier test card passes the gate with the D-27 field (`docs(backlog): <card> plan approved`) and reaches a draft PR; B1.55's card moves from Partial to Done; the PR carries `config-change-approved` (D-19, `scripts/agent/` is protected)
 - **Tier:** quick · **Depends on:** ~~B1.55~~ (its code merged in #171; the card stays Partial only for B1.65), ~~B1.58~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.65/` (plan review 2 rounds, lead rounds 1; diff review 3 passes: 0 + 1 + 3 text findings fixed; 2 live runs inside the runner container, 16 turns, USD 0.471, both stopped before the gate: `live.md`)
+- **Work:** `work/B1.65/` (plan review 2 rounds, lead rounds 1; diff review 3 passes: 0 + 1 + 3 text findings fixed; 5 live runs inside the runner container: 1–2 before the gate (16 turns, USD 0.471), 3 at the review commit, 4 past the gate at the push, 5 to a ready PR: `live.md`)
 
 ### B1.62 · The runner's image carries the Prisma engines and Playwright's browser for a full run inside
 

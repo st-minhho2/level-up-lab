@@ -1,13 +1,26 @@
-Closing lane (`backlog/CLAUDE.md`, "Closing a card", step 4): B1.65 merged as bc6b11a (#180) but not measured.
+Closing lane (`backlog/CLAUDE.md` "Closing a card") for B1.65 — The runner's prompt lets a run pass a reviewed low or
+medium plan (D-27), feature PR #180 merged as bc6b11a, Partial since #188. The checklist is the plan; no `Plan approved
+by` line. One file outside the lane's checklist, as in #195 and #198 (the lead approved recording the live runs with
+the card's PRs): `backlog/work/B1.65/live.md`, run 5's record.
 
-- B1.65 → `Partial — merged bc6b11a, pending a live run past the gate`: its two live runs inside the runner container
-  (issue #184, card B1.66) stopped at the plan commit, before the gate (no git identity in the container, then no
-  Prisma client for the pre-commit `tsc`; `backlog/work/B1.65/live.md`). The lead chose to merge as is (option A).
-  The row stays; README totals E1 42/2/23 of 67, total 53/2/24 of 79; Work line.
-- B1.55 stays Partial; its pending clause now names the live run instead of B1.65's prompt change, which landed.
+Evidence (`live.md`):
 
-A later live run waits on B1.62 (#186) and a git identity kept in the container; it closes both cards.
+- A4: run 4 on #184 committed `Plan approved by: reviewer (D-27, tier low, issue #184)` (e7e9dd0), after B1.62, B1.69
+  and B1.74.
+- A5: run 5 opened draft PR #200 with `scripts/pr-step.sh draft` and reached `ready` (25 turns, USD 0.519), after B1.76.
+- Two actions on #200 were the lead's, not the run's: `ready_for_review` at 10:11:29Z and GitHub's "Update branch"
+  (db95f93). `unattended.sh 184` reads yes (0 messages; its ready time is the lead's click); `no-rework.sh 200` lists
+  db95f93 as a human commit, pending until merge.
 
-Files: `backlog/plan/E1-todos.md`, `backlog/README.md`, `backlog/work/B1.65/closing-pr-body.md`.
+Files:
+
+- `backlog/plan/E1-todos.md`: B1.65 `**Status: Done**`, 7 of 7; Work line with the five runs
+- `backlog/README.md`: Remaining row 76 out; `~~B1.65~~` in node 76; totals
+- `backlog/work/B1.65/live.md`: run 5's row, record and the Acceptance lines A4/A5
+- `backlog/work/B1.65/closing-pr-body.md`: this body (replaces #188's partial body)
+
+No `spec/` change: B1.65 has no section. B1.55 closes in its own PR (its last clause was this run's D-27 field).
+
+`check-backlog.sh` OK.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)

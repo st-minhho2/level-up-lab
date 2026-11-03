@@ -7,11 +7,11 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open   | Total  |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ------ | ------ |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 47     | 2       | 25     | 74     |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 48     | 1       | 25     | 74     |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0      | 5      |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3      |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4      |
-| **Total**        |                                                      | **58** | **2**   | **26** | **86** |
+| **Total**        |                                                      | **59** | **1**   | **26** | **86** |
 
 ## Execution order
 
@@ -106,7 +106,7 @@ flowchart TD
   S73["73 · runner deny list and TERM<br/>B1.61"]
   S74["74 · eligibility by label node id<br/>~~B1.63~~"]
   S75["75 · eligibility refuses a closed issue<br/>~~B1.64~~"]
-  S76["76 · runner prompt follows D-27<br/>B1.65"]
+  S76["76 · runner prompt follows D-27<br/>~~B1.65~~"]
   S77["77 · runner image engines and browser<br/>~~B1.62~~"]
   S78["78 · plan for run log retention<br/>B1.66"]
   S79["79 · CI token proof runs the timeline query<br/>B1.67"]
@@ -147,7 +147,6 @@ at most 3 cards Doing (B1.18).
 | 71   | B1.59 | A launchd job runs the runner's poll every 15 minutes, inside the sandbox                                | —      | Open    | ~~B1.44~~, ~~B1.58~~, ~~B1.62~~ | Lead  | S [estimate] |
 | 72   | B1.60 | CI runs the runner and tier probes, under bash 5 as well                                                 | —      | Open    | ~~B1.44~~                       | Lead  | S [estimate] |
 | 73   | B1.61 | The runner's deny list spares commit messages, and TERM ends the tools a run started                     | —      | Open    | ~~B1.44~~                       | Lead  | S [estimate] |
-| 76   | B1.65 | The runner's prompt lets a run pass a reviewed low or medium plan (D-27)                                 | —      | Partial | ~~B1.55~~, ~~B1.58~~            | Lead  | S [estimate] |
 | 78   | B1.66 | A plan for how long the runner keeps its run logs                                                        | —      | Open    | —                               | Lead  | S [estimate] |
 | 79   | B1.67 | CI's token proof runs the eligibility check's timeline query, and the scripts guide states its rules     | —      | Open    | ~~B1.63~~                       | Lead  | S [estimate] |
 | 81   | B1.70 | The runner firewall reads GitHub's ranges with a token, so a restart never hits the anonymous rate limit | —      | Open    | ~~B1.58~~                       | Lead  | S [estimate] |
