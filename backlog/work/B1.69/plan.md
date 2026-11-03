@@ -67,4 +67,4 @@ compose header   exec runner git config --global user.name "level-up-lab runner"
 Steps: 1 red · 2 green · 3 reviewer (diff) · 4 PR. All dev-lead (no `src/`). Not in scope: Dockerfile, B1.70
 (`init-firewall.sh`), B1.71 (`worktree.sh`), `scripts/CLAUDE.md` (B1.72), signing, the `Agent-Run:` hook.
 
-Plan review: approved, round 2 (round 1: 4 reasons, addressed; r2 C1 folded into the run-smoke row) · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 (round 1: 4 reasons, addressed; r2 C1 folded into the run-smoke row) · Plan approved by: lead, 2026-11-03 (decisions 1–3 as proposed: bot identity, B1.72 left as filed, step in the compose header) · Rounds: 1
