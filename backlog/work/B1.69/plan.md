@@ -24,13 +24,13 @@ Round 2 (plan review r1: 4 reasons, "r1 #n" below). **The lead decides at this g
 
 ## Files
 
-| File                                      | Change                                                                                                           |
-| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `scripts/agent/run-smoke.sh`              | R17 (refusal, red first); `run()` exports `GIT_CONFIG_GLOBAL=${GITCFG:-$TMP/gitconfig}`, `GIT_CONFIG_NOSYSTEM=1` |
-| `scripts/agent/sandbox-probe.sh`          | S11 (red first); header S1–S11                                                                                   |
-| `scripts/agent/run.sh`                    | `identity_problem()`; first step of `preflight` unless `binary`; header line                                     |
-| `.devcontainer/runner/docker-compose.yml` | header only: two `git config --global` lines + one comment line; "10 probes OK" → "11" twice                     |
-| `backlog/work/B1.69/*`                    | advice, plan, review, pr-body                                                                                    |
+| File                                      | Change                                                                                                                                            |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/agent/run-smoke.sh`              | R17 (refusal, red first); `run()` and R5/R13's direct calls export `GIT_CONFIG_GLOBAL=${GITCFG:-$TMP/gitconfig}`, `GIT_CONFIG_NOSYSTEM=1` (r2 C1) |
+| `scripts/agent/sandbox-probe.sh`          | S11 (red first); header S1–S11                                                                                                                    |
+| `scripts/agent/run.sh`                    | `identity_problem()`; first step of `preflight` unless `binary`; header line                                                                      |
+| `.devcontainer/runner/docker-compose.yml` | header only: two `git config --global` lines + one comment line; "10 probes OK" → "11" twice                                                      |
+| `backlog/work/B1.69/*`                    | advice, plan, review, pr-body                                                                                                                     |
 
 ## Interfaces touched
 
@@ -67,4 +67,4 @@ compose header   exec runner git config --global user.name "level-up-lab runner"
 Steps: 1 red · 2 green · 3 reviewer (diff) · 4 PR. All dev-lead (no `src/`). Not in scope: Dockerfile, B1.70
 (`init-firewall.sh`), B1.71 (`worktree.sh`), `scripts/CLAUDE.md` (B1.72), signing, the `Agent-Run:` hook.
 
-Plan review: · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 (round 1: 4 reasons, addressed; r2 C1 folded into the run-smoke row) · Plan approved by: · Rounds: 1

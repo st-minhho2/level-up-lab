@@ -63,3 +63,59 @@ Verdict: changes requested
 
 Riskiest unfalsified: S11 step 2 (dirname of `GIT_CONFIG_GLOBAL` is a mountinfo `$5` entry) relies on `/home/node/.level-up-lab`
 being the exact mount point in the container; true by `docker-compose.yml:75`, not run here.
+
+## Plan review (round 2)
+
+SCOPE: all (tooling, no §). Plan at `36587d3` (round 2: `git diff d9445c0 36587d3` touches `plan.md` only, +29 −18).
+Re-read: cards B1.69 and B1.72 (`E1-todos.md:900`, `:933`), `advice.md`, runner `docker-compose.yml`, `run.sh`
+(`preflight` `:80`, dispatcher `:274`), `run-smoke.sh` (`run()` `:104`, direct calls `:152`, `:262`, `:305`),
+`sandbox-probe.sh`, `.github/rulesets/main.json:30`, B1.62's plan (precedent for the drill and the subject).
+
+Probes run (none on the tree; one on a scratch copy of `scripts/` under the session scratchpad):
+
+- `scripts/next-task.sh --check B1.69` → `[next-task] B1.69: no overlap with any Doing or Review card` (exit 0)
+- `scripts/agent/tier.sh backlog/work/B1.69/plan.md` → `high`; `scripts/ci/check-plan-scope.sh` → `OK: chore/B1.69-runner-git-identity changes only paperwork`
+- the plan's baseline numbers, today on the host: `run-smoke.sh` → `16 probes OK`; `tier-smoke.sh` → `9 probes OK`;
+  `hook-smoke.sh` → `hook-smoke: 511 probes OK`; `sandbox-probe.sh` → `9 of 10 probes FAILED`. All four match the plan.
+- `gh repo view st-minhho2/level-up-lab` → `PUBLIC`, so the drill's clone with no login works as written.
+- Copy probe of the plan's harness change (`identity_problem` first in `preflight` unless `binary`; `run()` exports
+  `GIT_CONFIG_GLOBAL=$TMP/gitconfig` holding an identity, `GIT_CONFIG_NOSYSTEM=1`), run once with the host's identity
+  and once with `GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1` outside: the FAIL sets differ by exactly
+  **R5 and R13** ("TERM left the claude run going", "poll TERM: lock/stopped/calls=0"). The copy has other
+  environment-only FAILs (no commits, no `.claude/`) equal in both runs. See note C1.
+
+| Check                                                                | Result                                                                                                                                                                                                                                                                                                                                                                |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file belongs to the card                                       | pass. Four tooling files plus `work/B1.69/*`. The B1.72 rows are gone because decision 2 now defaults to "leave B1.72 as filed" (r1 #1 resolved). The alternative's cost is stated as five places plus Blocked by, two more Files rows                                                                                                                                |
+| interfaces follow `ts-style.md`; mutations in actions; Prisma in lib | n/a (no `src/`). The refusal line, the S11 conditions and the two header commands are pasted. `--check-binary` and `--mode` are unchanged, and S4 still calls `--mode`                                                                                                                                                                                                |
+| follows `advice.md` or states the deviation                          | pass. Approach A and the named bot. The compose header is now stated as a reading of "README or script", with a new README as the alternative (r1 #3 resolved). Dropping `(red)` is stated (B1.62 #185)                                                                                                                                                               |
+| ≤ 7 criteria, measurable Thens                                       | pass. The card's 5 Acceptance clauses map to S11, R17, the header step, the PR statement (decision 1) and the label                                                                                                                                                                                                                                                   |
+| verification: exact commands, expected numbers                       | pass (r1 #4 resolved). Red: 1 of 17 / 10 of 11. Green: 17, 9 and 511, each matching today's baseline + 1 / 0 / 0. The container drill under `-p b169-verify` gives each command and its expected line, and R17 is stated as hand-run until B1.60. `-e RUNNER_BUDGET_USD=1` was dropped, which is harmless: the drill stops at "not logged in", before any `claude -p` |
+| skeleton → red → green → map → review                                | pass for tooling (B1.58 and B1.62 precedent): red `test(scripts)`, green `chore(scripts)`, reviewer, PR. No skeleton or map row without a §                                                                                                                                                                                                                           |
+| `Lead approves spec` box                                             | n/a. No section. `Plan approved by:` is empty; I write neither                                                                                                                                                                                                                                                                                                        |
+| no settled D-n contradicted                                          | pass. D-19 label; D-28 tier `high` = `tier.sh`; D-27 keeps the lead's `approve` (high tier); D-29 metrics read the `Agent-Run:` trailer, not the author                                                                                                                                                                                                               |
+| `next-task.sh --check B1.69`                                         | pass: "B1.69: no overlap with any Doing or Review card"                                                                                                                                                                                                                                                                                                               |
+
+Round-1 reasons: #1 resolved (default changed, alternative costed), #2 resolved (rebase and squash both stated, the
+squash trailer marked `[unverified]`), #3 resolved (stated as a reading, alternative named), #4 resolved (above).
+
+Notes for the lead's gate and the diff review (none blocks; each is checked at diff review):
+
+- **C1 (binding for the build).** The Files row says "`run()` exports `GIT_CONFIG_GLOBAL` …". However, R5 (`run-smoke.sh:152`)
+  and R13 (`:262`) start `run.sh` directly, not through `run()`, and both reach `preflight`. As the plan is worded, those
+  two calls read the host's own global identity. The lead's host has one, so the planned "17 probes OK" holds there.
+  On a host with no global `user.name`, for example B1.60's CI job, R5 and R13 FAIL with no mention of identity
+  (confirmed on the copy, above). The same export belongs on both direct calls. `:305` (R14, `--check-binary`) skips
+  the check, so it does not need it. This stays inside `run-smoke.sh`, which is already in the Files table. If the
+  diff leaves either call without the export, the diff review reports it as a correctness finding.
+- **C2 (decision 2's default, one unstated order).** The plan covers B1.72 picked after B1.69. B1.72 is `To do` and
+  eligible now (`next-task.sh --list`), so it can also merge first. In that order `scripts/CLAUDE.md` says S1–S10
+  once B1.69 lands, because this card keeps `scripts/CLAUDE.md` out of scope. Either way the guide stays one probe
+  short until someone edits it. That costs a follow-up line, not a defect in this card.
+- **C3.** The footer still reads `Rounds: 1`. Updating it is the dev-lead's job.
+
+Verdict: approved (ready for the lead's gate; high tier, so the lead's `approve` is required before any build commit)
+
+Riskiest unfalsified: S11 step 2 treats the directory of `GIT_CONFIG_GLOBAL` as a mount point listed in mountinfo,
+which depends on `/home/node/.level-up-lab` being the exact mount target (`docker-compose.yml:75`). This was not run
+here and is first exercised by the container drill.
