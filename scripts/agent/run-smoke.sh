@@ -378,7 +378,8 @@ r=0
 printf '[user]\n\temail = smoke@runner.invalid\n' > "$TMP/no-name"
 printf '[user]\n\tname = smoke runner\n' > "$TMP/no-email"
 printf '[user]\n\tname = "  "\n\temail = smoke@runner.invalid\n' > "$TMP/blank-name"
-for g in /dev/null "$TMP/no-name" "$TMP/no-email" "$TMP/blank-name"; do
+printf '[user]\n\tname = smoke runner\n\temail = "  "\n' > "$TMP/blank-email"
+for g in /dev/null "$TMP/no-name" "$TMP/no-email" "$TMP/blank-name" "$TMP/blank-email"; do
   reset; GITCFG="$g" run 7
   [[ $RC -eq 1 && $(calls) -eq 0 && ! -e "$RUNS/7" ]] && has '[run] no git identity' "$TMP/out" \
     && has "git config --global" "$TMP/out" && has 'docker-compose.yml' "$TMP/out" \
