@@ -1,6 +1,6 @@
 # B1.63 + B1.64 plan — eligibility by label node id; a closed issue is refused (tooling)
 
-Round 1. One plan, one PR for both cards (the lead's choice in session); tier quick, no `src/` (advisor skipped).
+Round 2 (plan review r1: 3 reasons, all addressed). One plan, one PR for both cards (the lead's choice in session); tier quick, no `src/` (advisor skipped).
 Risk tier **high** (D-28: `scripts/agent/` is CONFIG_PROTECTED) → the lead's gate holds; `config-change-approved` (D-19).
 Approach: REST events keep a label's name at event time (B1.49 live step 6), so read the GraphQL timeline, whose
 `label.id` is the node id through rename and delete (steps 6–7; REST `node_id` = GraphQL `id`, checked live).
