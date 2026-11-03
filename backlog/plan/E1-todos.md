@@ -874,3 +874,14 @@ _tooling · no §_
 - **Acceptance:** the runner image (`.devcontainer/runner/Dockerfile`) holds the Prisma engines for the lockfile's Prisma version and Playwright's chromium with its system libraries, wired through the engine and browser path variables, so `scripts/worktree.sh <branch>` and `pnpm test:e2e` succeed inside with the allow list unchanged; a Prisma or Playwright bump that the image does not match fails a probe instead of reaching the network; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** ~~B1.58~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.62/`
+
+### B1.66 · A plan for how long the runner keeps its run logs
+
+_tooling · no §_
+**Status: Open** — `scripts/agent/run.sh:15` writes one `<UTC timestamp>-<pid>.jsonl`, `.err` and `.exit` per run under `$RUNNER_RUNS/<issue>/` (default `~/.level-up-lab/runs/`), plus `stopped` and `verified-versions`, and nothing removes them (`grep -nE 'prune|retention|-mtime' scripts/agent/run.sh` → only the `--check-binary` probe worktree, line 192); no plan says how long they stay. Also the live test card of B1.65 (`work/B1.65/plan.md`, decision 3): a tier-0 plan an `agent-ready` run can carry past the gate under D-27
+
+- **Spec:** none — tooling (D-27); no `src/` change, no section
+- **Test:** `scripts/agent/tier.sh backlog/work/B1.66/plan.md` prints `low` — red because: the plan does not exist
+- **Acceptance:** `backlog/work/B1.66/plan.md` states what `runs/<issue>/` and `runs/check-binary/` hold today (from `run.sh`), proposes a retention rule (what is kept as evidence, for how long, who removes the rest) and names the card that would build it; its Files table lists only `backlog/work/B1.66/*`; no script change. Tier 0: the plan is the deliverable
+- **Tier:** 0 · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.66/`
