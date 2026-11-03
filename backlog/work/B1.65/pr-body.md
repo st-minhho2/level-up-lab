@@ -4,7 +4,7 @@ B1.65 — The runner's prompt lets a run pass a reviewed low or medium plan (D-2
 
 - spec: none — tooling (D-27); no `src/` change, no section
 - test: probe R16 in `scripts/agent/run-smoke.sh` (the exact prompt and both header lines) — red before (f35f449: `1 of 16 probes FAILED`, R16), green after (5507b90, b72e2cb: `16 probes OK`)
-- acceptance: A1–A3 met (R16), A7 met (label); A4/A5 pending the live run (plan step 5, `live.md`, after this PR is ready); A6 in B1.55's closing lane
+- acceptance: A1–A3 met (R16), A7 met (label); A4 not met, A5 not reached: two live runs (`live.md`) stopped at the plan commit, before the gate (no git identity in the container, then no Prisma client: B1.62); A6 waits on A4. Lead decision: merge as is, B1.65 closes `Partial — pending live run after B1.62 and a git identity in the container`, B1.55 stays Partial
 - risk tier: high (D-28, `scripts/agent/` is protected)
 
 ## Plan
@@ -100,8 +100,8 @@ none (tooling; no feature row)
 
 ## Review
 
-`/review-loop`: passes 2/3 (`backlog/work/B1.65/review.md`, "Diff review (pass 1)" a80a2af, "(pass 2)" 79b583c), both
-ready for PR, 0 blocking findings. Reviewer's suites (pass 2): vitest `202 passed`, playwright `43 passed`, stryker
+`/review-loop`: passes 3/3 (`backlog/work/B1.65/review.md`, "Diff review (pass 1)" a80a2af, "(pass 2)" 79b583c, "(pass 3)" 74c6d51 on `live.md`):
+passes 1–2 ready for PR; pass 3 sent back three text fixes in `live.md` and this body, fixed in the next commit. Reviewer's suites (pass 2): vitest `202 passed`, playwright `43 passed`, stryker
 `93.40` (no `src/` change).
 
 | Pass | #   | Finding                                                                               | Disposition                                                                                                                                     |
@@ -121,7 +121,7 @@ within 15 turns — only the live run shows it.
 
 ## Evidence
 
-- AC met: 4/7 (A1–A3, A7; A4, A5 live run pending; A6 B1.55 closing lane)
+- AC met: 4/7 (A1–A3, A7; A4 not met, A5 not reached in 2 live runs: `live.md`; A6 waits on A4)
 - tier: high
 - plan deviations: none
 - trace: n/a
