@@ -951,3 +951,14 @@ _tooling · no §_
 - **Acceptance:** the header's setup steps name no branch that can disappear (the clone stays on `main`, or the line goes); every other step unchanged; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** ~~B1.69~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.73/`
+
+### B1.74 · dev-lead commits a reviewer's review.md that Prettier rejects, formatted and unchanged
+
+_tooling · no §_
+**Status: Open** — the live run on #184 after B1.69 (`work/B1.65/live.md`, run 3) stopped before the D-27 approval: the reviewer's `backlog/work/B1.66/review.md` failed lefthook's pre-commit Prettier check, and dev-lead, which never writes a card's `review.md` (`.claude/agents/dev-lead.md`), left it untracked and stopped; without a committed review there is no `Plan approved by: reviewer (D-27, …)` line. `grep -ci prettier .claude/agents/dev-lead.md` → 0. The same happened to every reviewer write in B1.69's interactive session, where `format-after-edit.sh` runs Prettier from `$CLAUDE_PROJECT_DIR` and `.prettierignore` holds `.worktrees` [cause in the container unverified: a subagent's tool calls are not in the run's stream]
+
+- **Spec:** none — tooling (D-27); no `src/` change, no section
+- **Test:** a probe that gives dev-lead's commit step an unformatted `review.md` — red because: dev-lead.md has no step that formats it (`grep -ci prettier .claude/agents/dev-lead.md` → 0)
+- **Acceptance:** before committing a card's `review.md`, dev-lead runs `pnpm exec prettier --write` on that file only; the commit is formatting only (`git diff -w` of the file before and after shows no word changed), otherwise dev-lead stops and reports; dev-lead still never edits `review.md` with Write or Edit; a run's `ALLOW` already holds `Bash(pnpm exec prettier *)`; the PR carries `config-change-approved` (D-19) (lead's choice A, 2026-11-03)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.74/`
