@@ -174,3 +174,81 @@ Verdict: approved (ready for the lead's gate, not approved for build)
 
 Riskiest unfalsified: `gh pr create --draft --head <branch>` in gh 2.23.0 inside the runner neither pushes nor needs
 git's credential; only run 5 tests it.
+
+## Diff review (pass 1)
+
+Scope: tooling (no §; `scripts/`, `.devcontainer/runner/`). Range `origin/main...79b22c5`, red 894db58, green 79b22c5.
+
+### Command results (last line of each, run by the reviewer)
+
+| Command                                    | Result                                                                                                                                                                                                  |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                | `All matched files use Prettier code style!`                                                                                                                                                            |
+| `pnpm typecheck`                           | `tsc --noEmit`, no error                                                                                                                                                                                |
+| `pnpm test`                                | `Tests  202 passed (202)`                                                                                                                                                                               |
+| `pnpm test:e2e`                            | `43 passed (1.2m)`                                                                                                                                                                                      |
+| `pnpm test:mutation`                       | `Final mutation score of 93.40 is greater than or equal to break threshold 70` (no `src/` change)                                                                                                       |
+| `check-suppressions.sh`                    | `OK: no new suppressions`                                                                                                                                                                               |
+| `check-config-change.sh`                   | exit 1: Dockerfile, docker-compose.yml, sandbox-probe.sh without the label; expected, the plan carries `config-change-approved` (D-19), the agent adds it at PR creation                                |
+| `check-feat-commits.sh`                    | `OK: no feat commit touches tests`                                                                                                                                                                      |
+| `check-ac-coverage.sh`                     | `OK: every criterion of a shipped section has a test`                                                                                                                                                   |
+| `check-spec-sections.sh`                   | `OK: sections cited: 1 … 22`                                                                                                                                                                            |
+| `check-features-map.sh`                    | `OK`                                                                                                                                                                                                    |
+| `check-plan-scope.sh` / `check-backlog.sh` | `OK: … stays inside the approved plan of B1.76` / `OK: README matches the cards`                                                                                                                        |
+| `verify-red.sh B1.76`                      | `no 'test(<pkg>): B1.76 … (red)' commit`: not applicable, the red is a shell probe that `verify-red.sh` cannot judge (vitest only); the plan's Verification names the subject without `(red)` by design |
+| `scripts/pr-step-smoke.sh` (host)          | `[pr-step-smoke] 15 ok, 0 FAIL`                                                                                                                                                                         |
+| `sandbox-probe.sh` in `b176-verify`        | `1 of 12 probes FAILED`; S12's only line: `git credential fill failed: gh auth login in the runner …` (no login there)                                                                                  |
+
+Red, reproduced by hand (the old image, the lead's container, read-only): with every `GIT_CONFIG_*` cleared,
+`git config --get-urlmatch credential.helper https://github.com` → empty, `/etc/gitconfig` absent, marker present:
+S12's first two assertions fail there (and its fill, nothing answering). New image (`b176-verify`, clone at 79b22c5):
+the same view → `!/usr/bin/gh auth git-credential`, `/etc/gitconfig` `root 644`, not writable by node; a `GIT_TRACE`
+fill in that view runs `/usr/bin/gh auth git-credential get` and fails only on "could not read Username" (no login).
+No credential lookup was run on the host or in the lead's container.
+
+### Checklist
+
+| Check                                                                                                         | Result                                                                                                                                                                                                                     |
+| ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every Acceptance clause has a probe matching it                                                               | pass: helper at system scope, root-owned → S12 assertions 1–2 + the build's read-back; wrapper unchanged and clearing → R15 (`git diff origin/main...HEAD -- scripts/pr-step.sh` empty); fill → S12 (runner only)          |
+| no probe weakened after the red commit                                                                        | pass: `git log --first-parent --no-merges 894db58..HEAD` on probe/test files empty; no merge commits on the branch                                                                                                         |
+| every changed file in `plan.md`                                                                               | pass: 7 rows, `check-plan-scope` OK                                                                                                                                                                                        |
+| interfaces match the plan                                                                                     | pass: the Dockerfile `RUN` is the plan's line verbatim; S12 and R15 as written in "Interfaces touched"                                                                                                                     |
+| Zod / Prisma / raw SQL / migration                                                                            | n/a (no `src/`, no `prisma/`)                                                                                                                                                                                              |
+| no secret, no suppression                                                                                     | pass: the image writes only the helper command; S12 sends the fill's stdout to `/dev/null`; `check-suppressions` OK                                                                                                        |
+| features map row                                                                                              | n/a (tooling)                                                                                                                                                                                                              |
+| would a probe fail if one changed line were reverted (copies in the scratchpad, wrapper mutated, smoke rerun) | pass: B (loop deleted) → R15 `count` fails; D (`GIT_CONFIG_GLOBAL` and loop) → R15 `global` and `count` fail; SYSTEM kept by both lines → R15 `system` fails on this host; Dockerfile line removed → S12 (old image above) |
+
+### Findings
+
+```
+[1] KIND: coverage
+    WHERE: scripts/pr-step-smoke.sh:167-173 (R15, case `system`)
+    DEFECT: the `system` case has no control proving a hook named by GIT_CONFIG_SYSTEM fires, so it is vacuous
+            wherever any higher-precedence scope already sets core.hooksPath.
+    TRIGGER: HOME whose .gitconfig sets `core.hooksPath` (I used a scratch HOME pointing at an empty hooks dir) plus a
+             wrapper copy that keeps GIT_CONFIG_SYSTEM (dropped from the unset line, `grep -v SYSTEM` in the loop).
+    WRONG BEHAVIOUR: `[pr-step-smoke] 15 ok, 0 FAIL` with the mutant; on the real HOME (no global hooksPath) the same
+                     mutant gives `system: rc=0 hook=hooks`, `FAIL R15`.
+    CONFIDENCE: confirmed (ran both on copies)
+```
+
+Not blocking: the plan's R15 interface names one control (GIT_CONFIG_GLOBAL), the lead's host has no global
+`core.hooksPath` (checked), and the global control already shows the observable works. A second control
+(`GIT_CONFIG_SYSTEM=… git push` firing the hook) would close it; a later card or a review-pass `test(scripts)` commit.
+
+Answers to the dev-lead's three doubts:
+
+1. S12's "credential fill skipped: not the runner" prints only where the marker is absent, and then the fill was
+   indeed not run; in the runner a failing fill prints its own line (seen in `b176-verify`). Accurate as written.
+2. R15's control cannot pass for the wrong reason because of a host global `core.hooksPath`: `GIT_CONFIG_GLOBAL`
+   replaces `~/.gitconfig` for that push, and a local or env `core.hooksPath` would make the control fail, not pass.
+   The `system` case is where a host's global hooksPath bites (finding 1).
+3. Old image: reproduced S12's view directly (above), not the full probe (that would mean copying the script into
+   the lead's container); the count line is unaffected per round 2's note 2.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: a real push from the wrapper with `gh` logged in (the helper returning the token in the cleared
+environment) and `gh pr create --draft --head` not pushing in gh 2.23.0; no logged-in, rebuilt runner exists before
+run 5.
