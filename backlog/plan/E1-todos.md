@@ -940,3 +940,14 @@ _tooling · no §_
 - **Acceptance:** the row reads S1–S10 and names engines, browser and Postgres; nothing else changes
 - **Tier:** quick · **Depends on:** ~~B1.62~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.72/`
+
+### B1.73 · The runner's setup steps check out a branch that exists
+
+_tooling · no §_
+**Status: Open** — `.devcontainer/runner/docker-compose.yml:10` tells the lead to run `git checkout chore/B1.62-runner-image-probes` in a fresh clone; that branch was merged (#186) and is gone from origin (`git ls-remote --heads origin 'chore/B1.62*'` → empty), so a setup that follows the header from a new volume stops there with "pathspec … did not match", before B1.69's identity lines and the probe (B1.69 diff review pass 1)
+
+- **Spec:** none — tooling; no `src/` change, no section
+- **Test:** none — a one-line header comment fix (`.claude/rules/planning.md`: one-sentence diff); checked by following the header in a throwaway compose project to "11 probes OK"
+- **Acceptance:** the header's setup steps name no branch that can disappear (the clone stays on `main`, or the line goes); every other step unchanged; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** ~~B1.69~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.73/`
