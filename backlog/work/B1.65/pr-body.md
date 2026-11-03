@@ -3,8 +3,8 @@
 B1.65 — The runner's prompt lets a run pass a reviewed low or medium plan (D-27) (tooling, no spec section)
 
 - spec: none — tooling (D-27); no `src/` change, no section
-- test: probe R16 in `scripts/agent/run-smoke.sh` (the exact prompt and header) — red before, green after (pending)
-- acceptance: pending (A1–A3 by R16; A4/A5 by the live run in `live.md`; A6 in B1.55's closing lane; A7 this label)
+- test: probe R16 in `scripts/agent/run-smoke.sh` (the exact prompt and both header lines) — red before (f35f449: `1 of 16 probes FAILED`, R16), green after (5507b90, b72e2cb: `16 probes OK`)
+- acceptance: A1–A3 met (R16), A7 met (label); A4/A5 pending the live run (plan step 5, `live.md`, after this PR is ready); A6 in B1.55's closing lane
 - risk tier: high (D-28, `scripts/agent/` is protected)
 
 ## Plan
@@ -100,11 +100,28 @@ none (tooling; no feature row)
 
 ## Review
 
-pending
+`/review-loop`: passes 2/3 (`backlog/work/B1.65/review.md`, "Diff review (pass 1)" a80a2af, "(pass 2)" 79b583c), both
+ready for PR, 0 blocking findings. Reviewer's suites (pass 2): vitest `202 passed`, playwright `43 passed`, stryker
+`93.40` (no `src/` change).
+
+| Pass | #   | Finding                                                                               | Disposition                                                                                                                                     |
+| ---- | --- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | 1   | pr-body claimed run-smoke "16 OK on both bashes"                                      | fix now: real numbers below; the copied Plan text stays as approved                                                                             |
+| 1    | 2   | R16's header check (`Loop 5` anywhere in lines 2–16) let "every plan proceeds …" pass | fix now: b72e2cb pins both header lines whole; that mutant → `1 of 16 probes FAILED`                                                            |
+| 1    | 3   | the prompt restates Loop 5's conditions and can drift from dev-lead.md                | no change needed: accepted cost (plan review r2 note 3); today they match (dev-lead.md:62–68)                                                   |
+| 1    | 4   | line-wrapped prompt; how the model reads it                                           | judged by the live run (plan step 5)                                                                                                            |
+| 1    | 5   | ALLOW already names tier.sh and eligible.sh                                           | no change needed (run.sh:38–39)                                                                                                                 |
+| 2    | A   | R16 greps the header pair anywhere in the file; an extra comment line after it passes | no change needed: the header is a comment the run never reads; the run's behavior comes only from the prompt, which R16 pins as a whole literal |
+
+Smokes: host `/bin/bash` 3.2.57: run-smoke `16 probes OK`, tier-smoke `9 probes OK`. Runner container `bash` 5.2.15
+(a `git archive` copy, no `.git`): run-smoke R6 and R15 fail, tier-smoke T4 fails, the same three as on `origin/main`
+there (the container is the sandbox, so `mode()` gives `bypassPermissions`; T4 needs `.git`); R16 ok. Riskiest
+unfalsified: whether a headless dev-lead in the container runs `tier.sh` and `eligible.sh` and writes the D-27 field
+within 15 turns — only the live run shows it.
 
 ## Evidence
 
-- AC met: pending
+- AC met: 4/7 (A1–A3, A7; A4, A5 live run pending; A6 B1.55 closing lane)
 - tier: high
 - plan deviations: none
 - trace: n/a
