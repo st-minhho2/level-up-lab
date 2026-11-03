@@ -308,3 +308,119 @@ the live run, `live.md` and its review pass)
 Riskiest unfalsified: unchanged from pass 1. Will a headless dev-lead in the container run `tier.sh` and
 `eligible.sh` (4–5 `gh api` calls through the firewall) and write the D-27 field within 15 turns? Or will an
 `eligible.sh` exit 1 turn the run into `gate` and lose A4? Only step 5 reaches it.
+
+## Diff review (pass 3)
+
+Scope: the delta `79b583c..HEAD`. That is merge bea5284 (origin/main a7fce59, clean: `--remerge-diff` empty, no
+change to `run.sh` or `run-smoke.sh`), d1ae8ff (`docs/metrics.md` row), 9434993 (`pr-body.md`) and 250b88a
+(`live.md`, plan step 5). This is plan step 6: are `live.md`'s claims true to the run logs, does it state A4/A5
+honestly, and is Partial the right status. All container reads were read-only (`docker exec … ls/jq/git log/status`).
+
+### Command results (run by the reviewer, host `/bin/bash` 3.2.57)
+
+| Command                              | Last line                                                                              |
+| ------------------------------------ | -------------------------------------------------------------------------------------- |
+| `pnpm lint`                          | `All matched files use Prettier code style!`                                           |
+| `pnpm typecheck`                     | exit 0, no output                                                                      |
+| `pnpm test`                          | `Tests  202 passed (202)`                                                              |
+| `pnpm test:e2e`                      | `43 passed (52.3s)`                                                                    |
+| `pnpm test:mutation`                 | `Final mutation score of 93.40 is greater than or equal to break threshold 70`         |
+| `scripts/agent/run-smoke.sh`         | `16 probes OK`                                                                         |
+| `scripts/agent/tier-smoke.sh`        | `9 probes OK`                                                                          |
+| `scripts/agent/eligible-smoke.sh`    | `14 probes OK` (came in with the merge)                                                |
+| `scripts/ci/check-plan-scope.sh`     | `OK: chore/B1.65-run-prompt stays inside the approved plan of B1.65`                   |
+| `scripts/ci/check-suppressions.sh`   | `OK: no new suppressions`                                                              |
+| `scripts/ci/check-config-change.sh`  | exit 1: `run-smoke.sh`, `run.sh` without the label (expected locally; #180 carries it) |
+| `scripts/ci/check-feat-commits.sh`   | `OK: no feat commit touches tests`                                                     |
+| `scripts/ci/check-ac-coverage.sh`    | `OK: every criterion of a shipped section has a test`                                  |
+| `scripts/ci/check-spec-sections.sh`  | `OK: sections cited: 1 … 22`                                                           |
+| `scripts/ci/check-features-map.sh`   | `OK`                                                                                   |
+| `scripts/verify-red.sh B1.65`        | exit 1, no `(red)` subject (pass 1 note 5 stands); `--auto`: nothing to verify         |
+| `git diff --stat origin/main...HEAD` | 9 files, 941 insertions, 4 deletions                                                   |
+| `gh pr checks 180`                   | lint, typecheck, test, e2e, guards, semgrep, claude-review pass; mutation pending      |
+
+### live.md against the logs
+
+| Claim in `live.md`                                                            | Log / state                                                                                                                                                                                             | Holds        |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| run 1: 9 turns, USD 0.351, 1 denial, ended                                    | result line: `num_turns 9`, `total_cost_usd 0.3508`, `subtype success`, `is_error false`, one `permission_denials` entry; `.exit` 0                                                                     | yes          |
+| run 2: 7 turns, USD 0.120, 0 denials, ended                                   | `num_turns 7`, `0.1202`, `success`, `[]`; `.exit` 0                                                                                                                                                     | yes          |
+| total 2 calls, 16 turns, USD 0.471 (plan decision 2: ≤ 2 calls)               | two `.jsonl` in `runs/184/`, 9 + 7, 0.3508 + 0.1202 = 0.4710; both under 15 turns and USD 1                                                                                                             | yes          |
+| run 1 stopped at `Author identity unknown`; the `git -c` try denied           | result text quotes it; the denial's `tool_input` is `git -c user.name=… -c user.email=… commit …`, which `DENY` `Bash(git -c*)` (run.sh:42) matches; no second try in the tool list                     | yes          |
+| run 2: pre-commit `tsc` TS7006 at `e2e/21-clear-search.spec.ts:44`            | tool result: lefthook `gate ❯ tsc` with `(44,31)` and `(44,75) TS7006`, `node_modules/.prisma/client` absent, `prisma generate` → `request to https://binaries.prisma.sh/…/schema-engine.sha256 failed` | yes          |
+| no gate line in either run                                                    | `grep -c "is ready. Reply"` → 0 in both logs                                                                                                                                                            | yes          |
+| run 2 said "`RUNNER_CHILD=1`, so this is a valid D-27 run"                    | in run 2's result text                                                                                                                                                                                  | yes          |
+| "in both runs dev-lead skipped advice … wrote a plan"                         | run 1 did both (Write of `plan.md`, "Advice step (Loop 2): skipped"). Run 2 has no Write. It `cat`s run 1's staged plan and says nothing of advice                                                      | partly, [3]  |
+| state: worktree at a7fce59, `plan.md` staged, not pushed, `ended`             | container: `chore/B1.66-agent` a7fce59, `A  backlog/work/B1.66/plan.md`; no remote head `chore/B1.66-agent`; `runs/184/stopped` = `ended`; clone `chore/B1.65-run-prompt` 9434993                       | yes          |
+| identity set by the lead before run 2                                         | container `git config --global user.name` is set; run 2 got past author identity to the hook                                                                                                            | yes          |
+| `--claim` printed `may start (WIP 1/3: Doing B1.57)`; `pnpm install` exited 0 | not in `runs/184/` (run.sh's own output goes to the lead's terminal). The worktree and `node_modules` exist                                                                                             | [unverified] |
+| "the next free id is B1.67"                                                   | B1.67 is a filed card at a7fce59, the run's base                                                                                                                                                        | no, [1]      |
+
+### A4 / A5 and the status
+
+- **A4 is stated honestly.** "Not met within the 2 runs; blocked at the plan commit … before the gate" matches both
+  logs. Neither run reached plan review, `eligible.sh`, the D-27 field or the gate. `live.md` does not dress up the
+  A1 signs as A4: "toward A1 … short of proof".
+- **A5 is stated honestly.** "Not reached": no push, no remote branch, no PR.
+- **Partial is the right status.** A1–A3 are met (R16, re-run here: 16 OK) and A7 is met (#180 carries
+  `config-change-approved`). A4 and A5 are not met. A6 (B1.55 → Done) depends on A4 (plan decision 6), so B1.55
+  stays Partial. Done would contradict decision 2 ("A4 must hold within them"). Open would hide merged code and 4 of
+  7 clauses met.
+- **"Pending live run after B1.62" names only one of the two gaps the runs found.** B1.62's Acceptance covers engines
+  and the browser. The git identity is not in it. `live.md` itself calls the identity "Not in B1.58's setup steps or
+  probes: follow-up", but no card holds it. The lead's `git config --global` lives in the running container and is
+  unproven across a rebuild. The closing lane's status line should name both: B1.62 plus the identity follow-up
+  (filed, or folded into B1.62 by the lead). Otherwise a run after B1.62 on a fresh container stops where run 1 did.
+  This is not a finding against this branch. It is a note for the closing lane.
+
+### Checklist (delta)
+
+| Check                                         | Result                                                                                                                                                                         |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| test change after the red commit is explained | pass: `f35f449..HEAD` first-parent non-merge test changes are b72e2cb only (pass 2). The merge's `--remerge-diff` is empty                                                     |
+| changed file in `plan.md`                     | pass: `live.md` and `pr-body.md` are under `backlog/work/B1.65/*`. The `docs/metrics.md` row is closing-lane bookkeeping outside the Files table, and `check-plan-scope.sh` OK |
+| metrics row                                   | pass: red f35f449 `1 FAIL (R16)`, feat 5507b90, 93.40 unchanged, which matches pass 1 and the stryker run above                                                                |
+| live run inside plan decisions 2 and 5        | pass: 2 calls, ≤ 15 turns, ≤ USD 1. It stopped on the missing client and waited for B1.62, never the host. No hook bypassed, no workaround after the denial                    |
+| PR body matches the evidence                  | fail, [2]                                                                                                                                                                      |
+| no secret, no suppression, no `src/` change   | pass. The denial's `tool_input` in the log holds the lead's git email. It is not a secret and is not copied into the tree                                                      |
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: backlog/work/B1.65/live.md:38
+    DEFECT: "the next free id is B1.67" is false: B1.67 is a filed card at the run's base a7fce59
+            (backlog/plan/E1-todos.md:889, backlog/README.md:147), so B1.68 was the right id.
+    TRIGGER: B1.66's reviewer acts on the note and asks the run to rename its follow-up to B1.67.
+    WRONG BEHAVIOUR: two cards would share the id B1.67. The run itself was right: run 1's 4th tool call greps the
+            `### B1.6x|B1.7` headings, and its 6th runs `grep -c "B1.68"` before it picks the id.
+    CONFIDENCE: confirmed (git grep at HEAD and a7fce59; tool list of 20261103T025049Z-17898.jsonl)
+
+[2] KIND: plan-mismatch
+    WHERE: backlog/work/B1.65/pr-body.md:7, :103, :124 (and PR #180's body at head 250b88a, same text)
+    DEFECT: the PR body still says "A4/A5 pending the live run (plan step 5 …)" and "passes 2/3", but step 5 has run
+            and live.md records A4 not met, A5 not reached.
+    TRIGGER: the lead merges #180 "as is" today, as chosen.
+    WRONG BEHAVIOUR: the merged PR's record says the live run is still to come. It should say it ran twice
+            (USD 0.471), stopped at the plan commit before the gate, and that A4 and A5 are not met. It should also
+            give the status (Partial, pending B1.62 plus the identity follow-up) and add review pass 3.
+    CONFIDENCE: confirmed (grep of pr-body.md; `gh pr view 180 --json body`)
+
+[3] KIND: correctness (not blocking)
+    WHERE: backlog/work/B1.65/live.md:26
+    DEFECT: "in both runs dev-lead skipped advice … wrote a plan" overstates run 2, which wrote nothing and never
+            mentions advice. It read run 1's staged plan.
+    TRIGGER: someone counts "both runs" as two independent readings of the prompt toward A1.
+    WRONG BEHAVIOUR: run 1 is the only evidence of the skipped advice and the plan scope. Run 2 adds the `tier.sh`
+            call and the RUNNER_CHILD sentence.
+    CONFIDENCE: confirmed (tool lists of both .jsonl: run 2 has no Write)
+```
+
+Verdict: back to code-writer (dev-lead). [1] and [2] are text fixes in `backlog/work/B1.65/` and change nothing the
+lead decided: merge #180, B1.65 Partial, B1.55 Partial. This was the third pass, so no fourth reviewer pass is asked
+for. The lead can check the fix diff directly. [3] can be fixed in the same edit.
+
+Riskiest unfalsified: unchanged and now known to be untested. No run has reached `eligible.sh 184 B1.66` (4–5
+`gh api` calls through the firewall) or written `Plan approved by: reviewer (D-27, tier low, issue #184)`. Whether
+the prompt carries a headless dev-lead through Loop 5 is still open. It waits on B1.62 and on a durable git identity
+in the container.
