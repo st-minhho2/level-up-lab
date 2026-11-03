@@ -806,7 +806,7 @@ _tooling · no §_
 - **Spec:** none — tooling (D-26, D-27); no `src/` change, no section
 - **Test:** `scripts/agent/launchd-smoke.sh` (new) — red because: the plist and its install script do not exist
 - **Acceptance:** a LaunchAgent plist (`StartInterval` 900) and an install / uninstall script the lead runs by hand; each tick runs `scripts/agent/run.sh --poll` inside B1.58's container, never on the host; a tick never overlaps the previous one; output goes to `~/.level-up-lab/runs/poll.log`; `plutil -lint` clean
-- **Tier:** quick · **Depends on:** ~~B1.44~~, ~~B1.58~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** quick · **Depends on:** ~~B1.44~~, ~~B1.58~~, B1.62 (the lead, 2026-11-03: a full run inside the container needs B1.62's engines and browser) · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.59/`
 
 ### B1.60 · CI runs the runner and tier probes, under bash 5 as well
