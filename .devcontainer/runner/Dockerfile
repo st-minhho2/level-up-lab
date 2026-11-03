@@ -74,6 +74,13 @@ RUN chmod 0755 /usr/local/bin/init-firewall.sh /usr/local/bin/runner-postgres.sh
     /home/node/.local/share/pnpm/store /home/node/pgdata \
   && chown -R node:node /home/node
 
+# GitHub's credential helper at system scope (B1.76): scripts/pr-step.sh clears every GIT_CONFIG_* variable, so the
+# runner-runs file GIT_CONFIG_GLOBAL names is invisible to its push; /etc/gitconfig is root's, read-only to a run. The
+# helper only asks gh, whose login stays in the runner-gh volume; nothing secret is written here.
+RUN test -x /usr/bin/gh \
+  && git config --system 'credential.https://github.com.helper' '!/usr/bin/gh auth git-credential' \
+  && [ "$(git config --system --get 'credential.https://github.com.helper')" = '!/usr/bin/gh auth git-credential' ]
+
 USER node
 # `firewall` overrides this with its own entrypoint and command; only `runner` starts Postgres.
 CMD ["/usr/local/bin/runner-postgres.sh", "sleep", "infinity"]
