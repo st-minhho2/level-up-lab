@@ -72,4 +72,4 @@ Plan review: changes requested, round 2 (cap; r1 list renumbering → fixed; r2 
 Changed after approval (diff review pass 1, 3 findings): `w()` reads `{ cat; echo; }` first, so a review.md with no
 final newline (Prettier adds one) is not refused (FR9); FR10 (a changed digit refused) and FR11 (a `1) 2) 4)` list
 accepted) pin `[:alnum:]` and `[.)]`; the scratch repositories are removed; hook-smoke 522 probes, `scripts/CLAUDE.md`
-names FR1–FR11. Same Files, same block shape; needs the lead's re-approval before ready.
+names FR1–FR11. Same Files, same block shape; re-approved by: lead, 2026-11-03.
