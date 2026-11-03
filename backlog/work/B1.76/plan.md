@@ -66,4 +66,4 @@ R15  control: GIT_CONFIG_GLOBAL with core.hooksPath → a pre-push hook fires on
 Steps: 1 red · 2 green · 3 reviewer (diff) · 4 PR. All dev-lead (no `src/`). Not in scope: `scripts/pr-step.sh`, B1.70,
 B1.71, B1.72, B1.73.
 
-Plan review: approved, round 2 (round 1: 4 reasons, addressed; r2 notes folded) · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 (round 1: 4 reasons, addressed; r2 notes folded) · Plan approved by: lead, 2026-11-03 (decisions 1–3 as proposed) · Rounds: 1
