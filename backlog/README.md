@@ -139,9 +139,9 @@ at most 3 cards Doing (B1.18).
 | 71   | B1.59 | A launchd job runs the runner's poll every 15 minutes, inside the sandbox                             | —      | Open    | ~~B1.44~~, ~~B1.58~~, B1.62 | Lead  | S [estimate] |
 | 72   | B1.60 | CI runs the runner and tier probes, under bash 5 as well                                              | —      | Open    | ~~B1.44~~                   | Lead  | S [estimate] |
 | 73   | B1.61 | The runner's deny list spares commit messages, and TERM ends the tools a run started                  | —      | Open    | ~~B1.44~~                   | Lead  | S [estimate] |
-| 74   | B1.63 | The eligibility check matches the agent-ready label by its node id, not its name                      | —      | Open    | ~~B1.43~~, B1.55            | Lead  | S [estimate] |
-| 75   | B1.64 | The eligibility check refuses a closed issue, with or without a card id                               | —      | Open    | ~~B1.43~~, B1.55            | Lead  | S [estimate] |
-| 76   | B1.65 | The runner's prompt lets a run pass a reviewed low or medium plan (D-27)                              | —      | Open    | B1.55, ~~B1.58~~            | Lead  | S [estimate] |
+| 74   | B1.63 | The eligibility check matches the agent-ready label by its node id, not its name                      | —      | Open    | ~~B1.43~~, ~~B1.55~~        | Lead  | S [estimate] |
+| 75   | B1.64 | The eligibility check refuses a closed issue, with or without a card id                               | —      | Open    | ~~B1.43~~, ~~B1.55~~        | Lead  | S [estimate] |
+| 76   | B1.65 | The runner's prompt lets a run pass a reviewed low or medium plan (D-27)                              | —      | Open    | ~~B1.55~~, ~~B1.58~~        | Lead  | S [estimate] |
 | 77   | B1.62 | The runner's image carries the Prisma engines and Playwright's browser for a full run inside          | —      | Open    | ~~B1.58~~                   | Lead  | S [estimate] |
 
 ## Waiting on human

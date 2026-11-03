@@ -839,7 +839,7 @@ _tooling · no §_
 - **Spec:** none — tooling (D-27); no `src/` change, no section
 - **Test:** new probes in `scripts/agent/eligible-smoke.sh` — red because: the script filters events by name, so a fixture whose newest `agent-ready`-named event belongs to another label node exits 0
 - **Acceptance:** `eligible.sh` reads the issue's labeled and unlabeled events with their label node ids and decides on the newest event whose id is the id of the `agent-ready` label the issue carries now; the rename sequence above exits 1 (the labeler of `y` has no write), a label deleted and re-created needs a new `labeled` event, and events across pages keep their order; the PR carries `config-change-approved` (D-19, `scripts/agent/` is protected)
-- **Tier:** quick · **Depends on:** ~~B1.43~~, B1.55 (both change `eligible.sh`) · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** quick · **Depends on:** ~~B1.43~~, ~~B1.55~~ (both change `eligible.sh`; B1.55's change merged in #171) · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.63/`
 
 ### B1.64 · The eligibility check refuses a closed issue, with or without a card id
@@ -850,7 +850,7 @@ _tooling · no §_
 - **Spec:** none — tooling (D-27); no `src/` change, no section
 - **Test:** a new probe in `scripts/agent/eligible-smoke.sh` — red because: a closed issue with a valid `agent-ready` history and no `<card>` argument exits 0
 - **Acceptance:** `eligible.sh <issue>` exits 1 with `eligible: #<n> is closed` on a closed issue whether or not `<card>` is given, so `run.sh <issue>` refuses it; the PR carries `config-change-approved` (D-19, `scripts/agent/` is protected)
-- **Tier:** quick · **Depends on:** ~~B1.43~~, B1.55 (both change `eligible.sh`) · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** quick · **Depends on:** ~~B1.43~~, ~~B1.55~~ (both change `eligible.sh`; B1.55's change merged in #171) · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.64/`
 
 ### B1.65 · The runner's prompt lets a run pass a reviewed low or medium plan (D-27)
@@ -861,7 +861,7 @@ _tooling · no §_
 - **Spec:** none — tooling (D-27); no `src/` change, no section
 - **Test:** a new probe in `scripts/agent/run-smoke.sh` — red because: the prompt the `claude` shim receives still says "At the plan gate print the gate line and stop"
 - **Acceptance:** the run's prompt tells dev-lead to follow Loop 5's D-27 path (a reviewed low or medium plan of the issue it names proceeds; a high-tier plan or a refusal prints the gate line and stops) and the header says the same; run-smoke asserts the exact prompt; one live run on a low-tier test card passes the gate with the D-27 field (`docs(backlog): <card> plan approved`) and reaches a draft PR; B1.55's card moves from Partial to Done; the PR carries `config-change-approved` (D-19, `scripts/agent/` is protected)
-- **Tier:** quick · **Depends on:** B1.55, ~~B1.58~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** quick · **Depends on:** ~~B1.55~~ (its code merged in #171; the card stays Partial only for B1.65), ~~B1.58~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.65/`
 
 ### B1.62 · The runner's image carries the Prisma engines and Playwright's browser for a full run inside
