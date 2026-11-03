@@ -806,7 +806,7 @@ _tooling · no §_
 - **Spec:** none — tooling (D-26, D-27); no `src/` change, no section
 - **Test:** `scripts/agent/launchd-smoke.sh` (new) — red because: the plist and its install script do not exist
 - **Acceptance:** a LaunchAgent plist (`StartInterval` 900) and an install / uninstall script the lead runs by hand; each tick runs `scripts/agent/run.sh --poll` inside B1.58's container, never on the host; a tick never overlaps the previous one; output goes to `~/.level-up-lab/runs/poll.log`; `plutil -lint` clean
-- **Tier:** quick · **Depends on:** ~~B1.44~~, ~~B1.58~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** quick · **Depends on:** ~~B1.44~~, ~~B1.58~~, B1.62 (the lead, 2026-11-03: a full run inside the container needs B1.62's engines and browser) · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.59/`
 
 ### B1.60 · CI runs the runner and tier probes, under bash 5 as well
@@ -834,24 +834,24 @@ _tooling · no §_
 ### B1.63 · The eligibility check matches the agent-ready label by its node id, not its name
 
 _tooling · no §_
-**Status: Open** — B1.49's live check (`backlog/work/B1.49/live.md`, step 6): after a label rename, the REST issue events and timeline keep `label.name` as it was when the event happened, while the issue's labels carry the new name, and no `unlabeled` or `renamed` event is added. `scripts/agent/eligible.sh:30` matches events by `.label.name == "agent-ready"`, so it fails open: the lead labels issue K `agent-ready`, a write user renames `agent-ready` away, a triage user labels K with `y`, `y` is renamed to `agent-ready` → the last event named `agent-ready` is the lead's old one and the script exits 0 for a label the triage user applied. GraphQL `LabeledEvent.label.id` / `UnlabeledEvent.label.id` stays the label's node id through a rename and a delete (live.md steps 6–7)
+**Status: Done** — 58ded5d (#179, with B1.64); eligible-smoke 14 probes OK on bash 5 and 3.2 (red 27f01a0: 7 of 14 FAIL; E12 the rename sequence exited 0), hook-smoke 511 OK (red: S16 low, S16 medium, C9, S28 FAIL); live read-only: REST node_id = GraphQL label id, the script's query with first: 1 and first: 100 on #169 gives the same 6 rows; reviewer mutants all killed but 2 equivalent; mutation 93.40 (unchanged, no src/); the accepted path end to end on a live open agent-ready issue and CI's gh 2.23 are not run (B1.65, B1.67)
 
 - **Spec:** none — tooling (D-27); no `src/` change, no section
 - **Test:** new probes in `scripts/agent/eligible-smoke.sh` — red because: the script filters events by name, so a fixture whose newest `agent-ready`-named event belongs to another label node exits 0
 - **Acceptance:** `eligible.sh` reads the issue's labeled and unlabeled events with their label node ids and decides on the newest event whose id is the id of the `agent-ready` label the issue carries now; the rename sequence above exits 1 (the labeler of `y` has no write), a label deleted and re-created needs a new `labeled` event, and events across pages keep their order; the PR carries `config-change-approved` (D-19, `scripts/agent/` is protected)
-- **Tier:** quick · **Depends on:** ~~B1.43~~, B1.55 (both change `eligible.sh`) · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.63/`
+- **Tier:** quick · **Depends on:** ~~B1.43~~, ~~B1.55~~ (both change `eligible.sh`; B1.55's change merged in #171) · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.63/` (plan, review, pr-body; one plan and one PR with B1.64, the lead's choice: plan review 2 rounds, lead rounds 1; diff review 1 of 3 passes, 0 findings; follow-up B1.67)
 
 ### B1.64 · The eligibility check refuses a closed issue, with or without a card id
 
 _tooling · no §_
-**Status: Open** — B1.49's live check (`backlog/work/B1.49/live.md`, step 9a): `scripts/agent/eligible.sh 169` exits 0 on the closed issue #169 while it still carries `agent-ready`, because the script never reads the issue's state. `run.sh --poll` lists only open issues, but `run.sh <issue>` (`scripts/agent/run.sh:256-258`) goes straight to the run. B1.55's plan adds the open check only when `eligible.sh` gets a `<card>` argument
+**Status: Done** — 58ded5d (#179, with B1.63); eligible-smoke E11 (red 27f01a0: a closed issue without <card> exited 0); live: eligible.sh 169 exits 1 'eligible: #169 is closed'
 
 - **Spec:** none — tooling (D-27); no `src/` change, no section
 - **Test:** a new probe in `scripts/agent/eligible-smoke.sh` — red because: a closed issue with a valid `agent-ready` history and no `<card>` argument exits 0
 - **Acceptance:** `eligible.sh <issue>` exits 1 with `eligible: #<n> is closed` on a closed issue whether or not `<card>` is given, so `run.sh <issue>` refuses it; the PR carries `config-change-approved` (D-19, `scripts/agent/` is protected)
-- **Tier:** quick · **Depends on:** ~~B1.43~~, B1.55 (both change `eligible.sh`) · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.64/`
+- **Tier:** quick · **Depends on:** ~~B1.43~~, ~~B1.55~~ (both change `eligible.sh`; B1.55's change merged in #171) · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.63/` (planned, built and reviewed with B1.63 in one PR, #179)
 
 ### B1.65 · The runner's prompt lets a run pass a reviewed low or medium plan (D-27)
 
@@ -861,7 +861,7 @@ _tooling · no §_
 - **Spec:** none — tooling (D-27); no `src/` change, no section
 - **Test:** a new probe in `scripts/agent/run-smoke.sh` — red because: the prompt the `claude` shim receives still says "At the plan gate print the gate line and stop"
 - **Acceptance:** the run's prompt tells dev-lead to follow Loop 5's D-27 path (a reviewed low or medium plan of the issue it names proceeds; a high-tier plan or a refusal prints the gate line and stops) and the header says the same; run-smoke asserts the exact prompt; one live run on a low-tier test card passes the gate with the D-27 field (`docs(backlog): <card> plan approved`) and reaches a draft PR; B1.55's card moves from Partial to Done; the PR carries `config-change-approved` (D-19, `scripts/agent/` is protected)
-- **Tier:** quick · **Depends on:** B1.55, ~~B1.58~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** quick · **Depends on:** ~~B1.55~~ (its code merged in #171; the card stays Partial only for B1.65), ~~B1.58~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.65/`
 
 ### B1.62 · The runner's image carries the Prisma engines and Playwright's browser for a full run inside
@@ -874,3 +874,25 @@ _tooling · no §_
 - **Acceptance:** the runner image (`.devcontainer/runner/Dockerfile`) holds the Prisma engines for the lockfile's Prisma version and Playwright's chromium with its system libraries, wired through the engine and browser path variables, so `scripts/worktree.sh <branch>` and `pnpm test:e2e` succeed inside with the allow list unchanged; a Prisma or Playwright bump that the image does not match fails a probe instead of reaching the network; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** ~~B1.58~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.62/`
+
+### B1.66 · A plan for how long the runner keeps its run logs
+
+_tooling · no §_
+**Status: Open** — `scripts/agent/run.sh:15` writes one `<UTC timestamp>-<pid>.jsonl`, `.err` and `.exit` per run under `$RUNNER_RUNS/<issue>/` (default `~/.level-up-lab/runs/`), plus `stopped` and `verified-versions`, and nothing removes them (`grep -nE 'prune|retention|-mtime' scripts/agent/run.sh` → only the `--check-binary` probe worktree, line 192); no plan says how long they stay. Also the live test card of B1.65 (`work/B1.65/plan.md`, decision 3): a tier-0 plan an `agent-ready` run can carry past the gate under D-27
+
+- **Spec:** none — tooling (D-27); no `src/` change, no section
+- **Test:** `scripts/agent/tier.sh backlog/work/B1.66/plan.md` prints `low` — red because: the plan does not exist
+- **Acceptance:** `backlog/work/B1.66/plan.md` states what `runs/<issue>/` and `runs/check-binary/` hold today (from `run.sh`), proposes a retention rule (what is kept as evidence, for how long, who removes the rest) and names the card that would build it; its Files table lists only `backlog/work/B1.66/*`; no script change. Tier 0: the plan is the deliverable
+- **Tier:** 0 · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.66/`
+
+### B1.67 · CI's token proof runs the eligibility check's timeline query, and the scripts guide states its rules
+
+_tooling · no §_
+**Status: Open** — since B1.63 (#179) `scripts/agent/eligible.sh` reads label events through `gh api graphql --paginate -F owner='{owner}' -F repo='{repo}'`, but the CI step "The job token reads what eligible.sh reads" (`.github/workflows/ci.yml:155`) still calls `repos/{owner}/{repo}/issues/$PR/events`: nothing shows that the `guards` job token (`issues: read`) and Debian's gh 2.23 run that query and expand the `{owner}` placeholder in a `-F` field (`grep -c 'api graphql' .github/workflows/ci.yml` → 0). A failure there refuses the first runner-path PR (fail-closed). `scripts/CLAUDE.md:21-22` still says "probes E1–E9" and names neither the closed-issue nor the node-id rule (B1.57 held the file during B1.63)
+
+- **Spec:** none — tooling (D-27); no `src/` change, no section
+- **Test:** the proof step on the card's own PR run — red because: it reads REST events, not the timeline (`grep -c 'api graphql' .github/workflows/ci.yml` → 0)
+- **Acceptance:** the step runs `eligible.sh`'s own query string (same `-F` fields, `--paginate`, `--jq`) under the job token on a number GraphQL resolves as an issue (a PR number does not), and exits 0 on the card's PR; the `scripts/CLAUDE.md` rows for `agent/eligible.sh` and `agent/eligible-smoke.sh` name the open-issue and node-id rules and probes E1–E14; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** ~~B1.63~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.67/`

@@ -307,9 +307,9 @@ cat > "$GS/bin/gh" <<'SHIM'
 shift; [[ "$1" == --paginate ]] && shift
 ep="$1"; q="${3:-}"
 case "$ep" in
+  graphql) f=none; for a in "$@"; do [[ "$a" == n=* ]] && f="${a#n=}/timeline"; done ;;
   *'issues?labels=agent-ready'*) f=open-bodies ;;
-  */issues/*/events) f="${ep%/events}"; f="${f##*/}/events" ;;
-  */issues/*) f="${ep##*/}"; if [[ "$q" == .state* ]]; then f="$f/state"; else f="$f/issue"; fi ;;
+  */issues/*) f="${ep##*/}"; if [[ "$q" == .body* ]]; then f="$f/body"; else f="$f/issue"; fi ;;
   */collaborators/*/permission) f="${ep%/permission}"; f="perm-${f##*/}" ;;
   *) exit 9 ;;
 esac
@@ -428,9 +428,10 @@ echo "== D-27 approval (B1.55): on a runner's path only a reviewed low or medium
 # Runner path: a `<prefix>/<card>-agent` branch, or RUNNER_CHILD in the hook's env, or (CI) an open agent-ready issue
 # naming the card. Each probe cuts a branch from main with a plan + review commit, then the approval commit.
 gh_issue() { # gh_issue <n> <card id> <state> <labeler permission> [<label>]: issue <n> by lead, labeled by lab<n>
-  mkdir -p "$GHF/$1"; printf 'lead\n%s\n' "${5:-agent-ready}" > "$GHF/$1/issue"
-  printf '%s\n### Card id\n\n%s\n\n### Spec\n\nx\n' "$3" "$2" > "$GHF/$1/state"
-  printf 'labeled\tlab%s\n' "$1" > "$GHF/$1/events"; printf '%s\t%s\n' "$4" "$4" > "$GHF/perm-lab$1"
+  mkdir -p "$GHF/$1"; printf 'lead\n%s\n' "$3" > "$GHF/$1/issue"
+  [[ "${5:-agent-ready}" == agent-ready ]] && echo LA_ready >> "$GHF/$1/issue"
+  printf '### Card id\n\n%s\n\n### Spec\n\nx\n' "$2" > "$GHF/$1/body"
+  printf 'LabeledEvent\tLA_ready\tlab%s\n' "$1" > "$GHF/$1/timeline"; printf '%s\t%s\n' "$4" "$4" > "$GHF/perm-lab$1"
 }
 status_plan() { # status_plan <dir> <card> <field> <files...>: plan_md and its status line
   local d="$1" c="$2" f="$3"; shift 3; plan_md "$d" "$c" "$@"
