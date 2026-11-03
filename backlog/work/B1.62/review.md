@@ -79,3 +79,73 @@ FAILED`).
      the firewall's REJECT counter (`iptables -L OUTPUT -v` in `firewall`) unchanged across the drill.
 
 Waiting on: dev-lead (reasons 1–5, plan round 2). Then the lead's gate: decisions 1–3 plus the costs above.
+
+## Plan review (round 2)
+
+SCOPE: all (tooling, no §: `.devcontainer/runner/`, `scripts/agent/`). Plan at `63c1281`. Read: round 1, the
+`bd3a4ab..63c1281` diff of `plan.md`, `advice.md`, card B1.62, `sandbox-probe.sh`, runner `Dockerfile` and
+`docker-compose.yml`, `run.sh`, `.env.example`, `ci.yml:70-92`, root `docker-compose.yml`.
+
+Probes run (none on the tree, none on the lead's `level-up-lab-runner` project or volumes):
+
+- `scripts/next-task.sh --check B1.62` → `[next-task] B1.62: no overlap with any Doing or Review card` (exit 0)
+- `scripts/agent/tier.sh backlog/work/B1.62/plan.md` → `high`; `scripts/ci/check-plan-scope.sh` →
+  `OK: chore/B1.62-runner-image changes only paperwork`
+- today's `sandbox-probe.sh` on a `git archive` copy on the host → `6 of 7 probes FAILED` (S2 ok). S8–S10 cannot pass
+  on the host (no `/opt/prisma-engines`, no `ss`, no node-owned postgres), so the plan's host red "9 of 10 probes
+  FAILED" holds
+- `ci.yml:89` is `pnpm exec playwright install --with-deps chromium`, as the plan quotes. CI and the root compose
+  both run `postgres:17-alpine` with user `postgres` and db `level_up_lab`
+- `run.sh` unsets only `CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`, `CLAUDE_CODE_SESSION_ID` (lines 47, 117), so the
+  image's engine and browser path variables reach a run's child
+- `playwright install --dry-run chromium` with `PLAYWRIGHT_BROWSERS_PATH=/opt/x` → `chromium-1248`, `ffmpeg-1013`;
+  with `--only-shell` → `chromium_headless_shell-1248`, `ffmpeg-1013` (gate note 1)
+- `psql` given `.env.example`'s `DATABASE_URL` verbatim (throwaway `postgres:17-alpine`, `--network none`) →
+  `psql: error: invalid URI query parameter: "schema"` (gate note 3)
+
+Round 1 reasons:
+
+| r1  | Round 2                                                                                                                                                            | Result   |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| 1   | `initdb -E UTF8 --locale=C.UTF-8` in the script row; S10 asserts encoding `UTF8`; the green step inserts 200 × `é` → `INSERT 0 1`                                  | resolved |
+| 2   | S10 takes host, port, database and user from `.env.example`'s `DATABASE_URL`                                                                                       | resolved |
+| 3   | Costs name: lifetime per container start, database-wide objects reaching later runs, a killed Postgres failing every later run, B1.59's choice                     | resolved |
+| 4   | The ENV pair is listed. `--only-shell` is decision 2's cheaper option, with its size. `postgresql-common` + `create_main_cluster = false` is in the Dockerfile row | resolved |
+| 5   | Push, then `git fetch origin chore/B1.62-runner-image && git checkout FETCH_HEAD`. Host red "9 of 10". The bump drill runs under `docker run --rm --network none`  | resolved |
+
+| Check                                                                | Result                                                                                                                                                                     |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file belongs to the card                                       | pass. 3 `.devcontainer/runner/*`, `sandbox-probe.sh`, work files; `scripts/CLAUDE.md` is left out with its reason (B1.57)                                                  |
+| interfaces follow `ts-style.md`; mutations in actions; Prisma in lib | n/a (no `src/`). The ENV (7 keys), the script and the S8–S10 contracts are pasted. The "ARG" sides are read from the clone's Dockerfile, as S3 reads `CLAUDE_CODE_VERSION` |
+| follows `advice.md` or states the deviation                          | pass. Approach A: PGDG 17, full `chromium`, tmpfs, CMD script, ARG pins, S8–S10. The advice's `initdb` encoding bug is fixed and stated (r1 #1)                            |
+| ≤ 7 criteria, measurable Thens                                       | pass. The card's 4 Acceptance clauses map to S8–S10, `worktree.sh` exit 0, e2e 43 and the bump drill. No banned adjective                                                  |
+| verification: exact commands, expected numbers                       | pass. Host "9 of 10 probes FAILED" (measured base: 6 of 7), image red "3 of 10", green "10 probes OK", 202, 43, `INSERT 0 1`                                               |
+| skeleton → red → green → map → review                                | pass for tooling (B1.44, B1.58 precedent): red `test(scripts)`, green `chore(scripts)`, review `docs(backlog)`. No skeleton or map row without a §                         |
+| `Lead approves spec` box                                             | n/a. No spec section (D-26, D-27). `Plan approved by:` is empty; I write neither                                                                                           |
+| no settled D-n contradicted                                          | pass. D-19 label named; D-28 tier `high` = `tier.sh`; D-27: interactive card, so the lead's gate stays                                                                     |
+| `next-task.sh --check B1.62`                                         | pass: "[next-task] B1.62: no overlap with any Doing or Review card"                                                                                                        |
+
+Not a reason: the plan is 84 lines, against `planning.md`'s ≈ 40 (round 1: 70; B1.58's approved plan: 113).
+
+Verdict: approved (ready for the lead's gate; not approved for build)
+
+Notes for the lead's gate (costs; none blocks the default plan):
+
+1. **Picking decision 2's `--only-shell` changes S9** (confirmed by the dry-run above). S9 as written requires every
+   `install --dry-run chromium` location to exist. That list includes `chromium-1248`, which an `--only-shell` image
+   lacks. S9 would FAIL on every run. Choosing `--only-shell` therefore also puts `--only-shell` in S9's dry-run.
+   That is an interface change, so write it into `plan.md` when approving.
+2. **The default is not the configuration the spike ran.** The header's "`pnpm test:e2e` 43" was measured with
+   `npx playwright@1.64.1 install --with-deps --only-shell chromium` (`advice.md:30`). The global
+   `npm install -g playwright@…` + full `chromium` install is `[unverified]` there. The green step's 43 is its first
+   measurement.
+3. **For the diff:** "psql with that URL" cannot run verbatim, because libpq rejects `.env.example`'s
+   `?schema=public` (above). S10 has to strip the query string. The `runner-postgres.sh` row also does not name the
+   superuser `-U postgres` (`advice.md:49` does). S10 catches either mistake at the green step.
+
+Riskiest unfalsified: the Acceptance clause "a bump … fails a probe instead of reaching the network". The bump drill
+runs only the probe under `--network none`. It never runs `pnpm install` or `worktree.sh` against the bumped
+lockfile. So the claim that the engine path variables stop `@prisma/engines`' postinstall from contacting
+`binaries.prisma.sh` rests on Prisma's code, not on a measurement.
+
+Waiting on: the lead's gate (decisions 1–3, the Costs paragraph, notes 1–2 above).
