@@ -109,13 +109,13 @@ level, with the card id in place of `<card>`:
 
 ```bash
 f=backlog/work/<card>/review.md
-w() { sed -E 's/[0-9]+[.)]([[:space:]]|$)/ /g' | LC_ALL=C tr -cs '[:alnum:]' ' '; }
+w() { { cat; echo; } | sed -E 's/[0-9]+[.)]([[:space:]]|$)/ /g' | LC_ALL=C tr -cs '[:alnum:]' ' '; }
 git add "$f" && pnpm exec prettier --write "$f" && [ "$(git show ":$f" | w)" = "$(w < "$f")" ] && git add "$f" \
   || { git restore -- "$f"; git restore --staged -- "$f"; echo "review.md not committed: Prettier failed or changed more than formatting" >&2; false; }
 ```
 
 Exit 0: the file is formatted, its letters and digits in order are the reviewer's (list numbers aside, which Prettier
-renumbers), and the formatted copy is staged; commit it as the step says. Not 0: the reviewer's text is back as it was;
+renumbers; a final newline Prettier adds counts as formatting), and the formatted copy is staged; commit it as the step says. Not 0: the reviewer's text is back as it was;
 do not commit it and do not fix it by hand. Stop and report "Review for <card> not committed: Prettier failed or
 changed more than formatting." under "Waiting on human".
 
