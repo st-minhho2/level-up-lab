@@ -7,11 +7,11 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open   | Total  |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ------ | ------ |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 49     | 0       | 25     | 74     |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 49     | 0       | 26     | 75     |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0      | 5      |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3      |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4      |
-| **Total**        |                                                      | **60** | **0**   | **26** | **86** |
+| **Total**        |                                                      | **60** | **0**   | **27** | **87** |
 
 ## Execution order
 
@@ -117,6 +117,7 @@ flowchart TD
   S84["84 · runner setup checks out an existing branch<br/>B1.73"]
   S85["85 · dev-lead commits a formatted review.md<br/>~~B1.74~~"]
   S86["86 · PR wrapper keeps the runner's git credential<br/>~~B1.76~~"]
+  S87["87 · guard-bash blocks printing a git or gh credential<br/>B1.77"]
 ```
 
 ## Remaining
@@ -152,6 +153,7 @@ at most 3 cards Doing (B1.18).
 | 82   | B1.71 | worktree.sh stops when the Prisma client was not generated                                               | —      | Open   | ~~B1.62~~                       | Lead  | S [estimate] |
 | 83   | B1.72 | The scripts guide lists sandbox probes S1–S10                                                            | —      | Open   | ~~B1.62~~                       | Lead  | S [estimate] |
 | 84   | B1.73 | The runner's setup steps check out a branch that exists                                                  | —      | Open   | ~~B1.69~~                       | Lead  | S [estimate] |
+| 87   | B1.77 | guard-bash blocks commands that print a git or gh credential                                             | —      | Open   | —                               | Lead  | S [estimate] |
 
 ## Waiting on human
 
