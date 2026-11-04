@@ -973,3 +973,14 @@ _tooling · no §_
 - **Acceptance:** inside the runner container the wrapper's push reaches GitHub through GitHub's credential helper set at system scope by the image (root-owned); `scripts/pr-step.sh` unchanged, still clearing every `GIT_CONFIG_*` (R15); `draft`, `ready`, `open` use `gh`'s own login; S12 proves the wrapper's git sees the helper; the wrapper makes no commit, so it needs no identity; the PR carries `config-change-approved` (D-19) (lead's approval of B1.76's plan, 2026-11-03)
 - **Tier:** quick · **Depends on:** ~~B1.69~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.76/` (advice: system-scope helper, the wrapper unchanged; plan: review 2 rounds, lead approve 1, card lines amended ca15cf3; diff review 1 of 3 passes, 1 finding fixed in 1ac7441); the lead rebuilt the runner (12 probes OK)
+
+### B1.77 · guard-bash blocks commands that print a git or gh credential
+
+_tooling · no §_
+**Status: Open** — `.claude/hooks/guard-bash.sh` rule 4 blocks reads of secret files (`.env*`, keys, cloud credentials) but not commands that ask a credential helper or `gh` for a token and print it: `git credential fill`, `printf … | git credential fill`, `git credential-osxkeychain get`, `gh auth token` and `gh auth status --show-token` each exit 0 through the hook (probed 2026-11-04 with the hook's JSON input). B1.76's plan review found it when a reviewer's `git credential fill` on the lead's Mac pulled the real GitHub credential from the keychain (output discarded, never printed)
+
+- **Spec:** none — tooling (invariant 7: secrets are never read or printed); no `src/` change, no section
+- **Test:** probes in `scripts/hook-smoke.sh` for the five commands above (and a piped or `;`-joined form) — red because: guard-bash exits 0 on each
+- **Acceptance:** guard-bash blocks every agent Bash call that runs `git credential fill|approve|reject`, any `git credential-<helper> get`, `gh auth token`, or `gh auth status` with `--show-token`/`-t`, in any segment, with one message naming the rule; scripts that need a credential stay unaffected (they run it inside the script, e.g. `sandbox-probe.sh` S12, B1.76, and git's own pushes); `hook-smoke.sh` gains the probes, and a negative probe proves `gh auth status` without the flag still passes; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.77/`
