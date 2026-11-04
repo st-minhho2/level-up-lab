@@ -161,15 +161,14 @@ at most 3 cards Doing (B1.18).
 | 83   | B1.72 | The scripts guide lists sandbox probes S1–S10                                                            | —      | Open   | ~~B1.62~~                       | Lead  | S [estimate] |
 | 84   | B1.73 | The runner's setup steps check out a branch that exists                                                  | —      | Open   | ~~B1.69~~                       | Lead  | S [estimate] |
 | 87   | B1.77 | guard-bash blocks commands that print a git or gh credential                                             | —      | Open   | —                               | Lead  | S [estimate] |
-| 88   | B5.1  | Show how many open todos are overdue                                                                     | —      | Open   | D-30                            | Lead  | S [estimate] |
-| 89   | B5.2  | Escape cancels a title edit                                                                              | —      | Open   | D-30                            | Lead  | S [estimate] |
-| 90   | B5.3  | The slash key focuses the search box                                                                     | —      | Open   | D-30                            | Lead  | S [estimate] |
-| 91   | B5.4  | The browser tab title shows the remaining count                                                          | —      | Open   | D-30                            | Lead  | S [estimate] |
-| 92   | B5.5  | Escape clears the search box                                                                             | —      | Open   | D-30                            | Lead  | S [estimate] |
-| 93   | B5.6  | Escape closes the due-date editor without saving                                                         | —      | Open   | D-30                            | Lead  | S [estimate] |
+| 88   | B5.1  | Show how many open todos are overdue                                                                     | —      | Open   | ~~D-30~~                        | Lead  | S [estimate] |
+| 89   | B5.2  | Escape cancels a title edit                                                                              | —      | Open   | ~~D-30~~                        | Lead  | S [estimate] |
+| 90   | B5.3  | The slash key focuses the search box                                                                     | —      | Open   | ~~D-30~~                        | Lead  | S [estimate] |
+| 91   | B5.4  | The browser tab title shows the remaining count                                                          | —      | Open   | ~~D-30~~                        | Lead  | S [estimate] |
+| 92   | B5.5  | Escape clears the search box                                                                             | —      | Open   | ~~D-30~~                        | Lead  | S [estimate] |
+| 93   | B5.6  | Escape closes the due-date editor without saving                                                         | —      | Open   | ~~D-30~~                        | Lead  | S [estimate] |
 
 ## Waiting on human
 
-| ID   | What                                                                                                                             | Blocks    |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| D-30 | E5 batch rule: sections 23–28, contract files, mount components, one `page.tsx` card per batch (`work/B5.1/decision-request.md`) | B5.1–B5.6 |
+| ID  | What | Blocks |
+| --- | ---- | ------ |
