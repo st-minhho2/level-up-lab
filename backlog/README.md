@@ -106,7 +106,7 @@ flowchart TD
   S73["73 · runner deny list and TERM<br/>B1.61"]
   S74["74 · eligibility by label node id<br/>~~B1.63~~"]
   S75["75 · eligibility refuses a closed issue<br/>~~B1.64~~"]
-  S76["76 · runner prompt follows D-27<br/>B1.65"]
+  S76["76 · runner prompt follows D-27<br/>~~B1.65~~"]
   S77["77 · runner image engines and browser<br/>~~B1.62~~"]
   S78["78 · plan for run log retention<br/>B1.66"]
   S79["79 · CI token proof runs the timeline query<br/>B1.67"]
@@ -146,7 +146,6 @@ at most 3 cards Doing (B1.18).
 | 71   | B1.59 | A launchd job runs the runner's poll every 15 minutes, inside the sandbox                                | —      | Open    | ~~B1.44~~, ~~B1.58~~, ~~B1.62~~ | Lead  | S [estimate] |
 | 72   | B1.60 | CI runs the runner and tier probes, under bash 5 as well                                                 | —      | Open    | ~~B1.44~~                       | Lead  | S [estimate] |
 | 73   | B1.61 | The runner's deny list spares commit messages, and TERM ends the tools a run started                     | —      | Open    | ~~B1.44~~                       | Lead  | S [estimate] |
-| 76   | B1.65 | The runner's prompt lets a run pass a reviewed low or medium plan (D-27)                                 | —      | Partial | ~~B1.55~~, ~~B1.58~~            | Lead  | S [estimate] |
 | 78   | B1.66 | A plan for how long the runner keeps its run logs                                                        | —      | Open    | —                               | Lead  | S [estimate] |
 | 79   | B1.67 | CI's token proof runs the eligibility check's timeline query, and the scripts guide states its rules     | —      | Open    | ~~B1.63~~                       | Lead  | S [estimate] |
 | 81   | B1.70 | The runner firewall reads GitHub's ranges with a token, so a restart never hits the anonymous rate limit | —      | Open    | ~~B1.58~~                       | Lead  | S [estimate] |
