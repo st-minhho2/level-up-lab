@@ -19,16 +19,16 @@ interactive sessions (today both may write it there). Alternative: accept the co
 
 ## Files
 
-| File                             | Change                                                                                  | Why                       |
-| -------------------------------- | --------------------------------------------------------------------------------------- | ------------------------- |
-| `.claude/hooks/path-guard.sh`    | optional `--role <owner>`; early `exit 0` under the four conditions; header names B1.78 | Acceptance 1, 2           |
-| `.claude/agents/dev-lead.md`     | frontmatter hook command gains `''--role'' ''dev-lead''` first; body unchanged          | Acceptance 1, 2           |
-| `.claude/agents/advisor.md`      | frontmatter: `''!backlog/work/*/review.md''` added (decision above)                     | r1 reason 2               |
-| `.claude/agents/spec-analyst.md` | frontmatter: `''!backlog/work/*/review.md''` added (decision above)                     | r1 reason 2               |
-| `scripts/hook-smoke.sh`          | section "path-guard.sh --role (B1.78)" HG1–HG13; `role_patterns`/`role_probes` rows     | Acceptance 3 (both modes) |
-| `.claude/docs/hooks.md`          | `path-guard.sh` row and "Role write scopes": `--role`, deferral conditions, fail closed | doc drift                 |
-| `scripts/CLAUDE.md`              | the `hook-smoke.sh` row names HG1–HG13                                                  | doc drift                 |
-| `backlog/work/B1.78/*`           | probe, advice, plan, review, pr-body                                                    | pipeline                  |
+| File                             | Change                                                                                                                             | Why                       |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| `.claude/hooks/path-guard.sh`    | optional `--role <owner>`; early `exit 0` under the four conditions; header names B1.78                                            | Acceptance 1, 2           |
+| `.claude/agents/dev-lead.md`     | frontmatter hook command gains `''--role'' ''dev-lead''` first; body unchanged                                                     | Acceptance 1, 2           |
+| `.claude/agents/advisor.md`      | frontmatter: `''!backlog/work/*/review.md''` added (decision above)                                                                | r1 reason 2               |
+| `.claude/agents/spec-analyst.md` | frontmatter: `''!backlog/work/*/review.md''` added (decision above)                                                                | r1 reason 2               |
+| `scripts/hook-smoke.sh`          | section "path-guard.sh --role (B1.78)" HG1–HG13; `role_patterns`/`role_probes` rows                                                | Acceptance 3 (both modes) |
+| `.claude/docs/hooks.md`          | `path-guard.sh` row and "Role write scopes": `--role`, deferral conditions, fail closed; advisor and spec-analyst rows (r2 note 2) | doc drift                 |
+| `scripts/CLAUDE.md`              | the `hook-smoke.sh` row names HG1–HG13                                                                                             | doc drift                 |
+| `backlog/work/B1.78/*`           | probe, advice, plan, review, pr-body                                                                                               | pipeline                  |
 
 ## Interfaces touched
 
@@ -75,4 +75,4 @@ spec-analyst gain `2 backlog/work/B1.2/review.md` (+2 frontmatter rows, +16 in t
 
 Not in scope: `run.sh`/ALLOW, reviewer/test-writer/code-writer frontmatter, the stale `plan-scope.sh:8` comment.
 
-Plan review: changes requested, round 1 (3 reasons: counts, advisor/spec-analyst review.md, HG10 inputs) · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 (r1: 3 reasons fixed; r2: 0 findings, 4 costs noted) · Plan approved by: · Rounds: 1
