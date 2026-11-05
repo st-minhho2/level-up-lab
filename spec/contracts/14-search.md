@@ -74,7 +74,7 @@ section 15, is not searched), several words, fuzzy matching, regular expressions
 locale-aware case folding, a search in the database query, client-side navigation for the form (`next/form`),
 keeping the search when a filter link is followed (that needs a change to §12 REQ-12.6), counts of matches,
 limiting the remaining count, "Clear completed" or "Mark all complete" to the todos shown, remembering the search
-outside the address (cookie, local storage), keyboard shortcuts, any ordering other than creation time newest
+outside the address (cookie, local storage), keyboard shortcuts other than the slash key (§25), any ordering other than creation time newest
 first (§1).
 
 ## Unchanged behavior
