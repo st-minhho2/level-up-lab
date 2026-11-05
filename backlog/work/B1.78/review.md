@@ -137,3 +137,87 @@ Riskiest unfalsified: that in the real `--agent dev-lead` runner, the frontmatte
 code-writer fire for their own calls. `probe.md` shows this only for `sub-probe`. The deferral hands those writes to
 those hooks, so if one does not fire, that role writes unguarded. The post-merge live rerun of #207 covers the
 reviewer only.
+
+## Plan review (round 3)
+
+SCOPE: all (tooling, no §). Plan at `0492051`, the lead's change at the gate: A3 replaces A2's deferral. dev-lead's
+hook applies the calling role's own list, read from that role's frontmatter, and a read failure blocks. advisor and
+spec-analyst gain `'!backlog/work/*/review.md'`. Read: `plan.md` and its diff from round 2, `probe.md`, `advice.md`,
+`path-guard.sh`, `lib.sh`, the six agent frontmatters, `hook-smoke.sh` (`probe`, `role_patterns`, `role_probes`,
+`layout_probes`), `check-agent-frontmatter.sh` (it enforces `name` == file name, so a lookup by `agent_type` finds
+the right file), `run.sh` `check_binary` (its probe write comes from the main session, `agent_type` `dev-lead`, so
+it gets the owner's list and is still blocked), `.claude/docs/hooks.md:35-48`.
+
+Commands (on the tree, read-only; probes on a scratch copy of the hook under the session scratchpad):
+
+- `scripts/next-task.sh --check B1.78` → `[next-task] B1.78: no overlap with any Doing or Review card`
+- `scripts/agent/tier.sh backlog/work/B1.78/plan.md` → `high`. `plan-files.sh --any B1.78 HEAD` → 8 rows, the same
+  as the Files table.
+- `scripts/hook-smoke.sh` → `hook-smoke: 522 probes OK` (the baseline matches)
+- `prettier --check .claude/agents/*.md` → all formatted. The frontmatter commands are single-quoted scalars with
+  `''`, as the interface's parser expects.
+- Today's hook with dev-lead's real list (`--role dev-lead …`), on a fixture project (`CLAUDE_PROJECT_DIR` = fixture,
+  no git), `agent_type` `reviewer`: `backlog/work/B9.1/review.md` → **2**, `backlog/work/B9.1/plan.md` → **0**
+  (reason 1)
+
+Counts, traced against the unchanged hook. The old hook reads `--role` and `dev-lead` as globs that never match, so
+every caller gets dev-lead's list.
+
+- HG calls: 2+3+2+5+1+3+3+3+2+3+4+2+4 = 37.
+- Existing rows: 2 frontmatter rows, plus 16 (4 layouts × 2 modes × 2 roles).
+- Green total: 522 + 37 + 18 = 577.
+- Red: HG1 2, HG2 2, HG3 1, HG8 3, HG10 3, HG13 2, `role_patterns` 3, `role_probes` 2 = 18 FAIL lines, as the
+  plan states.
+
+| Check                                                                          | Result                                                                                                                        |
+| ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                 | pass: no §. Each row traces to the card's Acceptance, to the lead's gate change (advisor, spec-analyst) or to doc drift       |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib | pass (n/a): no TypeScript, actions or Prisma. The script interface and three frontmatter commands are pasted                  |
+| plan follows `advice.md`'s recommendation or states the deviation              | pass: A3 is stated as the lead's change to `advice.md` A/A2. Red is proved through hook-smoke, as in rounds 1–2               |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number      | pass: the card's Acceptance clauses are exit codes or denial counts. The live check is `[unverified]`                         |
+| verification lists exact commands with expected numbers                        | fail: reason 1. The numbers add up (577 green, 18 red), but the HG11 rows chosen cannot fail for the behaviour the lead added |
+| work breakdown skeleton → red → green → map → review, convention subjects      | pass: red → green → review → PR. No skeleton or map for a tooling card (B1.74 precedent)                                      |
+| `Lead approves spec` box, ticked only by a human                               | pass (n/a): no spec section, nothing ticked                                                                                   |
+| no settled D-n contradicted                                                    | pass: D-19 label named. D-28 tier `high` matches `tier.sh`, so the lead's `approve` is kept (D-27). D-29 untouched            |
+| `scripts/next-task.sh --check B1.78` says no overlap                           | pass: `[next-task] B1.78: no overlap with any Doing or Review card`                                                           |
+
+Verdict: changes requested
+
+1. **HG11 does not pin "a read failure blocks" for a malformed frontmatter.** This is the rule the lead added at
+   the gate. All four HG11 rows write the fixture's `review.md`, and dev-lead's own list already refuses that path
+   (`!backlog/work/*/review.md`). Suppose an implementation falls back to `<owner>`'s globs when the role's
+   frontmatter is malformed. That is A2's "else <owner>'s globs", the behaviour the lead replaced. It returns 2 on
+   all four rows: body-only, the bad token, two lines, and file missing. I confirmed this on the scratch copy:
+   dev-lead's list on the fixture's `review.md` gives 2. The missing-file case is still pinned, by HG8 on
+   `plan.md`. The three malformed cases are not, and once the red commit lands they cannot be strengthened
+   without a new `test(...)` commit.
+   Fix in the plan, with the same 4 calls: write the fixture role's globs as `''backlog/*''` and have each HG11 row
+   write the fixture's `backlog/work/B9.1/plan.md`. On that path dev-lead's list gives 0, a lax parse that reads the
+   body, takes the first of two lines or skips the bad token gives 0, and only a block gives 2. Each row then fails
+   on today's hook, so the red line becomes **22 FAIL lines (HG11 ×4 added)**. The green total stays 577.
+
+Not blocking (for the build and the diff review):
+
+1. **The `$(…)` row is ambiguous, and checking only its exit code cannot detect an `eval`.** "an unquoted or `$(…)`
+   token" is one call, so the build may pick the unquoted case and leave the eval case untested. The interface
+   promises "read without eval". A `''$(touch <marker>)''` token is single-quoted, so the parser takes it as a
+   literal glob and exit code 2 says nothing about eval. An unquoted `$(touch <marker>)` token should exit 2 _and_
+   leave the marker absent. If the lead wants this pinned, name the token and the marker check in HG11. That is
+   still one call, or +1 if both tokens are kept (578 green, 23 red).
+2. **What A3 costs, and what it gains (none blocking, stated so the lead approves them knowingly).**
+   - A headless subagent with no agent file (general-purpose, a plugin `ns:role`) is refused every write, including
+     `backlog/*`, which dev-lead's list allows today (HG8). dev-lead's body dispatches no such agent today (grep:
+     no `general-purpose` or `Explore`).
+   - advisor and spec-analyst lose `backlog/work/*/review.md` in interactive sessions too. That is the lead's
+     intent.
+   - A role whose own hook did not fire is still held by its own list. This closes round 2's riskiest point.
+3. **Carried:** the parser accepts only the single-quoted `''` form. Prettier keeps that form today (checked).
+   Whatever reformat changes it makes every dispatched role fail closed. That is safe, but it would block a whole
+   headless run. The hooks.md row should say so.
+
+Waiting on human: this is round 3. The lead either takes the HG11 change (one plan line, red 18 → 22) or approves
+as is with reason 1 recorded as an accepted cost.
+
+Riskiest unfalsified: that `agent_type` in a real headless run is always exactly the dispatched role's file name.
+`probe.md` shows it for `sub-probe` only, not for reviewer, test-writer or code-writer under `--agent dev-lead`. A
+different value fails closed, and the whole run stops. The post-merge rerun of #207 covers the reviewer only.
