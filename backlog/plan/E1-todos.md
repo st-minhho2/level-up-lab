@@ -995,3 +995,14 @@ _tooling · no §_
 - **Acceptance:** in a headless `--agent dev-lead` run each dispatched role is held by its own guard only (reviewer writes its `review.md`; test-writer and code-writer write their paths), while dev-lead itself is still refused `review.md`, `src/`, `prisma/`, `e2e/` and tests; interactive sessions unchanged; hook-smoke covers both modes; the way the guard tells the caller apart is named in the plan and proved by a probe on the real hook input of Claude Code 2.1.303; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** ~~B1.74~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.78/` (probe, advice, plan: 3 review rounds, 2 lead rounds; diff review 3 of 3 passes, 4 probe gaps closed)
+
+### B1.79 · guard-bash's secret-read rule refuses commands that only mention `.key` or `.env` in their text
+
+_tooling · no §_
+**Status: Open** — `.claude/hooks/guard-bash.sh:104-107` (rule 4) blocks a command when `SECRET_PATH` matches anywhere in its text and `READER` matches anywhere else, whether or not the reader reads that path. The runner's rerun of #207 (B5.2, log `20261105T041944Z-185231.jsonl` in `runs/207/`, permission denials 7) lost 4 calls to it, none of which read a secret: three `python3`/`cp`/`head` commands whose text held the JavaScript property `event.key !== 'Escape'` (matched by `\.key([[:space:]]|$)`), and one `python3` heredoc whose comment said "DATABASE_URL from .env via playwright.config.ts" (matched by `(^|[[:space:]/=])\.env…`). The roles retried with Edit, so the run went on; replayed through the hook on 2026-11-05, each still exits 2. Epic E5 is about keyboard keys, so `event.key` lands in most of its diffs
+
+- **Spec:** none — tooling (invariant 7: secrets are never read or printed); no `src/` change, no section
+- **Test:** probes in `scripts/hook-smoke.sh` for a reader whose text only mentions the path (`python3 - <<'PY'` with `event.key !== 'Escape'` in its body, `sed -n '/event.key /p' src/components/todo-item.tsx`, a heredoc comment naming the dotenv file) — red because: guard-bash exits 2 on each
+- **Acceptance:** the four commands from the run (or probes of the same shape) pass guard-bash; every existing secret-read probe in `hook-smoke.sh` keeps its verdict, and a reader whose argument, redirect or `open(…)` names a secret path stays refused in any segment; the rule's message is unchanged; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.79/`
