@@ -1,5 +1,6 @@
 // §7 home page; §12 the list filtered by the `filter` query parameter; §13 the remaining count; §14 mark all complete;
-// §16 the list searched by title through the `q` query parameter; §23 the overdue count.
+// §16 the list searched by title through the `q` query parameter; §23 the overdue count; §26 the tab title.
+import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { ClearCompletedButton } from '@/components/clear-completed-button';
 import { CompleteAllButton } from '@/components/complete-all-button';
@@ -16,6 +17,11 @@ import { listTodos } from '@/lib/todos';
 
 // Server Component: reads straight from src/lib; mutations go through src/actions/todos.ts.
 export const dynamic = 'force-dynamic';
+
+// §26 skeleton: an empty object keeps `/` rendering with the layout's title until the green step.
+export function generateMetadata(): Promise<Metadata> {
+  return Promise.resolve({});
+}
 
 export default async function HomePage({
   searchParams,
