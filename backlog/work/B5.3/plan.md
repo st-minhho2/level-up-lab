@@ -64,4 +64,4 @@ Counts are the test-writer's target; a different count is stated in the red comm
 | 4    | dev-lead                          | F23 ✅                                            | `docs(map): F23 … [B5.3]`           |
 | 5    | reviewer (diff)                   | `review.md` diff section                          | `docs(backlog): B5.3 review …`      |
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: changes requested, round 1 (reason 1 escalated, D-31 waiting on human) · Plan approved by: · Rounds: 1

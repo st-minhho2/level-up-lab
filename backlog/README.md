@@ -172,5 +172,6 @@ at most 3 cards Doing (B1.18).
 
 ## Waiting on human
 
-| ID  | What | Blocks |
-| --- | ---- | ------ |
+| ID   | What                                                                                                                                                                                                                                                                                                                                                          | Blocks |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| D-31 | B5.3 (§25): does `/` focus the search box from a focused row checkbox (option 2, recommended: only text-like `input` types are text-entry) or not (option 1, every `input`)? And may B5.3's `docs(spec)` update the "no 'use client'" notes of §16 and §21 (A, recommended) or not (B)? Options and costs: `work/B5.3/decision-request.md`. Reply `D-31: 2A`. | B5.3   |
