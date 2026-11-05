@@ -129,5 +129,6 @@ as in batch 3. CFR is the 14-day mechanical bound; re-measure on 2026-11-16 for 
 | B1.74 | — (tooling) | 0               | n/a       | 93.40 (unchanged, no src/ change) | 0              | 10aa7db: FR1–FR8 FAIL; 324fcc7: FR9 FAIL             | e6230d0, 0b6a49d |
 | B1.76 | — (tooling) | 0               | n/a       | 93.40 (unchanged, no src/ change) | 0              | 894db58: host S12 FAIL (11 of 12)                    | 79b22c5          |
 | B1.78 | — (tooling) | 0               | n/a       | 93.40 (unchanged, no src/ change) | 0              | d09fe9c: 22 FAIL (HG1–HG13, role rows)               | 92425b2          |
+| B5.2  | §24         | 6               | 6 (100 %) | 93.40 (lib, actions unchanged)    | 0              | e21c12a (pin b918076)                                | pending          |
 
 A value below target for two consecutive measurements opens a row in `docs/mistake-log.md` and a fix in `.claude/`.
