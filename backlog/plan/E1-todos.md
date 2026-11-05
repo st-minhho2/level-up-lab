@@ -988,10 +988,10 @@ _tooling · no §_
 ### B1.78 · dev-lead's write guard stops at dev-lead in a headless run, so the roles it dispatches can write
 
 _tooling · no §_
-**Status: Open** — the runner's first E5 run (issue #207, card B5.2, log `20261104T072635Z-74496.jsonl` in `runs/207/`) stopped at Loop 4: the reviewer's two `Write`s of `backlog/work/B5.2/review.md` were denied (permission denials 4) by dev-lead's frontmatter hook (`.claude/agents/dev-lead.md:11`, `path-guard.sh 'backlog/*' … '!backlog/work/*/review.md'`, the negation added by B1.74, #196). Under `claude -p --agent dev-lead` (`scripts/agent/run.sh`) the main agent's frontmatter hooks also run for the subagents it dispatches; interactively dev-lead is itself a subagent and its hook stays its own. The run replayed the reviewer's own guard on the same path and it allowed the write. The same guard allows only `backlog/*`, so test-writer (`*.test.ts`, `e2e/`) and code-writer (`src/`) would be refused at red and green [unverified: no headless run has reached them]: no E5 card can finish while this holds
+**Status: Done** — cd7249c (#209): hook-smoke red 22 FAIL, green 581 probes OK (bash 3.2, 5.2), run-smoke 17, vitest 202, e2e 43, mutation 93.40 (no src/); live proof pending the #207 rerun
 
 - **Spec:** none — tooling (D-27, D-29); no `src/` change, no section
 - **Test:** a probe in `scripts/hook-smoke.sh` that feeds `path-guard.sh` (or the hook dev-lead's frontmatter runs) a `PreToolUse` input written by a subagent (reviewer on `backlog/work/<card>/review.md`, test-writer on a `*.test.ts`, code-writer on `src/`) in a headless dev-lead session — red because: the guard judges every caller by dev-lead's list
 - **Acceptance:** in a headless `--agent dev-lead` run each dispatched role is held by its own guard only (reviewer writes its `review.md`; test-writer and code-writer write their paths), while dev-lead itself is still refused `review.md`, `src/`, `prisma/`, `e2e/` and tests; interactive sessions unchanged; hook-smoke covers both modes; the way the guard tells the caller apart is named in the plan and proved by a probe on the real hook input of Claude Code 2.1.303; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** ~~B1.74~~ · **Owner:** Lead · **Size:** S [estimate]
-- **Work:** `work/B1.78/`
+- **Work:** `work/B1.78/` (probe, advice, plan: 3 review rounds, 2 lead rounds; diff review 3 of 3 passes, 4 probe gaps closed)
