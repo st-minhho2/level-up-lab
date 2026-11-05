@@ -126,7 +126,7 @@ flowchart TD
   S92["92 · Escape clears search<br/>B5.5"]
   S93["93 · Escape closes the due-date editor<br/>B5.6"]
   S94["94 · dev-lead write guard stops at dev-lead headless<br/>~~B1.78~~"]
-  S95["95 · guard-bash secret rule spares text that only mentions a path<br/>B1.79"]
+  S95["95 · build roles write files with Write/Edit, not Bash text<br/>B1.79"]
   S96["96 · components guide: search form is a client component<br/>B1.80"]
   S90 --> S96
   S97["97 · .env.example no longer exempts a whole command<br/>B1.81"]
@@ -137,42 +137,42 @@ flowchart TD
 Board state (To do · Doing · Review · Closing) is derived, not typed: `scripts/next-task.sh --list` (BOARD column),
 at most 3 cards Doing (B1.18).
 
-| Step | ID    | Title                                                                                                    | Spec § | Status | Blocked by                      | Owner | Size         |
-| ---- | ----- | -------------------------------------------------------------------------------------------------------- | ------ | ------ | ------------------------------- | ----- | ------------ |
-| 41   | B1.30 | guard-bash reads shell words before matching a push                                                      | —      | Open   | —                               | Lead  | S [estimate] |
-| 45   | B1.34 | Package guide headings and the app page header cite the sections their modules name                      | —      | Open   | —                               | Lead  | S [estimate] |
-| 46   | B1.35 | A guard checks that the guide tables cite the sections their packages name                               | —      | Open   | —                               | Lead  | S [estimate] |
-| 47   | B1.36 | hook-smoke's review-gate probe judges "clean" from the gate's own base                                   | —      | Open   | —                               | Lead  | S [estimate] |
-| 48   | B1.37 | hook-smoke's check-plan-scope probes ignore an exported HEAD_SHA and BASE_SHA                            | —      | Open   | —                               | Lead  | S [estimate] |
-| 49   | B1.38 | pr-step accepts the ci type that commit-msg accepts                                                      | —      | Open   | —                               | Lead  | S [estimate] |
-| 50   | B1.39 | plan-deviations judges a merged PR's files by the guard's plan_lists rule                                | —      | Open   | —                               | Lead  | S [estimate] |
-| 51   | B1.40 | next-task --check reads plan tokens by the plan_lists rule                                               | —      | Open   | —                               | Lead  | S [estimate] |
-| 52   | B1.41 | Guides state the plan-token rule and name hook-smoke's L1–L15                                            | —      | Open   | —                               | Lead  | S [estimate] |
-| 53   | B4.4  | Section 22 criteria measure the reload rule and the no-role rule                                         | —      | Open   | —                               | Lead  | S [estimate] |
-| 60   | B1.48 | CI runs the agent-ready eligibility probes                                                               | —      | Open   | ~~B1.43~~                       | Lead  | S [estimate] |
-| 62   | B1.50 | The client layer rule also stops a component reaching @prisma/client                                     | —      | Open   | ~~B1.46~~                       | Lead  | S [estimate] |
-| 63   | B1.51 | The daily feature map reaches the agent board and its PRs carry a tier                                   | —      | Open   | ~~B1.44~~                       | Lead  | S [estimate] |
-| 64   | B1.52 | dev-lead fills the PR Evidence section after CI is green                                                 | —      | Open   | ~~B1.45~~                       | Lead  | S [estimate] |
-| 65   | B1.53 | CI runs the feature-map probes                                                                           | —      | Open   | ~~B1.45~~                       | Lead  | S [estimate] |
-| 66   | B1.54 | The feature map reads the issue form's card field, warns when it truncates, and folds before it trims    | —      | Open   | ~~B1.45~~                       | Lead  | S [estimate] |
-| 68   | B1.56 | A high-tier gate stop resumes when the lead approves on the issue                                        | —      | Open   | ~~B1.44~~, ~~B1.55~~            | Lead  | S [estimate] |
-| 71   | B1.59 | A launchd job runs the runner's poll every 15 minutes, inside the sandbox                                | —      | Open   | ~~B1.44~~, ~~B1.58~~, ~~B1.62~~ | Lead  | S [estimate] |
-| 72   | B1.60 | CI runs the runner and tier probes, under bash 5 as well                                                 | —      | Open   | ~~B1.44~~                       | Lead  | S [estimate] |
-| 73   | B1.61 | The runner's deny list spares commit messages, and TERM ends the tools a run started                     | —      | Open   | ~~B1.44~~                       | Lead  | S [estimate] |
-| 78   | B1.66 | A plan for how long the runner keeps its run logs                                                        | —      | Open   | —                               | Lead  | S [estimate] |
-| 79   | B1.67 | CI's token proof runs the eligibility check's timeline query, and the scripts guide states its rules     | —      | Open   | ~~B1.63~~                       | Lead  | S [estimate] |
-| 81   | B1.70 | The runner firewall reads GitHub's ranges with a token, so a restart never hits the anonymous rate limit | —      | Open   | ~~B1.58~~                       | Lead  | S [estimate] |
-| 82   | B1.71 | worktree.sh stops when the Prisma client was not generated                                               | —      | Open   | ~~B1.62~~                       | Lead  | S [estimate] |
-| 83   | B1.72 | The scripts guide lists sandbox probes S1–S10                                                            | —      | Open   | ~~B1.62~~                       | Lead  | S [estimate] |
-| 84   | B1.73 | The runner's setup steps check out a branch that exists                                                  | —      | Open   | ~~B1.69~~                       | Lead  | S [estimate] |
-| 87   | B1.77 | guard-bash blocks commands that print a git or gh credential                                             | —      | Open   | —                               | Lead  | S [estimate] |
-| 90   | B5.3  | The slash key focuses the search box                                                                     | —      | Open   | ~~D-30~~                        | Lead  | S [estimate] |
-| 91   | B5.4  | The browser tab title shows the remaining count                                                          | —      | Open   | ~~D-30~~                        | Lead  | S [estimate] |
-| 92   | B5.5  | Escape clears the search box                                                                             | —      | Open   | ~~D-30~~                        | Lead  | S [estimate] |
-| 93   | B5.6  | Escape closes the due-date editor without saving                                                         | —      | Open   | ~~D-30~~                        | Lead  | S [estimate] |
-| 95   | B1.79 | guard-bash's secret-read rule refuses commands that only mention `.key` or `.env` in their text          | —      | Open   | —                               | Lead  | S [estimate] |
-| 96   | B1.80 | The components guide says the search form is a client component once section 25 lands                    | —      | Open   | B5.3                            | Lead  | S [estimate] |
-| 97   | B1.81 | guard-bash's secret-read rule lets any command through once it names `.env.example`                      | —      | Open   | —                               | Lead  | S [estimate] |
+| Step | ID    | Title                                                                                                               | Spec § | Status | Blocked by                      | Owner | Size         |
+| ---- | ----- | ------------------------------------------------------------------------------------------------------------------- | ------ | ------ | ------------------------------- | ----- | ------------ |
+| 41   | B1.30 | guard-bash reads shell words before matching a push                                                                 | —      | Open   | —                               | Lead  | S [estimate] |
+| 45   | B1.34 | Package guide headings and the app page header cite the sections their modules name                                 | —      | Open   | —                               | Lead  | S [estimate] |
+| 46   | B1.35 | A guard checks that the guide tables cite the sections their packages name                                          | —      | Open   | —                               | Lead  | S [estimate] |
+| 47   | B1.36 | hook-smoke's review-gate probe judges "clean" from the gate's own base                                              | —      | Open   | —                               | Lead  | S [estimate] |
+| 48   | B1.37 | hook-smoke's check-plan-scope probes ignore an exported HEAD_SHA and BASE_SHA                                       | —      | Open   | —                               | Lead  | S [estimate] |
+| 49   | B1.38 | pr-step accepts the ci type that commit-msg accepts                                                                 | —      | Open   | —                               | Lead  | S [estimate] |
+| 50   | B1.39 | plan-deviations judges a merged PR's files by the guard's plan_lists rule                                           | —      | Open   | —                               | Lead  | S [estimate] |
+| 51   | B1.40 | next-task --check reads plan tokens by the plan_lists rule                                                          | —      | Open   | —                               | Lead  | S [estimate] |
+| 52   | B1.41 | Guides state the plan-token rule and name hook-smoke's L1–L15                                                       | —      | Open   | —                               | Lead  | S [estimate] |
+| 53   | B4.4  | Section 22 criteria measure the reload rule and the no-role rule                                                    | —      | Open   | —                               | Lead  | S [estimate] |
+| 60   | B1.48 | CI runs the agent-ready eligibility probes                                                                          | —      | Open   | ~~B1.43~~                       | Lead  | S [estimate] |
+| 62   | B1.50 | The client layer rule also stops a component reaching @prisma/client                                                | —      | Open   | ~~B1.46~~                       | Lead  | S [estimate] |
+| 63   | B1.51 | The daily feature map reaches the agent board and its PRs carry a tier                                              | —      | Open   | ~~B1.44~~                       | Lead  | S [estimate] |
+| 64   | B1.52 | dev-lead fills the PR Evidence section after CI is green                                                            | —      | Open   | ~~B1.45~~                       | Lead  | S [estimate] |
+| 65   | B1.53 | CI runs the feature-map probes                                                                                      | —      | Open   | ~~B1.45~~                       | Lead  | S [estimate] |
+| 66   | B1.54 | The feature map reads the issue form's card field, warns when it truncates, and folds before it trims               | —      | Open   | ~~B1.45~~                       | Lead  | S [estimate] |
+| 68   | B1.56 | A high-tier gate stop resumes when the lead approves on the issue                                                   | —      | Open   | ~~B1.44~~, ~~B1.55~~            | Lead  | S [estimate] |
+| 71   | B1.59 | A launchd job runs the runner's poll every 15 minutes, inside the sandbox                                           | —      | Open   | ~~B1.44~~, ~~B1.58~~, ~~B1.62~~ | Lead  | S [estimate] |
+| 72   | B1.60 | CI runs the runner and tier probes, under bash 5 as well                                                            | —      | Open   | ~~B1.44~~                       | Lead  | S [estimate] |
+| 73   | B1.61 | The runner's deny list spares commit messages, and TERM ends the tools a run started                                | —      | Open   | ~~B1.44~~                       | Lead  | S [estimate] |
+| 78   | B1.66 | A plan for how long the runner keeps its run logs                                                                   | —      | Open   | —                               | Lead  | S [estimate] |
+| 79   | B1.67 | CI's token proof runs the eligibility check's timeline query, and the scripts guide states its rules                | —      | Open   | ~~B1.63~~                       | Lead  | S [estimate] |
+| 81   | B1.70 | The runner firewall reads GitHub's ranges with a token, so a restart never hits the anonymous rate limit            | —      | Open   | ~~B1.58~~                       | Lead  | S [estimate] |
+| 82   | B1.71 | worktree.sh stops when the Prisma client was not generated                                                          | —      | Open   | ~~B1.62~~                       | Lead  | S [estimate] |
+| 83   | B1.72 | The scripts guide lists sandbox probes S1–S10                                                                       | —      | Open   | ~~B1.62~~                       | Lead  | S [estimate] |
+| 84   | B1.73 | The runner's setup steps check out a branch that exists                                                             | —      | Open   | ~~B1.69~~                       | Lead  | S [estimate] |
+| 87   | B1.77 | guard-bash blocks commands that print a git or gh credential                                                        | —      | Open   | —                               | Lead  | S [estimate] |
+| 90   | B5.3  | The slash key focuses the search box                                                                                | —      | Open   | ~~D-30~~                        | Lead  | S [estimate] |
+| 91   | B5.4  | The browser tab title shows the remaining count                                                                     | —      | Open   | ~~D-30~~                        | Lead  | S [estimate] |
+| 92   | B5.5  | Escape clears the search box                                                                                        | —      | Open   | ~~D-30~~                        | Lead  | S [estimate] |
+| 93   | B5.6  | Escape closes the due-date editor without saving                                                                    | —      | Open   | ~~D-30~~                        | Lead  | S [estimate] |
+| 95   | B1.79 | build roles write files with Write/Edit, not Bash text, so guard-bash's secret rule stops refusing their code edits | —      | Open   | —                               | Lead  | S [estimate] |
+| 96   | B1.80 | The components guide says the search form is a client component once section 25 lands                               | —      | Open   | B5.3                            | Lead  | S [estimate] |
+| 97   | B1.81 | guard-bash's secret-read rule lets any command through once it names `.env.example`                                 | —      | Open   | —                               | Lead  | S [estimate] |
 
 ## Waiting on human
 
