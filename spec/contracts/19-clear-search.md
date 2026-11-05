@@ -47,7 +47,7 @@ import type { TodoFilter } from '@/lib/todo-filter'; // §12
 export const CLEAR_SEARCH_LABEL: string; // 'Clear search': the link's text and accessible name, no aria-label
 export function isSearchInEffect(query: string): boolean; // query.trim() !== '' (the same trim as parseSearchQuery, §16); never throws
 export function clearSearchHref(filter: TodoFilter): string; // 'all' → '/'; 'active' → '/?filter=active'; 'completed' → '/?filter=completed'; never a q
-// src/components/todo-search-form.tsx (§16, extended by §21; still no 'use client': no state or events)
+// src/components/todo-search-form.tsx (§16, extended by §21; no 'use client' in §21 itself: no state or events; §25 adds 'use client' to this file)
 export function TodoSearchForm({ filter, query }: { readonly filter: TodoFilter; readonly query: string }): ReactNode; // unchanged signature and §16 markup; inside the <form>, after the <button type="submit">Search</button>, only when isSearchInEffect(query): <Link href={clearSearchHref(filter)}>{CLEAR_SEARCH_LABEL}</Link> (next/link, rendered as an <a>, as the links of §12)
 ```
 

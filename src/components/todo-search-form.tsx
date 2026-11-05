@@ -1,12 +1,42 @@
-// §16 TodoSearchForm, extended by §21: a native GET form and a link, no state or events, so no 'use client'.
+'use client';
+
+// §16 TodoSearchForm, extended by §21 (a "Clear search" link) and §25 (the `/` key focuses the box): a native GET
+// form; 'use client' only for §25's ref and document keydown effect.
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { CLEAR_SEARCH_LABEL, clearSearchHref, isSearchInEffect } from '@/lib/clear-search';
+import { isSearchShortcut } from '@/lib/search-shortcut';
 import type { TodoFilter } from '@/lib/todo-filter';
 import { SEARCH_QUERY_MAX_LENGTH } from '@/lib/todo-search';
 
 // REQ-16.1, REQ-16.2, REQ-16.6: submitting sends `q` to `/` and keeps a selected filter; All is the bare address.
 export function TodoSearchForm({ filter, query }: { readonly filter: TodoFilter; readonly query: string }): ReactNode {
+  const searchBoxRef = useRef<HTMLInputElement>(null);
+
+  // REQ-25.1, REQ-25.2, REQ-25.6: one document listener while the form is mounted, removed on unmount.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent): void {
+      // An HTMLInputElement is an HTMLElement, so its `type` reaches isSearchShortcut (REQ-25.3).
+      const target = event.target instanceof HTMLElement ? event.target : null;
+      if (
+        isSearchShortcut({
+          key: event.key,
+          ctrlKey: event.ctrlKey,
+          metaKey: event.metaKey,
+          altKey: event.altKey,
+          target,
+        })
+      ) {
+        event.preventDefault();
+        searchBoxRef.current?.focus();
+      }
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, []);
+
   return (
     <form role="search" method="get" action="/" className="flex gap-2">
       <label htmlFor="search-todos" className="sr-only">
@@ -17,6 +47,7 @@ export function TodoSearchForm({ filter, query }: { readonly filter: TodoFilter;
           different pairs never share a key. */}
       <input
         key={`${filter}\u0000${query}`}
+        ref={searchBoxRef}
         id="search-todos"
         type="search"
         name="q"
