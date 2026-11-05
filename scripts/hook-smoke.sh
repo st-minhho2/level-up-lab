@@ -757,4 +757,13 @@ req 0 'Claude Code, marker for this session' CLAUDE_CODE_CHILD_SESSION=1 CLAUDE_
 req 0 'Claude Code, env from CLAUDE_ENV_FILE' CLAUDE_CODE_CHILD_SESSION=1 LEVEL_UP_LAB_HOOKS="$PWD"
 rm -f "$COMMON/claude-hooks/$SID" "$ENVF"
 
+echo "== role prompts: files change through Write or Edit only (B1.79)"
+states() { # states <role> <fixed text>: the role's prompt holds the text
+  local f=".claude/agents/$1.md"; n=$((n+1))
+  if grep -qF -- "$2" "$f"; then echo "ok   $f states \"$2\""; else echo "FAIL $f does not state \"$2\""; fail=1; fi
+}
+for r in test-writer code-writer reviewer dev-lead; do states "$r" 'Files change through Write or Edit only (B1.79)'; done # RP1-RP4
+states reviewer 'still write with Bash'    # RP5: probes on the $TMPDIR copy
+states dev-lead 'are commands, not edits'  # RP6: Prettier in "Committing a review"
+
 echo; [[ $fail -eq 0 ]] && echo "hook-smoke: $n probes OK" || { echo "hook-smoke: FAILURES above"; exit 1; }
