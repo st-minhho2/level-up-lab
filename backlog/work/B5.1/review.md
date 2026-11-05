@@ -73,3 +73,68 @@ Verdict: approved
 
 `approved` means ready for the lead's gate (medium tier: D-27 lets a reviewer-approved plan proceed on the issue's label), not
 approved for build by this review; `Plan approved by:` and the spec box are left for the lead / runner.
+
+## Diff review (round 1)
+
+SCOPE: all (lib `src/lib/overdue-count.ts`; ui `src/components/overdue-count.tsx`, `src/app/page.tsx`, `e2e/23-overdue-count.spec.ts`).
+Commits: skeleton 267b71f, red e4f9548, feat 39f6913.
+
+### Commands (last line of each, run by the reviewer)
+
+| Command                             | Result                                                                                                               |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!`                                                                         |
+| `pnpm typecheck`                    | `tsc --noEmit` clean                                                                                                 |
+| `pnpm test`                         | `Tests  213 passed (213)` (plan target 207 → 213)                                                                    |
+| `pnpm test:e2e`                     | `45 passed (1.1m)` (plan target 44 → 45)                                                                             |
+| `pnpm test:mutation`                | `Final mutation score of 93.52 is greater than or equal to break threshold 70`; `overdue-count.ts` 100.00 (6 killed) |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                                            |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                                    |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                                   |
+| `scripts/ci/check-ac-coverage.sh`   | `OK …`; §23 line: `✗, no tests expected yet (7 criteria)`; grep finds AC-23.1 … AC-23.7 each in a test title         |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 24`                                                                                         |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                                                 |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B5.1-agent stays inside the approved plan of B5.1 (D-27 approval)`                                         |
+| `scripts/verify-red.sh B5.1`        | `RESULT: red for the right reason` (2 + 4 new unit tests red on behavior)                                            |
+| `git diff --stat main...HEAD`       | `16 files changed, 860 insertions(+), 1 deletion(-)`                                                                 |
+
+### Checklist
+
+| Check                                                                 | Result                                                                                                                                                                                                                                                                                                                                               |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-§.n has a test whose assertion matches its Then              | pass: AC-23.1–23.6 unit/component assertions copy the Thens (counts, labels, tag/role/aria, `""` cases, identical SSR strings, 0 stderr + 0 `onRecoverableError`, the 4-step sequence + `getTimerCount() 0`); AC-23.7 e2e covers placement, no listitem, tick/untick with 0 navigations, due-date edit, filter, search, reload, F ticked → 0 matches |
+| no test weakened after the red commit                                 | pass: `git log --first-parent --no-merges e4f9548..HEAD -- '*.test.*' e2e/` empty; `--merges --remerge-diff` empty                                                                                                                                                                                                                                   |
+| every changed file is in `plan.md`                                    | pass: 6 code/test files + `spec/features-map.md` in Files; `docs/metrics.md` is the plan's stated paperwork (and `check-plan-scope.sh` paperwork list)                                                                                                                                                                                               |
+| interfaces match §23's function contracts                             | pass: both lib signatures and the `OverdueCount` prop type verbatim; `page.tsx` maps `({ completed, dueDate })` from `todos` (not `shown`), after `<RemainingCount/>`, outside the `<ul>` conditional                                                                                                                                                |
+| Zod at every action boundary / Prisma only in lib / no raw SQL        | n/a: no action, no Prisma, no SQL in `src/`; `check-layers` clean                                                                                                                                                                                                                                                                                    |
+| migration reversible and indexed                                      | n/a: none                                                                                                                                                                                                                                                                                                                                            |
+| no secret, no suppression                                             | pass                                                                                                                                                                                                                                                                                                                                                 |
+| features map row moved                                                | pending: F21 is ✗; the plan assigns ✅ to step 4 (`docs(map)` by dev-lead), not the feat commit. Must land before the PR.                                                                                                                                                                                                                            |
+| would a test fail if one changed line were reverted (probe on a copy) | see below                                                                                                                                                                                                                                                                                                                                            |
+
+Probes on a copy (`src/components/overdue-count.test.tsx` only; `src/components/` is outside Stryker's `mutate`):
+
+| Mutant (line)                                        | Result                                                                                                            |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `useState(todayOf(new Date()))` (13)                 | killed by AC-23.5                                                                                                 |
+| `<span>` → `<p>` (21)                                | killed by AC-23.3                                                                                                 |
+| drop `previous ??` (17)                              | survives: equivalent with `[]` deps (effect runs once per mount; StrictMode's re-run happens at the same instant) |
+| drop `[]` deps (18)                                  | survives: `previous ??` keeps the first day                                                                       |
+| drop both `??` and `[]` (17–18)                      | killed by AC-23.6 (`3 overdue` after midnight)                                                                    |
+| drop `today === undefined` guard (20, `today ?? ''`) | survives: equivalent, `isOverdue(d, '', …)` is false for every d, so nothing renders                              |
+| `page.tsx` passes `shown` instead of `todos`         | traced, not run: on `/?q=zzz` `shown` is `[]`, AC-23.7's `expectOneCount(page, '1 overdue')` fails                |
+
+On the two questions raised: `previous ??` alone is not killable and is equivalent today; it is a redundant second guard
+with `[]` that makes REQ-23.6 survive a future deps change, and the pair is killed by AC-23.6. Not a finding. The
+`docs/metrics.md` row in the feat commit follows `code-writer.md` step 5–6 and the B5.2 precedent (6562b3f); its figures
+(213/7 ACs/93.52/`overdue-count.ts` 100) match what this review ran. Not a finding.
+
+### Findings
+
+None blocking.
+
+Verdict: ready for PR (after the plan's step 4 `docs(map): F21 … [B5.1]` lands)
+
+Riskiest unfalsified: real-browser midnight rollover with the page open (REQ-23.6) is only proven under jsdom fake
+`Date`; a Server Action re-render after midnight keeps the mount's day because state survives the RSC refresh, which
+AC-23.6's `rerender` models but no e2e exercises.
