@@ -32,7 +32,7 @@ _F22 · section 24_
 ### B5.3 · The slash key focuses the search box
 
 _F23 · section 25_
-**Status: Open** — §16 lists keyboard shortcuts under Out of scope (`spec/contracts/14-search.md`, Out of scope): reaching the search box takes a mouse or several Tabs
+**Status: Done** — 9bb37ab (#221), 6 AC-25.n tests green (unit 218, e2e 46), mutation 92.18 (search-shortcut.ts 82.98); unattended and no-rework 1/1 (D-29), but the run stopped once for the lead's D-31 ruling
 
 - **Spec:** §25 — unchanged (section written from `work/B5.3/analysis.md`; contract `spec/contracts/23-search-shortcut.md`; keyboard shortcuts lifted from §16's Out of scope in the same lane, D-30)
 - **Test:** `src/lib/search-shortcut.test.ts::AC-25.1: isSearchShortcut is true for / outside a text-entry element, false inside an input, textarea, select or contenteditable, false with Ctrl, Meta or Alt, and false for any other key` — red because: `isSearchShortcut` is not exported yet (`src/lib/search-shortcut.ts` does not exist)
