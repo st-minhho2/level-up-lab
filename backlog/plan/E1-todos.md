@@ -1017,3 +1017,14 @@ _documentation · no §_
 - **Acceptance:** the `todo-search-form.tsx` line names §16, §21 and section 25 and says it is `'use client'` for section 25's `/` listener (events), as merged by B5.3; the Test command has no match; the heading's section list covers section 25 once its heading lands; `check-spec-sections.sh` stays OK
 - **Tier:** 0 · **Depends on:** B5.3 · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.80/`
+
+### B1.81 · guard-bash's secret-read rule lets any command through once it names `.env.example`
+
+_tooling · no §_
+**Status: Open** — `.claude/hooks/guard-bash.sh:106-107` skips rule 4 for the whole command when `ENV_EXAMPLE` (`\.env\.example`) matches anywhere in it, so a reader that also names a real dotenv file passes: replayed through the hook on 2026-11-05, `cat .env.example .env`, `cat .env .env.example` and `grep -h KEY .env.example .env.local` each exit 0 (`cp .env.example .env`, which reads only the example, exits 0 as it should). Found in B1.79's plan review
+
+- **Spec:** none — tooling (invariant 7: secrets are never read or printed); no `src/` change, no section
+- **Test:** probes in `scripts/hook-smoke.sh` expecting exit 2 for `cat .env.example .env`, `cat .env .env.example` and `grep -h KEY .env.example .env.local` — red because: guard-bash exits 0 on each
+- **Acceptance:** a reader whose command names a dotenv file other than `.env.example` is refused even when `.env.example` is also named; `cat .env.example` and `cp .env.example .env` still pass; every existing probe in `hook-smoke.sh` keeps its verdict; the rule's message is unchanged; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.81/`
