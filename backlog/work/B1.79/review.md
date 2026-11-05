@@ -217,3 +217,86 @@ Round 2 reasons: 1 fixed for all six rows (r1, r3–r7 exit 2), 2 fixed (m4–m7
 
 Riskiest unfalsified: a consumer the B class lists (`cat >`, `tee`, python/node/ruby/perl) whose output is run by a
 shell some other way than the three shapes above, for example `python3 - <<'PY' > x.sh` followed by `. x.sh`.
+
+## Plan review (round 4: re-scoped plan, round 1)
+
+SCOPE: all (tooling, no §: `.claude/agents/`, `scripts/`, `backlog/`). Plan at `7f0f6c0`. Read: card B1.79
+(`backlog/plan/E1-todos.md:999`), `plan.md`, `guard-redesign-stopped.md`, the four role prompts (frontmatter and
+opening paragraphs), `.claude/settings.json` (hook wiring), `path-guard.sh`, `plan-scope.sh`, `verify-red.sh`,
+`.github/workflows/ci.yml` (guards), `scripts/hook-smoke.sh` (summary and counting), `backlog/CLAUDE.md`,
+`docs/mistake-log.md`, the work breakdowns and red-commit subjects of B1.62, B1.69, B1.74, B1.76, B1.78.
+
+Commands run (nothing on the tree):
+
+- `scripts/next-task.sh --check B1.79` gave `[next-task] B1.79: no overlap with any Doing or Review card` (exit 0).
+- `scripts/agent/tier.sh backlog/work/B1.79/plan.md` gave `high`, as the plan states.
+- `scripts/ci/plan-files.sh --any B1.79 HEAD` gave 9 tokens, the Files table exactly.
+- `scripts/hook-smoke.sh` gave `hook-smoke: 581 probes OK`, the baseline the plan quotes.
+- `scripts/ci/check-backlog.sh` gave `[check-backlog] OK: README matches the cards`.
+- The premise holds on the wiring: `settings.json` runs `guard-bash.sh` only on `Bash`. `Edit|Write|MultiEdit`
+  run only `plan-scope.sh` (path and plan checks, no content check) and each role's `path-guard.sh` (path only).
+  All four roles list `Write, Edit` in `tools:`. So a role that follows the rule can make the 4 refused edits.
+- I could not check the before counts. The runner logs (`207/…185231.jsonl`, the #214/#215 runs) are inside the
+  runner container, and `~/.level-up-lab/runs/207/` does not exist on this host [unverified].
+
+| Check                                                                     | Result                                                                                                                                                                                                     |
+| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file belongs to the card                                            | pass: 4 role prompts, hook-smoke and its `scripts/CLAUDE.md` row, the card, the README row/node, work artifacts. No section, so the features map is not touched                                            |
+| interfaces follow `ts-style.md`; mutations in actions; Prisma in lib      | pass (n/a): body text only, no `src/`, no frontmatter or tool-list change                                                                                                                                  |
+| follows `advice.md` or states the deviation                               | pass: "No advice (tier quick, no section)" is stated; the card is `Tier: quick`                                                                                                                            |
+| ≤ 7 criteria, every Then measurable                                       | pass with a gap (reason 2): one Acceptance with measurable parts. "with its own exceptions kept" has no probe                                                                                              |
+| verification lists exact commands with expected numbers                   | fail (reason 1): the red step's subject makes the CI step `verify-red.sh --auto` fail, so "CI green" cannot hold. Minor: `pnpm test` has no expected count (reason 3)                                      |
+| work breakdown skeleton → red → green → map → review, convention subjects | fail (reason 1): red → green → review is the tooling shape used by B1.78. No skeleton and no map are needed (no `src/`, no section). But the red subject carries `(red)`, which tooling cards must not use |
+| `Lead approves spec` box, ticked only by a human                          | pass (n/a): no spec section. The plan's `Plan approved by:` is empty, and the tier is high, so the lead's `approve` is needed (D-28)                                                                       |
+| no settled D-n contradicted                                               | pass: D-19 (label), D-27/D-28 (high tier → lead) are followed. No D-n covers role-prompt wording                                                                                                           |
+| `next-task.sh --check` says no overlap                                    | pass: `[next-task] B1.79: no overlap with any Doing or Review card`                                                                                                                                        |
+
+Verdict: changes requested
+
+1. **The red commit's `(red)` marker fails CI (confirmed by tracing the code, and the same thing already happened
+   once).** Plan Verification and Work breakdown step 1 name the red commit
+   `test(scripts): B1.79 role prompts state the Write/Edit rule (red)`.
+
+   - In CI, `guards` runs `scripts/verify-red.sh --auto` on every PR (`ci.yml:179-182`).
+   - `--auto` picks up every card id from a `test(…): B… … (red)` subject (`verify-red.sh:45`).
+   - It then finds no `*.test.ts(x)` in that commit, because the commit touches only `scripts/hook-smoke.sh`.
+     `verify-red.sh:72-76` prints `::error::test(B1.79) commits touch no *.test.ts(x) file` and returns 1.
+   - This is the B1.62 incident (`docs/mistake-log.md:31`: PR #185 failed, and history is never rewritten, so the
+     card moved to a new branch and PR #186). The fix there: "tooling cards follow B1.58: probe commits carry no
+     `(red)` marker". B1.63, B1.69, B1.74 and B1.76 all name the red commit "(no `(red)` marker)".
+
+   Once pushed, the commit cannot be reworded (no force push), so the whole branch would be lost. Fix: drop `(red)`
+   from the subject in both places, e.g. `test(scripts): B1.79 role-prompt rule probes`, and say why ("no vitest
+   file, B1.62 #185"). The red proof stays: hook-smoke shows 4 FAIL lines and ends "hook-smoke: FAILURES above",
+   exit 1.
+
+2. **(minor) The exceptions in the Acceptance have no probe.** RP1–RP4 grep only the shared sentence. If the
+   reviewer's line ("probes on the copy under `$TMPDIR` still write with Bash") or dev-lead's Prettier line were
+   dropped, all 585 probes would still pass, yet the card's Acceptance requires "its own exceptions kept". Two
+   ways to fix it:
+   - add RP5 (reviewer.md holds `` `$TMPDIR` still write with Bash ``) and RP6 (dev-lead.md holds
+     `` `pnpm exec prettier --write` on `review.md` ``), and change the counts to 6 FAIL / 587; or
+   - say the diff review checks the exceptions by reading them, not by a probe.
+
+3. **(minor) Verification:** `pnpm lint && pnpm typecheck && pnpm test` green has no number. State the expected
+   vitest count unchanged from `main` (no test file changes), so a drop is visible.
+
+Costs the lead should see when approving (not blocking):
+
+- The rule covers prompts only. Nothing enforces it. A role that ignores it hits guard-bash rule 4 as today (the
+  same refusal, the same retry with Edit), so the worst case is no change. The improvement is measured only on later
+  E5 runs.
+- dev-lead.md will forbid Bash writes. dev-lead's own `path-guard.sh` allows Write/Edit only on `backlog/*`,
+  `docs/metrics.md` and `docs/mistake-log.md`. Under `claude -p --agent dev-lead` (headless), a dev-lead that once
+  could heredoc a file outside those paths now has no route at all. That is the intended tightening, but this
+  card's steps 1–2 (`scripts/hook-smoke.sh`, `.claude/agents/*.md`) work only in the interactive session acting as
+  dev-lead (`/work-next`, no frontmatter hook), as B1.78 did.
+- Advisor, spec-analyst and the interactive main session are not covered. That is stated in "Not in scope".
+- The paragraph forbids "`>` that writes a file" without "repository". Read strictly, it also forbids
+  `pnpm test > "$TMPDIR/out"` for test-writer and code-writer. The opening clause ("a repository file") scopes it,
+  but the list does not repeat the scope.
+
+Riskiest unfalsified: that test-writer and code-writer actually switch to Edit when patching. The 4 denials came
+from patches (`python3 -I -c` with `cp`/`head`) whose cause I could not read (the logs are in the runner
+container). If a role used Bash because Edit had failed first (e.g. an unread file or a non-unique `old_string`),
+a prompt rule does not remove that cause.
