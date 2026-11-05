@@ -34,6 +34,8 @@ _F22 · section 24_
 _F23 · section 25_
 **Status: Open** — §16 lists keyboard shortcuts under Out of scope (`spec/contracts/14-search.md`, Out of scope): reaching the search box takes a mouse or several Tabs
 
+- **Spec:** §25 — unchanged (section written from `work/B5.3/analysis.md`; contract `spec/contracts/23-search-shortcut.md`; keyboard shortcuts lifted from §16's Out of scope in the same lane, D-30)
+- **Test:** `src/lib/search-shortcut.test.ts::AC-25.1: isSearchShortcut is true for / outside a text-entry element, false inside an input, textarea, select or contenteditable, false with Ctrl, Meta or Alt, and false for any other key` — red because: `isSearchShortcut` is not exported yet (`src/lib/search-shortcut.ts` does not exist)
 - **Acceptance:** `/` pressed outside any text field focuses the "Search" box and types nothing; ignored while a field has focus; mounts in `src/components/todo-search-form.tsx` only; lifts keyboard shortcuts from §16's Out of scope in its own `docs(spec)` commit; contract `spec/contracts/23-search-shortcut.md` (section 25); batch 1
 - **Tier:** full · **Depends on:** ~~D-30~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B5.3/`
