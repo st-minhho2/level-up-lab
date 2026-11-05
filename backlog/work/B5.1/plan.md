@@ -63,4 +63,4 @@ test-writer's target; a different count is stated in the red commit.
 | 4    | dev-lead            | F21 ✅                                                | `docs(map): F21 … [B5.1]`      |
 | 5    | reviewer (diff)     | `review.md` diff section                              | `docs(backlog): B5.1 review …` |
 
-Plan review: pending, round 2 (round 1: 1 reason, AC-23.5 hydration check) · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 (round 1: 1 reason, AC-23.5 hydration check, applied 0bc8786) · Plan approved by: · Rounds: 1
