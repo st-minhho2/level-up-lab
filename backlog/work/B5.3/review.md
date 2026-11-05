@@ -74,3 +74,71 @@ Costs the lead approves along with this plan (none of them blocks it):
    ("stays a Server Component … no `'use client'`") becomes its own card. No card on this branch or on `origin/main`
    names it, and the plan says "its own card" without an id. Once the feat lands, that guide contradicts the code until
    the card runs. Filing it is a separate lane and does not block this plan.
+
+## Diff review (pass 1)
+
+Base `origin/main` 3aff4b2 (the local `main` ref, 50d38ec, is stale and lists B5.1 files that are already merged).
+Card commits: skeleton 81637e7, red 499c07e, green ff1802b. Scope: lib + ui.
+
+### Command results (run by the reviewer, 2026-11-05)
+
+| Command                              | Last line                                                                                                                                         |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                          | `✖ 1 problem (0 errors, 1 warning)` (the warning was already there: `todo-form.tsx:23`)                                                           |
+| `pnpm typecheck`                     | `tsc --noEmit`, no output                                                                                                                         |
+| `pnpm test`                          | `Tests 218 passed (218)`                                                                                                                          |
+| `pnpm test:e2e`                      | `46 passed (2.5m)` (local run, `pnpm dev` server)                                                                                                 |
+| `pnpm test:mutation`                 | `Final mutation score of 92.18 is greater than or equal to break threshold 70`; `search-shortcut.ts` 82.98 (39 killed, 7 survived, 1 no coverage) |
+| `pnpm build`                         | ok (route table printed)                                                                                                                          |
+| `check-suppressions.sh`              | `OK: no new suppressions`                                                                                                                         |
+| `check-config-change.sh`             | `OK: no protected config changed`                                                                                                                 |
+| `check-feat-commits.sh`              | `OK: no feat commit touches tests`                                                                                                                |
+| `check-ac-coverage.sh`               | `OK: every criterion of a shipped section has a test`                                                                                             |
+| `check-spec-sections.sh`             | `OK: sections cited: 1 … 25`                                                                                                                      |
+| `check-features-map.sh`              | `OK`                                                                                                                                              |
+| `check-plan-scope.sh`                | `OK: feat/B5.3-agent stays inside the approved plan of B5.3 (D-27 approval)`                                                                      |
+| `verify-red.sh B5.3`                 | `RESULT: red for the right reason` (exit 0)                                                                                                       |
+| `git diff --stat origin/main...HEAD` | `17 files changed, 929 insertions(+), 32 deletions(-)`                                                                                            |
+
+### Checklist
+
+| Check                                                                               | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-25.n has a test whose assertion matches its Then                           | pass: AC-25.1 has 19 cases matching the Then one for one, and a not-throw loop. AC-25.2 checks activeElement, value `milk`, `defaultPrevented`, 0 `fetch`, 0 `submit` and an unchanged href. AC-25.3 covers button, link and checkbox. AC-25.4 covers New todo, 3 modifiers and the box itself, with a positive control. AC-25.5 covers unmount and remount with a `focus` spy called exactly 1 time. AC-25.6 (e2e) asserts every clause, including 0 POSTs from load to the last key |
+| no test weakened after the red commit                                               | pass: `git log --first-parent --no-merges 499c07e..HEAD -- '*.test.*' e2e/` is empty, and there are no merges after the red commit. The 4 existing §16/§21 tests only had a header comment changed                                                                                                                                                                                                                                                                                    |
+| every changed file is in `plan.md`                                                  | pass: all 6 rows of the Files table, nothing else under `src/`/`e2e/`. `page.tsx` is untouched (D-30)                                                                                                                                                                                                                                                                                                                                                                                 |
+| interfaces match §25's Function contracts                                           | pass: `SEARCH_SHORTCUT_KEY`, `ShortcutEvent` and `isSearchShortcut` match character for character. `TodoSearchForm` keeps its signature and markup, has one `document` keydown listener and removes it in the effect cleanup. The ref is on the keyed input                                                                                                                                                                                                                           |
+| Zod at action boundary · Prisma only in lib · no raw SQL · migration                | n/a: no action, query or migration. `search-shortcut.ts` imports nothing                                                                                                                                                                                                                                                                                                                                                                                                              |
+| no secret, no suppression                                                           | pass (gitleaks not re-run; the diff has no literals except type names)                                                                                                                                                                                                                                                                                                                                                                                                                |
+| features map row moved                                                              | pass: F23 (§25) added as ✗; the `docs(map)` ✅ step is still to come. The other 22 rows only had their column width changed by Prettier (I compared them cell by cell)                                                                                                                                                                                                                                                                                                                |
+| would a test fail if one changed line were reverted? (probe on a copy in `$TMPDIR`) | Removing `preventDefault` → 4 tests fail. Removing `removeEventListener` → AC-25.5 fails. Replacing the `instanceof` target with `null` → AC-25.4 fails. Removing `type.toLowerCase()` → AC-25.1 fails. Removing the `isContentEditable` check → AC-25.1 fails. **Survive:** removing `'button'` from the non-text set (P4) and removing `tagName.toUpperCase()` (P6); Stryker also reports survivors at lines 19–25 and `?? ''` at 33:38                                             |
+
+### Findings
+
+None blocking. The lead's three doubts, each traced:
+
+- (1) `__reactFiber` hydration wait: this can only fail loudly. If React renames the key, `waitForFunction` times out
+  and AC-25.6 goes red; it cannot go green by mistake. The test is brittle when React is upgraded, but no assertion
+  is weakened. Not a finding.
+- (2) Survivors on `button`/`submit`/`reset`/`image`/`file`/`range`/`color`, on `tagName` case-insensitivity (P6),
+  and on the `?? ''` fallback: the tests match AC-25.1's Then exactly. These survivors come from a gap between
+  REQ-25.3 (all 9 types, tagName case-insensitive) and AC-25.1, which samples 2 types and only uppercase tags. I traced
+  the implementation against REQ-25.3 and it is correct for all 9 types, in either case. In a browser, HTML `tagName`
+  is always uppercase and `input.type` is always a lowercase string, so P6 and `?? ''` cannot be reached from the
+  component. This is not a test-writer defect: pinning the other 7 types needs AC-25.1 widened by a
+  `docs(spec)` commit under a D-n, so it is the lead's call. It is listed under Riskiest unfalsified.
+- (3) SVG or document target → `null` → the shortcut fires. This is correct per spec. REQ-25.3's text-entry set is
+  input/textarea/select/`isContentEditable`, and AC-25.1 requires `true` for a `null` target. `SVGElement` has no
+  `isContentEditable`. Inside an editing host, the keydown target is the host (an `HTMLElement` with
+  `isContentEditable` true), never a nested SVG, so no `/` typed into an editor is ever lost. `document` is never a
+  keydown target while `body`/`html` exist. Not a finding.
+
+Not caused by this diff, but still open: `src/components/CLAUDE.md:11` still says `todo-search-form.tsx` "stays a Server
+Component … no `'use client'`", which the feat now contradicts. D-31 requires its own card, and no card for it is filed
+on `origin/main` or this branch (plan-review cost 3).
+
+Verdict: ready for PR
+
+Riskiest unfalsified: REQ-25.3 for the 7 unpinned input types (`button` … `color`). Removing any of them from
+`NON_TEXT_INPUT_TYPES` keeps all 218 unit tests and 46 e2e tests green (probe P4), so a regression there would ship
+silently unless AC-25.1 is widened.
