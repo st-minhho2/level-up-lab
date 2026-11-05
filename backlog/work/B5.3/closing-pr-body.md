@@ -7,7 +7,7 @@ Files:
 - `backlog/plan/E5-todos-keys.md`: B5.3 `**Status: Done** — 9bb37ab (#221)`, 6 AC-25.n tests green (unit 218, e2e
   46), mutation 92.18 (`search-shortcut.ts` 82.98); unattended and no-rework 1/1 (D-29), with the D-31 stop noted
 - `backlog/README.md`: Remaining row 90 out; `~~B5.3~~` in node 90 and in row 96 (B1.80) Blocked by; totals updated
-  (E5 3/0/3, total 64/0/33 of 97)
+  (E5 3/0/3, total 65/0/32 of 97, after B1.79's closing #227)
 - `spec/technical-requirements.md`: §25 index row ✗ → ✅
 - `docs/metrics.md`: B5.3 Green column on the merged sha (9bb37ab)
 - `backlog/work/B5.3/closing-pr-body.md`: this body (Closing step 6)
