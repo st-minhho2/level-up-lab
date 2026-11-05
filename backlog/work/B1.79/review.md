@@ -73,3 +73,77 @@ Verdict: changes requested
 
 Not a reason: the plan is 72 lines, against planning.md's ≈ 40. B1.78's 82-line plan passed review with the same
 layout.
+
+## Plan review (round 2)
+
+SCOPE: all (tooling, no §). Plan at `e1dfa6e`; the only change since round 1 (`02efba1`) is `plan.md`. The prototype
+in the session scratchpad (`proto/.claude/hooks/guard-bash.sh`) now holds the round-1 fixes (`\$` opens no `$'…'`,
+lines joined at `\`-newline, ASSIGN_PATH, LINE_PATH).
+
+Commands run (nothing on the tree):
+
+- `scripts/next-task.sh --check B1.79` gave `[next-task] B1.79: no overlap with any Doing or Review card`.
+- `scripts/agent/tier.sh backlog/work/B1.79/plan.md` gave `high`.
+- `hook-smoke.sh` on a `git archive` copy with the prototype hook (node_modules linked) gave `hook-smoke: 581 probes OK`.
+- Replay of `den.jsonl`: today 2,2,2,2,2,2,0; prototype 2,0,0,2,0,0,0 (unchanged from round 1, as planned).
+- Round-1 probes p1–p4, p6, p7, p10, p11 (the reason-1 rows): 2 on the prototype. Round-1 fixes hold.
+- New probes below, through today's hook and the prototype. I ran each regression row with `bash` in a scratch
+  folder holding a fake dotenv file, and each printed that file.
+
+| Check                                                                                  | Result                                                                                                                               |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| every file in the plan belongs to the section's features (map)                         | pass: no § (tooling); rows unchanged from round 1                                                                                    |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | pass: no TypeScript, action or Prisma change                                                                                         |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass: no `advice.md` (tier quick), stated                                                                                            |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass: 3 Acceptance lines; each probe row has a wanted exit code                                                                      |
+| verification lists exact commands with expected numbers                                | pass: red 20 FAIL / 598 ok, green 618 (581 + 37), the runner-container command and its last line now pasted (round-1 reason 3 fixed) |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | pass: tooling, no skeleton and no map (B1.78 precedent)                                                                              |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by you | pass: n/a, no spec; tier high → lead's `approve` (D-27, D-28); `config-change-approved` planned (D-19)                               |
+| no settled D-n contradicted                                                            | **fail**: there are still regressions, which D-25 makes in-card (reason 1)                                                           |
+| `scripts/next-task.sh --check <card>` on the committed plan says no overlap            | pass: `[next-task] B1.79: no overlap with any Doing or Review card`                                                                  |
+
+Verdict: changes requested
+
+1. **Secret reads still pass when the path is not first on its line and has no `=` before it.** The round-1 fix
+   added two patterns that each cover one spelling: LINE_PATH (a heredoc line that starts with the path) and
+   ASSIGN_PATH (`=` before the path). A bare path word anywhere else on a heredoc line or a quoted-string line, with
+   the reader on another line, still passes. Today's hook refuses each of these (Acceptance 2, D-25). Confirmed,
+   each read the fake file:
+
+   | Input (newlines as ⏎)                                           | today | planned |
+   | --------------------------------------------------------------- | ----- | ------- |
+   | `xargs cat <<'EOF'` ⏎ `a.txt .env` ⏎ `EOF` (SR23 plus one word) | 2     | 0       |
+   | `xargs cat <<< 'a` ⏎ `.env` ⏎ `b'` (here-string, quoted lines)  | 2     | 0       |
+   | `bash <<'SH'` ⏎ `for f in .env` ⏎ `do cat "$f"; done` ⏎ `SH`    | 2     | 0       |
+   | `bash -c '` ⏎ `for f in .env` ⏎ `do cat "$f"; done'`            | 2     | 0       |
+   | `bash <<'SH'` ⏎ `set -- a .env` ⏎ `cat "$2"` ⏎ `SH`             | 2     | 0       |
+   | `bash <<'SH'` ⏎ `F=( .env )` ⏎ `cat "${F[0]}"` ⏎ `SH`           | 2     | 0       |
+
+   The plan's "Out of reach, as today" line does not cover these, because today's hook blocks them. Adding one
+   pattern per spelling will not close this; round 1 and round 2 each found new rows. One rule that would close it:
+   check a heredoc body against today's rule (a path word anywhere, plus a reader anywhere in the command) whenever
+   the heredoc or here-string feeds a shell or a word consumer (`bash`, `sh`, `zsh`, `source`, `xargs`, `while read`,
+   `<<<`), and against the per-line rule only when it feeds an interpreter or a file (`python3 -`, `node -`,
+   `cat > f`, `git commit -F -`). Apply the same to a multi-line quoted string passed to `bash -c`/`sh -c`. If the
+   plan keeps the current design instead, it must list each row above as "2 today, 0 after" so the lead approves the
+   loss knowingly.
+
+2. **LINE_PATH and ASSIGN_PATH add new refusals of the card's own target shape, and the plan does not list them.**
+   Under the round-1 rule (traced: SECRET_FILE matches but no reader on the line) these passed; under the round-2
+   rule they exit 2:
+   - `cat > src/components/x.tsx <<'EOF'` ⏎ `  if (` ⏎ `    event.key === 'Escape' &&` ⏎ `    !pending` ⏎ `  ) {}` ⏎
+     `EOF`. Prettier wraps a long condition this way, so E5 diffs will produce it. Today 2, planned 2.
+   - `cat > notes.md <<'EOF'` ⏎ `  event.key is the property` ⏎ `EOF`, and `python3 - <<'PY'` ⏎ `k=event.key` ⏎
+     `PY`. Both 2 today and 2 planned.
+
+   The card says E5 puts `event.key` in most diffs, so the first one is the card's own problem coming back. Either
+   make LINE_PATH/ASSIGN_PATH apply only in the shell-fed case from reason 1, or keep `.key`/`.pem`/`.p12` out of
+   them. Otherwise list these rows under "Still refused" and add an SM row that pins the verdict either way.
+
+3. (minor) The Files table and the `scripts/CLAUDE.md` row still say "SR1–SR21", but the probe list runs to SR28.
+   The footer still says `Rounds: 1`.
+
+Round 1 reasons: 1 partly fixed (all 7 rows now 2; the class is still open, reason 1 above), 2 fixed ("Still
+refused" names the two examples), 3 fixed.
+
+Round 3 of this review goes to the human (reviewer.md: third round → "Waiting on human").
