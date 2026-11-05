@@ -71,4 +71,4 @@ headless dev-lead writes only `backlog/` and two `docs/` files through Write/Edi
 card that needs `scripts/` or `.claude/` written by dev-lead itself (as this one) runs from an interactive session, as
 B1.78 did.
 
-Plan review: approved, re-scoped round 2 (`review.md` round 5) · Plan approved by: · Rounds: 1
+Plan review: approved, re-scoped round 2 (`review.md` round 5) · Plan approved by: lead, 2026-11-05 · Rounds: 1
