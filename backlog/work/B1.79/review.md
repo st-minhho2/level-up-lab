@@ -147,3 +147,73 @@ Round 1 reasons: 1 partly fixed (all 7 rows now 2; the class is still open, reas
 refused" names the two examples), 3 fixed.
 
 Round 3 of this review goes to the human (reviewer.md: third round → "Waiting on human").
+
+## Plan review (round 3)
+
+SCOPE: all (tooling, no §). The lead asked for this round after the 2-round cap. Plan at `bd38b51`; the only change
+since round 2 (`dbc845a`) is `plan.md`. New design: a quoted string or heredoc body that a shell runs (tags X/Y) is
+checked unsplit, as today; anything else (tags C/B) is checked line by line. The prototype at the same scratchpad path
+implements it.
+
+Commands run (nothing on the tree):
+
+- `scripts/next-task.sh --check B1.79` gave `[next-task] B1.79: no overlap with any Doing or Review card`.
+- `scripts/agent/tier.sh` gave `high`; `plan-files.sh --any B1.79 HEAD` gave 5 tokens, all in the Files table.
+- `hook-smoke.sh` on a `git archive` copy with the prototype hook (node_modules linked) gave
+  `hook-smoke: 581 probes OK`.
+- The coordinator's claims hold. Rounds 1–2 regression probes p1–p4, p6–p8, p10, p11, r1 and r3–r8 exit 2.
+  Mention probes m1, m2 and m4–m7 exit 0; m3 (`git commit -F -` heredoc) exits 2, as the plan's "Still refused"
+  says. Replay of `den.jsonl`: today 2,2,2,2,2,2,0; prototype 2,0,0,2,0,0,0.
+- New probes against the consumer classification, below. I ran each regression row with `bash` (`SHELL=/bin/bash`)
+  in a scratch folder holding a fake dotenv file, and each printed that file.
+
+| Check                                                                                  | Result                                                                                                                            |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                         | pass: no § (tooling); rows unchanged; Files table and `scripts/CLAUDE.md` row now say SM1–SM13, SR1–SR35 (round-2 reason 3 fixed) |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | pass: no TypeScript, action or Prisma change                                                                                      |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass: no `advice.md` (tier quick), stated; per-segment scoping and pattern-per-spelling rejected with reasons                     |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass: 3 Acceptance lines; 48 probe rows, each with a wanted exit code                                                             |
+| verification lists exact commands with expected numbers                                | pass: red 25 FAIL / 604 ok (25 starred rows), green 629 (581 + 48), runner command pasted with last line                          |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | pass: tooling, no skeleton and no map (B1.78 precedent)                                                                           |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by you | pass: n/a, no spec; tier high → lead's `approve` (D-27, D-28); `config-change-approved` planned (D-19)                            |
+| no settled D-n contradicted                                                            | **fail**: there are still regressions, which D-25 makes in-card (reason 1)                                                        |
+| `scripts/next-task.sh --check <card>` on the committed plan says no overlap            | pass: `[next-task] B1.79: no overlap with any Doing or Review card`                                                               |
+
+Verdict: changes requested. **Waiting on human** (third round): the lead either asks for the fixes in reason 1 or
+approves the plan with the rows in reason 1 listed as accepted losses.
+
+1. **The design is right, but its fallbacks are unsafe in three places, and none is listed.** The text classed C/B
+   (checked line by line) is the text that can pass, and the classification sends shell-run text there. Each row
+   exits 2 today, exits 0 on the prototype, and read the fake file:
+
+   | Input (newlines as ⏎)                                                                                                    | today | planned | Why it is C/B                                                                 |
+   | ------------------------------------------------------------------------------------------------------------------------ | ----- | ------- | ----------------------------------------------------------------------------- |
+   | `tee <<'EOF' \| bash` ⏎ `for f in .env` ⏎ `do cat "$f"; done` ⏎ `EOF`                                                    | 2     | 0       | the consumer is read only up to the first `\|`                                |
+   | `cat > /dev/stdout <<'EOF' \| sh` ⏎ (same body) ⏎ `EOF`                                                                  | 2     | 0       | same                                                                          |
+   | `cat > x.sh <<'EOF'` ⏎ (same body) ⏎ `EOF` ⏎ `bash x.sh`                                                                 | 2     | 0       | the file written is then run by a shell                                       |
+   | `/bin/bash -c '` ⏎ `for f in .env` ⏎ `do cat "$f"; done'`                                                                | 2     | 0       | the shell-name check needs a space or `(` before the name, and `/` is neither |
+   | `$SHELL -c '` ⏎ (same) `'` (and `watch -n 1 '…'`, same body)                                                             | 2     | 0       | not in the shell-name list                                                    |
+   | `python3 - <<'PY'` ⏎ `paths = '''` ⏎ `.env` ⏎ `'''.split()` ⏎ `for p in paths: print(open(p).read())` ⏎ `PY`             | 2     | 0       | B line `.env` alone: no reader on it, no quotes around it                     |
+   | `python3 - <<'PY'` ⏎ `import subprocess` ⏎ `subprocess.run('xargs cat', shell=True, input=b'''` ⏎ `.env` ⏎ `''')` ⏎ `PY` | 2     | 0       | same                                                                          |
+
+   Three narrow changes would close these. I checked that the run's 4 denied commands contain no shell word, so none
+   of the changes touches them; none touches SM10–SM13 either:
+
+   - (a) Class a heredoc B only when the whole command names no shell. A shell here means `bash`, `sh`, `zsh`,
+     `dash`, `ksh`, `eval`, `source`, `$SHELL`/`${SHELL}`, in any position, after `/` too.
+   - (b) Let the shell-name check for quoted strings accept `/` before the name and `$SHELL`. `watch`, `ssh` and
+     `su -c` are either added or listed as out of reach.
+   - (c) A C/B line that is only a path word (`^[ \t]*PATH_WORD[ \t]*$`) blocks when the command has a reader. A
+     comment line starts with `#` or `//`, and the SM10–SM13 lines hold other words, so none of them matches.
+
+   Each fix needs its row as an SR probe. Alternatively, the plan lists every row above as "2 today, 0 after", and the
+   lead accepts the loss when approving.
+
+2. (minor, for the diff review) The "Out of reach" line adds "a shell function that runs its quoted argument". Today
+   blocks that shape only when the path ends a word in the unsplit text. The hooks.md row should say the verdict
+   changes for it, not "as today".
+
+Round 2 reasons: 1 fixed for all six rows (r1, r3–r7 exit 2), 2 fixed (m4–m7 exit 0, SM10–SM13 pin them), 3 fixed.
+
+Riskiest unfalsified: a consumer the B class lists (`cat >`, `tee`, python/node/ruby/perl) whose output is run by a
+shell some other way than the three shapes above, for example `python3 - <<'PY' > x.sh` followed by `. x.sh`.
