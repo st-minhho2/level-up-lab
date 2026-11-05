@@ -5,10 +5,10 @@ Files card **B1.81** through the "Filing a card" lane (`backlog/CLAUDE.md`). The
 Files:
 
 - `backlog/plan/E1-todos.md`: card B1.81 (quick, no dependency).
-- `backlog/README.md`: totals (E1 50/0/28/78, total 63/0/33/96), node S97, Remaining row 97.
+- `backlog/README.md`: totals (E1 50/0/29/79, total 63/0/34/97), node S97, Remaining row 97.
 - `backlog/work/B1.81/filing-pr-body.md`: this body.
 
-Numbering: step 96 / B1.80 is taken by the open filing PR #219. Whichever merges second rebases its totals.
+Numbering: rebased on B1.80 (#219, step 96), so B1.81 is step 97.
 
 `scripts/ci/check-backlog.sh` → OK.
 
