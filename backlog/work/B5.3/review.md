@@ -42,3 +42,35 @@ Verdict: changes requested
    `src/components/CLAUDE.md:11` ("stays a Server Component … no `'use client'`") goes stale too. The plan names it as
    a follow-up, which is correct under D-30, but that follow-up has no card id yet. File it with an id so it is not
    lost.
+
+## Plan review (round 2)
+
+Plan: `backlog/work/B5.3/plan.md` at 33dacdb. Spec: `spec/contracts/23-search-shortcut.md` (§25) at faf26f0, under
+D-31 ("2A"). Round 1's two reasons are re-checked below.
+
+| Check                                                                             | Result                                                                                                                                                                                                                                                                                                                                                                                 |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: the Files table has 6 rows, all §25's (F23 is a new row): `search-shortcut.ts` and its test, `todo-search-form.tsx` and its test, `e2e/25-search-shortcut.spec.ts`, `features-map.md`. Step 0 is gone. The §16 and §21 note edits already landed in faf26f0 (2 lines, one in each file, limited to the "'use client'" remark), which D-31 (A) covers. Round 1 reason 2 is closed |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass: the interface block matches §25's Function contracts exactly, including the new optional `readonly type?: string`. It has `readonly` fields, explicit return types and no `any`. There is no action, Zod, Prisma, route or env change, and `page.tsx` is untouched                                                                                                               |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: approach A. Q3 is no longer described as "settled by the written spec": the plan cites D-31 and says the non-text type list is the analyst's reading, which the lead may amend. Round 1 reason 1 is closed: §25 now agrees with itself (prose line 24, REQ-25.3 and the contract all treat a checkbox and a radio as non-text-entry)                                             |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: 6 criteria. AC-25.1 now has `INPUT` checkbox and `RADIO` (uppercase, which tests the case-insensitive match) → `true`, and no-type, `text` and `date` → `false`. AC-25.3 adds a focused checkbox                                                                                                                                                                                 |
+| verification lists exact commands with expected numbers                           | pass: `pnpm test` 213 → 218 (I re-ran it today: `Tests 213 passed (213)`). `pnpm test:e2e` 45 → 46 (grep finds 45 `test(` across `e2e/*.spec.ts`). Mutation ≥ 70. `verify-red.sh B5.3` exit 0. `pnpm build`. `check-plan-scope.sh` (today: `OK: feat/B5.3-agent changes only paperwork`)                                                                                               |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: `chore(todos)` skeleton → `test(todos) … (red)` → `feat(todos)` → `docs(map): F23 … [B5.3]` → `docs(backlog)` review                                                                                                                                                                                                                                                             |
+| the section has a `Lead approves spec` box, ticked only by a human                | pass: §25 line 5 `- [ ] Lead approves spec`, unticked; I left it unticked                                                                                                                                                                                                                                                                                                              |
+| no settled D-n contradicted                                                       | pass: D-30 (one component, no `page.tsx`, package guides out of card plans) and D-31 (2: text-like inputs only; A: the §16 and §21 notes) are both followed. `src/components/CLAUDE.md` is kept out of the Files table, as D-31 says                                                                                                                                                   |
+| `scripts/next-task.sh --check B5.3` on the committed plan                         | pass: `[next-task] B5.3: no overlap with any Doing or Review card` (exit 0)                                                                                                                                                                                                                                                                                                            |
+
+Verdict: approved (ready for the lead's gate, not approved for build)
+
+Costs the lead approves along with this plan (none of them blocks it):
+
+1. `TodoSearchForm` becomes a Client Component. Its markup and the no-JS GET submit stay the same, but `/` does nothing
+   before hydration. AC-25.6's Given says "client hydrated", so the e2e must wait for hydration before the first key.
+   If it does not, the test can fail at random. I will check this in the diff review.
+2. The non-text `type` list (checkbox, radio, button, submit, reset, image, file, range, color) is the spec-analyst's
+   reading of D-31, which gives no list. Typed fields such as `date` and `number` stay text-entry. If the lead wants a
+   different list, it has to change in §25 before the red commit.
+3. The follow-up card is not filed yet. D-31 ("file card guide") says the stale line at `src/components/CLAUDE.md:11`
+   ("stays a Server Component … no `'use client'`") becomes its own card. No card on this branch or on `origin/main`
+   names it, and the plan says "its own card" without an id. Once the feat lands, that guide contradicts the code until
+   the card runs. Filing it is a separate lane and does not block this plan.
