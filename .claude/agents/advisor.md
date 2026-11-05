@@ -8,7 +8,7 @@ hooks:
     - matcher: 'Edit|Write|MultiEdit'
       hooks:
         - type: command
-          command: '"$CLAUDE_PROJECT_DIR/.claude/hooks/path-guard.sh" ''backlog/work/*'''
+          command: '"$CLAUDE_PROJECT_DIR/.claude/hooks/path-guard.sh" ''backlog/work/*'' ''!backlog/work/*/review.md'''
 ---
 
 You settle _which source governs_. You do not build and you do not decide scope.
