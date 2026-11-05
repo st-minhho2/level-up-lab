@@ -221,21 +221,21 @@ echo "== agent frontmatter (parses; each role's hook command, as the YAML yields
 n=$((n+1)); if out="$(scripts/ci/check-agent-frontmatter.sh 2>&1)"; then echo "ok   $out"; else printf 'FAIL %s\n' "$out"; fail=1; fi
 role_patterns() { # the patterns each role's path-guard.sh must receive, in order
   case "$1" in
-    advisor) echo "backlog/work/*" ;;
+    advisor) echo "backlog/work/* !backlog/work/*/review.md" ;;
     code-writer) echo "src/* prisma/* spec/features-map.md docs/metrics.md !*.test.ts !*.test.tsx !e2e/* !src/lib/prisma.ts" ;;
-    dev-lead) echo "backlog/* docs/metrics.md docs/mistake-log.md !backlog/00-decisions.md !backlog/work/*/review.md" ;;
+    dev-lead) echo "--role dev-lead backlog/* docs/metrics.md docs/mistake-log.md !backlog/00-decisions.md !backlog/work/*/review.md" ;;
     reviewer) echo "backlog/work/*/review.md" ;;
-    spec-analyst) echo "spec/contracts/* backlog/* !spec/features-map.md !backlog/00-decisions.md" ;;
+    spec-analyst) echo "spec/contracts/* backlog/* !spec/features-map.md !backlog/00-decisions.md !backlog/work/*/review.md" ;;
     test-writer) echo "*.test.ts *.test.tsx e2e/*" ;;
   esac
 }
 role_probes() { # <exit> <path> pairs: one write the role may make, one it may not
   case "$1" in
-    advisor) echo "0 backlog/work/B1.2/advice.md 2 src/lib/todos.ts" ;;
+    advisor) echo "0 backlog/work/B1.2/advice.md 2 src/lib/todos.ts 2 backlog/work/B1.2/review.md" ;;
     code-writer) echo "0 src/lib/todos.ts 2 src/lib/todos.test.ts 2 e2e/x.spec.ts" ;;
     dev-lead) echo "0 backlog/work/B1.2/plan.md 2 src/lib/todos.ts 2 backlog/00-decisions.md 2 backlog/work/B1.2/review.md" ;;
     reviewer) echo "0 backlog/work/B1.2/review.md 2 backlog/work/B1.2/plan.md" ;;
-    spec-analyst) echo "0 spec/contracts/04-edit-title.md 2 src/lib/todos.ts 2 spec/features-map.md" ;;
+    spec-analyst) echo "0 spec/contracts/04-edit-title.md 2 src/lib/todos.ts 2 spec/features-map.md 2 backlog/work/B1.2/review.md" ;;
     test-writer) echo "0 src/lib/todos.test.ts 0 e2e/x.spec.ts 2 src/lib/todos.ts" ;;
   esac
 }
@@ -257,6 +257,65 @@ $(scripts/ci/check-agent-frontmatter.sh --commands 2>/dev/null)
 EOF
 rm -rf "$FAKE"
 n=$((n+1)); if [[ $roles -eq 6 ]]; then echo "ok   6 roles declare a path-guard.sh hook"; else echo "FAIL $roles roles declare a path-guard.sh hook (want 6)"; fail=1; fi
+
+echo "== path-guard.sh --role (B1.78): headless, dev-lead's hook also fires for a dispatched role and applies that role's own list"
+# backlog/work/B1.78/probe.md (2.1.303): under claude -p --agent dev-lead the main agent's frontmatter hook fires for
+# every subagent's write too; agent_type names the caller (the --agent main session included), agent_id only a subagent.
+DL=(--role dev-lead 'backlog/*' 'docs/metrics.md' 'docs/mistake-log.md' '!backlog/00-decisions.md' '!backlog/work/*/review.md')
+hl_json() { # hl_json <path> <agent_type|-> [agent_id]: a PreToolUse Write input as Claude Code sends it
+  node -e 'const [p, t, i] = process.argv.slice(1); const o = { tool_name: "Write", tool_input: { file_path: p } };
+    if (t !== "-") o.agent_type = t; if (i) o.agent_id = i; process.stdout.write(JSON.stringify(o))' "$1" "$2" "${3:-}"
+}
+hg() { # hg <expected-exit> <agent_type|-> <repo-relative path> [agent_id]: dev-lead's list with --role
+  probe "$1" path-guard.sh "$(hl_json "$PWD/$3" "$2" "${4:-}")" "${DL[@]}"
+}
+REV=backlog/work/B1.2/review.md; PLAN=backlog/work/B1.2/plan.md; SRC=src/lib/todos.ts; UT=src/lib/todos.test.ts
+# HG1–HG3: a dispatched role writes its own paths and nothing else (its list, not dev-lead's)
+hg 0 reviewer "$REV" a8cc1200e7c13e481; hg 2 reviewer "$PLAN" a8cc1200e7c13e481
+hg 0 test-writer "$UT" a1; hg 0 test-writer e2e/x.spec.ts a1; hg 2 test-writer "$SRC" a1
+hg 0 code-writer "$SRC" a2; hg 2 code-writer "$UT" a2
+# HG4–HG5: dev-lead as the headless --agent main session (no agent_id)
+for p in "$REV" "$SRC" prisma/schema.prisma e2e/x.spec.ts "$UT"; do hg 2 dev-lead "$p"; done
+hg 0 dev-lead "$PLAN"
+# HG6: dev-lead as an interactive subagent (agent_id)
+hg 2 dev-lead "$REV" a3; hg 2 dev-lead "$SRC" a3; hg 0 dev-lead "$PLAN" a3
+# HG7: no agent_type at all: dev-lead's own list (fail closed, as before)
+hg 2 - "$REV"; hg 2 - "$SRC"; hg 0 - "$PLAN"
+# HG8: an agent without an agent file has no list to read: blocked, even on a path dev-lead's list allows
+for t in general-purpose Explore claude; do hg 2 "$t" "$PLAN" a4; done
+# HG9: advisor and spec-analyst never write review.md (their own lists, read from their frontmatter)
+hg 2 advisor "$REV" a5; hg 2 spec-analyst "$REV" a6
+# HG10: a type that is not a plain agent name is never looked up
+for t in ../hooks/lib Reviewer ns:reviewer; do hg 2 "$t" "$PLAN" a7; done
+# HG11: a role file that cannot be read as one path-guard command blocks, on a path dev-lead's list allows, so only
+# the read failure can block it
+FX="$(mktemp -d)"; git -C "$FX" init -q; mkdir -p "$FX/.claude/agents" "$FX/backlog/work/B9.1"
+fm() { # fm <name> <frontmatter command lines> [body]
+  printf -- "---\nname: %s\ndescription: fixture\ntools: Write\nhooks:\n  PreToolUse:\n    - matcher: 'Edit|Write|MultiEdit'\n      hooks:\n%s---\n%s\n" \
+    "$1" "$2" "${3:-}" > "$FX/.claude/agents/$1.md"
+}
+PG="\"\$CLAUDE_PROJECT_DIR/.claude/hooks/path-guard.sh\""
+cmdline() { printf "        - type: command\n          command: '%s %s'\n" "$PG" "$1"; }
+fm fx-prose "" "$(cmdline "''backlog/*''")"
+fm fx-eval "$(cmdline "''backlog/*'' \$(touch $FX/marker)")"
+fm fx-two "$(cmdline "''backlog/*''")
+$(cmdline "''backlog/*''")"
+hgx() { # hgx <agent_type>: the fixture's plan.md, dev-lead's list with --role, the fixture as the project
+  CLAUDE_PROJECT_DIR="$FX" probe 2 path-guard.sh "$(hl_json "$FX/backlog/work/B9.1/plan.md" "$1" a8)" "${DL[@]}"
+}
+for t in fx-missing fx-prose fx-eval fx-two; do hgx "$t"; done
+n=$((n+1)); if [[ ! -e "$FX/marker" ]]; then echo "ok   path-guard never evaluates a role's command"; else echo "FAIL path-guard evaluated \$(touch marker) from a role's frontmatter"; fail=1; fi
+rm -rf "$FX"
+# HG12: --role without a name, or without a glob after it
+probe 2 path-guard.sh "$(hl_json "$PWD/$PLAN" dev-lead)" --role
+probe 2 path-guard.sh "$(hl_json "$PWD/$PLAN" dev-lead)" --role dev-lead
+# HG13: dev-lead's real frontmatter command, as the YAML yields it
+DLCMD="$(scripts/ci/check-agent-frontmatter.sh --commands 2>/dev/null | awk -F'\t' '$1 == "dev-lead" { print $2 }')"
+for row in "0 reviewer $REV" "2 reviewer $PLAN" "2 dev-lead $REV" "2 - $SRC"; do
+  set -- $row; n=$((n+1)); rc=0
+  hl_json "$PWD/$3" "$2" | sh -c "$DLCMD" >/dev/null 2>&1 || rc=$?
+  if [[ -n "$DLCMD" && $rc -eq $1 ]]; then echo "ok   dev-lead's frontmatter exit $rc  $2 $3"; else echo "FAIL dev-lead's frontmatter exit $rc (want $1)  $2 $3"; fail=1; fi
+done
 
 echo "== path-guard.sh per layout (main, .worktrees/<slug>, .claude/worktrees/<name>, nested) x role, with and without git"
 # CLAUDE_PROJECT_DIR stays the main checkout while the write lands in a worktree: patterns must see the path
