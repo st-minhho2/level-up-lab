@@ -45,6 +45,8 @@ _F23 · section 25_
 _F24 · section 26_
 **Status: Open** — the tab title is fixed (`grep -rn 'generateMetadata' src/app` → 0): a person with the list in a background tab cannot see what is left
 
+- **Spec:** §26 — unchanged (section written from `work/B5.4/analysis.md`; contract `spec/contracts/24-page-title.md`; "a count in the page title" lifted from §13's Out of scope in the same lane, D-32)
+- **Test:** `src/lib/page-title.test.ts::AC-26.1: pageTitle returns Todos for 0 and (N) Todos for 1, 2, 11 and 1000` — red because: `pageTitle` is not exported yet (`src/lib/page-title.ts` does not exist)
 - **Acceptance:** the document title reads `(n) Todos` while n > 0 open todos remain (§13's count) and `Todos` at 0; `generateMetadata` in `src/app/page.tsx` (the batch's one `page.tsx` card); contract `spec/contracts/24-page-title.md` (section 26); batch 2
 - **Tier:** full · **Depends on:** ~~D-30~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B5.4/`

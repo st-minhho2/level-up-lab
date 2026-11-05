@@ -1,5 +1,6 @@
 // §7 home page; §12 the list filtered by the `filter` query parameter; §13 the remaining count; §14 mark all complete;
-// §16 the list searched by title through the `q` query parameter; §23 the overdue count.
+// §16 the list searched by title through the `q` query parameter; §23 the overdue count; §26 the tab title.
+import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { ClearCompletedButton } from '@/components/clear-completed-button';
 import { CompleteAllButton } from '@/components/complete-all-button';
@@ -9,6 +10,7 @@ import { TodoFilterNav } from '@/components/todo-filter-nav';
 import { TodoForm } from '@/components/todo-form';
 import { TodoItem } from '@/components/todo-item';
 import { TodoSearchForm } from '@/components/todo-search-form';
+import { pageTitle } from '@/lib/page-title';
 import { countRemaining } from '@/lib/todo-count';
 import { filterTodos, parseTodoFilter } from '@/lib/todo-filter';
 import { parseSearchQuery, searchEmptyMessage, searchTodos } from '@/lib/todo-search';
@@ -16,6 +18,11 @@ import { listTodos } from '@/lib/todos';
 
 // Server Component: reads straight from src/lib; mutations go through src/actions/todos.ts.
 export const dynamic = 'force-dynamic';
+
+// §26 REQ-26.3: counted from every stored todo, never from searchParams; title only, the layout's description stays.
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: pageTitle(countRemaining(await listTodos())) };
+}
 
 export default async function HomePage({
   searchParams,
