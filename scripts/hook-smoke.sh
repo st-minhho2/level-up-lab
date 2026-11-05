@@ -303,10 +303,12 @@ fm fx-role "$(cmdline "''--role'' ''fx-role'' ''backlog/*''")" # a second orches
 # two path-guard commands that read as one list only across the line break (review pass 2)
 fm fx-two "$(cmdline "''backlog/x")
 $(printf "        - type: command\n          command: 'hooks/path-guard.sh'' ''backlog/*'''")"
+# a path-guard line that is not the hook's own command: globs but no "$CLAUDE_PROJECT_DIR/…" prefix (review pass 3)
+fm fx-np "$(printf "        - type: command\n          command: ' ''backlog/*'' ''hooks/path-guard.sh'''")"
 hgx() { # hgx <agent_type>: the fixture's plan.md, dev-lead's list with --role, the fixture as the project
   CLAUDE_PROJECT_DIR="$FX" probe 2 path-guard.sh "$(hl_json "$FX/backlog/work/B9.1/plan.md" "$1" a8)" "${DL[@]}"
 }
-for t in fx-missing fx-prose fx-eval fx-role fx-two; do hgx "$t"; done
+for t in fx-missing fx-prose fx-eval fx-role fx-two fx-np; do hgx "$t"; done
 n=$((n+1)); if [[ ! -e "$FX/marker" ]]; then echo "ok   path-guard never evaluates a role's command"; else echo "FAIL path-guard evaluated \$(touch marker) from a role's frontmatter"; fail=1; fi
 rm -rf "$FX"
 # HG12: --role without a name, or without a glob after it
