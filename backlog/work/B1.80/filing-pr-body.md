@@ -1,6 +1,6 @@
 Files card **B1.80** through the "Filing a card" lane (`backlog/CLAUDE.md`). The checklist is the plan, so there is no `Plan approved by` line.
 
-When B5.3 merges, the `todo-search-form.tsx` line in `src/components/CLAUDE.md` (line 11: "stays a Server Component … no `'use client'`") goes stale. D-31 makes the form `'use client'` for §25's `/` listener, and D-30 keeps package guides out of B5.3's plan. The lead asked for this card in the orchestrating session: "D-31: 2A, file card guide".
+When B5.3 merges, the `todo-search-form.tsx` line in `src/components/CLAUDE.md` (line 11: "stays a Server Component … no `'use client'`") goes stale. D-31 makes the form `'use client'` for section 25's `/` listener, and D-30 keeps package guides out of B5.3's plan. The lead asked for this card in the orchestrating session: "D-31: 2A, file card guide".
 
 Files:
 

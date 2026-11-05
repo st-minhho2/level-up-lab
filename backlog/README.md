@@ -170,7 +170,7 @@ at most 3 cards Doing (B1.18).
 | 92   | B5.5  | Escape clears the search box                                                                             | —      | Open   | ~~D-30~~                        | Lead  | S [estimate] |
 | 93   | B5.6  | Escape closes the due-date editor without saving                                                         | —      | Open   | ~~D-30~~                        | Lead  | S [estimate] |
 | 95   | B1.79 | guard-bash's secret-read rule refuses commands that only mention `.key` or `.env` in their text          | —      | Open   | —                               | Lead  | S [estimate] |
-| 96   | B1.80 | The components guide says the search form is a client component once §25 lands                           | —      | Open   | B5.3                            | Lead  | S [estimate] |
+| 96   | B1.80 | The components guide says the search form is a client component once section 25 lands                    | —      | Open   | B5.3                            | Lead  | S [estimate] |
 
 ## Waiting on human
 
