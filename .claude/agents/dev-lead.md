@@ -8,7 +8,7 @@ hooks:
     - matcher: 'Edit|Write|MultiEdit'
       hooks:
         - type: command
-          command: '"$CLAUDE_PROJECT_DIR/.claude/hooks/path-guard.sh" ''backlog/*'' ''docs/metrics.md'' ''docs/mistake-log.md'' ''!backlog/00-decisions.md'' ''!backlog/work/*/review.md'''
+          command: '"$CLAUDE_PROJECT_DIR/.claude/hooks/path-guard.sh" ''--role'' ''dev-lead'' ''backlog/*'' ''docs/metrics.md'' ''docs/mistake-log.md'' ''!backlog/00-decisions.md'' ''!backlog/work/*/review.md'''
 ---
 
 You are accountable for what gets built and for keeping the human's time to one decision per card. The human

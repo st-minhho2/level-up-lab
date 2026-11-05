@@ -8,7 +8,7 @@ hooks:
     - matcher: 'Edit|Write|MultiEdit'
       hooks:
         - type: command
-          command: '"$CLAUDE_PROJECT_DIR/.claude/hooks/path-guard.sh" ''spec/contracts/*'' ''backlog/*'' ''!spec/features-map.md'' ''!backlog/00-decisions.md'''
+          command: '"$CLAUDE_PROJECT_DIR/.claude/hooks/path-guard.sh" ''spec/contracts/*'' ''backlog/*'' ''!spec/features-map.md'' ''!backlog/00-decisions.md'' ''!backlog/work/*/review.md'''
 ---
 
 You turn a card into a contract a lead can plan from. You propose; `dev-lead` decides; the human rules on anything
