@@ -50,7 +50,7 @@ count is a read, derived from the list the page already holds. `countRemaining` 
 ## Out of scope
 
 Counting the completed todos, a count per filter or per search result, a plural form other than "item"/"items",
-live announcement to assistive technology (`role="status"`, `aria-live`), a count in the page title, counting from
+live announcement to assistive technology (`role="status"`, `aria-live`), counting from
 two tabs at once, a count that updates before the Server Action resolves (optimistic update).
 
 ## Unchanged behavior
