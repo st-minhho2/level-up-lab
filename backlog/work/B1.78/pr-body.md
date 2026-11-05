@@ -4,8 +4,8 @@ B1.78 — dev-lead's write guard stops at dev-lead in a headless run, so the rol
 spec section)
 
 - spec: none — tooling (D-27, D-29); no `src/` change, no section
-- test: `scripts/hook-smoke.sh` HG1–HG13 (new) and updated role rows — pending
-- acceptance: pending
+- test: `scripts/hook-smoke.sh` HG1–HG13 (new) and updated role rows. Red `d09fe9c`: 22 FAIL as planned, 556 ok. Green `92425b2`: "hook-smoke: 578 probes OK"; review passes add 3 probes (`ce9cb51` +2, `efb424b` reshapes fx-two, `99baa1b` +1): "hook-smoke: 581 probes OK" on bash 3.2.57 and 5.2.15 (reviewer). `pnpm test` 202, e2e 43, mutation 93.40 (no `src/` change); run-smoke 17 OK; `check-agent-frontmatter`, `check-plan-scope`, `check-backlog` OK. Each guard line of `role_globs` that changes a verdict fails a probe when deleted (sweep: name regex 1, one-command check 1, prefix check 1, tokenizer 13, own `--role` 1, the `role_globs` call 23); `-f`, `line != lines`, `-gt 0` are equivalent mutants.
+- acceptance: 4 of 4 clauses met in probes — each dispatched role held by its own list (HG1–HG3, HG13); dev-lead still refused review.md, `src/`, `prisma/`, `e2e/`, tests headless and interactive (HG4–HG7); interactive unchanged (dev-lead's hook fires only for dev-lead; per-layout rows unchanged); the caller is told apart by `agent_type`, proved on the real input of 2.1.303 (`backlog/work/B1.78/probe.md`). Live proof [unverified]: the rerun of #207 after merge
 - risk tier: high (`.claude/`); label `config-change-approved` (D-19)
 - live proof: rerun of issue #207 (B5.2) after this merges
 
@@ -100,11 +100,21 @@ None: tooling card, no `spec/features-map.md` row.
 
 ## Review
 
-pending
+Plan review: 3 rounds (r1 3 reasons fixed; r2 approved A2; lead changed the approach at the gate to A3, r3 1 finding fixed, accepted unreviewed). Diff review: 3 of 3 passes (`backlog/work/B1.78/review.md`).
+
+| Pass | #   | Finding                                                                                                | Source   | Kind     | Disposition | Justification                                                                                                          |
+| ---- | --- | ------------------------------------------------------------------------------------------------------ | -------- | -------- | ----------- | ---------------------------------------------------------------------------------------------------------------------- |
+| 1    | 1   | `path-guard.sh:21` name check unpinned                                                                 | reviewer | coverage | fix now     | `ce9cb51`: `../agents/reviewer` on review.md → 2; deleted line → 1 FAIL                                                |
+| 1    | 2   | `path-guard.sh:33` a role's own `--role` unpinned                                                      | reviewer | coverage | fix now     | `ce9cb51`: fixture fx-role → 2; deleted line → 1 FAIL                                                                  |
+| 1    | 3   | HG11 fixtures lost the newline before their closing `---` (fx-eval, fx-two refused for a wrong reason) | dev-lead | test bug | fix now     | `ce9cb51`: `fm()` adds it; reviewer r2 traced each fixture to its own check                                            |
+| 2    | 1   | `path-guard.sh:26` one-command check unpinned (fx-two also refused by the tokenizer)                   | reviewer | coverage | fix now     | `efb424b`: fx-two joins into one list only across lines; deleted line → 1 FAIL                                         |
+| 3    | 1   | `path-guard.sh:29` prefix check unpinned                                                               | reviewer | coverage | fix now     | `99baa1b`: fixture fx-np → 2; line replaced by `:` → 1 FAIL. Taken without a fourth pass (lead's choice; review cap 3) |
+
+Riskiest unfalsified: that `agent_type` in a real `claude -p --agent dev-lead` run equals the dispatched role's file name for test-writer, code-writer and reviewer (probe.md shows it for a probe role only). A mismatch blocks the run, never widens a write. The #207 rerun covers the reviewer.
 
 ## Evidence
 
-- AC met: pending
+- AC met: 4/4 (tooling Acceptance clauses; live proof pending the #207 rerun)
 - tier: high
 - plan deviations: none
 - trace: n/a
