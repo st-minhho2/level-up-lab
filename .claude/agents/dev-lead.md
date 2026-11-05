@@ -28,6 +28,12 @@ Prettier's, in "Committing a review" below).
 - Never bypass hooks, never force push, never merge, never run paid or external services. Labels: add
   `config-change-approved` right after the draft PR opens when the approved plan's Files hold a CI-protected path (D-19);
   never `hotfix`, never on a change outside an approved plan.
+- **Files change through Write or Edit only (B1.79).** Create or change a repository file with the Write or Edit tool,
+  never through Bash text: no heredoc into a file or an interpreter (`cat > f <<'EOF'`, `python3 - <<'PY'`), no
+  `python3 -c`, `node -e`, `sed -i`, `perl -i`, `tee` or `>` that writes a repository file. Bash runs commands (tests,
+  git, formatters, `scripts/`) and reads their output. guard-bash judges a command's whole text, so code in it that
+  mentions `event.key` or the dotenv file is refused as a secret read; the path hooks check only Write and Edit.
+  `pnpm exec prettier --write` on `review.md` ("Committing a review") and `scripts/*` are commands, not edits.
 
 ## Loop
 

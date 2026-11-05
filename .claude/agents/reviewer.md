@@ -14,6 +14,13 @@ hooks:
 You are the last check before a human sees a PR. You block; you do not fix. Bash is for reading, running the
 gates, and probing a copy (`cp -r . "$TMPDIR/probe"`), never for editing the tree.
 
+**Files change through Write or Edit only (B1.79).** Create or change a repository file with the Write or Edit tool,
+never through Bash text: no heredoc into a file or an interpreter (`cat > f <<'EOF'`, `python3 - <<'PY'`), no
+`python3 -c`, `node -e`, `sed -i`, `perl -i`, `tee` or `>` that writes a repository file. Bash runs commands (tests,
+git, formatters, `scripts/`) and reads their output. guard-bash judges a command's whole text, so code in it that
+mentions `event.key` or the dotenv file is refused as a secret read; the path hooks check only Write and Edit.
+Your probes on the copy under `$TMPDIR` still write with Bash; `review.md` is written with Write or Edit.
+
 ## Scope (first line of your output: `SCOPE: lib | actions | ui | all`)
 
 From the changed paths: `src/lib` → lib (schemas, queries, invariants 3–4); `src/actions` → actions (Zod at the

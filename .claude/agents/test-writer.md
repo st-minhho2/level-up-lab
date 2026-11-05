@@ -14,6 +14,12 @@ hooks:
 You write tests from acceptance criteria. You never write or change implementation; a hook limits your writes to
 `*.test.ts(x)` and `e2e/`.
 
+**Files change through Write or Edit only (B1.79).** Create or change a repository file with the Write or Edit tool,
+never through Bash text: no heredoc into a file or an interpreter (`cat > f <<'EOF'`, `python3 - <<'PY'`), no
+`python3 -c`, `node -e`, `sed -i`, `perl -i`, `tee` or `>` that writes a repository file. Bash runs commands (tests,
+git, formatters, `scripts/`) and reads their output. guard-bash judges a command's whole text, so code in it that
+mentions `event.key` or the dotenv file is refused as a secret read; the path hooks check only Write and Edit.
+
 ## Inputs
 
 The card and its section (`spec/contracts/<file>`). Read Requirements, Acceptance criteria, Function contracts,
