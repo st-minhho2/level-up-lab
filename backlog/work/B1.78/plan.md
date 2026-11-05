@@ -79,4 +79,4 @@ test` green; `check-plan-scope.sh`, `check-backlog.sh` OK.
 
 Not in scope: `run.sh`/ALLOW, reviewer/test-writer/code-writer frontmatter, the stale `plan-scope.sh:8` comment.
 
-Plan review: changes requested, round 3 (1 finding: HG11 could not tell a read failure from dev-lead's list → fixed above, unreviewed; over the 2-round cap) · Plan approved by: · Rounds: 2
+Plan review: changes requested, round 3 (1 finding: HG11 could not tell a read failure from dev-lead's list → fixed above, unreviewed; over the 2-round cap) · Plan approved by: lead, 2026-11-05 (HG11 fix from review round 3 accepted unreviewed) · Rounds: 2
