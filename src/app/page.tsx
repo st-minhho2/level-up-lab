@@ -1,8 +1,9 @@
 // §7 home page; §12 the list filtered by the `filter` query parameter; §13 the remaining count; §14 mark all complete;
-// §16 the list searched by title through the `q` query parameter.
+// §16 the list searched by title through the `q` query parameter; §23 the overdue count.
 import type { ReactNode } from 'react';
 import { ClearCompletedButton } from '@/components/clear-completed-button';
 import { CompleteAllButton } from '@/components/complete-all-button';
+import { OverdueCount } from '@/components/overdue-count';
 import { RemainingCount } from '@/components/remaining-count';
 import { TodoFilterNav } from '@/components/todo-filter-nav';
 import { TodoForm } from '@/components/todo-form';
@@ -41,6 +42,8 @@ export default async function HomePage({
       <TodoFilterNav selected={filter} />
       {/* §13 REQ-13.5: counted from the stored todos, not the filtered ones; outside the list in both states. */}
       <RemainingCount count={countRemaining(todos)} />
+      {/* §23 REQ-23.3: counted from the stored todos, not the filtered ones; outside the list in both states. */}
+      <OverdueCount todos={todos.map(({ completed, dueDate }) => ({ completed, dueDate }))} />
       {shown.length === 0 ? (
         <p className="text-zinc-600 dark:text-zinc-400">{searchEmptyMessage(filter, todos.length, query)}</p>
       ) : (
