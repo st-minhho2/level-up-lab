@@ -29,7 +29,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §22 | [contracts/20-all-done.md](contracts/20-all-done.md)                   | Todos: say "all done"                                                  | ✅     |
 | §23 | [contracts/21-overdue-count.md](contracts/21-overdue-count.md)         | Todos: show how many open todos are overdue                            | ✅     |
 | §24 | [contracts/22-escape-edit-title.md](contracts/22-escape-edit-title.md) | Todos: Escape cancels a title edit                                     | ✅     |
-| §25 | [contracts/23-search-shortcut.md](contracts/23-search-shortcut.md)     | Todos: the slash key focuses the search box                            | ✗      |
+| §25 | [contracts/23-search-shortcut.md](contracts/23-search-shortcut.md)     | Todos: the slash key focuses the search box                            | ✅     |
 
 Reading order: §1 → §2 → the section your backlog card names → [features-map.md](features-map.md).
 
