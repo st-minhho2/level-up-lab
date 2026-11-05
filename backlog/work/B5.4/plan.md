@@ -5,18 +5,19 @@ Approach: A from `advice.md` — a pure `src/lib/page-title.ts` plus `generateMe
 so it is right with JavaScript off and after a reload, and `revalidatePath('/')` refreshes it (REQ-26.4, proven by
 AC-26.5/26.6). Two `listTodos()` reads per request, as §26 states (no `cache()`, `src/lib/todos.ts` untouched). The e2e
 file follows the section number: `e2e/26-page-title.spec.ts` (advice Q2). No migration, dependency, env key or
-CI-protected path (no `config-change-approved`).
+CI-protected path (no `config-change-approved`). Deviation from advice: the skeleton is its own `chore` commit
+(dev-lead Loop 6), not part of `test(...)`.
 
 ## Files
 
-| File                         | Change                                                                     | Why (AC-26.n) |
-| ---------------------------- | -------------------------------------------------------------------------- | ------------- |
-| `src/lib/page-title.ts`      | Add `pageTitle` (skeleton throws `NotImplementedError`, then green)        | 26.1          |
-| `src/app/page.tsx`           | Add `generateMetadata` (skeleton throws `NotImplementedError`); header §26 | 26.2–26.7     |
-| `src/lib/page-title.test.ts` | Add (red): AC-26.1                                                         | 26.1          |
-| `src/app/page.test.ts`       | Add (red): AC-26.2, AC-26.3; mocks `@/lib/todos` only                      | 26.2, 26.3    |
-| `e2e/26-page-title.spec.ts`  | Add (red): AC-26.4–AC-26.7 with `expect(page).toHaveTitle`                 | 26.4–26.7     |
-| `spec/features-map.md`       | Add the F24 row (§26): skeleton ✗, ✅ in `docs(map)`                       | map           |
+| File                         | Change                                                                                                                                                                  | Why (AC-26.n) |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `src/lib/page-title.ts`      | Add `pageTitle` (skeleton throws `NotImplementedError`, then green)                                                                                                     | 26.1          |
+| `src/app/page.tsx`           | Add `generateMetadata` (skeleton returns `{}`, so `/` still renders); header §26                                                                                        | 26.2–26.7     |
+| `src/lib/page-title.test.ts` | Add (red): AC-26.1                                                                                                                                                      | 26.1          |
+| `src/app/page.test.ts`       | Add (red): AC-26.2, AC-26.3; mocks `@/lib/todos` and `@/lib/prisma` with a factory (`{ prisma: {} }`: `server-only` via the client components' actions, review round 1) | 26.2, 26.3    |
+| `e2e/26-page-title.spec.ts`  | Add (red): AC-26.4–AC-26.7 with `expect(page).toHaveTitle`                                                                                                              | 26.4–26.7     |
+| `spec/features-map.md`       | Add the F24 row (§26): skeleton ✗, ✅ in `docs(map)`                                                                                                                    | map           |
 
 Paperwork (exempt): §26 index row stays ✗ until the closing PR; `docs/metrics.md` per-card row.
 
@@ -32,9 +33,10 @@ export async function generateMetadata(): Promise<Metadata>; // { title: pageTit
 
 ## Verification
 
-Red (`test(todos): B5.4 … (red)`): `scripts/verify-red.sh B5.4` exit 0; AC-26.1–26.3 fail on the skeleton's
-`NotImplementedError`; `pnpm test:e2e e2e/26-page-title.spec.ts` → AC-26.4–26.7 failed (title `level-up-lab` or the
-page erroring), recorded in the body. Green: `pnpm lint && pnpm typecheck` clean · `pnpm test` 218 → 221 passed
+Red (`test(todos): B5.4 … (red)`): `scripts/verify-red.sh B5.4` exit 0; AC-26.1 fails on the skeleton's
+`NotImplementedError`, AC-26.2/26.3 on assertions (`title` undefined from the `{}` skeleton);
+`pnpm test:e2e e2e/26-page-title.spec.ts` → AC-26.4–26.7 failed on the title (`level-up-lab`, the layout's), the
+other 46 e2e stay green between the commits, recorded in the body. Green: `pnpm lint && pnpm typecheck` clean · `pnpm test` 218 → 221 passed
 (3 new AC-26.n) · `pnpm test:e2e` 46 → 50 passed, `e2e/13-remaining-count.spec.ts` and `e2e/smoke.spec.ts` unchanged
 and green · `pnpm test:mutation` ≥ 70 with `src/lib/page-title.ts` in scope (`page.tsx` is outside Stryker; AC-26.2–
 26.7 cover it) · `pnpm build` ok · `scripts/ci/check-plan-scope.sh` OK. Counts are the test-writer's target; a
