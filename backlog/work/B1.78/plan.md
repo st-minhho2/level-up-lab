@@ -15,16 +15,16 @@ lead's frontmatter hook fired for the subagent's write next to the subagent's ow
 
 ## Files
 
-| File                             | Change                                                                                                                         | Why                       |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------- |
-| `.claude/hooks/path-guard.sh`    | optional `--role <owner>`; another caller's list read from its frontmatter, read failure blocks; B1.78                         | Acceptance 1, 2           |
-| `.claude/agents/dev-lead.md`     | frontmatter hook command gains `''--role'' ''dev-lead''` first; body unchanged                                                 | Acceptance 1, 2           |
-| `.claude/agents/advisor.md`      | frontmatter: `''!backlog/work/*/review.md''` added (lead, gate round 2)                                                        | lead's change             |
-| `.claude/agents/spec-analyst.md` | frontmatter: `''!backlog/work/*/review.md''` added (lead, gate round 2)                                                        | lead's change             |
-| `scripts/hook-smoke.sh`          | section "path-guard.sh --role (B1.78)" HG1–HG13; `role_patterns`/`role_probes` rows                                            | Acceptance 3 (both modes) |
-| `.claude/docs/hooks.md`          | `path-guard.sh` row and "Role write scopes": `--role`, the role's own list, read failure blocks; advisor and spec-analyst rows | doc drift                 |
-| `scripts/CLAUDE.md`              | the `hook-smoke.sh` row names HG1–HG13                                                                                         | doc drift                 |
-| `backlog/work/B1.78/*`           | probe, advice, plan, review, pr-body                                                                                           | pipeline                  |
+| File                             | Change                                                                                                                                                                                                     | Why                       |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| `.claude/hooks/path-guard.sh`    | optional `--role <owner>`; another caller's list read from its frontmatter, read failure blocks; B1.78                                                                                                     | Acceptance 1, 2           |
+| `.claude/agents/dev-lead.md`     | frontmatter hook command gains `''--role'' ''dev-lead''` first; body unchanged                                                                                                                             | Acceptance 1, 2           |
+| `.claude/agents/advisor.md`      | frontmatter: `''!backlog/work/*/review.md''` added (lead, gate round 2)                                                                                                                                    | lead's change             |
+| `.claude/agents/spec-analyst.md` | frontmatter: `''!backlog/work/*/review.md''` added (lead, gate round 2)                                                                                                                                    | lead's change             |
+| `scripts/hook-smoke.sh`          | section "path-guard.sh --role (B1.78)" HG1–HG13; `role_patterns`/`role_probes` rows                                                                                                                        | Acceptance 3 (both modes) |
+| `.claude/docs/hooks.md`          | `path-guard.sh` row and "Role write scopes": `--role`, the role's own list, read failure blocks; only the `''`-quoted form parses (a reformat blocks every dispatched role); advisor and spec-analyst rows | doc drift                 |
+| `scripts/CLAUDE.md`              | the `hook-smoke.sh` row names HG1–HG13                                                                                                                                                                     | doc drift                 |
+| `backlog/work/B1.78/*`           | probe, advice, plan, review, pr-body                                                                                                                                                                       | pipeline                  |
 
 ## Interfaces touched
 
@@ -49,20 +49,21 @@ HG1 reviewer: review.md 0, plan.md 2 (2) · HG2 test-writer: `src/lib/todos.test
 src, `prisma/schema.prisma`, e2e, test → 2 (5) · HG5 same, plan.md 0 (1) · HG6 dev-lead with `agent_id`: review.md 2,
 src 2, plan.md 0 (3) · HG7 no `agent_type`: review.md 2, src 2, plan.md 0 (3) · HG8 general-purpose, Explore, claude
 on plan.md → 2 (3) · HG9 advisor review.md 2, spec-analyst review.md 2 (2) · HG10 `../hooks/lib`, `Reviewer`,
-`ns:reviewer` on plan.md → 2 (3) · HG11 fixture project, reviewer on its review.md: file missing; path-guard only in
-the body; an unquoted or `$(…)` token; two path-guard lines → 2 (4) · HG12 `--role` alone; `--role dev-lead` with no
+`ns:reviewer` on plan.md → 2 (3) · HG11 fixture project, a role whose own glob is `''backlog/*''`, writing
+`backlog/work/B9.1/plan.md` (dev-lead's list allows it, so only the read failure blocks): file missing; path-guard only
+in the body; an unquoted `$(touch <marker>)` token, and the marker is not created (no eval); two path-guard lines → 2 (5) · HG12 `--role` alone; `--role dev-lead` with no
 glob → 2 (2) · HG13 the real dev-lead frontmatter command: reviewer review.md 0, reviewer plan.md 2, dev-lead
-review.md 2, none src 2 (4). = 37 calls.
+review.md 2, none src 2 (4). = 38 calls.
 Existing rows: `role_patterns` dev-lead, advisor, spec-analyst updated (0 new calls); `role_probes` advisor and
 spec-analyst gain `2 backlog/work/B1.2/review.md` (+2 frontmatter rows, +16 in the 4 layouts × 2 modes loop).
 
 ## Verification
 
-- Red `test(scripts): B1.78 path-guard role probes` (hook-smoke only, body "Red because …"): 18 FAIL lines — HG1 ×2,
-  HG2 ×2, HG3 ×1, HG8 ×3, HG10 ×3, HG13 reviewer ×2, `role_patterns` ×3, `role_probes` advisor/spec-analyst
+- Red `test(scripts): B1.78 path-guard role probes` (hook-smoke only, body "Red because …"): 22 FAIL lines — HG1 ×2,
+  HG2 ×2, HG3 ×1, HG8 ×3, HG10 ×3, HG11 ×4 (the marker row passes), HG13 reviewer ×2, `role_patterns` ×3, `role_probes` advisor/spec-analyst
   review.md ×2 in the frontmatter section; every other probe ok.
 - Green `chore(hooks): B1.78 dev-lead's guard applies the dispatched role's own list` (no probe file): "hook-smoke:
-  577 probes OK" (522 + 37 + 18); `check-agent-frontmatter.sh`, `run-smoke.sh`, `pnpm lint && pnpm typecheck && pnpm
+  578 probes OK" (522 + 38 + 18); `check-agent-frontmatter.sh`, `run-smoke.sh`, `pnpm lint && pnpm typecheck && pnpm
 test` green; `check-plan-scope.sh`, `check-backlog.sh` OK.
 - Live (after merge, Part 2): rerun of #207 passes the reviewer's `review.md` write with 0 permission denials (run 1
   had 4) [unverified until then]; `run.sh --check-binary` still blocks dev-lead's own `spec/` write.
@@ -78,4 +79,4 @@ test` green; `check-plan-scope.sh`, `check-backlog.sh` OK.
 
 Not in scope: `run.sh`/ALLOW, reviewer/test-writer/code-writer frontmatter, the stale `plan-scope.sh:8` comment.
 
-Plan review: pending, round 3 (rounds 1–2 approved A2; the lead's change replaces the deferral) · Plan approved by: · Rounds: 2
+Plan review: changes requested, round 3 (1 finding: HG11 could not tell a read failure from dev-lead's list → fixed above, unreviewed; over the 2-round cap) · Plan approved by: · Rounds: 2
