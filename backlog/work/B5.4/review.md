@@ -76,3 +76,80 @@ Notes for the build, not reasons to block:
 - Round 1's first cost goes away with this revision: with the `{}` skeleton `/` keeps rendering, so the 46 existing e2e
   stay green between commits. The other two costs remain: two `findMany` per `/` request, and REQ-26.4 is unproven
   until AC-26.5 runs (red after green → stop for a D-n).
+
+## Diff review (round 1)
+
+SCOPE: all (`src/lib`, `src/app`, `e2e`)
+
+Reviewed `8007d5f` (`origin/main...HEAD`: 16 files, 697 insertions, 2 deletions; code and tests in 6 files).
+
+### Command results (last line of each)
+
+| Command                             | Last line                                                                                          |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!` (exit 0)                                              |
+| `pnpm typecheck`                    | `tsc --noEmit` (exit 0, no error)                                                                  |
+| `pnpm test`                         | `Tests  222 passed (222)` (38 files)                                                               |
+| `pnpm test:e2e`                     | `50 passed (1.2m)`                                                                                 |
+| `pnpm test:mutation`                | `Final mutation score of 92.31 is greater than or equal to break threshold 70` (page-title.ts 100) |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                          |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                  |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                 |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test` (§26 still ✗ in the index, by plan)          |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 26`                                                                       |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                               |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B5.4-agent stays inside the approved plan of B5.4 (D-27 approval)`                       |
+| `scripts/verify-red.sh B5.4`        | `RESULT: red for the right reason` (4 unit tests new and failing; e2e skipped by the script)       |
+
+Unit count 222, not the plan's 221: the red commit body states it (AC-26.3 (a) and (b) as two tests), as the plan allows.
+
+### Checklist
+
+| Check                                                    | Result                                                                                                                                                                                                                                               |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-§.n has a test whose assertion matches its Then | pass: 26.1 `toEqual` of the five exact strings; 26.2 `"(3) Todos"`; 26.3 (a)/(b) `"Todos"`; 26.4 title on both URLs + `toHaveCount(1)` of "2 items left"; 26.5 four titles, 0 navigations, same URL; 26.6 three titles; 26.7 two titles + health 200 |
+| no test weakened after the red commit                    | pass: `git log --first-parent --no-merges 019ecc7..HEAD -- '*.test.*' e2e/` empty; the `--merges --remerge-diff` query empty (no merges)                                                                                                             |
+| every changed file is in `plan.md`                       | pass: the 6 Files rows; `docs/metrics.md` and backlog/spec paperwork as the plan states; `check-plan-scope.sh` OK                                                                                                                                    |
+| interfaces match §26 Function contracts                  | pass: `pageTitle(remaining: number): string`, `generateMetadata(): Promise<Metadata>` returning `{ title }` only, no `searchParams` argument; `layout.tsx`, `todos.ts`, `todo-count.ts` untouched                                                    |
+| Zod at every action boundary                             | n/a: no action added or changed                                                                                                                                                                                                                      |
+| Prisma only in `src/lib`, no raw SQL                     | pass: no Prisma in the diff outside `e2e/` seeding (allowed, as in every e2e file)                                                                                                                                                                   |
+| migration reversible and indexed                         | n/a: no migration                                                                                                                                                                                                                                    |
+| no secret, no suppression                                | pass: `check-suppressions.sh` OK; no key or env value in the diff                                                                                                                                                                                    |
+| features map row moved                                   | pass: F24 (§26) added ✗ in the skeleton, moved to ✅ in `8007d5f docs(map): F24 … [B5.4]`, a map-only commit                                                                                                                                         |
+| would a test fail if one changed line were reverted      | pass: see probes                                                                                                                                                                                                                                     |
+
+### Probes (copy at `/tmp/probe-b54-455917`, worktree untouched)
+
+1. AC-26.5's navigation counter catches a reload: added `await page.reload()` before `expect(navigations()).toBe(0)`
+   → `Expected: 0 Received: 1`, 1 failed. The "no navigation" half of the Then is measured, not assumed.
+2. AC-26.5 proves the title refreshes from the server after a Server Action: memoised `generateMetadata` (first result
+   returned forever) → `toHaveTitle` `Expected: "(1) Todos" Received: "Todos"` at line 77, 1 failed. With probe 1, a
+   pass means the title changed through the action's re-render with zero document navigations, which is REQ-26.4.
+3. Reverting `generateMetadata` to the skeleton `{}` and `pageTitle` to the throw: the red commit is that state, and
+   `verify-red.sh` shows all 4 unit tests failing on behavior; the red body records the 4 e2e failing on `level-up-lab`.
+   Mutation: `page-title.ts` 6 of 6 mutants killed.
+4. Traced: a `generateMetadata` that counted the filtered or searched list would give `Todos` on `/?filter=completed`
+   (0 open among completed) and on `/?q=zzz` (0 matches), so AC-26.4 fails on both; it asserts `"(2) Todos"`.
+
+### Questions from the launcher
+
+- Map commit made by code-writer, not dev-lead (plan step 4): the diff is what step 4 names (one row, ✗ → ✅, its own
+  `docs(map)` commit with the `[B5.4]` suffix) and the file is in the plan. A role-ownership deviation, not a diff
+  deviation; no finding. Record it in the PR body so the lead sees it, and the path-hook mismatch (dev-lead cannot
+  write `spec/features-map.md` while the plan assigns it the step) belongs in a `.claude/` card, not this PR.
+- AC-26.5: yes, see probes 1 and 2.
+
+### Findings
+
+No blocking finding.
+
+Notes, not reasons to block:
+
+- `docs/metrics.md` B5.4 row: Green column reads `feat(todos) B5.4` where every other row has a SHA. It was written
+  inside the feat commit, so it cannot name itself; fill `cef2905` in the closing lane.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: Next 15.5.28 streams metadata for dynamic pages, so with JavaScript off (or for a client that
+reads the title before the stream ends) the `<title>` may arrive after the shell; no AC asserts the title without
+JavaScript, and none was probed here.
