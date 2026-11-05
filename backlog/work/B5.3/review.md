@@ -1,0 +1,144 @@
+# B5.3 review
+
+## Plan review (round 1)
+
+Plan: `backlog/work/B5.3/plan.md` at 882324f. Spec: `spec/contracts/23-search-shortcut.md` (§25), at 8967961.
+
+| Check                                                                             | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | fail: `spec/contracts/14-search.md` and `spec/contracts/19-clear-search.md` belong to §16 (F14) and §21, not §25 (F23). Each is a lead-approved section (boxes ticked 2026-10-31, 2026-11-01). D-30 allows one `docs(spec)` change on this card, lifting shortcuts from §16's Out of scope, and that landed in ce92ec7. It does not cover §21 at all (reason 2). Every other file is §25's: `search-shortcut.ts`, its test, `todo-search-form.tsx`, its test, `e2e/25-search-shortcut.spec.ts`, and the F23 row |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass: the interface block copies §25's function contracts exactly. Explicit return types, `readonly` fields, no `any`, no action, no Prisma. The client boundary imports only pure modules (`clear-search`, `todo-filter`, `todo-search` → `todo-schema` → `zod`; no `server-only`, checked by grep)                                                                                                                                                                                                            |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass in form (approach A). But the plan carries the advice's claim that analysis Q3 is "settled by the written spec", and that is false (reason 1)                                                                                                                                                                                                                                                                                                                                                              |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: 6 criteria. Each Then is an exact `activeElement`, `defaultPrevented`, value, address, row or count. No banned adjectives                                                                                                                                                                                                                                                                                                                                                                                 |
+| verification lists exact commands with expected numbers                           | pass: `pnpm test` 213 → 218 (I re-ran it today: 213 passed, 35 files). `pnpm test:e2e` 45 → 46 (grep finds 45 `test(` across `e2e/*.spec.ts`). Mutation ≥ 70. `verify-red.sh B5.3` exit 0. `pnpm build`                                                                                                                                                                                                                                                                                                         |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: `chore(todos)` skeleton → `test(todos) … (red)` → `feat(todos)` → `docs(map): F23 … [B5.3]` → review. Step 0 `docs(spec)` precedes these, as the commit order allows, but only within a D-n (reason 2)                                                                                                                                                                                                                                                                                                    |
+| the section has a `Lead approves spec` box, ticked only by a human                | pass: §25 line 5 `- [ ] Lead approves spec`, unticked; I left it unticked                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| no settled D-n contradicted                                                       | fail: D-30 grants one `docs(spec)` on this card ("B5.3 lifts keyboard shortcuts from §16's Out of scope, each in its own `docs(spec)` commit"), and ce92ec7 already used it. Step 0 rewrites §16 again and also §21, which D-30 does not name. Under D-27/D-28 a medium-tier plan proceeds on this approval alone, so the lead would never see the change (reason 2)                                                                                                                                            |
+| `scripts/next-task.sh --check B5.3` on the committed plan                         | pass: `[next-task] B5.3: no overlap with any Doing or Review card` (exit 0)                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+
+Verdict: changes requested
+
+1. **§25 contradicts itself on checkboxes, and the plan picks a side without reporting it.** Line 24 says: "A button, a link
+   or a checkbox with focus is not one, so `/` moves focus to the box from them." Two parts of §25 say the opposite.
+   REQ-25.3 exempts any `input`. The function contract (`tagName INPUT … → false`; `ShortcutEvent.target` has no
+   `type`) can only return `false` for a checkbox. The plan adopts analysis Q3 as proposed ("`input` (every type, a
+   checkbox included)"). The advice calls this "settled by the written spec", but it is a spec ≠ spec conflict, which
+   `spec-fidelity.md` says to report before choosing a side.
+   - **Cost the lead must see:** the row checkbox is `<input type="checkbox">` (`src/components/todo-item.tsx:63`). After
+     someone ticks a row with the keyboard, `/` does nothing. That drops the Intent's own case ("a person who is reading
+     or **ticking** the list reaches the search box with one key").
+   - **No test catches it:** no criterion covers a checkbox target. AC-25.1 lists BODY, BUTTON and A as `true` and INPUT
+     as `false`. AC-25.3 tests only a button and a link.
+   - **Fix:** route this through `/advise` and the lead. Either (a) a `docs(spec)` fix under a D-n drops "or a checkbox"
+     from line 24, and the plan states the dropped behavior as a cost; or (b) a D-n adds `type` to `ShortcutEvent`,
+     exempts only text-like input types, and adds a checkbox case to AC-25.1 and AC-25.3. Re-plan after either.
+2. **Step 0 changes two lead-approved sections without a D-n that covers them.** D-30's `docs(spec)` permission for B5.3
+   was used by ce92ec7 (§16 Out of scope). Rewriting §16's function-contract note again, and §21's (not named in D-30),
+   is a further spec change, and `spec/CLAUDE.md` requires an approved D-n for one. This plan is medium tier (D-28), so
+   my approval would let step 0 land without the lead ever seeing it. Not editing is also a cost: if step 0 is dropped,
+   §16 (`14-search.md:55`, "no 'use client'") and §21 (`19-clear-search.md:50`, "still no 'use client'") contradict
+   §25's "gains 'use client'" once the feat lands. Fix: get a lead ruling that extends D-30 to cover the §16 and §21
+   note edits, or have the lead approve step 0 explicitly. Then cite that D-n in step 0's commit subject.
+   `src/components/CLAUDE.md:11` ("stays a Server Component … no `'use client'`") goes stale too. The plan names it as
+   a follow-up, which is correct under D-30, but that follow-up has no card id yet. File it with an id so it is not
+   lost.
+
+## Plan review (round 2)
+
+Plan: `backlog/work/B5.3/plan.md` at 33dacdb. Spec: `spec/contracts/23-search-shortcut.md` (§25) at faf26f0, under
+D-31 ("2A"). Round 1's two reasons are re-checked below.
+
+| Check                                                                             | Result                                                                                                                                                                                                                                                                                                                                                                                 |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: the Files table has 6 rows, all §25's (F23 is a new row): `search-shortcut.ts` and its test, `todo-search-form.tsx` and its test, `e2e/25-search-shortcut.spec.ts`, `features-map.md`. Step 0 is gone. The §16 and §21 note edits already landed in faf26f0 (2 lines, one in each file, limited to the "'use client'" remark), which D-31 (A) covers. Round 1 reason 2 is closed |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass: the interface block matches §25's Function contracts exactly, including the new optional `readonly type?: string`. It has `readonly` fields, explicit return types and no `any`. There is no action, Zod, Prisma, route or env change, and `page.tsx` is untouched                                                                                                               |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: approach A. Q3 is no longer described as "settled by the written spec": the plan cites D-31 and says the non-text type list is the analyst's reading, which the lead may amend. Round 1 reason 1 is closed: §25 now agrees with itself (prose line 24, REQ-25.3 and the contract all treat a checkbox and a radio as non-text-entry)                                             |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: 6 criteria. AC-25.1 now has `INPUT` checkbox and `RADIO` (uppercase, which tests the case-insensitive match) → `true`, and no-type, `text` and `date` → `false`. AC-25.3 adds a focused checkbox                                                                                                                                                                                 |
+| verification lists exact commands with expected numbers                           | pass: `pnpm test` 213 → 218 (I re-ran it today: `Tests 213 passed (213)`). `pnpm test:e2e` 45 → 46 (grep finds 45 `test(` across `e2e/*.spec.ts`). Mutation ≥ 70. `verify-red.sh B5.3` exit 0. `pnpm build`. `check-plan-scope.sh` (today: `OK: feat/B5.3-agent changes only paperwork`)                                                                                               |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: `chore(todos)` skeleton → `test(todos) … (red)` → `feat(todos)` → `docs(map): F23 … [B5.3]` → `docs(backlog)` review                                                                                                                                                                                                                                                             |
+| the section has a `Lead approves spec` box, ticked only by a human                | pass: §25 line 5 `- [ ] Lead approves spec`, unticked; I left it unticked                                                                                                                                                                                                                                                                                                              |
+| no settled D-n contradicted                                                       | pass: D-30 (one component, no `page.tsx`, package guides out of card plans) and D-31 (2: text-like inputs only; A: the §16 and §21 notes) are both followed. `src/components/CLAUDE.md` is kept out of the Files table, as D-31 says                                                                                                                                                   |
+| `scripts/next-task.sh --check B5.3` on the committed plan                         | pass: `[next-task] B5.3: no overlap with any Doing or Review card` (exit 0)                                                                                                                                                                                                                                                                                                            |
+
+Verdict: approved (ready for the lead's gate, not approved for build)
+
+Costs the lead approves along with this plan (none of them blocks it):
+
+1. `TodoSearchForm` becomes a Client Component. Its markup and the no-JS GET submit stay the same, but `/` does nothing
+   before hydration. AC-25.6's Given says "client hydrated", so the e2e must wait for hydration before the first key.
+   If it does not, the test can fail at random. I will check this in the diff review.
+2. The non-text `type` list (checkbox, radio, button, submit, reset, image, file, range, color) is the spec-analyst's
+   reading of D-31, which gives no list. Typed fields such as `date` and `number` stay text-entry. If the lead wants a
+   different list, it has to change in §25 before the red commit.
+3. The follow-up card is not filed yet. D-31 ("file card guide") says the stale line at `src/components/CLAUDE.md:11`
+   ("stays a Server Component … no `'use client'`") becomes its own card. No card on this branch or on `origin/main`
+   names it, and the plan says "its own card" without an id. Once the feat lands, that guide contradicts the code until
+   the card runs. Filing it is a separate lane and does not block this plan.
+
+## Diff review (pass 1)
+
+Base `origin/main` 3aff4b2 (the local `main` ref, 50d38ec, is stale and lists B5.1 files that are already merged).
+Card commits: skeleton 81637e7, red 499c07e, green ff1802b. Scope: lib + ui.
+
+### Command results (run by the reviewer, 2026-11-05)
+
+| Command                              | Last line                                                                                                                                         |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                          | `✖ 1 problem (0 errors, 1 warning)` (the warning was already there: `todo-form.tsx:23`)                                                           |
+| `pnpm typecheck`                     | `tsc --noEmit`, no output                                                                                                                         |
+| `pnpm test`                          | `Tests 218 passed (218)`                                                                                                                          |
+| `pnpm test:e2e`                      | `46 passed (2.5m)` (local run, `pnpm dev` server)                                                                                                 |
+| `pnpm test:mutation`                 | `Final mutation score of 92.18 is greater than or equal to break threshold 70`; `search-shortcut.ts` 82.98 (39 killed, 7 survived, 1 no coverage) |
+| `pnpm build`                         | ok (route table printed)                                                                                                                          |
+| `check-suppressions.sh`              | `OK: no new suppressions`                                                                                                                         |
+| `check-config-change.sh`             | `OK: no protected config changed`                                                                                                                 |
+| `check-feat-commits.sh`              | `OK: no feat commit touches tests`                                                                                                                |
+| `check-ac-coverage.sh`               | `OK: every criterion of a shipped section has a test`                                                                                             |
+| `check-spec-sections.sh`             | `OK: sections cited: 1 … 25`                                                                                                                      |
+| `check-features-map.sh`              | `OK`                                                                                                                                              |
+| `check-plan-scope.sh`                | `OK: feat/B5.3-agent stays inside the approved plan of B5.3 (D-27 approval)`                                                                      |
+| `verify-red.sh B5.3`                 | `RESULT: red for the right reason` (exit 0)                                                                                                       |
+| `git diff --stat origin/main...HEAD` | `17 files changed, 929 insertions(+), 32 deletions(-)`                                                                                            |
+
+### Checklist
+
+| Check                                                                               | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-25.n has a test whose assertion matches its Then                           | pass: AC-25.1 has 19 cases matching the Then one for one, and a not-throw loop. AC-25.2 checks activeElement, value `milk`, `defaultPrevented`, 0 `fetch`, 0 `submit` and an unchanged href. AC-25.3 covers button, link and checkbox. AC-25.4 covers New todo, 3 modifiers and the box itself, with a positive control. AC-25.5 covers unmount and remount with a `focus` spy called exactly 1 time. AC-25.6 (e2e) asserts every clause, including 0 POSTs from load to the last key |
+| no test weakened after the red commit                                               | pass: `git log --first-parent --no-merges 499c07e..HEAD -- '*.test.*' e2e/` is empty, and there are no merges after the red commit. The 4 existing §16/§21 tests only had a header comment changed                                                                                                                                                                                                                                                                                    |
+| every changed file is in `plan.md`                                                  | pass: all 6 rows of the Files table, nothing else under `src/`/`e2e/`. `page.tsx` is untouched (D-30)                                                                                                                                                                                                                                                                                                                                                                                 |
+| interfaces match §25's Function contracts                                           | pass: `SEARCH_SHORTCUT_KEY`, `ShortcutEvent` and `isSearchShortcut` match character for character. `TodoSearchForm` keeps its signature and markup, has one `document` keydown listener and removes it in the effect cleanup. The ref is on the keyed input                                                                                                                                                                                                                           |
+| Zod at action boundary · Prisma only in lib · no raw SQL · migration                | n/a: no action, query or migration. `search-shortcut.ts` imports nothing                                                                                                                                                                                                                                                                                                                                                                                                              |
+| no secret, no suppression                                                           | pass (gitleaks not re-run; the diff has no literals except type names)                                                                                                                                                                                                                                                                                                                                                                                                                |
+| features map row moved                                                              | pass: F23 (§25) added as ✗; the `docs(map)` ✅ step is still to come. The other 22 rows only had their column width changed by Prettier (I compared them cell by cell)                                                                                                                                                                                                                                                                                                                |
+| would a test fail if one changed line were reverted? (probe on a copy in `$TMPDIR`) | Removing `preventDefault` → 4 tests fail. Removing `removeEventListener` → AC-25.5 fails. Replacing the `instanceof` target with `null` → AC-25.4 fails. Removing `type.toLowerCase()` → AC-25.1 fails. Removing the `isContentEditable` check → AC-25.1 fails. **Survive:** removing `'button'` from the non-text set (P4) and removing `tagName.toUpperCase()` (P6); Stryker also reports survivors at lines 19–25 and `?? ''` at 33:38                                             |
+
+### Findings
+
+None blocking. The lead's three doubts, each traced:
+
+- (1) `__reactFiber` hydration wait: this can only fail loudly. If React renames the key, `waitForFunction` times out
+  and AC-25.6 goes red; it cannot go green by mistake. The test is brittle when React is upgraded, but no assertion
+  is weakened. Not a finding.
+- (2) Survivors on `button`/`submit`/`reset`/`image`/`file`/`range`/`color`, on `tagName` case-insensitivity (P6),
+  and on the `?? ''` fallback: the tests match AC-25.1's Then exactly. These survivors come from a gap between
+  REQ-25.3 (all 9 types, tagName case-insensitive) and AC-25.1, which samples 2 types and only uppercase tags. I traced
+  the implementation against REQ-25.3 and it is correct for all 9 types, in either case. In a browser, HTML `tagName`
+  is always uppercase and `input.type` is always a lowercase string, so P6 and `?? ''` cannot be reached from the
+  component. This is not a test-writer defect: pinning the other 7 types needs AC-25.1 widened by a
+  `docs(spec)` commit under a D-n, so it is the lead's call. It is listed under Riskiest unfalsified.
+- (3) SVG or document target → `null` → the shortcut fires. This is correct per spec. REQ-25.3's text-entry set is
+  input/textarea/select/`isContentEditable`, and AC-25.1 requires `true` for a `null` target. `SVGElement` has no
+  `isContentEditable`. Inside an editing host, the keydown target is the host (an `HTMLElement` with
+  `isContentEditable` true), never a nested SVG, so no `/` typed into an editor is ever lost. `document` is never a
+  keydown target while `body`/`html` exist. Not a finding.
+
+Not caused by this diff, but still open: `src/components/CLAUDE.md:11` still says `todo-search-form.tsx` "stays a Server
+Component … no `'use client'`", which the feat now contradicts. D-31 requires its own card, and no card for it is filed
+on `origin/main` or this branch (plan-review cost 3).
+
+Verdict: ready for PR
+
+Riskiest unfalsified: REQ-25.3 for the 7 unpinned input types (`button` … `color`). Removing any of them from
+`NON_TEXT_INPUT_TYPES` keeps all 218 unit tests and 46 e2e tests green (probe P4), so a regression there would ship
+silently unless AC-25.1 is widened.
