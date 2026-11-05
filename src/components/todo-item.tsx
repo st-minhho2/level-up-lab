@@ -1,8 +1,8 @@
 'use client';
 
-// §7 TodoItem, with the §6 edit mode, the §19 delete button, the §20 creation date and the §10 message of a failed
-// toggle or save.
-import { useState, useTransition, type FormEvent, type ReactNode } from 'react';
+// §7 TodoItem, with the §6 edit mode, the §24 Escape that cancels it, the §19 delete button, the §20 creation date and
+// the §10 message of a failed toggle or save.
+import { useState, useTransition, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { toggleTodoAction, updateTodoTitleAction } from '@/actions/todos';
 import { DeleteTodoButton } from '@/components/delete-todo-button';
 import { TodoDueDate } from '@/components/todo-due-date';
@@ -29,6 +29,16 @@ export function TodoItem({ todo }: { readonly todo: Todo }): ReactNode {
   function onEdit(): void {
     setDraft(todo.title);
     setEditing(true);
+  }
+
+  // Ignored while pending so an in-flight save ends the edit through its own result (REQ-24.5); other keys keep §6.
+  function onTitleKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
+    if (event.key !== 'Escape' || pending) {
+      return;
+    }
+    setEditing(false);
+    setDraft(todo.title);
+    setError(undefined);
   }
 
   // The action trims and validates; the draft is sent as typed so the field can keep it on a rejection (AC-6.4) or a
@@ -67,6 +77,7 @@ export function TodoItem({ todo }: { readonly todo: Todo }): ReactNode {
             type="text"
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={onTitleKeyDown}
             aria-invalid={error !== undefined}
             aria-describedby={error !== undefined ? errorId : undefined}
             className="flex-1 rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"

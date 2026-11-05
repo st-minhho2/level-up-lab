@@ -206,3 +206,105 @@ describe('<TodoItem> delete button (§19)', () => {
     expect(within(row).getAllByRole('button', { name: 'Delete todo' })).toHaveLength(1);
   });
 });
+
+// §24: an action promise held open by the test, so a save can be in flight while a key is pressed (AC-24.4).
+function deferredSave() {
+  let resolve: (value: { ok: true; data: ReturnType<typeof mistyped> }) => void = () => undefined;
+  const promise = new Promise<{ ok: true; data: ReturnType<typeof mistyped> }>((settle) => {
+    resolve = settle;
+  });
+  return { promise, resolve };
+}
+
+describe('<TodoItem> Escape cancels a title edit (§24)', () => {
+  it('AC-24.1: 0 textbox roles; the row\'s label reads "Buy mik"; 1 button named "Edit title"; updateTodoTitleAction called 0 times', async () => {
+    const user = userEvent.setup();
+    render(<TodoItem todo={mistyped()} />);
+    await user.click(screen.getByRole('button', { name: 'Edit title' }));
+    const field = screen.getByRole('textbox', { name: 'Edit title' });
+    await user.clear(field);
+    await user.type(field, 'Buy milk');
+
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryAllByRole('textbox')).toHaveLength(0);
+    expect(screen.getByRole('listitem')).toHaveTextContent(/^Buy mik$/);
+    expect(screen.queryAllByRole('checkbox', { name: 'Buy mik' })).toHaveLength(1);
+    expect(screen.queryAllByRole('button', { name: 'Edit title' })).toHaveLength(1);
+    expect(actions.updateTodoTitleAction).toHaveBeenCalledTimes(0);
+  });
+
+  it('AC-24.2: the field\'s value is "Buy mik" when editing is activated again after the Escape', async () => {
+    const user = userEvent.setup();
+    render(<TodoItem todo={mistyped()} />);
+    await user.click(screen.getByRole('button', { name: 'Edit title' }));
+    const field = screen.getByRole('textbox', { name: 'Edit title' });
+    await user.clear(field);
+    await user.type(field, 'Buy milk');
+    await user.keyboard('{Escape}');
+
+    await user.click(screen.getByRole('button', { name: 'Edit title' }));
+
+    expect(screen.getByRole('textbox', { name: 'Edit title' })).toHaveValue('Buy mik');
+  });
+
+  it('AC-24.3: 0 alert roles in the row and 0 textbox roles after Escape on a rejected save', async () => {
+    actions.updateTodoTitleAction.mockResolvedValue({ ok: false, fieldErrors: { title: ['Title is required'] } });
+    const user = userEvent.setup();
+    render(<TodoItem todo={mistyped()} />);
+    const row = screen.getByRole('listitem');
+    await user.click(screen.getByRole('button', { name: 'Edit title' }));
+    const field = screen.getByRole('textbox', { name: 'Edit title' });
+    await user.clear(field);
+    await user.type(field, '   ');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(within(row).getByRole('alert').textContent).toBe('Title is required'));
+
+    await user.type(field, '{Escape}');
+
+    expect(within(row).queryAllByRole('alert')).toHaveLength(0);
+    expect(screen.queryAllByRole('textbox')).toHaveLength(0);
+  });
+
+  it('AC-24.4: after the Escape the field is still present and holds "Buy milk"; after the resolution 0 textbox roles; updateTodoTitleAction called exactly once', async () => {
+    const save = deferredSave();
+    actions.updateTodoTitleAction.mockReturnValue(save.promise);
+    const user = userEvent.setup();
+    render(<TodoItem todo={mistyped()} />);
+    await user.click(screen.getByRole('button', { name: 'Edit title' }));
+    const field = screen.getByRole('textbox', { name: 'Edit title' });
+    await user.clear(field);
+    await user.type(field, 'Buy milk');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(actions.updateTodoTitleAction).toHaveBeenCalledTimes(1);
+
+    await user.type(field, '{Escape}');
+
+    expect(screen.getByRole('textbox', { name: 'Edit title' })).toHaveValue('Buy milk');
+
+    save.resolve({ ok: true, data: { ...mistyped(), title: 'Buy milk' } });
+
+    await waitFor(() => expect(screen.queryAllByRole('textbox')).toHaveLength(0));
+    expect(actions.updateTodoTitleAction).toHaveBeenCalledTimes(1);
+  });
+
+  it('AC-24.5: Enter calls updateTodoTitleAction once with ("todo-9", "Buy milk"); ArrowLeft keeps the field present and does not call the action', async () => {
+    actions.updateTodoTitleAction.mockResolvedValue({ ok: true, data: { ...mistyped(), title: 'Buy milk' } });
+    const user = userEvent.setup();
+    render(<TodoItem todo={mistyped()} />);
+    await user.click(screen.getByRole('button', { name: 'Edit title' }));
+    const field = screen.getByRole('textbox', { name: 'Edit title' });
+    await user.clear(field);
+    await user.type(field, 'Buy milk');
+
+    await user.keyboard('{ArrowLeft}');
+
+    expect(screen.getByRole('textbox', { name: 'Edit title' })).toHaveValue('Buy milk');
+    expect(actions.updateTodoTitleAction).toHaveBeenCalledTimes(0);
+
+    await user.keyboard('{Enter}');
+
+    expect(actions.updateTodoTitleAction).toHaveBeenCalledTimes(1);
+    expect(actions.updateTodoTitleAction.mock.calls[0]).toEqual(['todo-9', 'Buy milk']);
+  });
+});

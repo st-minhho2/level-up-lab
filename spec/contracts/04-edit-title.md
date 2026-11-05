@@ -51,7 +51,7 @@ export function updateTodoTitleAction(id: string, title: string): Promise<Action
 
 ## Out of scope
 
-Cancelling an edit (Escape/blur), editing anything but the title, concurrent edits from two tabs, undo.
+Cancelling an edit by blur (Escape: §24), editing anything but the title, concurrent edits from two tabs, undo.
 
 ## Unchanged behavior
 
