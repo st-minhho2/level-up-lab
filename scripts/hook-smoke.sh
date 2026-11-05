@@ -300,8 +300,9 @@ cmdline() { printf "        - type: command\n          command: '%s %s'\n" "$PG"
 fm fx-prose "" "$(cmdline "''backlog/*''")"
 fm fx-eval "$(cmdline "''backlog/*'' \$(touch $FX/marker)")"
 fm fx-role "$(cmdline "''--role'' ''fx-role'' ''backlog/*''")" # a second orchestrator (review pass 1)
-fm fx-two "$(cmdline "''backlog/*''")
-$(cmdline "''backlog/*''")"
+# two path-guard commands that read as one list only across the line break (review pass 2)
+fm fx-two "$(cmdline "''backlog/x")
+$(printf "        - type: command\n          command: 'hooks/path-guard.sh'' ''backlog/*'''")"
 hgx() { # hgx <agent_type>: the fixture's plan.md, dev-lead's list with --role, the fixture as the project
   CLAUDE_PROJECT_DIR="$FX" probe 2 path-guard.sh "$(hl_json "$FX/backlog/work/B9.1/plan.md" "$1" a8)" "${DL[@]}"
 }
