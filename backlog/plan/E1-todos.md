@@ -1006,3 +1006,14 @@ _tooling · no §_
 - **Acceptance:** the four commands from the run (or probes of the same shape) pass guard-bash; every existing secret-read probe in `hook-smoke.sh` keeps its verdict, and a reader whose argument, redirect or `open(…)` names a secret path stays refused in any segment; the rule's message is unchanged; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.79/`
+
+### B1.80 · The components guide says the search form is a client component once §25 lands
+
+_documentation · no §_
+**Status: Open** — `src/components/CLAUDE.md:11` says "`todo-search-form.tsx` (§16) stays a Server Component … no state or events, so no `'use client'`"; §25 (B5.3, D-31) adds a `/` key listener that makes it `'use client'`, and D-30 keeps package guides out of B5.3's plan, so the line goes stale when B5.3 merges
+
+- **Spec:** none — documentation (`src/components/CLAUDE.md`); no `src/` code change, no section
+- **Test:** `git grep -n "todo-search-form.tsx\` (§16) stays a Server Component" src/components/CLAUDE.md` — red because: 1 match today
+- **Acceptance:** the `todo-search-form.tsx` line names §16, §21 and §25 and says it is `'use client'` for §25's `/` listener (events), as merged by B5.3; the Test command has no match; the heading's section list covers §25; `check-spec-sections.sh` stays OK
+- **Tier:** 0 · **Depends on:** B5.3 · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.80/`
