@@ -52,4 +52,4 @@ different count is stated in the red commit. AC-26.5 red after green code → st
 | 4    | dev-lead            | F24 ✅                                          | `docs(map): F24 … [B5.4]`      |
 | 5    | reviewer (diff)     | `review.md` diff section                        | `docs(backlog): B5.4 review …` |
 
-Plan review: approved, round 2 (round 1: 1 reason, `@/lib/prisma` factory mock in `page.test.ts`, applied e0de8d4) · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 (round 1: 1 reason, `@/lib/prisma` factory mock in `page.test.ts`, applied e0de8d4) · Plan approved by: reviewer (D-27, tier medium, issue #223) · Rounds: 1
