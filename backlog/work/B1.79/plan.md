@@ -43,7 +43,7 @@ reviewer (its `$TMPDIR` exception) · RP6 `are commands, not edits` in dev-lead 
 ## Verification
 
 - Red `test(scripts): B1.79 role prompts state the Write/Edit rule` (no `(red)` marker: `verify-red.sh --auto` judges
-  only commits that touch `*.test.ts(x)`, B1.62's mistake-log row; hook-smoke only, body "Red because no role file
+  every `(red)` commit and fails one that touches no `*.test.ts(x)`, B1.62's mistake-log row; hook-smoke only, body "Red because no role file
   states the rule"): 6 FAIL lines (RP1–RP6), 581 ok.
 - Green `chore(agents): B1.79 build roles write files with Write/Edit, not Bash text` (no probe file): "hook-smoke:
   587 probes OK" (the 581 existing verdicts unchanged); `git diff origin/main -- .claude/hooks/` empty;
@@ -71,5 +71,4 @@ headless dev-lead writes only `backlog/` and two `docs/` files through Write/Edi
 card that needs `scripts/` or `.claude/` written by dev-lead itself (as this one) runs from an interactive session, as
 B1.78 did.
 
-Plan review: changes requested, re-scoped round 1 (fixed above: no `(red)` marker, RP5–RP6, vitest count, "repository
-file") · Plan approved by: · Rounds: 1
+Plan review: approved, re-scoped round 2 (`review.md` round 5) · Plan approved by: · Rounds: 1
