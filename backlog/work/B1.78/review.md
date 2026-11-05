@@ -394,3 +394,84 @@ Verdict: back to test-writer
 Riskiest unfalsified: unchanged from round 1. It is that `agent_type` in a real `claude -p --agent dev-lead` run
 equals the dispatched role's file name for test-writer, code-writer and reviewer. `probe.md` shows only
 `sub-probe`, and it stays `[unverified]` until the post-merge rerun of #207.
+
+## Diff review (round 3)
+
+SCOPE: all (tooling, no §). New since round 2: `efb424b test(scripts): B1.78 review pass 2 -- …` (`hook-smoke.sh`
++3 −2, fx-two only). The hook has not changed since `92425b2`. Probes ran on fresh clones of `efb424b` in the session
+scratchpad. The tree was not edited; only this section was added.
+
+### Commands (last line of each)
+
+| Command                                                    | Result                                                                                                                                 |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                                | `All matched files use Prettier code style!`                                                                                           |
+| `pnpm typecheck`                                           | `tsc --noEmit`, no errors                                                                                                              |
+| `pnpm test`                                                | `Tests  202 passed (202)`                                                                                                              |
+| `pnpm test:e2e`                                            | `43 passed (53.4s)`. The `e2e: insert rejected` server log line is the suite's injected failure                                        |
+| `pnpm test:mutation`                                       | `Final mutation score of 93.40 is greater than or equal to break threshold 70`                                                         |
+| `scripts/ci/check-suppressions.sh`                         | `OK: no new suppressions`                                                                                                              |
+| `scripts/ci/check-config-change.sh`                        | exit 1, the protected-file list ends with `.claude/hooks/path-guard.sh`. Expected until the PR carries `config-change-approved` (D-19) |
+| `scripts/ci/check-feat-commits.sh`                         | `OK: no feat commit touches tests`                                                                                                     |
+| `scripts/ci/check-ac-coverage.sh`                          | `OK: every criterion of a shipped section has a test`                                                                                  |
+| `scripts/ci/check-spec-sections.sh`                        | `OK: sections cited: 1 … 22`                                                                                                           |
+| `scripts/ci/check-features-map.sh`                         | `OK`                                                                                                                                   |
+| `scripts/ci/check-agent-frontmatter.sh`                    | `OK: 13 files`                                                                                                                         |
+| `scripts/ci/check-plan-scope.sh`                           | `OK: chore/B1.78-headless-guard stays inside the approved plan of B1.78`                                                               |
+| `scripts/ci/check-backlog.sh`                              | `OK: README matches the cards`                                                                                                         |
+| `scripts/verify-red.sh B1.78`                              | `no 'test(<pkg>): B1.78 … (red)' commit`: n/a, as in rounds 1–2 (hook-smoke is the red proof)                                          |
+| `scripts/hook-smoke.sh` at `efb424b`, bash 3.2.57 (macOS)  | `hook-smoke: 580 probes OK`                                                                                                            |
+| `scripts/hook-smoke.sh` at `efb424b`, bash 5.2.15 (runner) | `hook-smoke: 580 probes OK` (`level-up-lab-runner-runner`, the worktree's `node_modules` mounted read-only)                            |
+| `git diff --stat main...HEAD`                              | `15 files changed, 1124 insertions(+), 71 deletions(-)`                                                                                |
+
+### Checklist
+
+| Check                                                | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| round 2 finding 1                                    | fixed. js-yaml reads the new fx-two as two commands (`"$CLAUDE_PROJECT_DIR/.claude/hooks/path-guard.sh" 'backlog/x` and `hooks/path-guard.sh' 'backlog/*'`). With L26 deleted, hook-smoke reports 1 FAIL (`fx-two` exit 0, want 2) under bash 3.2.57 and under 5.2.15. That matches dev-lead's check                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| no test weakened after the red commit                | pass. `git log --first-parent --no-merges d09fe9c..HEAD -- '*.test.*' e2e/ scripts/hook-smoke.sh` lists `ce9cb51` and `efb424b`. `efb424b` replaces fx-two's two identical commands with the split shape and keeps the expected exit at 2. The old shape is still refused at HEAD (by L26 and the tokenizer), so no verdict was dropped. `--merges --remerge-diff`: empty                                                                                                                                                                                                                                                                                                                                                                        |
+| every changed file is in `plan.md`                   | pass: `check-plan-scope.sh` OK, and `efb424b` touches only `scripts/hook-smoke.sh`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Zod / Prisma / raw SQL / migration / features map    | n/a: no `src/` or `prisma/` change, and tooling has no F-row                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| no secret, no suppression                            | pass                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| would a test fail if one changed line were reverted? | **fail for L29 (finding 1)**. A sweep at `efb424b` (bash 3.2.57) replaced each line of `role_globs` and the `--role` block with `:` and ran hook-smoke. L21 gave 1 FAIL, L22 5, L26 1, L27 5, L28 5, L30 5, L32 13, L33 1, L41 33, L42 73, L43 76, L44 23, L45 7. L34 made hook-smoke hang, because `rest` never shrinks, so I killed that run. L40 was not re-run, since the hook is unchanged and it gave 1 FAIL in round 1. **L29 gave 0 FAIL, and that line changes a verdict.** L23 and L36 gave 0, but both are equivalent mutants. For L23, a missing file makes awk fail, grep matches nothing, and the function returns 1. For L36, once L29 passes, `rest` starts with a space, so the loop either returns 1 or adds at least one glob |
+
+### Findings
+
+```
+[1] KIND: coverage
+    WHERE: .claude/hooks/path-guard.sh:29 / scripts/hook-smoke.sh (HG11)
+    DEFECT: the plan's rule that the one command line must be of the form
+            '"$CLAUDE_PROJECT_DIR/.claude/hooks/path-guard.sh" ''<glob>'' …' is held only by L29's prefix test, and
+            no HG11 fixture has a path-guard line with another prefix, so deleting L29 keeps hook-smoke at 580 OK.
+    TRIGGER: path-guard.sh:29 replaced by `:`; a role file fx-np whose frontmatter has one valid YAML command
+            (js-yaml: ` 'src/*' 'hooks/path-guard.sh'`):
+              command: ' ''src/*'' ''hooks/path-guard.sh'''
+            agent_type fx-np writes src/lib/todos.ts under dev-lead's --role list.
+    WRONG BEHAVIOUR: exit 0. Without the prefix test, the tokenizer accepts the leading ` 'src/*'`, so the role
+            gets src/* (and the junk glob hooks/path-guard.sh). Neither dev-lead's list nor the plan allows that.
+            At HEAD the result is exit 2 (L29), under bash 3.2.57 and 5.2.15. Nothing in hook-smoke fails.
+    CONFIDENCE: confirmed (ran both on the copy, both bash versions)
+```
+
+This finding belongs to the same class as round 2's. Rounds 1 and 2 both missed it: round 1 called L29 redundant
+behind the tokenizer, and round 2 looked only at L29's `line != lines` half, which the prefix half backs up. Fix: a
+`test(scripts): B1.78 review pass 3 -- …` hardening commit that adds an `fx-np` fixture in this shape to the HG11
+loop (580 → 581). With L29 deleted, that must give 1 FAIL.
+
+Not blocking:
+
+1. `plan.md` Verification and `pr-body.md` still say `578 probes OK (522 + 38 + 18)`. The final count (581 after
+   the fix) and the three review-pass commits belong in the PR body. dev-lead already holds this item.
+2. My first bash 5 run of hook-smoke with L26 deleted showed 5 extra FAILs in the unchanged `guard-bash.sh` probes
+   for the PR-step wrapper (B1.23, exit 2 where 0 is wanted). These were not reproduced. The next three bash 5 runs
+   on the same clone (HEAD, a no-op edit, L26 deleted) gave 0 such FAILs. B1.78 does not touch that section, so I
+   record it as possible pre-existing flakiness, not a finding.
+3. As in round 2, exploiting finding 1 needs a malformed role file in a human-reviewed PR. It blocks because the
+   plan names the rule and the suite does not hold it.
+
+Verdict: back to test-writer. This is pass 3 of 3, so the cap is reached. Waiting on human: the lead either takes
+the one-fixture hardening commit (581) without another full pass, or accepts finding 1 as a recorded cost.
+
+Riskiest unfalsified: unchanged from rounds 1 and 2. It is that `agent_type` in a real `claude -p --agent dev-lead`
+run equals the dispatched role's file name for test-writer, code-writer and reviewer. `probe.md` shows only
+`sub-probe`, and it stays `[unverified]` until the post-merge rerun of #207.
