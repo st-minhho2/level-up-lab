@@ -27,6 +27,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §20 | [contracts/18-created-date.md](contracts/18-created-date.md)           | Todos: show the creation date                                          | ✅     |
 | §21 | [contracts/19-clear-search.md](contracts/19-clear-search.md)           | Todos: clear the search                                                | ✅     |
 | §22 | [contracts/20-all-done.md](contracts/20-all-done.md)                   | Todos: say "all done"                                                  | ✅     |
+| §23 | [contracts/21-overdue-count.md](contracts/21-overdue-count.md)         | Todos: show how many open todos are overdue                            | ✅     |
 | §24 | [contracts/22-escape-edit-title.md](contracts/22-escape-edit-title.md) | Todos: Escape cancels a title edit                                     | ✅     |
 
 Reading order: §1 → §2 → the section your backlog card names → [features-map.md](features-map.md).

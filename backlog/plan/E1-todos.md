@@ -1006,3 +1006,25 @@ _tooling · no §_
 - **Acceptance:** each of the four role prompts states the rule (create or change repository files with Write/Edit, never with a Bash heredoc, `python3 -c`, `sed -i` or `tee`; Bash runs commands and reads output) with its own exceptions kept (the reviewer's probes on a copy under `$TMPDIR`); `guard-bash.sh` unchanged and the 581 existing hook-smoke probes keep their verdicts; measure for later: guard-bash secret-rule denials per runner log (tool results holding `guard-bash.sh: reading secret files` in `~/.level-up-lab/runs/*/*.jsonl`), 4 in #207's rerun before, counted again on the next E5 runs; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.79/`
+
+### B1.80 · The components guide says the search form is a client component once section 25 lands
+
+_documentation · no §_
+**Status: Open** — `src/components/CLAUDE.md:11` says "`todo-search-form.tsx` (§16) stays a Server Component … no state or events, so no `'use client'`"; section 25 (B5.3, D-31) adds a `/` key listener that makes it `'use client'`, and D-30 keeps package guides out of B5.3's plan, so the line goes stale when B5.3 merges
+
+- **Spec:** none — documentation (`src/components/CLAUDE.md`); no `src/` code change, no section
+- **Test:** `git grep -n "todo-search-form.tsx\` (§16) stays a Server Component" src/components/CLAUDE.md` — red because: 1 match today
+- **Acceptance:** the `todo-search-form.tsx` line names §16, §21 and section 25 and says it is `'use client'` for section 25's `/` listener (events), as merged by B5.3; the Test command has no match; the heading's section list covers section 25 once its heading lands; `check-spec-sections.sh` stays OK
+- **Tier:** 0 · **Depends on:** B5.3 · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.80/`
+
+### B1.81 · guard-bash's secret-read rule lets any command through once it names `.env.example`
+
+_tooling · no §_
+**Status: Open** — `.claude/hooks/guard-bash.sh:106-107` skips rule 4 for the whole command when `ENV_EXAMPLE` (`\.env\.example`) matches anywhere in it, so a reader that also names a real dotenv file passes: replayed through the hook on 2026-11-05, `cat .env.example .env`, `cat .env .env.example` and `grep -h KEY .env.example .env.local` each exit 0 (`cp .env.example .env`, which reads only the example, exits 0 as it should). Found in B1.79's plan review
+
+- **Spec:** none — tooling (invariant 7: secrets are never read or printed); no `src/` change, no section
+- **Test:** probes in `scripts/hook-smoke.sh` expecting exit 2 for `cat .env.example .env`, `cat .env .env.example` and `grep -h KEY .env.example .env.local` — red because: guard-bash exits 0 on each
+- **Acceptance:** a reader whose command names a dotenv file other than `.env.example` is refused even when `.env.example` is also named; `cat .env.example` and `cp .env.example .env` still pass; every existing probe in `hook-smoke.sh` keeps its verdict; the rule's message is unchanged; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.81/`
