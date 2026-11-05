@@ -19,7 +19,7 @@ _F21 · section 23_
 ### B5.2 · Escape cancels a title edit
 
 _F22 · section 24_
-**Status: Open** — §6 lists "Cancelling an edit (Escape/blur)" under Out of scope (`spec/contracts/04-edit-title.md:54`): a person who opens an edit by mistake can leave it only by saving
+**Status: Done** — 6562b3f (#211), 6 AC-24.n tests green (unit 207, e2e 44), mutation 93.40; unattended and no-rework 1/1 (D-29)
 
 - **Spec:** §24 — unchanged (section written from `work/B5.2/analysis.md`; contract `spec/contracts/22-escape-edit-title.md`; Escape lifted from §6's Out of scope in the same lane, D-30)
 - **Test:** `src/components/todo-item.test.tsx::AC-24.1: Escape in the title field leaves edit mode, shows the stored title "Buy mik" and makes 0 updateTodoTitleAction calls` — red because: `TodoItem` has no Escape handling, so the text field stays after the key press
