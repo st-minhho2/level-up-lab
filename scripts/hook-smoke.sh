@@ -287,23 +287,25 @@ for t in general-purpose Explore claude; do hg 2 "$t" "$PLAN" a4; done
 hg 2 advisor "$REV" a5; hg 2 spec-analyst "$REV" a6
 # HG10: a type that is not a plain agent name is never looked up
 for t in ../hooks/lib Reviewer ns:reviewer; do hg 2 "$t" "$PLAN" a7; done
+hg 2 ../agents/reviewer "$REV" a7 # resolves to reviewer.md, whose list would allow it (review pass 1)
 # HG11: a role file that cannot be read as one path-guard command blocks, on a path dev-lead's list allows, so only
 # the read failure can block it
 FX="$(mktemp -d)"; git -C "$FX" init -q; mkdir -p "$FX/.claude/agents" "$FX/backlog/work/B9.1"
-fm() { # fm <name> <frontmatter command lines> [body]
-  printf -- "---\nname: %s\ndescription: fixture\ntools: Write\nhooks:\n  PreToolUse:\n    - matcher: 'Edit|Write|MultiEdit'\n      hooks:\n%s---\n%s\n" \
+fm() { # fm <name> <frontmatter command lines> [body]; $(…) drops the lines' last newline, so the format adds it
+  printf -- "---\nname: %s\ndescription: fixture\ntools: Write\nhooks:\n  PreToolUse:\n    - matcher: 'Edit|Write|MultiEdit'\n      hooks:\n%s\n---\n%s\n" \
     "$1" "$2" "${3:-}" > "$FX/.claude/agents/$1.md"
 }
 PG="\"\$CLAUDE_PROJECT_DIR/.claude/hooks/path-guard.sh\""
 cmdline() { printf "        - type: command\n          command: '%s %s'\n" "$PG" "$1"; }
 fm fx-prose "" "$(cmdline "''backlog/*''")"
 fm fx-eval "$(cmdline "''backlog/*'' \$(touch $FX/marker)")"
+fm fx-role "$(cmdline "''--role'' ''fx-role'' ''backlog/*''")" # a second orchestrator (review pass 1)
 fm fx-two "$(cmdline "''backlog/*''")
 $(cmdline "''backlog/*''")"
 hgx() { # hgx <agent_type>: the fixture's plan.md, dev-lead's list with --role, the fixture as the project
   CLAUDE_PROJECT_DIR="$FX" probe 2 path-guard.sh "$(hl_json "$FX/backlog/work/B9.1/plan.md" "$1" a8)" "${DL[@]}"
 }
-for t in fx-missing fx-prose fx-eval fx-two; do hgx "$t"; done
+for t in fx-missing fx-prose fx-eval fx-role fx-two; do hgx "$t"; done
 n=$((n+1)); if [[ ! -e "$FX/marker" ]]; then echo "ok   path-guard never evaluates a role's command"; else echo "FAIL path-guard evaluated \$(touch marker) from a role's frontmatter"; fail=1; fi
 rm -rf "$FX"
 # HG12: --role without a name, or without a glob after it
