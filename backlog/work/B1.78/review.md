@@ -221,3 +221,96 @@ as is with reason 1 recorded as an accepted cost.
 Riskiest unfalsified: that `agent_type` in a real headless run is always exactly the dispatched role's file name.
 `probe.md` shows it for `sub-probe` only, not for reviewer, test-writer or code-writer under `--agent dev-lead`. A
 different value fails closed, and the whole run stops. The post-merge rerun of #207 covers the reviewer only.
+
+## Diff review (round 1)
+
+SCOPE: all (tooling, no §). Range `origin/main...HEAD`: red `d09fe9c` (`scripts/hook-smoke.sh`), green `92425b2`.
+Read: `plan.md`, the full diff, `lib.sh`, the six agent frontmatters, `check-agent-frontmatter.sh --commands`.
+Probes ran on a clone of the branch in the session scratchpad. The tree was not edited; only this section was added.
+
+### Commands (last line of each)
+
+| Command                                                    | Result                                                                                                      |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                                | `All matched files use Prettier code style!`                                                                |
+| `pnpm typecheck`                                           | `tsc --noEmit`, no errors                                                                                   |
+| `pnpm test`                                                | `Tests  202 passed (202)`                                                                                   |
+| `pnpm test:e2e`                                            | `43 passed (1.1m)`                                                                                          |
+| `pnpm test:mutation`                                       | `Final mutation score of 93.40 is greater than or equal to break threshold 70`                              |
+| `scripts/ci/check-suppressions.sh`                         | `OK: no new suppressions`                                                                                   |
+| `scripts/ci/check-config-change.sh`                        | exit 1: 5 protected files, no `config-change-approved` label. Expected before the PR; D-19 label at PR time |
+| `scripts/ci/check-feat-commits.sh`                         | `OK: no feat commit touches tests`                                                                          |
+| `scripts/ci/check-ac-coverage.sh`                          | `OK: every criterion of a shipped section has a test`                                                       |
+| `scripts/ci/check-spec-sections.sh`                        | `OK: sections cited: 1 … 22`                                                                                |
+| `scripts/ci/check-features-map.sh`                         | `OK`                                                                                                        |
+| `scripts/ci/check-agent-frontmatter.sh`                    | `OK: 13 files`                                                                                              |
+| `scripts/ci/check-plan-scope.sh`                           | `OK: chore/B1.78-headless-guard stays inside the approved plan of B1.78`                                    |
+| `scripts/ci/check-backlog.sh`                              | `OK: README matches the cards`                                                                              |
+| `scripts/verify-red.sh B1.78`                              | `no 'test(<pkg>): B1.78 … (red)' commit`: n/a. The plan proves red with hook-smoke (B1.74 precedent)        |
+| `scripts/hook-smoke.sh` at `d09fe9c` (red)                 | `hook-smoke: FAILURES above`: **22 FAIL**, the 22 the plan names                                            |
+| `scripts/hook-smoke.sh` at `92425b2`, bash 3.2 (macOS)     | `hook-smoke: 578 probes OK`                                                                                 |
+| `scripts/hook-smoke.sh` at `92425b2`, bash 5.2.15 (runner) | `hook-smoke: 578 probes OK` (the `level-up-lab-runner-runner` image)                                        |
+
+`git diff --stat origin/main...HEAD`: 12 files, +916 −69. Code: `path-guard.sh` +37, `hook-smoke.sh` +64/−5, three
+agent frontmatter lines, `hooks.md`, `scripts/CLAUDE.md`. `git diff -w` on `scripts/CLAUDE.md` shows one real change,
+the `hook-smoke.sh` row (`dev-lead's --role HG1–HG13`). The other 85 lines only change column width.
+
+### Checklist
+
+| Check                                                     | Result                                                                                                                                                                                                                                                   |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every Acceptance clause has a probe whose verdict matches | pass: HG1–HG3 (dispatched role uses its own list), HG4–HG7 (dev-lead and no `agent_type` unchanged), HG8/HG11 (read failure blocks), HG13 (the real frontmatter). The live #207 rerun is `[unverified]` until after the merge, per the plan              |
+| no test weakened after the red commit                     | pass: `git log --first-parent --no-merges d09fe9c..HEAD -- '*.test.*' e2e/ scripts/hook-smoke.sh` is empty, and so is `--merges --remerge-diff`                                                                                                          |
+| every changed file is in `plan.md`                        | pass: 7 code/doc files plus `backlog/work/B1.78/*` = the Files table. `check-plan-scope.sh` OK                                                                                                                                                           |
+| interfaces match the plan                                 | pass: `--role <owner>` with `$# -ge 3`, the owner's globs for an absent, empty or owner `agent_type`, otherwise the role's list read without eval. The three frontmatter commands match the plan character for character                                 |
+| Zod / Prisma / raw SQL / migration                        | n/a: no `src/`, `prisma/`                                                                                                                                                                                                                                |
+| no secret, no suppression                                 | pass: `check-suppressions.sh` OK. No env read                                                                                                                                                                                                            |
+| features map row moved                                    | n/a: tooling, no F-row                                                                                                                                                                                                                                   |
+| parser = YAML for the real roles                          | pass: for the 5 non-owner roles, `role_globs` returns the same argv as `check-agent-frontmatter.sh --commands` evaluated by the shell. For `dev-lead` it returns 1 (`--role`), which is never reached because the agent is the owner                     |
+| scalar forms (caller's question)                          | pass, fail closed, the same under bash 3.2 and 5.2: a trailing `# comment`, a double-quoted scalar, `>-` block, two spaces after `command:` or between tokens, CRLF, a `"…"` token → 1. Trailing blanks and a glob with a space → parsed                 |
+| odd `agent_type` (caller's question)                      | pass: `"reviewer "`, `5`, `{…}`, `null`, `"$(touch m)"` → 2 on review.md and src (marker not created). `"reviewer\n"` and `["reviewer"]` reduce to `reviewer` (`$(…)` strips the newline, `String([x])`), so they get reviewer's list, never a wider one |
+| would a test fail if one changed line were reverted?      | **fail (findings 1, 2)**. Each line of `path-guard.sh` was removed alone on the copy, and hook-smoke was counted: L21 (name regex) 0 FAIL, L23 0, L26 0, L29 0, L33 (`--role` reject) 0, L36 0, awk frontmatter→whole file 1, L40 (argc) 1               |
+
+### Findings
+
+```
+[1] KIND: coverage
+    WHERE: scripts/hook-smoke.sh (HG10) / .claude/hooks/path-guard.sh:21
+    DEFECT: HG10 says "a type that is not a plain agent name is never looked up", but its three probes write
+            plan.md, which every list it could resolve to also refuses, so deleting the name regex keeps 578 OK.
+    TRIGGER: path-guard.sh:21 replaced by `:`; agent_type `../agents/reviewer` (or `Reviewer` on the
+            case-insensitive macOS FS) writing backlog/work/B1.2/review.md with dev-lead's --role list.
+    WRONG BEHAVIOUR: exit 0 (the name resolves to .claude/agents/reviewer.md); at HEAD exit 2. hook-smoke stays
+            green, so the plan's "exit 2 if agent_type !~ ^[a-z][a-z0-9-]*$" rule has no probe that pins it.
+    CONFIDENCE: confirmed (ran both on the copy)
+
+[2] KIND: coverage
+    WHERE: .claude/hooks/path-guard.sh:33 / scripts/hook-smoke.sh (HG11)
+    DEFECT: the plan's "exit 2 if … the role's own command carries --role" has no probe; deleting L33 keeps 578 OK.
+    TRIGGER: path-guard.sh:33 replaced by `:`; a role file `fx-role.md` whose command is
+            `… ''--role'' ''fx-role'' ''backlog/*''`; agent_type fx-role writes backlog/work/B1.2/plan.md.
+    WRONG BEHAVIOUR: exit 0 (`--role`, `fx-role`, `backlog/*` are applied as globs); at HEAD exit 2.
+    CONFIDENCE: confirmed (ran both on the copy)
+```
+
+Fix for both: a `test(scripts): B1.78 review pass 1 -- …` hardening commit (no `(red)`), because the rows pass at
+HEAD. HG10 should add `../agents/reviewer` on `review.md`, which resolves on both macOS and Linux. HG11 should add
+an `fx-role` fixture carrying `''--role''`. That is +2 probes (578 → 580), so the plan's Verification line and the PR
+body numbers change.
+
+Not blocking:
+
+1. L23, L26, L29 and L36 are redundant behind the tokenizer. Removing one alone changes no verdict I could build:
+   `fx-two` is still refused because the newline between the two lines breaks the `^ '…'` match. HG11 `fx-two`
+   therefore does not pin L26 specifically. That is acceptable, since the behaviour holds.
+2. The role file is read live from `$CLAUDE_PROJECT_DIR` at hook time, while the role's own hook comes from the
+   frontmatter loaded at launch. A mid-run edit to `.claude/agents/*.md` changes only dev-lead's copy of the
+   check. No role's Edit/Write list covers `.claude/`, and Bash writes were never under path-guard, so this opens
+   no new path.
+3. `check-config-change.sh` stays red until the PR carries `config-change-approved` (D-19, plan).
+
+Verdict: back to test-writer
+
+Riskiest unfalsified: that `agent_type` in a real `claude -p --agent dev-lead` run equals the dispatched role's file
+name for test-writer, code-writer and reviewer. `probe.md` shows only `sub-probe`, and any other value blocks every
+write of the run. This stays `[unverified]` until the post-merge rerun of #207.
