@@ -6,23 +6,24 @@ Approach: A from `advice.md`. A pure `src/lib/search-shortcut.ts` (`isSearchShor
 block word for word; approach B (a second client file) contradicts §25 and D-30. Analysis Q1–Q6 as proposed (advice:
 settled by the written spec). No migration, dependency, env key or CI-protected path (no `config-change-approved`).
 Costs: the form stops being a Server Component (markup and no-JS GET submit unchanged); `/` does nothing before
-hydration. The §16/§21 "no 'use client'" notes go stale and get one `docs(spec)` commit before any test.
-`src/components/CLAUDE.md` line 11 goes stale too; package guides stay out of card plans (D-30), so it is a follow-up.
+hydration. D-31 (2A) applied in faf26f0 before any test: only text-like `input` types are text-entry, so `/` works
+from a row checkbox (AC-25.1, AC-25.3 checkbox case); §16/§21 "no 'use client'" notes updated there. The non-text
+type list (checkbox, radio, button, submit, reset, image, file, range, color) is the analyst's reading of D-31.
+`src/components/CLAUDE.md:11` goes stale; D-30/D-31 keep it out of this card (its own card, per D-31).
 
 ## Files
 
 | File                                       | Change                                                                                | Why (AC-25.n) |
 | ------------------------------------------ | ------------------------------------------------------------------------------------- | ------------- |
-| `spec/contracts/14-search.md`              | Function-contract note: "§25 adds 'use client' (keydown listener)", not "no"          | drift §25     |
-| `spec/contracts/19-clear-search.md`        | Same note for §21's line ("still no 'use client'" → "§25 adds 'use client'")          | drift §25     |
 | `src/lib/search-shortcut.ts`               | Add: `SEARCH_SHORTCUT_KEY`, `ShortcutEvent`, `isSearchShortcut` (skeleton, then real) | 25.1          |
 | `src/lib/search-shortcut.test.ts`          | Add (red): AC-25.1                                                                    | 25.1          |
 | `src/components/todo-search-form.tsx`      | `'use client'`, ref, effect; header names §25; signature and markup unchanged         | 25.2–25.6     |
-| `src/components/todo-search-form.test.tsx` | Add (red): AC-25.2–25.5; header comment "Server Component" fixed in red commit        | 25.2–25.5     |
+| `src/components/todo-search-form.test.tsx` | Add (red): AC-25.2–25.5 (25.3 incl. a checkbox); "Server Component" comment fixed     | 25.2–25.5     |
 | `e2e/25-search-shortcut.spec.ts`           | Add (red): AC-25.6, POSTs counted from load to the last key                           | 25.6          |
 | `spec/features-map.md`                     | Add F23 (§25): code-writer's feat (✗), ✅ in `docs(map)`                              | map           |
 
-Paperwork (exempt): §25 index row stays ✗ until the closing PR; `docs/metrics.md` per-card row.
+Paperwork (exempt, already landed or closing): `docs(spec)` faf26f0 (§25, §16, §21 under D-31); §25 index row stays ✗
+until the closing PR; `docs/metrics.md` per-card row.
 
 ## Interfaces touched
 
@@ -34,7 +35,7 @@ export interface ShortcutEvent {
   readonly ctrlKey: boolean;
   readonly metaKey: boolean;
   readonly altKey: boolean;
-  readonly target: { readonly tagName?: string; readonly isContentEditable?: boolean } | null;
+  readonly target: { readonly tagName?: string; readonly type?: string; readonly isContentEditable?: boolean } | null;
 }
 export function isSearchShortcut(event: ShortcutEvent): boolean;
 // src/components/todo-search-form.tsx (§16, §21, §25): 'use client'; props and markup unchanged
@@ -55,13 +56,12 @@ Counts are the test-writer's target; a different count is stated in the red comm
 
 ## Work breakdown
 
-| Step | Role / skill                      | Produces                                          | Commit                              |
-| ---- | --------------------------------- | ------------------------------------------------- | ----------------------------------- |
-| 0    | spec-analyst                      | §16, §21 notes                                    | `docs(spec): §16 §21 … (§25, D-30)` |
-| 1    | `new-feature-slice` (code-writer) | `search-shortcut.ts` stub (`NotImplementedError`) | `chore(todos): B5.3 skeleton`       |
-| 2    | test-writer                       | 2 test files + `e2e/25-search-shortcut.spec.ts`   | `test(todos): B5.3 … (red)`         |
-| 3    | code-writer                       | lib + form, F23 ✗                                 | `feat(todos): B5.3 …`               |
-| 4    | dev-lead                          | F23 ✅                                            | `docs(map): F23 … [B5.3]`           |
-| 5    | reviewer (diff)                   | `review.md` diff section                          | `docs(backlog): B5.3 review …`      |
+| Step | Role / skill                      | Produces                                          | Commit                         |
+| ---- | --------------------------------- | ------------------------------------------------- | ------------------------------ |
+| 1    | `new-feature-slice` (code-writer) | `search-shortcut.ts` stub (`NotImplementedError`) | `chore(todos): B5.3 skeleton`  |
+| 2    | test-writer                       | 2 test files + `e2e/25-search-shortcut.spec.ts`   | `test(todos): B5.3 … (red)`    |
+| 3    | code-writer                       | lib + form, F23 ✗                                 | `feat(todos): B5.3 …`          |
+| 4    | dev-lead                          | F23 ✅                                            | `docs(map): F23 … [B5.3]`      |
+| 5    | reviewer (diff)                   | `review.md` diff section                          | `docs(backlog): B5.3 review …` |
 
-Plan review: changes requested, round 1 (reason 1 escalated, D-31 waiting on human) · Plan approved by: · Rounds: 1
+Plan review: pending, round 2 (round 1: changes requested, settled by D-31) · Plan approved by: · Rounds: 1
