@@ -1006,3 +1006,14 @@ _tooling · no §_
 - **Acceptance:** the four commands from the run (or probes of the same shape) pass guard-bash; every existing secret-read probe in `hook-smoke.sh` keeps its verdict, and a reader whose argument, redirect or `open(…)` names a secret path stays refused in any segment; the rule's message is unchanged; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.79/`
+
+### B1.81 · guard-bash's secret-read rule lets any command through once it names `.env.example`
+
+_tooling · no §_
+**Status: Open** — `.claude/hooks/guard-bash.sh:106-107` skips rule 4 for the whole command when `ENV_EXAMPLE` (`\.env\.example`) matches anywhere in it, so a reader that also names a real dotenv file passes: replayed through the hook on 2026-11-05, `cat .env.example .env`, `cat .env .env.example` and `grep -h KEY .env.example .env.local` each exit 0 (`cp .env.example .env`, which reads only the example, exits 0 as it should). Found in B1.79's plan review
+
+- **Spec:** none — tooling (invariant 7: secrets are never read or printed); no `src/` change, no section
+- **Test:** probes in `scripts/hook-smoke.sh` expecting exit 2 for `cat .env.example .env`, `cat .env .env.example` and `grep -h KEY .env.example .env.local` — red because: guard-bash exits 0 on each
+- **Acceptance:** a reader whose command names a dotenv file other than `.env.example` is refused even when `.env.example` is also named; `cat .env.example` and `cp .env.example .env` still pass; every existing probe in `hook-smoke.sh` keeps its verdict; the rule's message is unchanged; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.81/`
