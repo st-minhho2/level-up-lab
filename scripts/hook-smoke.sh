@@ -763,6 +763,9 @@ states() { # states <role> <fixed text>: the role's prompt holds the text
   if grep -qF -- "$2" "$f"; then echo "ok   $f states \"$2\""; else echo "FAIL $f does not state \"$2\""; fail=1; fi
 }
 for r in test-writer code-writer reviewer dev-lead; do states "$r" 'Files change through Write or Edit only (B1.79)'; done # RP1-RP4
+for r in test-writer code-writer reviewer dev-lead; do # RP7-RP10: the forbidden forms, not only the heading
+  states "$r" '`python3 -c`, `node -e`, `sed -i`, `perl -i`, `tee` or `>` that writes a repository file'
+done
 states reviewer 'still write with Bash'    # RP5: probes on the $TMPDIR copy
 states dev-lead 'are commands, not edits'  # RP6: Prettier in "Committing a review"
 
