@@ -999,7 +999,7 @@ _tooling · no §_
 ### B1.79 · build roles write files with Write/Edit, not Bash text, so guard-bash's secret rule stops refusing their code edits
 
 _tooling · no §_
-**Status: Open** — the runner's rerun of #207 (B5.2, log `20261105T041944Z-185231.jsonl` in `runs/207/`, permission denials 7) lost 4 calls to `.claude/hooks/guard-bash.sh` rule 4 (lines 104-107), none of which read a secret: test-writer and code-writer patched files through Bash (`python3 - <<'PY'`, `python3 -I -c` with `cp`/`head`), and the text held `event.key !== 'Escape'` or a comment naming the dotenv file. The roles retried with Edit, so the run went on. Rule 4 judges a command's whole text; making it tell a mention from a read failed (3 plan reviews, 20 bypasses reported: `work/B1.79/guard-redesign-stopped.md`), so the guard stays as it is. `git grep -c 'Files change through Write or Edit only' .claude/agents/` finds nothing: no role prompt tells a role to write files with Write/Edit rather than Bash. Epic E5 is about keyboard keys, so `event.key` lands in most of its diffs
+**Status: Done** — 768a882 (#222): hook-smoke red 6 FAIL, green 587, review pass 1 RP7-RP10, 591 probes OK; vitest 207, e2e 44, mutation 93.40 (no src/); guard-bash unchanged; measure pending the next E5 runs (secret-rule denials, 4 before)
 
 - **Spec:** none — tooling (invariant 7: secrets are never read or printed; guard-bash unchanged); no `src/` change, no section
 - **Test:** a `scripts/hook-smoke.sh` row per role file (`test-writer.md`, `code-writer.md`, `reviewer.md`, `dev-lead.md` under `.claude/agents/`) that the file states the rule "Files change through Write or Edit only (B1.79)" — red because: no role file holds it
