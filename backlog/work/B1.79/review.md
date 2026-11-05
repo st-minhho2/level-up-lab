@@ -300,3 +300,44 @@ Riskiest unfalsified: that test-writer and code-writer actually switch to Edit w
 from patches (`python3 -I -c` with `cp`/`head`) whose cause I could not read (the logs are in the runner
 container). If a role used Bash because Edit had failed first (e.g. an unread file or a non-unique `old_string`),
 a prompt rule does not remove that cause.
+
+## Plan review (round 5: re-scoped plan, round 2)
+
+SCOPE: all (tooling, no §). Plan at `8c5589b`; I compared it with `a8b8be1`, and only `plan.md` changed.
+
+Commands run (nothing on the tree):
+
+- `scripts/next-task.sh --check B1.79` gave `[next-task] B1.79: no overlap with any Doing or Review card`.
+- `scripts/agent/tier.sh backlog/work/B1.79/plan.md` gave `high`.
+- `scripts/ci/plan-files.sh --any B1.79 HEAD` gave 9 tokens, the Files table exactly.
+- `pnpm test` gave `Test Files  33 passed (33)` · `Tests  207 passed (207)`, the numbers the plan now quotes.
+- The red side of the new probes, checked by grep: `still write with Bash` occurs 0 times in `reviewer.md`,
+  `are commands, not edits` 0 times in `dev-lead.md`, and `Files change through Write or Edit only (B1.79)` in no
+  file under `.claude/agents/`. So the red commit gives 6 FAIL lines. The 581 baseline is from round 4
+  (`hook-smoke: 581 probes OK`), and nothing under `scripts/` or `.claude/` has changed since.
+
+| Check                                                                | Result                                                                                                                                                    |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file belongs to the card                                       | pass: same 9 rows; the `hook-smoke.sh` and `scripts/CLAUDE.md` rows now name RP1–RP6                                                                      |
+| interfaces follow `ts-style.md`; mutations in actions; Prisma in lib | pass (n/a): body text only                                                                                                                                |
+| follows `advice.md` or states the deviation                          | pass: "No advice (tier quick, no section)"                                                                                                                |
+| ≤ 7 criteria, every Then measurable                                  | pass: the rule (RP1–RP4) and both exceptions (RP5 reviewer, RP6 dev-lead) each have a probe                                                               |
+| verification lists exact commands with expected numbers              | pass: red 6 FAIL / 581 ok; green `hook-smoke: 587 probes OK`; `pnpm test` → 207 passed (33 files); empty `git diff origin/main -- .claude/hooks/`         |
+| work breakdown, convention subjects                                  | pass: red → green → review, the tooling shape B1.78 used. The red subject has no `(red)`, so CI `verify-red.sh --auto` finds no card id in it and exits 0 |
+| `Lead approves spec` box, ticked only by a human                     | pass (n/a): no section. `Plan approved by:` is empty, and the tier is high, so the lead's `approve` is needed (D-28)                                      |
+| no settled D-n contradicted                                          | pass: D-19 (label), D-27/D-28 (high tier → lead)                                                                                                          |
+| `next-task.sh --check` says no overlap                               | pass: `[next-task] B1.79: no overlap with any Doing or Review card`                                                                                       |
+
+Verdict: approved (ready for the lead's gate, not approved for build)
+
+Round 4 reasons: 1 fixed (the subject has no `(red)` in Verification or in Work breakdown step 1), 2 fixed (RP5,
+RP6), 3 fixed (207 / 33). The "Costs" paragraph states the cost of no enforcement, the unknown cause and the
+headless dev-lead route.
+
+Non-blocking wording, for the PR body: Verification says "`verify-red.sh --auto` judges only commits that touch
+`*.test.ts(x)`". That is not what the script does. `--auto` judges every `test(…): B… … (red)` subject, and it fails
+one that touches no `*.test.ts(x)` (`verify-red.sh:45`, `:72-76`). The mistake-log row says it correctly: a `(red)`
+commit needs a vitest file. The plan's conclusion is right; only the reason given is off.
+
+Riskiest unfalsified: as in round 4, that the build roles actually switch to Edit. The runner logs do not show why
+they patched through `python3 -c`, and the plan's measure on the next E5 runs is the only check.
