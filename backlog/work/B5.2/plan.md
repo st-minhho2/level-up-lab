@@ -48,4 +48,4 @@ Counts are the test-writer's target; a different count is stated in the red comm
 | 4    | dev-lead        | F22 ✅                                         | `docs(map): F22 … [B5.2]`         |
 | 5    | reviewer (diff) | `review.md` diff section                       | `docs(backlog): B5.2 review …`    |
 
-Plan review: approved, round 2 · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: reviewer (D-27, tier medium, issue #207) · Rounds: 1
