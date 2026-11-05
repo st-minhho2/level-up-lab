@@ -314,3 +314,83 @@ Verdict: back to test-writer
 Riskiest unfalsified: that `agent_type` in a real `claude -p --agent dev-lead` run equals the dispatched role's file
 name for test-writer, code-writer and reviewer. `probe.md` shows only `sub-probe`, and any other value blocks every
 write of the run. This stays `[unverified]` until the post-merge rerun of #207.
+
+## Diff review (round 2)
+
+SCOPE: all (tooling, no §). New since round 1: `ce9cb51 test(scripts): B1.78 review pass 1 -- …` (`hook-smoke.sh`
++5 −3). Probes ran on fresh clones of `ce9cb51` in the session scratchpad. The tree was not edited; only this section
+was added.
+
+### Commands (last line of each)
+
+| Command                                                    | Result                                                                                                                                 |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                                | `All matched files use Prettier code style!`                                                                                           |
+| `pnpm typecheck`                                           | `tsc --noEmit`, no errors                                                                                                              |
+| `pnpm test`                                                | `Tests  202 passed (202)`                                                                                                              |
+| `pnpm test:e2e`                                            | `43 passed (52.3s)`. The `e2e: insert rejected` server log line is the suite's injected failure                                        |
+| `pnpm test:mutation`                                       | `Final mutation score of 93.40 is greater than or equal to break threshold 70`                                                         |
+| `scripts/ci/check-suppressions.sh`                         | `OK: no new suppressions`                                                                                                              |
+| `scripts/ci/check-config-change.sh`                        | exit 1, the protected-file list ends with `.claude/hooks/path-guard.sh`. Expected until the PR carries `config-change-approved` (D-19) |
+| `scripts/ci/check-feat-commits.sh`                         | `OK: no feat commit touches tests`                                                                                                     |
+| `scripts/ci/check-ac-coverage.sh`                          | `OK: every criterion of a shipped section has a test`                                                                                  |
+| `scripts/ci/check-spec-sections.sh`                        | `OK: sections cited: 1 … 22`                                                                                                           |
+| `scripts/ci/check-features-map.sh`                         | `OK`                                                                                                                                   |
+| `scripts/ci/check-agent-frontmatter.sh`                    | `OK: 13 files`                                                                                                                         |
+| `scripts/ci/check-plan-scope.sh`                           | `OK: chore/B1.78-headless-guard stays inside the approved plan of B1.78`                                                               |
+| `scripts/ci/check-backlog.sh`                              | `OK: README matches the cards`                                                                                                         |
+| `scripts/verify-red.sh B1.78`                              | `no 'test(<pkg>): B1.78 … (red)' commit`: n/a, as in round 1 (hook-smoke is the red proof)                                             |
+| `scripts/hook-smoke.sh` at `ce9cb51`, bash 3.2.57 (macOS)  | `hook-smoke: 580 probes OK`                                                                                                            |
+| `scripts/hook-smoke.sh` at `ce9cb51`, bash 5.2.15 (runner) | `hook-smoke: 580 probes OK` (`level-up-lab-runner-runner`, the worktree's `node_modules` mounted read-only)                            |
+| `git diff --stat main...HEAD`                              | `15 files changed, 1043 insertions(+), 71 deletions(-)`                                                                                |
+
+### Checklist
+
+| Check                                                | Result                                                                                                                                                                                                                                                                                                                                                                                   |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| round 1 findings 1 and 2                             | fixed. With L21 deleted, hook-smoke reports 1 FAIL (`../agents/reviewer` on review.md, exit 0). With L33 deleted, 1 FAIL (`fx-role`, exit 0). Both match dev-lead's sweep                                                                                                                                                                                                                |
+| no test weakened after the red commit                | pass. `git log --first-parent --no-merges d09fe9c..HEAD -- '*.test.*' e2e/ scripts/hook-smoke.sh` lists only `ce9cb51`, which adds 2 probes and changes no expected exit. The `fm()` newline makes fx-eval and fx-two reach their intended checks (below). `--merges --remerge-diff`: empty                                                                                              |
+| each HG11 fixture reaches the check it names         | pass on reach. I built an instrumented copy of the hook that prints the line of the first `return 1` that fires, and the identical fixtures. Results: fx-missing L23, fx-prose L25, fx-eval L32 (tokenizer, no marker created), fx-role L33, fx-two L26. A control `fx-ok` with one valid line exits 0, so the fixture shape is not what refuses. Identical under bash 3.2.57 and 5.2.15 |
+| each HG11 fixture pins the check it names            | **fail for fx-two (finding 1)**. With L26 deleted, hook-smoke still reports 580 OK, because the tokenizer (L32) also refuses fx-two's shape. L23 and L25 are backed up the same way, but I could not build an input where removing either one changes a verdict, so those two are equivalent mutants                                                                                     |
+| every changed file is in `plan.md`                   | pass: `check-plan-scope.sh` OK, and `ce9cb51` touches only `scripts/hook-smoke.sh`                                                                                                                                                                                                                                                                                                       |
+| Zod / Prisma / raw SQL / migration / features map    | n/a: no `src/` or `prisma/` change, and tooling has no F-row                                                                                                                                                                                                                                                                                                                             |
+| no secret, no suppression                            | pass                                                                                                                                                                                                                                                                                                                                                                                     |
+| would a test fail if one changed line were reverted? | L21: 1 FAIL. L33: 1 FAIL. L32: 13 FAIL. **L26: 0 FAIL, and that line changes a verdict (finding 1)**. L23, L25, L29's `line != lines` half, and L36: no input found that changes a verdict                                                                                                                                                                                               |
+
+### Findings
+
+```
+[1] KIND: coverage
+    WHERE: .claude/hooks/path-guard.sh:26 / scripts/hook-smoke.sh (HG11 fx-two)
+    DEFECT: the plan's "two such lines → exit 2" is guarded only by L26, but fx-two's two well-formed lines are
+            also refused by the tokenizer, so deleting L26 keeps hook-smoke at 580 OK.
+    TRIGGER: path-guard.sh:26 replaced by `:`; a role file fx-split whose frontmatter has two commands, each a
+            valid YAML single-quoted scalar (js-yaml reads them as `"$CLAUDE_PROJECT_DIR/.claude/hooks/path-guard.sh"
+            'backlog/x` and `hooks/path-guard.sh' 'src/*'`):
+              command: '"$CLAUDE_PROJECT_DIR/.claude/hooks/path-guard.sh" ''backlog/x'
+              command: 'hooks/path-guard.sh'' ''src/*'''
+            agent_type fx-split writes src/lib/todos.ts under dev-lead's --role list.
+    WRONG BEHAVIOUR: exit 0. Bash `[^']` and `.` match a newline, so one "glob" spans both lines
+            (`backlog/x⏎hooks/path-guard.sh`), and `src/*` becomes the role's second glob. The role is widened to
+            src/, which neither dev-lead's list nor the plan allows. At HEAD the result is exit 2 (L26). Nothing
+            in hook-smoke fails.
+    CONFIDENCE: confirmed (ran both on the copy)
+```
+
+Fix: a `test(scripts): B1.78 review pass 2 -- …` hardening commit. Either change fx-two's lines to the fx-split
+shape, which keeps 580, or add fx-split to the HG11 loop, which makes 581. Either way, L26 deleted must give 1 FAIL.
+My round 1 note 1 called L26 redundant because I had not built this input; that note is withdrawn.
+
+Not blocking:
+
+1. `plan.md` Verification and `pr-body.md` (line 79) still say `578 probes OK (522 + 38 + 18)`. The PR body must
+   carry the final count (580, or 581 after the fix) and name the review-pass probes.
+2. Exploiting finding 1 needs a malformed role file, which goes through a human-reviewed PR, since no role's list
+   covers `.claude/`. The finding blocks because the plan names this rule and the suite does not hold it, not
+   because of present exposure.
+
+Verdict: back to test-writer
+
+Riskiest unfalsified: unchanged from round 1. It is that `agent_type` in a real `claude -p --agent dev-lead` run
+equals the dispatched role's file name for test-writer, code-writer and reviewer. `probe.md` shows only
+`sub-probe`, and it stays `[unverified]` until the post-merge rerun of #207.
