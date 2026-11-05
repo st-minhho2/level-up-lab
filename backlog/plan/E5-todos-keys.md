@@ -12,6 +12,8 @@ mounts in and the one card per batch that changes `src/app/page.tsx` are fixed b
 _F21 · section 23_
 **Status: Open** — the header shows only the remaining count (`src/components/remaining-count.tsx` renders `remainingLabel(count)` and §22's message; `grep -rn 'overdue' src/components/remaining-count.tsx` → 0), so a person must scan every row for §17's `Overdue` marker
 
+- **Spec:** §23 — unchanged (section written from `work/B5.1/analysis.md`; contract `spec/contracts/21-overdue-count.md`)
+- **Test:** `src/lib/overdue-count.test.ts::AC-23.1: counts 2 overdue of the six todos for today 2026-11-01, 0 for [], and leaves the input unchanged` — red because: `countOverdue` is not exported yet (`src/lib/overdue-count.ts` does not exist)
 - **Acceptance:** a count of open todos past their due day (§17's rule), shown next to §13's count and hidden at 0; mounts in a new component rendered by `src/app/page.tsx` (the batch's one `page.tsx` card); contract `spec/contracts/21-overdue-count.md` (section 23); batch 1
 - **Tier:** full · **Depends on:** ~~D-30~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B5.1/`
