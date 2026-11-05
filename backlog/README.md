@@ -7,12 +7,12 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open   | Total  |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ------ | ------ |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 49     | 0       | 27     | 76     |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 50     | 0       | 26     | 76     |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0      | 5      |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3      |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4      |
 | E5 Todos keys    | [plan/E5-todos-keys.md](plan/E5-todos-keys.md)       | 0      | 0       | 6      | 6      |
-| **Total**        |                                                      | **60** | **0**   | **34** | **94** |
+| **Total**        |                                                      | **61** | **0**   | **33** | **94** |
 
 ## Execution order
 
@@ -125,7 +125,7 @@ flowchart TD
   S91["91 · tab title shows the count<br/>B5.4"]
   S92["92 · Escape clears search<br/>B5.5"]
   S93["93 · Escape closes the due-date editor<br/>B5.6"]
-  S94["94 · dev-lead write guard stops at dev-lead headless<br/>B1.78"]
+  S94["94 · dev-lead write guard stops at dev-lead headless<br/>~~B1.78~~"]
 ```
 
 ## Remaining
@@ -168,7 +168,6 @@ at most 3 cards Doing (B1.18).
 | 91   | B5.4  | The browser tab title shows the remaining count                                                          | —      | Open   | ~~D-30~~                        | Lead  | S [estimate] |
 | 92   | B5.5  | Escape clears the search box                                                                             | —      | Open   | ~~D-30~~                        | Lead  | S [estimate] |
 | 93   | B5.6  | Escape closes the due-date editor without saving                                                         | —      | Open   | ~~D-30~~                        | Lead  | S [estimate] |
-| 94   | B1.78 | dev-lead's write guard stops at dev-lead in a headless run, so the roles it dispatches can write         | —      | Open   | ~~B1.74~~                       | Lead  | S [estimate] |
 
 ## Waiting on human
 
