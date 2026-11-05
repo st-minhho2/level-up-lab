@@ -4,8 +4,8 @@ B1.79 — build roles write files with Write/Edit, not Bash text, so guard-bash'
 edits (tooling, no spec section)
 
 - spec: none — tooling (invariant 7; `guard-bash.sh` unchanged); no `src/` change, no section
-- test: `scripts/hook-smoke.sh` RP1–RP6 (new) — pending
-- acceptance: pending
+- test: `scripts/hook-smoke.sh` RP1–RP6 (new). Red `7ecce3e` (no `(red)` marker, plan): 6 FAIL, 581 ok. Green `6d52d16`: "hook-smoke: 587 probes OK". Review pass 1 `7122241` adds RP7–RP10 (the forbidden forms in each prompt): "hook-smoke: 591 probes OK"; with test-writer's list line deleted, 1 FAIL. `pnpm test` 207, e2e 44, mutation 93.40 (no `src/` change; reviewer); `check-agent-frontmatter`, `check-plan-scope`, `check-backlog` OK; `.claude/hooks/` and `settings.json` unchanged.
+- acceptance: 4 of 4 met — the four prompts state the rule with their exceptions (RP1–RP10); guard-bash unchanged and the 581 existing probes keep their verdicts; the measure is set (guard-bash secret-rule denials per runner log: 4 in #207's rerun, 0 in #214, #215; counted again on the next E5 runs) [after merge]; label `config-change-approved`.
 - risk tier: high (`.claude/`); label `config-change-approved` (D-19)
 - re-scope: the lead stopped a guard-bash redesign after 3 plan reviews (`backlog/work/B1.79/guard-redesign-stopped.md`)
 
@@ -92,13 +92,22 @@ None: tooling card, no `spec/features-map.md` row.
 
 ## Review
 
-Pending.
+Plan review: the stopped guard redesign took rounds 1–3 (20 bypasses reported; `guard-redesign-stopped.md`); the
+re-scoped plan took 2 rounds (r1: a `(red)` subject would fail `verify-red.sh --auto`, RP5–RP6, test count; r2
+approved). Lead approved at the gate after 1 round. Diff review: 1 pass, ready for PR (`backlog/work/B1.79/review.md`).
+
+| Pass | #   | Finding                                                                         | Source   | Kind     | Disposition | Justification                                                                 |
+| ---- | --- | ------------------------------------------------------------------------------- | -------- | -------- | ----------- | ----------------------------------------------------------------------------- |
+| 1    | 1   | RP1–RP4 check only the rule's heading; deleting the forbidden-form list kept OK | reviewer | coverage | fix now     | `7122241`: RP7–RP10 check the list in each prompt; list line deleted → 1 FAIL |
+
+Riskiest unfalsified: nothing enforces the rule, so whether test-writer and code-writer stop patching files through
+Bash shows only in the measure on the next E5 runner logs (4 denials before).
 
 ## Evidence
 
-- AC met: pending
+- AC met: 4/4 (tooling Acceptance clauses; the measure's "after" count waits for the next E5 runs)
 - tier: high
-- plan deviations: pending
+- plan deviations: none (`check-plan-scope` OK; RP7–RP10 are review-pass probes in a planned file)
 - trace: n/a
 
 ## Checklist
