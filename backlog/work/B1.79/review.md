@@ -341,3 +341,76 @@ commit needs a vitest file. The plan's conclusion is right; only the reason give
 
 Riskiest unfalsified: as in round 4, that the build roles actually switch to Edit. The runner logs do not show why
 they patched through `python3 -c`, and the plan's measure on the next E5 runs is the only check.
+
+## Diff review (round 1)
+
+SCOPE: none of lib, actions or ui. The diff touches no `src/`, `prisma/` or `e2e/`; it changes `.claude/agents/`,
+`scripts/` and `backlog/`. Red `7ecce3e`, green `6d52d16`, range `main...HEAD` (12 files, +681 −84).
+
+### Command results (last line of each, run by the reviewer at `6d52d16`)
+
+| Command                                                        | Last line                                                                                                                          |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                                    | `All matched files use Prettier code style!`                                                                                       |
+| `pnpm typecheck`                                               | `> tsc --noEmit` (no errors)                                                                                                       |
+| `pnpm test`                                                    | `Tests  207 passed (207)` (33 files)                                                                                               |
+| `pnpm test:e2e`                                                | `44 passed (1.2m)`                                                                                                                 |
+| `pnpm test:mutation`                                           | `Final mutation score of 93.40 is greater than or equal to break threshold 70`                                                     |
+| `scripts/hook-smoke.sh`                                        | `hook-smoke: 587 probes OK` (587 `ok` lines, 0 FAIL)                                                                               |
+| `check-suppressions.sh`                                        | `OK: no new suppressions`                                                                                                          |
+| `check-config-change.sh`                                       | exit 1 without the label (the four `.claude/agents/*.md`); with `CONFIG_CHANGE_APPROVED=true` it passes. PR #222 has the label     |
+| `check-feat-commits.sh`                                        | `OK: no feat commit touches tests`                                                                                                 |
+| `check-ac-coverage.sh`                                         | `OK: every criterion of a shipped section has a test`                                                                              |
+| `check-spec-sections.sh`                                       | `OK: sections cited: 1 … 22 24`                                                                                                    |
+| `check-features-map.sh`                                        | `OK`                                                                                                                               |
+| `check-agent-frontmatter.sh`                                   | `OK: 13 files`                                                                                                                     |
+| `check-plan-scope.sh`                                          | `OK: … stays inside the approved plan of B1.79`                                                                                    |
+| `check-backlog.sh`                                             | `OK: README matches the cards`                                                                                                     |
+| `scripts/verify-red.sh B1.79`                                  | `no 'test(<pkg>): B1.79 … (red)' commit`. This is expected: the plan leaves `(red)` off on purpose. Red was proven by hand (below) |
+| `scripts/next-task.sh --check B1.79`                           | `[next-task] B1.79: no overlap with any Doing or Review card`                                                                      |
+| `git diff main...HEAD -- .claude/hooks/ .claude/settings.json` | 0 lines                                                                                                                            |
+
+Red, proven by hand: I extracted `git archive 7ecce3e` into a copy under `$TMPDIR` and ran `bash scripts/hook-smoke.sh`.
+It exits 1 with 581 `ok` and 6 FAIL lines, RP1–RP6, which matches the plan's "6 FAIL lines (RP1–RP6), 581 ok". At green
+the result is 587 OK, so the 581 existing verdicts are unchanged.
+
+### Checklist
+
+| Check                                                  | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every criterion has a probe whose assertion matches it | partial: RP1–RP6 cover the rule heading and both exceptions; the rule's body (the forbidden forms) has no probe, see [1]                                                                                                                                                                                                                                                                                                                                                                                      |
+| no test weakened after red                             | pass: `git log --first-parent --no-merges 7ecce3e..HEAD -- '*.test.*' e2e/ scripts/hook-smoke.sh` is empty; there are no merges in the range                                                                                                                                                                                                                                                                                                                                                                  |
+| every changed file is in `plan.md`                     | pass: all 12 paths are in the Files table. `scripts/CLAUDE.md` has one row changed by word diff (`gate)` → `gate; role prompts state the Write/Edit rule RP1–RP6)`); the rest is Prettier realigning the table                                                                                                                                                                                                                                                                                                |
+| interfaces match the plan                              | pass: the four paragraphs are byte-identical after whitespace is normalised (same shasum). The reviewer and dev-lead exception lines match the plan's text. No frontmatter, tool or hook change                                                                                                                                                                                                                                                                                                               |
+| Zod / Prisma / raw SQL / migration                     | n/a: no `src/` or `prisma/` change                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| no secret, no suppression                              | pass: `check-suppressions` OK. The prompts say "the dotenv file" and never use the literal path                                                                                                                                                                                                                                                                                                                                                                                                               |
+| rule vs the roles' own steps                           | pass: I grepped the four prompts, `.claude/skills/*/SKILL.md` and `.claude/docs/*.md` for heredoc, `sed -i`, `tee`, `cat >`, `cp`, `mv`, `touch` and found no instruction that writes a repository file through Bash. dev-lead's "Committing a review" block runs `prettier --write` and `git restore`, which its exception line covers. `add-migration`'s `node -e` reads the environment and writes no file. The path guards allow Write/Edit on each role's targets (reviewer: `backlog/work/*/review.md`) |
+| features map row moved                                 | n/a: tooling, no feature                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| would a probe fail if a changed line were reverted?    | partial: deleting the heading or either exception line → FAIL. Deleting the body → still 587 OK, see [1]                                                                                                                                                                                                                                                                                                                                                                                                      |
+| D-19 label                                             | pass: PR #222 is a draft and has `config-change-approved`                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+
+### Findings
+
+```
+[1] KIND: coverage
+    WHERE: scripts/hook-smoke.sh:766 (RP1-RP4 grep only the heading)
+    DEFECT: The probes check only the bold heading. The substance the card's Acceptance names (never a Bash heredoc,
+            python3 -c, sed -i or tee; Bash runs commands and reads output) has no probe.
+    TRIGGER: In a copy of HEAD under $TMPDIR, delete lines 18-21 of .claude/agents/test-writer.md (keeping only the
+             first line of the paragraph) and run bash scripts/hook-smoke.sh. It exits 0: "hook-smoke: 587 probes OK".
+    WRONG BEHAVIOUR: A later edit can remove the forbidden forms and the "Bash runs commands" sentence from any role
+                     prompt, and nothing fails. Acceptance asks that each prompt "states the rule (... never with a Bash
+                     heredoc, python3 -c, sed -i or tee ...)".
+    CONFIDENCE: confirmed (I ran it)
+```
+
+Disposition: non-blocking. The approved plan sets the test as RP1–RP6 grepping the heading and the two exception
+phrases, and the card's `Test:` line says the same. The plan review (round 5) accepted that shape, and the green
+commit meets it exactly. Asking for a stronger probe now would change an approved test. Follow-up option for the lead:
+an RP7 that greps each role for `` `python3 -c`, `node -e`, `sed -i` `` and `Bash runs commands`.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: whether a prompt rule is enough to make test-writer and code-writer stop patching through
+`python3 -c` / heredocs. Nothing enforces it, the logs do not say why they used Bash, and only the plan's measure
+(guard-bash secret-rule denials on the next E5 runner logs, 4 before) can show it.
