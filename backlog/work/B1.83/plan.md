@@ -1,6 +1,7 @@
 # B1.83 plan — unattended.sh ends the window at the wrapper's own ready (tooling, no §)
 
-Approach: `scripts/pr-step.sh ready <n>` runs `gh pr ready`, then labels the PR `pr-step-ready` (created on first use);
+Approach: `scripts/pr-step.sh ready <n>` creates the label `pr-step-ready` (first use; `--force` after), runs
+`gh pr ready`, then adds the label to the PR through REST;
 `unattended.sh` ends the window at the latest `ready_for_review` at or before the PR's first `pr-step-ready` label,
 and keeps today's rule (first ready, else creation) for a PR without that pairing. Earlier ready events are counted
 in a new last column `touches`, never as messages. Label name: `pr-step-ready`, not `runner-ready`, because
@@ -10,30 +11,32 @@ lead's `approve`; the PR carries `config-change-approved` (D-19). Prototype on `
 
 ## Files
 
-| File                            | Change                                                                                          | Why        |
-| ------------------------------- | ----------------------------------------------------------------------------------------------- | ---------- |
-| `scripts/pr-step.sh`            | `ready` (not `--undo`): `gh label create … --force`, then `gh pr edit <n> --add-label`; header  | Acceptance |
-| `scripts/pr-step-smoke.sh`      | R7 expects the two label lines after `pr ready 7`, none after `--undo`; new R16; shim `GH_FAIL` | Test line  |
-| `scripts/metrics/unattended.sh` | `ready` from the label pairing, else today's rule; `touches` column; header                     | Acceptance |
-| `scripts/metrics-smoke.sh`      | M44–M47 (PRs #619–#622); M30, M31, M33, M39, M41 rows end in `\t0` (touches)                    | Test line  |
-| `backlog/work/B1.83/*`          | plan, review, pr-body                                                                           | pipeline   |
+| File                            | Change                                                                                                      | Why        |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------- | ---------- |
+| `scripts/pr-step.sh`            | `ready` (not `--undo`): `gh label create … --force`, `gh pr ready`, `gh api` POST label; header             | Acceptance |
+| `scripts/pr-step-smoke.sh`      | R7 expects label create before and the label add after `pr ready 7`, none for `--undo`; R16; shim `GH_FAIL` | Test line  |
+| `scripts/metrics/unattended.sh` | `ready` from the label pairing, else today's rule; `touches` column; header                                 | Acceptance |
+| `scripts/metrics-smoke.sh`      | M44–M47 (PRs #619–#622); M30, M31, M33, M39, M41 rows end in `\t0` (touches)                                | Test line  |
+| `backlog/work/B1.83/*`          | plan, review, pr-body                                                                                       | pipeline   |
 
 ## Interfaces touched
 
 `scripts/pr-step.sh ready <n> [--undo]`: arguments, refusals and exit 3 unchanged. New GitHub side effects of `ready`
-(lead's `gh` login), after `gh pr ready <n>` succeeds, each failure failing the step:
+(lead's `gh` login), in this order, each failure failing the step and skipping what follows:
 `gh label create pr-step-ready --force --color 0E8A16 --description "Made ready by scripts/pr-step.sh (B1.83)"`
-(creates the repo label, or rewrites its color and description) and `gh pr edit <n> --add-label pr-step-ready`.
+(creates the repo label, or rewrites its color and description), `gh pr ready <n>`, then
+`gh api --method POST "repos/{owner}/{repo}/issues/<n>/labels" -f 'labels[]=pr-step-ready'` (REST, not
+`gh pr edit`: the runner image's gh 2.23 also queries Projects (classic) there, which GitHub retired).
 `unattended.sh` TSV: `issue card pr labeled ready messages unattended touches` (was 7 columns; share line unchanged).
 
-| Probe | Fixture                                                            | Want                                 | Today          |
-| ----- | ------------------------------------------------------------------ | ------------------------------------ | -------------- |
-| R7    | `ready 7`, then `ready 7 --undo`                                   | view, ready, label, edit; view, undo | no label lines |
-| R16   | ready refused (8, 9); `gh pr ready` fails; `gh label create` fails | no label/edit; rc≠0; rc≠0, no edit   | last: rc 0     |
-| M44   | click 01:10, undo 01:20, labeled ready 03:00                       | ready 03:00, 0 yes, touches 1        | ready 01:10    |
-| M45   | M44 + lead comment 02:00                                           | ready 03:00, 1 no, touches 1         | 0 yes          |
-| M46   | labeled ready 03:00, undo 04:00, ready 04:30 (BEHIND round trip)   | ready 03:00, touches 0               | no column      |
-| M47   | click, undo, ready 03:00, no label (a PR before B1.83)             | ready 01:10, touches 0               | no column      |
+| Probe | Fixture                                                              | Want                                       | Today             |
+| ----- | -------------------------------------------------------------------- | ------------------------------------------ | ----------------- |
+| R7    | `ready 7`, then `ready 7 --undo`                                     | view, create, ready, add; view, undo       | no label lines    |
+| R16   | ready refused (8, 9); label create, `pr ready`, label add each fails | no label call; rc≠0, the failing call last | create, add: rc 0 |
+| M44   | click 01:10, undo 01:20, labeled ready 03:00                         | ready 03:00, 0 yes, touches 1              | ready 01:10       |
+| M45   | M44 + lead comment 02:00                                             | ready 03:00, 1 no, touches 1               | 0 yes             |
+| M46   | labeled ready 03:00, undo 04:00, ready 04:30 (BEHIND round trip)     | ready 03:00, touches 0                     | no column         |
+| M47   | click, undo, ready 03:00, no label (a PR before B1.83)               | ready 01:10, touches 0                     | no column         |
 
 ## Verification
 
@@ -45,6 +48,11 @@ lead's `approve`; the PR carries `config-change-approved` (D-19). Prototype on `
   touches 0 on all (no PR has the label yet); `no-rework.sh 211 216 221 229 232 235` identical (6/6 yes, file
   untouched). `check-plan-scope.sh`, `check-backlog.sh`, `hook-smoke.sh` OK; `pnpm lint && pnpm typecheck` clean,
   `pnpm test` 241 passed (unchanged). CI runs neither smoke (only hook-smoke): both are run locally and in review.
+- gh 2.23 (runner image `level-up-lab-runner-runner`, `--network none`, `GH_DEBUG=api`): `label create … --force`
+  sends `POST /repos/o/r/labels` with name, color, description; the `gh api` call sends
+  `POST /repos/o/r/issues/1/labels` with `{"labels": ["pr-step-ready"]}` (both seen before the network refusal).
+  Live, host gh 2.103: this card's own Loop 9 `ready` is the first real use; then
+  `gh pr view <n> --json labels` lists `pr-step-ready` and `unattended.sh`'s PR timeline holds the `labeled` row.
 
 ## Work breakdown
 
@@ -64,11 +72,19 @@ Costs:
   fallback; touches is 0 under the old rule, which cannot tell a click from the run's own BEHIND round trip.
 - A click left in place (never undone) makes the wrapper's `gh pr ready` a no-op with no event: the window ends at
   the click, as today, touches 0.
+- A failed label add leaves the PR ready without the label and the step non-zero: dev-lead prints no "PR … is
+  ready", so a runner run records `ended`, and until the label lands `unattended.sh` reads the PR by the old rule.
+  Recovery: rerun `scripts/pr-step.sh ready <n>` (gh skips the ready of a ready PR, so only create and add repeat).
+  A failed create or `gh pr ready` leaves the PR as it was.
 - `no-rework.sh` keeps the first ready (out of scope): on a labeled PR with a click its window starts earlier, which
-  can only add rework. `docs/metrics.md` (method text) and `scripts/CLAUDE.md` (R1–R15, M1–M43) go stale until a
-  follow-up; both stay out of the Files to keep B1.83 disjoint from B1.82 and B1.84.
-- guard-bash rule 5 wants the wrapper byte-identical to the hooks' copy: after step 2 this worktree's wrapper differs
-  from the session's launch checkout. B1.26 changed the wrapper the same way and every push still ran
-  (`$CLAUDE_PROJECT_DIR` followed the card worktree). A refusal is reported, never worked around.
+  can only add rework. `docs/metrics.md` row 28 (method: "the PR's first `ready_for_review`") and `scripts/CLAUDE.md`
+  (R1–R15, M1–M43) go stale at merge: outside the lead's Files list for this card; dev-lead files a follow-up card
+  (filing lane) after the merge.
+- guard-bash rule 5 (`.claude/hooks/guard-bash.sh:140-142`) wants the card worktree's wrapper byte-identical to the
+  copy beside the hooks that run. This session opened in a Claude worktree with the card worktree under its
+  `.worktrees/`, the layout B1.26 had (its session in `.claude/worktrees/peaceful-gauss-291fcd`, card worktree under
+  its `.worktrees/`): it changed the wrapper and every later push and `open` ran, because the hooks resolved in the
+  card worktree. If step 2's first push is refused here, dev-lead stops and the lead picks: open a session in the card
+  worktree to finish steps 2–4, or push and open the draft by hand. Never worked around.
 
 Plan review: · Plan approved by: · Rounds: 1
