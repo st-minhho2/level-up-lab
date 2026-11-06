@@ -799,4 +799,144 @@ acx 0 'A8 an escaped paren in a regex literal inside the table' "it.each([[/\\(/
 acx 1 'A9 a call whose name ends in it is not a test call (review pass 1)' "it('emits', () => { emit('AC-9.1: x'); });"
 acx 0 'A10 a type argument holding one nested <…> (review pass 1)' "it.each<Array<number>>([1])('AC-9.1: nested type', () => {});"
 
+echo "== guard-bash.sh: the reviewer's Bash writes land only under a set TMPDIR outside the worktree (B1.84)"
+# Fixture: a TMPDIR outside the repo holding probe/ (its .git points back at this checkout's git dir, as a `cp -r .`
+# copy's does) and link -> src; a second directory outside TMPDIR stands for the session scratchpad.
+RWT="$(cd "$(mktemp -d)" && pwd -P)"; RWS="$(cd "$(mktemp -d)" && pwd -P)"; RWW="$(pwd -P)"
+mkdir -p "$RWT/probe"; ln -s "$RWW/src" "$RWT/link"
+printf 'gitdir: %s\n' "$(git rev-parse --absolute-git-dir)" > "$RWT/probe/.git"
+rw() { # rw <expected-exit> <TMPDIR, - for unset> <cwd> <command> [cause text] [agent_type, - for none]
+  local want="$1" tmp="$2" cwd="$3" c="$4" text="${5:-}" who="${6:-reviewer}" json out rc; n=$((n+1))
+  json="$(node -e 'const [c, d, t] = process.argv.slice(1); const o = { tool_input: { command: c }, cwd: d };
+    if (t !== "-") o.agent_type = t; process.stdout.write(JSON.stringify(o))' "$c" "$cwd" "$who")"
+  if [[ "$tmp" == - ]]; then out="$(printf '%s' "$json" | env -u TMPDIR "$H/guard-bash.sh" 2>&1)"
+  else out="$(printf '%s' "$json" | TMPDIR="$tmp" "$H/guard-bash.sh" 2>&1)"; fi
+  rc=$?
+  if [[ $rc -eq $want && "$out" == *"$text"* ]]; then printf 'ok   rw exit %s  %s\n' "$rc" "$c"
+  else printf 'FAIL rw exit %s (want %s, "%s")  %s\n     %s\n' "$rc" "$want" "$text" "$c" "$out"; fail=1; fi
+}
+# RW1–RW5: TMPDIR unset (#225's probe), empty, inside the worktree, holding the worktree, not absolute
+rw 2 - "$RWW" "cd \"\$TMPDIR/probe\" && sed -i 's/a/b/' src/components/todo-due-date.tsx" 'TMPDIR is unset or empty'
+rw 2 '' "$RWW" "sed -i '' 's/a/b/' \"\$TMPDIR/probe/x.ts\"" 'TMPDIR is unset or empty'
+rw 2 "$RWW/src" "$RWW" 'cp -r . "$TMPDIR/probe"' 'overlaps the worktree'
+rw 2 / "$RWW" 'echo x > "$TMPDIR/x"' 'overlaps the worktree'
+rw 2 relative/dir "$RWW" 'touch "$TMPDIR/x"' 'not an existing absolute directory'
+# RW6–RW33: a valid TMPDIR, writes that land in the worktree or cannot be placed
+while IFS='|' read -r text c; do rw 2 "$RWT" "$RWW" "$c" "$text"; done <<'RW'
+outside TMPDIR|sed -i 's/a/b/' src/components/todo-due-date.tsx
+outside TMPDIR|sed -i.bak -e 's/a/b/' src/a.ts
+outside TMPDIR|perl -pi -e 's/a/b/' src/a.ts
+outside TMPDIR|printf x > src/a.ts
+outside TMPDIR|pnpm test 2>&1 >> notes.md
+outside TMPDIR|echo x | tee -a notes.md
+outside TMPDIR|cp "$TMPDIR/probe/a.ts" src/a.ts
+outside TMPDIR|mv src/a.ts "$TMPDIR/a.ts"
+outside TMPDIR|rm src/a.ts
+outside TMPDIR|touch src/new.ts
+outside TMPDIR|mkdir -p src/x
+outside TMPDIR|ln -sf "$TMPDIR/a" src/a.ts
+a cd may not have reached|cd "$TMPDIR/probe"; sed -i s/a/b/ src/a.ts
+outside TMPDIR|cd src && touch a.ts
+outside TMPDIR|sed -i s/a/b/ "$TMPDIR/link/a.ts"
+built at run time|for f in src/*.ts; do sed -i s/a/b/ "$f"; done
+built at run time|TMPDIR=src; sed -i s/a/b/ "$TMPDIR/a.ts"
+outside TMPDIR|echo "$(sed -i s/a/b/ src/a.ts)"
+outside TMPDIR|bash -c 'sed -i s/a/b/ src/a.ts'
+outside TMPDIR|git checkout -- src/a.ts
+outside TMPDIR|git stash
+points back at the repository|git -C "$TMPDIR/probe" stash
+outside TMPDIR|find src -name '*.orig' -delete
+xargs|ls src | xargs rm
+outside TMPDIR|( cd "$TMPDIR/probe" && true ); touch a.ts
+outside TMPDIR|dd if=/dev/zero of=src/a.ts count=1
+RW
+rw 2 "$RWT" "$RWW" "sed -i s/a/b/ \"$RWW/src/a.ts\"" 'outside TMPDIR'
+rw 2 "$RWT" "$RWW" "$(printf 'cat <<EOF\n$(touch src/a.ts)\nEOF')" 'outside TMPDIR'
+# RW34–RW52 (review r1): git off its read list, more writers, the session scratchpad
+while IFS='|' read -r text c; do rw 2 "$RWT" "$RWW" "$c" "$text"; done <<'RW'
+outside TMPDIR|git read-tree -u --reset HEAD
+outside TMPDIR|git checkout-index -a -f
+outside TMPDIR|git worktree remove --force .
+outside TMPDIR|git config core.hooksPath /x
+outside TMPDIR|git update-index --assume-unchanged src/a.ts
+outside TMPDIR|git branch -f main HEAD~1
+outside TMPDIR|git fetch origin
+outside TMPDIR|gzip src/a.ts
+outside TMPDIR|sort -o src/a.ts src/a.ts
+outside TMPDIR|curl -so src/a.ts https://example.com
+outside TMPDIR|tar -xf "$TMPDIR/a.tar" -C src
+outside TMPDIR|unzip -o "$TMPDIR/a.zip"
+outside TMPDIR|ditto "$TMPDIR/a" src
+outside TMPDIR|awk -i inplace 1 src/a.ts
+outside TMPDIR|ex -sc "%d|x" src/a.ts
+outside TMPDIR|split -l1 src/a.ts src/p
+outside TMPDIR|mktemp src/x.XXX
+outside TMPDIR|nohup pnpm test &
+RW
+rw 2 "$RWT" "$RWW" "echo x > \"$RWS/x.txt\"" 'outside TMPDIR'
+# RW53–RW55 (review r2): a cd joined by ;, a cd inside the loop, a write after the loop's ;
+while IFS='|' read -r text c; do rw 2 "$RWT" "$RWW" "$c" "$text"; done <<'RW'
+a cd may not have reached|cd "$TMPDIR/probe"; for i in 1; do touch a; done
+a cd may not have reached|cd "$TMPDIR/probe" && for i in 1 2 3; do cd .. && touch a; done
+a cd may not have reached|cd "$TMPDIR/probe" && for i in 1; do true; done; touch a
+RW
+# RW56–RW63: probes on the copy under a valid TMPDIR
+while IFS= read -r c; do rw 0 "$RWT" "$RWW" "$c"; done <<'RW'
+cp -r . "$TMPDIR/probe"
+cd "$TMPDIR/probe" && sed -i 's/a/b/' src/components/todo-due-date.tsx && pnpm test
+sed -i '' 's/a/b/' "$TMPDIR/probe/x.ts"
+git diff origin/main...HEAD > "$TMPDIR/d.diff"
+git init -q "$TMPDIR/g" && git -C "$TMPDIR/g" add -A
+rsync -a --exclude node_modules . "$TMPDIR/probe2"
+pnpm test 2>&1 | tail -5 > /dev/null
+RW
+rw 0 "$RWT" "$RWW" "$(printf "cat > \"\$TMPDIR/p.ts\" <<'EOF'\nx > src/a.ts\nEOF")"
+# RW64: the cwd is the copy itself
+rw 0 "$RWT" "$RWT/probe" "sed -i 's/a/b/' src/a.ts > /dev/null 2>&1"
+# RW65–RW71: reads and gates with TMPDIR unset
+while IFS= read -r c; do rw 0 - "$RWW" "$c"; done <<'RW'
+pnpm lint && pnpm typecheck && pnpm test 2>&1 | tail -5
+git log --oneline -3
+scripts/hook-smoke.sh >/dev/null 2>&1; echo $?
+grep -n x src/a.ts
+sed -n 1,5p src/a.ts
+git diff --stat origin/main...HEAD
+scripts/next-task.sh --check B1.84
+RW
+# RW72–RW82 (review r1): tests and git read forms with TMPDIR unset
+while IFS= read -r c; do rw 0 - "$RWW" "$c"; done <<'RW'
+[[ -f plan.md ]] && echo y
+if [ -n "$TMPDIR" ]; then echo set; fi
+git branch --show-current
+git config --get user.name
+git stash list
+git worktree list
+[[ "$x" > a ]] && echo y
+gzip -c src/a.ts | wc -c
+git -C src log -1
+git branch -a --contains HEAD
+git diff origin/main...HEAD -- src | head
+RW
+# RW83–RW86 (review r1): writers aimed at TMPDIR
+while IFS= read -r c; do rw 0 "$RWT" "$RWW" "$c"; done <<'RW'
+tar -xf a.tar -C "$TMPDIR/probe"
+mktemp -d
+curl -so "$TMPDIR/x" https://example.com
+[ -n "$TMPDIR" ] && cp -r . "$TMPDIR/probe"
+RW
+# RW87–RW91 (review r2): a block opened right after `cd X &&` keeps that cwd
+while IFS= read -r c; do rw 0 "$RWT" "$RWW" "$c"; done <<'RW'
+cd "$TMPDIR/probe" && for i in 1 2; do sed -i '' 's/a/b/' src/x.ts; done
+cd "$TMPDIR/probe" && { touch a; touch b; }
+cd "$TMPDIR/probe" && while read -r m; do sed -i "" "$m" src/x.ts; done < "$TMPDIR/muts"
+cd "$TMPDIR/probe" && if true; then touch a; fi
+RW
+rw 0 "$RWT" "$RWW" "$(printf 'cd "$TMPDIR/probe" &&\nfor i in 1 2; do\n  touch a.txt 2>/dev/null || touch b\ndone')"
+# RW92 (review r2): a /dev/* target of an option is no write
+rw 0 - "$RWW" 'sort src/a.ts -o /dev/stdout'
+# RW93–RW94: rule 6 is the reviewer's only
+rw 0 - "$RWW" "sed -i 's/a/b/' src/a.ts" '' code-writer
+rw 0 - "$RWW" "sed -i 's/a/b/' src/a.ts" '' -
+rm -f "$RWT/probe/.git" "$RWT/link"; rmdir "$RWT/probe" "$RWT" "$RWS" 2>/dev/null
+
 echo; [[ $fail -eq 0 ]] && echo "hook-smoke: $n probes OK" || { echo "hook-smoke: FAILURES above"; exit 1; }
