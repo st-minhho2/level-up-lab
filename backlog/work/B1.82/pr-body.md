@@ -3,9 +3,13 @@
 B1.82 — run.sh counts merged agent branches as in flight and skips the next issue (tooling, no spec section)
 
 - spec: none — tooling (D-26 runner, sequential cap); no `src/` change, no section
-- test: `scripts/agent/run-smoke.sh` R18 (new), red then green — pending
-- acceptance: merged or closed agent branches not counted; unmerged branch or open PR still counted (cap 3 holds); the
-  skip names the counted branches; R1–R17 keep their verdicts; label `config-change-approved` — pending
+- test: `scripts/agent/run-smoke.sh` R18 (new, 7 cases). Red `a332d16` (no `(red)` marker: smoke only, as B1.86): R1–R17
+  ok, R18 FAIL (all 7 cases), "1 of 18 probes FAILED". Green `9b58695`: "18 probes OK" (bash 3.2.57; run locally,
+  `run-smoke.sh` is in no CI job). `pnpm test` 241, e2e 52, mutation 92.62 (no `src/` change; reviewer).
+- acceptance: 5 of 5 — merged branch not counted (cases 1, 3, 4: tip merged into `origin/main`, PR merged, PR closed
+  at the tip, PR merged past the tip as #200); unmerged branch or open PR still counted, cap 3 holds (cases 2, 5, 6);
+  the skip names the counted branches (cases 2, 4, 6); R1–R17 keep their verdicts; label `config-change-approved`.
+  Narrowings the lead approved in the plan: (a) off the first-parent line only; CLOSED only at the tip
 - risk tier: high (`scripts/agent/`); label `config-change-approved` (D-19)
 
 ## Plan
@@ -90,11 +94,26 @@ None: tooling card, no `spec/features-map.md` row.
 
 ## Review
 
-pending
+`/review-loop`: 1 pass of 3 (`backlog/work/B1.82/review.md`, "Diff review (round 1)"). Verdict: ready for PR. Findings:
+none. Revert probes on copies of the green `run.sh`, each killed by R18: first-parent exclusion dropped, MERGED rule
+dropped, CLOSED matching any head, `--state closed` for `--state all`, skip line without names. One equivalent
+mutant survives (the first own-branch `grep -vxF`; the pipeline's last filter repeats it).
+
+Plan review: 2 rounds, both changes requested (round 1: CLOSED needs the tip, costs stated, local verification;
+round 2: a MERGED PR counts whatever its head, the #200 shape); the round-2 revision `c85fe96` went to the lead
+without a round 3, by the lead's call.
+
+Riskiest unfalsified: the per-branch `gh pr list --head <b> --state all` inside the runner container. If `gh` fails
+there (offline, logged out), every leftover branch counts again and the 2026-11-06 skip comes back (a stated cost);
+no probe makes that call fail.
+
+`verify-red.sh B1.82` prints "no (red) commit": expected for a smoke-only red (B1.62, B1.86); the run-smoke runs above
+are the proof. `docs/metrics.md` per-card row: not added (as B1.79, B1.86; B1.83 and B1.84 run in parallel on the same
+table end).
 
 ## Evidence
 
-- AC met: pending
+- AC met: 5/5
 - tier: high
 - plan deviations: none
 - trace: n/a
