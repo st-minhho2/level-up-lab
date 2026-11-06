@@ -128,3 +128,70 @@ Verdict: changes requested
 Riskiest spot I could not falsify: the runner container's local branch state after a merge. The probe proves what
 `in_flight` does for a given tip; whether the runner's leftover branches sit at the pushed tip, or something else
 moves them (a pull, a resumed run), I traced from `run.sh` and `worktree.sh` but did not observe in the container.
+
+## Diff review (round 1)
+
+SCOPE: all (tooling, no §: `scripts/agent/`, `backlog/`). Red `a332d16`, green `9b58695`, HEAD `9b58695`. Read: card
+B1.82, `plan.md` (approved `be48e01`), the diff `main...HEAD`, `run.sh` (`in_flight`, `run_issue`), `run-smoke.sh`
+(shims, `prs`, R4, R18), `worktree.sh` (branch base).
+
+Commands, run by me from the worktree (probes on `git archive` copies under the scratchpad, `/bin/bash` 3.2.57):
+
+| Command                                   | Last line                                                                                                                                                  |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                               | `All matched files use Prettier code style!`                                                                                                               |
+| `pnpm typecheck`                          | `> tsc --noEmit` (exit 0, no errors)                                                                                                                       |
+| `pnpm test`                               | `Tests  241 passed (241)` (39 files), as the plan says                                                                                                     |
+| `pnpm test:e2e`                           | `52 passed (1.3m)`                                                                                                                                         |
+| `pnpm test:mutation`                      | `All files 92.62` (no `src/` change)                                                                                                                       |
+| `check-suppressions.sh`                   | `OK: no new suppressions`                                                                                                                                  |
+| `check-config-change.sh`                  | exit 1 locally: `run-smoke.sh`, `run.sh` need the label. PR #242 carries `config-change-approved` (`gh pr view 242`), so CI passes it (D-19)               |
+| `check-feat-commits.sh`                   | `OK: no feat commit touches tests`                                                                                                                         |
+| `check-ac-coverage.sh`                    | `OK: every criterion of a shipped section has a test`                                                                                                      |
+| `check-spec-sections.sh`                  | `OK: sections cited: 1 … 28`                                                                                                                               |
+| `check-features-map.sh`                   | `OK`                                                                                                                                                       |
+| `check-plan-scope.sh`, `check-backlog.sh` | `OK: … stays inside the approved plan of B1.82`, `OK: README matches the cards`                                                                            |
+| `verify-red.sh B1.82`                     | `::error::no 'test(<pkg>): B1.82 … (red)' commit`: expected. The red is smoke-only and has no `(red)` marker (B1.62, as B1.86); the run below is the proof |
+| `run-smoke.sh` at `a332d16` (red)         | R1–R17 `ok`, `FAIL R18`, `1 of 18 probes FAILED`, all 7 cases fail                                                                                         |
+| `run-smoke.sh` at `9b58695` (green)       | `18 probes OK`                                                                                                                                             |
+| `git diff --stat main...HEAD`             | 5 files: `run.sh` +22 −5, `run-smoke.sh` +70 −4, `plan.md`, `pr-body.md`, `review.md`                                                                      |
+| `next-task.sh --check B1.82`              | `[next-task] B1.82: no overlap with any Doing or Review card`                                                                                              |
+
+Revert probes (one change each to the green `run.sh` on a copy, then `run-smoke.sh`). Every one of them fails R18 with
+`1 of 18 probes FAILED`:
+
+1. Dropped the first-parent exclusion from (a). Case "fresh branches" starts a run.
+2. Dropped the `MERGED` rule. Cases 4 and 6 skip with 4 branches.
+3. Changed CLOSED to match any head. Case 4 starts a run.
+4. Changed `--state all` to `--state closed`. Case 3 starts nothing, and the `--state all` call is missing.
+5. Dropped the names from the skip line. Cases 2, 4 and 5 fail.
+
+| Check                                                   | Result                                                                                                                                                                                                                                                                                                                    |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| the card's Acceptance has a probe that asserts its Then | pass. Not counted when merged: cases 1 and 3, plus the #200 shape in case 4. An unmerged branch or an open PR still counts: cases 2, 5 and 6. The skip names the branches: cases 2, 4 and 6. R1–R17 keep their verdicts. The label is on #242. The narrowing of (a) and of CLOSED is a cost the lead approved in the plan |
+| no test weakened after the red commit                   | pass. `git log --first-parent --no-merges a332d16..HEAD -- '*.test.*' e2e/ scripts/agent/run-smoke.sh` is empty, and there are no merge commits in the range                                                                                                                                                              |
+| every changed file in `plan.md`                         | pass. The files are `run.sh`, `run-smoke.sh` and `backlog/work/B1.82/*`, and `check-plan-scope.sh` reports OK                                                                                                                                                                                                             |
+| interfaces match the plan                               | pass. `in_flight` prints sorted lines (`LC_ALL=C sort -u`). The skip line is `skip #<n>: <k> agent branches in flight (cap 3): <names>`. The new `gh pr list --head <b> --state all --limit 100 --json state,headRefOid` call matches the plan word for word. `CAP=3` and the exit codes are unchanged                    |
+| Zod at action boundary · Prisma in lib · no raw SQL     | n/a (no `src/`)                                                                                                                                                                                                                                                                                                           |
+| migration reversible and indexed                        | n/a (no `prisma/`)                                                                                                                                                                                                                                                                                                        |
+| no secret, no suppression                               | pass                                                                                                                                                                                                                                                                                                                      |
+| features map row moved                                  | n/a (no section)                                                                                                                                                                                                                                                                                                          |
+| would a test fail if one changed line were reverted     | pass. All 5 revert probes above are killed. One mutant survives and is equivalent: dropping the first `grep -vxF -- "$1"` changes nothing, because the pipeline's final filter removes the own branch again                                                                                                               |
+| round-1 riskiest spot (shim doing `run.sh`'s filtering) | closed. The shim applies only gh's own `--state` and `--head`, and `run.sh`'s `--jq` alone picks MERGED and CLOSED (revert probes 2 and 3 show this)                                                                                                                                                                      |
+
+Traced, not a finding:
+
+- The per-branch `gh_` reads `</dev/null`, so it does not consume the `while read` loop's stdin.
+- `why` is reassigned before `comment` reads it.
+- `grep -c . <<< ""` gives 0.
+- `in_flight` has only one caller (`run.sh:235`).
+
+Findings: none.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: real `gh pr list --head <b> --state all` in the runner container. The plan review ran it
+against GitHub on the host. In the container, offline or logged out, `heads` is empty, so every leftover branch
+counts and the 2026-11-06 skip comes back (a stated cost). No probe covers `gh` failing on the per-branch call. The
+code needs no change for it, but nothing proves the container's `gh` answers. Also: #242's head on GitHub is still
+`89eb92c`, so the red and green commits are not pushed yet.
