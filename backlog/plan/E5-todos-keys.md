@@ -67,6 +67,8 @@ _F25 · section 27_
 _F26 · section 28_
 **Status: Open** — §15's editor closes only on save (`grep -n 'Escape' src/components/todo-due-date.tsx` → 0)
 
+- **Spec:** §28 — unchanged (section written from `work/B5.6/analysis.md`; contract `spec/contracts/26-escape-due-date.md`; Escape lifted from §15 Out of scope, D-32)
+- **Test:** `src/components/todo-due-date.test.tsx::AC-28.1: Escape in the "Due date" field closes the editor, shows Due 2026-11-05 once, prevents default and calls setTodoDueDateAction 0 times` — red because: the field has no keydown handler yet, so it stays open (assertion, not import)
 - **Acceptance:** Escape in the "Due date" field closes the editor, keeps the stored due date and calls no Server Action; mounts in `src/components/todo-due-date.tsx` only; contract `spec/contracts/26-escape-due-date.md` (section 28); batch 2
 - **Tier:** full · **Depends on:** ~~D-30~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B5.6/`
