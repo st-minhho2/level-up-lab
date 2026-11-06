@@ -75,3 +75,78 @@ Risk tier: medium (D-28: rows under `src/`, `e2e/`, `spec/`; none high).
 3. The plan footer reads `Rounds: 1`; the dev-lead updates it to 2 when recording this verdict.
 
 Verdict: approved (ready for the lead's gate, not approved for build)
+
+## Diff review (round 1)
+
+Commits: skeleton e7cbbbe · pin dad111a · red 2f4b204 · feat 7a0b815. Run by the reviewer in the worktree on 2026-11-06.
+
+### Command results (last line of each)
+
+| Command                             | Result                                                                                                    |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!` (exit 0)                                                     |
+| `pnpm typecheck`                    | `tsc --noEmit` clean                                                                                      |
+| `pnpm test`                         | `Tests  227 passed (227)` (plan: 222 → 227)                                                               |
+| `pnpm test:e2e`                     | `51 passed (1.4m)` (plan: 50 → 51)                                                                        |
+| `pnpm test:mutation`                | `Final mutation score of 92.62 is greater than or equal to break threshold 70`; `escape-search.ts` 100.00 |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                                 |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                         |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                        |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test` (§27 ✗ until the closing PR)                        |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 27`                                                                              |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                                      |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B5.5-agent stays inside the approved plan of B5.5 (D-27 approval)`                              |
+| `scripts/verify-red.sh B5.5`        | `RESULT: red for the right reason` (lib 1 new failed; component 2 new failed; e2e skipped)                |
+| `git diff --stat main...HEAD`       | `17 files changed, 810 insertions(+), 6 deletions(-)` (code: the 7 files in the plan + paperwork)         |
+
+Extra runs: `playwright test e2e/27 e2e/21 e2e/25 --repeat-each=10 --workers=1` under `pnpm dev` → `50 passed`;
+`e2e/27 e2e/21 --repeat-each=5` against a production build (`CI=1 NODE_ENV=production`, on a copy) → `20 passed`.
+
+### Checklist
+
+| Check                                                                | Result                                                                                                                                                                                                                                        |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-27.n has a test whose assertion matches its Then            | pass: 27.1 (`escape-search.test.ts`, all 10 cases + constant + no throw), 27.2–27.5 (`todo-search-form.test.tsx`), 27.6 (`e2e/27-escape-search.spec.ts`: exact address, empty box, `[D, B]`, 0 links, 0 POSTs, then 0 requests of any method) |
+| no test weakened after the red commit                                | pass: `git log --first-parent --no-merges 2f4b204..HEAD -- '*.test.*' e2e/` empty; the `--merges --remerge-diff` form empty (no merges)                                                                                                       |
+| every changed file is in `plan.md`                                   | pass: 6 Files rows + `docs/metrics.md` (paperwork, named in the plan)                                                                                                                                                                         |
+| interfaces match §27's Function contracts                            | pass: `SEARCH_ESCAPE_KEY: string`, `EscapeEvent` (5 readonly fields), `isSearchEscape` verbatim; `TodoSearchForm` signature and markup unchanged (only `onKeyDown` and `ref` added)                                                           |
+| Zod at every action boundary · Prisma only in `src/lib` · no raw SQL | n/a: no action, no Prisma, no SQL touched; `escape-search.ts` imports nothing                                                                                                                                                                 |
+| migration reversible and indexed                                     | n/a: none                                                                                                                                                                                                                                     |
+| no secret, no suppression                                            | pass (check-suppressions OK; diff read)                                                                                                                                                                                                       |
+| features map row moved                                               | pass: F25 ✗ (skeleton) → ✅; see observation 1 for the commit                                                                                                                                                                                 |
+| AC-27.3 "0 navigations" asserted (plan cost 2)                       | pass: `window.location.href` unchanged and 0 form submits, plus 0 `fetch` calls                                                                                                                                                               |
+| would a test fail if one changed line were reverted? (on a copy)     | pass, see probes                                                                                                                                                                                                                              |
+
+Probes on `/tmp/probe-b55-504633` (one change each, `vitest run src/components/todo-search-form.test.tsx`):
+
+| Probe                                                                                 | Result                                                                                                 |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| P1 `isSearchEscape(event)` (synthetic, React maps `Esc` → `Escape`)                   | AC-27.4 fails: the `nativeEvent` read is needed and pinned                                             |
+| P2 guard → any `Escape` regardless of modifiers (plan cost 1)                         | AC-27.4 fails                                                                                          |
+| P3 drop `preventDefault()`                                                            | AC-27.2, AC-27.3 fail                                                                                  |
+| P4 drop `value = ''`                                                                  | AC-27.2, AC-27.3 fail                                                                                  |
+| P5 drop the link `click()`                                                            | AC-27.2 fails                                                                                          |
+| P6 `if (isSearchInEffect(query))` → `if (true)`                                       | 12 passed: equivalent (the ref is `null` whenever the link is not rendered, so `?.click()` is a no-op) |
+| P7 a document-wide Escape listener that clears the box (positive control for AC-27.5) | AC-27.4, AC-27.5 fail                                                                                  |
+
+### Findings
+
+None blocking.
+
+Observations (no TRIGGER on behavior, so not findings):
+
+1. The F25 ✅ flip landed in the `feat` commit 7a0b815, not in the separate `docs(map): F25 … [B5.5]` commit of
+   plan step 4 / `backlog/CLAUDE.md` commit order. Same file, same content, so `check-plan-scope` passes. It cannot
+   be split without rewriting history, so the PR body should state the deviation.
+2. The `docs/metrics.md` row was written by the code-writer in the `feat` commit; the plan names it as exempt paperwork
+   without naming a role. Its numbers match this run (6/6, 92.62, `escape-search.ts` 100).
+3. AC-27.6's second Escape counts requests of any method until `networkidle`. It passed 10/10 under `pnpm dev` and 5/5
+   against a production build (Link prefetch active). An expired prefetch cache could still issue a GET inside the window.
+4. Locally, `CI=1 pnpm exec playwright test` fails to start the production server unless `NODE_ENV=production` is set
+   (`<Html> should not be imported outside of pages/_document` while prerendering `/404`). This is environmental and
+   not caused by this card; GitHub CI was not re-run here [unverified].
+
+Verdict: ready for PR
+
+Riskiest unfalsified: AC-27.6's "0 requests of any method" after the second Escape. Under a production server, a Link
+prefetch whose cache has expired could fire inside the `networkidle` window and turn the test red without a code change.
