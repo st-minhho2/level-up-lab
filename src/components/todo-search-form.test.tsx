@@ -264,3 +264,70 @@ describe('<TodoSearchForm> slash key shortcut (§25)', () => {
     expect(afterRemount.defaultPrevented).toBe(true);
   });
 });
+
+// Counts the clicks the "Clear search" link receives; the listener cancels each one so jsdom never navigates.
+function countClearLinkClicks(): { readonly count: () => number } {
+  let clicks = 0;
+  screen.getByRole('link', { name: 'Clear search' }).addEventListener('click', (event) => {
+    event.preventDefault();
+    clicks += 1;
+  });
+  return { count: () => clicks };
+}
+
+describe('<TodoSearchForm> Escape key (§27)', () => {
+  it('AC-27.4: Enter, a, /, Esc, Ctrl+Escape, Meta+Escape, Alt+Escape and Shift+Escape in the box each leave defaultPrevented false, the value milk and 0 clicks on the link', () => {
+    renderForm('all', 'milk');
+    const clearLink = countClearLinkClicks();
+    const keys: readonly KeyboardEventInit[] = [
+      { key: 'Enter' },
+      { key: 'a' },
+      { key: '/' },
+      { key: 'Esc' },
+      { key: 'Escape', ctrlKey: true },
+      { key: 'Escape', metaKey: true },
+      { key: 'Escape', altKey: true },
+      { key: 'Escape', shiftKey: true },
+    ];
+    searchBox().focus();
+
+    const outcomes = keys.map((init) => {
+      const event = pressKey(searchBox(), init);
+      return { key: init.key, prevented: event.defaultPrevented, value: (searchBox() as HTMLInputElement).value };
+    });
+
+    expect(outcomes).toEqual(keys.map((init) => ({ key: init.key, prevented: false, value: 'milk' })));
+    expect(clearLink.count()).toBe(0);
+  });
+
+  it('AC-27.5: Escape on document.body, in "New todo" and on a button each leave defaultPrevented false, "Search todos" value milk and 0 clicks on the link', () => {
+    render(
+      <>
+        <input type="text" aria-label="New todo" />
+        <button type="button">Add</button>
+        <TodoSearchForm filter="all" query="milk" />
+      </>,
+    );
+    const clearLink = countClearLinkClicks();
+    const newTodo = screen.getByRole('textbox', { name: 'New todo' });
+    const button = screen.getByRole('button', { name: 'Add' });
+    const targets: readonly HTMLElement[] = [document.body, newTodo, button];
+
+    const outcomes = targets.map((target) => {
+      if (target === document.body) {
+        focusBody();
+      } else {
+        target.focus();
+      }
+      const event = pressKey(target, { key: 'Escape' });
+      return { prevented: event.defaultPrevented, value: (searchBox() as HTMLInputElement).value };
+    });
+
+    expect(outcomes).toEqual([
+      { prevented: false, value: 'milk' },
+      { prevented: false, value: 'milk' },
+      { prevented: false, value: 'milk' },
+    ]);
+    expect(clearLink.count()).toBe(0);
+  });
+});
