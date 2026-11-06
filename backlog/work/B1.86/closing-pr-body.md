@@ -7,15 +7,12 @@ Files:
   FAIL A1/A3/A4, green 599, review pass 1 adds A9/A10, 601 probes OK), old vs new guard identical on `main` and §28
   `covered=7` on B5.6's closing branch, vitest 241, e2e 52, mutation 92.62 (no `src/`), plan review 2 rounds, diff
   review 2 passes
-- `backlog/README.md`: Remaining row 102 out; `~~B1.86~~` in node 102; totals updated (E1 52/0/32, total 68/0/34 of 102)
+- `backlog/README.md`: Remaining row 102 out; `~~B1.86~~` in node 102; totals updated (E1 52/0/32, total 69/0/33 of 102, after B5.6's closing #237)
 - `backlog/work/B1.86/closing-pr-body.md`: this body (Closing step 6)
 
 No `spec/features-map.md` or `spec/technical-requirements.md` change: B1.86 has no section. No other row names B1.86
-in Blocked by. B5.6's closing PR #237 merged `origin/main` after #239 and its `check-ac-coverage` step now passes
-locally (`§28  criteria=7 covered=7`).
-
-`#237` also changes the README totals (E5 6/0/0); whichever of the two merges second merges `origin/main` and
-recounts.
+in Blocked by. B5.6's closing PR #237 merged `origin/main` after #239, passed `check-ac-coverage`
+(`§28  criteria=7 covered=7`) and merged as c22e41a; this branch merged `origin/main` after it and recounted.
 
 `check-backlog.sh` OK.
 
