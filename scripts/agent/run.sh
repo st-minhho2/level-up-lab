@@ -173,10 +173,25 @@ branch_of() { # chore/<card>-agent for a tooling card, feat/<card>-agent otherwi
     echo "feat/$1-agent"
   fi
 }
-in_flight() { # in_flight <own branch>: agent branches with a local branch or an open PR, the issue's own excepted
-  { git for-each-ref --format='%(refname:short)' refs/heads/
-    gh_ pr list --state open --limit 100 --json headRefName --jq '.[].headRefName'; } \
-    | grep -E '^[a-z]+/B[0-9]+\.[0-9]+-agent$' | grep -vxF -- "$1" | sort -u | grep -c .
+in_flight() { # in_flight <own branch>: the agent branches in flight, one per line, the issue's own excepted (B1.82):
+  # an open PR's head, or a local branch not merged. Merged: its tip reached origin/main through a merge (an ancestor
+  # off the first-parent line, where a run's branch sits before its first commit), or a PR of it merged (main squashes,
+  # which leaves the tip outside origin/main; GitHub may have moved the head past the tip, as on #200), or one closed
+  # at its tip (a commit after a close counts again). origin/main is as last fetched; gh failing counts the branch.
+  local b heads line
+  line="$(git rev-list --first-parent origin/main 2>/dev/null)"
+  { gh_ pr list --state open --limit 100 --json headRefName --jq '.[].headRefName'
+    git for-each-ref --format='%(refname:short)' refs/heads/ | grep -E '^[a-z]+/B[0-9]+\.[0-9]+-agent$' \
+      | grep -vxF -- "$1" | while IFS= read -r b; do
+        git merge-base --is-ancestor "$b" origin/main 2>/dev/null \
+          && ! grep -qxF -- "$(git rev-parse "$b")" <<< "$line" && continue
+        heads="$(gh_ pr list --head "$b" --state all --limit 100 --json state,headRefOid \
+          --jq '.[] | select(.state == "MERGED" or .state == "CLOSED") | "\(.state) \(.headRefOid)"')"
+        grep -qE '^MERGED ' <<< "$heads" && continue
+        grep -qxF -- "CLOSED $(git rev-parse "$b")" <<< "$heads" && continue
+        echo "$b"
+      done; } \
+    | grep -E '^[a-z]+/B[0-9]+\.[0-9]+-agent$' | grep -vxF -- "$1" | LC_ALL=C sort -u
 }
 lock() { # lock <dir>: 0 when this process holds <dir>/lock; a dead holder's lock is taken over
   local holder
@@ -217,7 +232,9 @@ run_issue() { # run_issue <issue>: 0 ran or skipped, 1 refused
   card="$(card_of "$n")"
   [[ "$card" =~ ^B[0-9]+\.[0-9]+$ ]] || { say "skip #$n: no card id in the issue form (got '$card')"; return 0; }
   branch="$(branch_of "$card")"
-  [[ $(in_flight "$branch") -lt $CAP ]] || { say "skip #$n: $CAP agent branches in flight"; return 0; }
+  why="$(in_flight "$branch")"
+  [[ $(grep -c . <<< "$why") -lt $CAP ]] \
+    || { say "skip #$n: $(grep -c . <<< "$why") agent branches in flight (cap $CAP): $(tr '\n' ' ' <<< "$why" | sed 's/ $//')"; return 0; }
   lock "$dir" || { say "skip #$n: locked by a running pid"; return 0; }
   trap "rm -rf $(printf %q "$dir/lock")" EXIT
   wt="$(git worktree list --porcelain | awk -v b="branch refs/heads/$branch" '/^worktree /{w=substr($0, 10)} $0 == b {print w}')"
