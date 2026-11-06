@@ -7,12 +7,12 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open   | Total   |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ------ | ------- |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 54     | 0       | 31     | 85      |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 55     | 0       | 30     | 85      |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0      | 5       |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3       |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4       |
 | E5 Todos keys    | [plan/E5-todos-keys.md](plan/E5-todos-keys.md)       | 6      | 0       | 0      | 6       |
-| **Total**        |                                                      | **71** | **0**   | **32** | **103** |
+| **Total**        |                                                      | **72** | **0**   | **31** | **103** |
 
 ## Execution order
 
@@ -132,7 +132,7 @@ flowchart TD
   S97["97 · .env.example no longer exempts a whole command<br/>B1.81"]
   S98["98 · run.sh skips issues while merged agent branches remain<br/>~~B1.82~~"]
   S99["99 · unattended.sh tells the runner's ready from a person's<br/>~~B1.83~~"]
-  S100["100 · reviewer probes refuse to write without TMPDIR<br/>B1.84"]
+  S100["100 · reviewer probes refuse to write without TMPDIR<br/>~~B1.84~~"]
   S101["101 · plans give the docs(map) step to code-writer<br/>B1.85"]
   S102["102 · check-ac-coverage reads multi-line it.each titles<br/>~~B1.86~~"]
   S103["103 · docs follow B1.83's label and touches column<br/>B1.87"]
@@ -175,7 +175,6 @@ at most 3 cards Doing (B1.18).
 | 87   | B1.77 | guard-bash blocks commands that print a git or gh credential                                             | —      | Open   | —                               | Lead  | S [estimate] |
 | 96   | B1.80 | The components guide says the search form is a client component once section 25 lands                    | —      | Open   | ~~B5.3~~                        | Lead  | S [estimate] |
 | 97   | B1.81 | guard-bash's secret-read rule lets any command through once it names `.env.example`                      | —      | Open   | —                               | Lead  | S [estimate] |
-| 100  | B1.84 | The reviewer's probes edit the worktree when `TMPDIR` is unset                                           | —      | Open   | —                               | Lead  | S [estimate] |
 | 101  | B1.85 | Card plans give the `docs(map)` step to dev-lead, whose hook refuses `spec/features-map.md`              | —      | Open   | —                               | Lead  | S [estimate] |
 | 103  | B1.87 | Docs still describe unattended.sh and pr-step.sh as they were before B1.83                               | —      | Open   | —                               | Lead  | S [estimate] |
 
