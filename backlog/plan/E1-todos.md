@@ -1039,3 +1039,14 @@ _tooling · no §_
 - **Acceptance:** a local agent branch whose tip is an ancestor of `origin/main` (merged), or whose PR is merged or closed, is not counted; an unmerged local agent branch or an open agent PR still counts, so the cap of 3 holds; the skip message names the branches it counted; existing runner probes keep their verdicts; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.82/`
+
+### B1.83 · unattended.sh takes the first ready_for_review, whoever made it
+
+_tooling · no §_
+**Status: Open** — `scripts/metrics/unattended.sh:49` ends the D-29 window at the PR's first `ready_for_review` event, and the runner's `gh` acts under the lead's account, so the timeline cannot tell the runner's ready from a person's. On 2026-11-06 the lead clicked "Ready for review" on runner PR #232 at 00:34:32Z while run 224 was still in diff review (only plan and PR-body commits pushed, and no ready step of the PR wrapper in `runs/224/*.jsonl`); the lead undid it, but `unattended.sh 224` will still close the window at 00:34:32Z, before the code existed, and a merge at that moment would have landed docs only
+
+- **Spec:** none — tooling (D-29 metrics, runner); no `src/` change, no section
+- **Test:** a fixture timeline for `unattended.sh` with ready_for_review at t1, convert_to_draft at t2 and the runner's ready at t3 — red because: the script reports ready = t1
+- **Acceptance:** the runner's own ready is identifiable without reading the actor: the PR wrapper's `ready` step adds a label (e.g. `runner-ready`, created on first use) in the same step, and `unattended.sh` ends the window at the `ready_for_review` paired with that label, falling back to today's rule for PRs that predate it; a ready that is later undone is reported in a new `touches` column, not counted as a message; `no-rework.sh` keeps its verdicts on #211, #216, #221 and #229; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.83/`
