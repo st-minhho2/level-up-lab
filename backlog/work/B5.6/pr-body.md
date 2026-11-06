@@ -76,17 +76,30 @@ Plan review: approved, round 2 (round 1: 1 reason, unit counts stated, applied b
 
 ## Map delta
 
-pending
+- F26 · §28 · ✗ → ✅ — `onDueDateKeyDown` on the "Due date" input in `src/components/todo-due-date.tsx`; evidence: `pnpm test` → 241 passed, `pnpm test:e2e` → 52 passed, mutation 92.62 (`src/lib` + `src/actions`, unchanged by this card). The ✗ row landed in the feat commit 7e16b8f, the ✅ flip in `docs(map)` 6e04aba (written by `code-writer`: `dev-lead`'s path hook refuses `spec/features-map.md`, mistake-log row 8df2de3).
 
 ## Review
 
-pending
+`/review-loop`: passes 1/3, verdict ready for PR, 0 findings. Plan review: approved in round 2 (round 1: 1 reason, unit counts stated, applied be6294a).
+
+| Pass | #   | Finding (file:line)                                                            | Source   | Kind       | Disposition      | Justification                                                                                                            |
+| ---- | --- | ------------------------------------------------------------------------------ | -------- | ---------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 1    | Q1  | `pending` read in `onDueDateKeyDown` stale between submit and render?          | dev-lead | question   | no change needed | submit and Escape are separate discrete events; React flushes `pending = true` first; no `pending` guard → AC-28.4 fails |
+| 1    | Q2  | AC-28.7's POST count flaky?                                                    | dev-lead | flake risk | no change needed | a wrong save posts at once, before the field could close; `fill` sends no POST; 1/1 green                                |
+| 1    | S1  | `setDraft(dueDate ?? '')` on Escape survives its removal                       | reviewer | coverage   | no change needed | equivalent: `onEdit` reseeds the draft on every open, so the reset is unobservable; §28 Function contracts require it    |
+| 1    | P1  | reviewer probe wrote 10 `sed -i` edits into the worktree's `todo-due-date.tsx` | reviewer | process    | fixed            | `git restore` by dev-lead before any commit; HEAD was intact; mistake-log row 571c92f                                    |
+
+Probes (one line removed each, on an archive copy): `preventDefault` → 1 fails · `setEditing(false)` → 4 · `setError` → 1 · each of ctrl/meta/alt/shift → 1 · `pending` → 1 · `CANCEL_KEY = 'Esc'` → 4 · `setDraft` → 0 (equivalent, S1).
+
+Riskiest unfalsified: an Escape in the window between a successful save's `setEditing(false)` and `pending` turning false; harmless (the save is stored) and untested.
+
+Full text: `backlog/work/B5.6/review.md` "Diff review (round 1)".
 
 ## Evidence
 
-- AC met: pending
+- AC met: 7/7 (AC-28.1 … AC-28.7)
 - tier: medium
-- plan deviations: none
+- plan deviations: none (step 4's `docs(map)` commit was written by `code-writer`, not `dev-lead`; same file and content as the Files table)
 - trace: n/a
 
 ## Checklist
