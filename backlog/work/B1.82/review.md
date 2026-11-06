@@ -63,3 +63,68 @@ Verdict: changes requested
 Riskiest spot I could not falsify: the `gh` shim honoring `--state` and `--head`. If the shim's filter does the
 work that `run.sh`'s own `--jq` should do, R18 passes against a `gh` that behaves differently. The diff review must
 check that `run.sh` alone decides MERGED, CLOSED and OPEN.
+
+## Plan review (round 2)
+
+SCOPE: all (tooling, no §). Plan at `6896b31`. Read: card B1.82, `plan.md`, the round-1 revision diff, the
+prototype `run.sh` and `run-smoke.sh` the plan cites (scratchpad `proto/` and `red2/`, diffed against the tree:
+`red2/run.sh` is today's `run.sh`, `red2/run-smoke.sh` is `proto/run-smoke.sh`).
+
+Commands run (nothing on the tree; probes on `git archive HEAD` copies under the scratchpad, `/bin/bash` 3.2):
+
+- `scripts/next-task.sh --check B1.82` gave `[next-task] B1.82: no overlap with any Doing or Review card` (exit 0).
+- `scripts/agent/tier.sh backlog/work/B1.82/plan.md` gave `high`. `plan-files.sh --any B1.82 HEAD` gave the 3 Files
+  rows. `check-backlog.sh` gave `[check-backlog] OK: README matches the cards`.
+- Red (today's `run.sh`, prototype `run-smoke.sh`): R1–R17 `ok`, R18 FAIL on all 7 cases, `1 of 18 probes FAILED`.
+- Green (prototype both): `ok R18`, `18 probes OK`. Both match the plan's Verification.
+- Real `gh pr list --head chore/B1.66-agent --state all --limit 100 --json state,headRefOid --jq '<MERGED or CLOSED>'`
+  returned `db95f93…` (exit 0): the new call works against GitHub as written.
+- `gh api …/commits/db95f93`: committer `GitHub`, parents `5e23968`, `821ee1c`. PR #200's last commit is a
+  "Merge branch 'main' into chore/B1.66-agent" made with GitHub's Update branch after the run's last push (`5e23968`,
+  `Agent-Run:` trailer); the PR merged at `db95f93`.
+- Probe on the green copy (an extra R18 case, not kept): `feat/B9.1-agent` at its own tip with a MERGED PR whose
+  `headRefOid` is a commit whose parent is that tip (the #200 shape), plus two unmerged branches without a PR. Got
+  `[run] skip #7: 3 agent branches in flight (cap 3): chore/B9.2-agent feat/B9.1-agent feat/B9.3-agent`.
+
+Round-1 reasons: 1 fixed (headRefOid = tip; case 4 covers it), 2 fixed (the `gh` cost is stated), 3 fixed (local
+R1–R18 run stated, `pnpm test` 241 passed). Round 1's riskiest spot is closed in the plan: case 3 asserts `run.sh`
+sent `--state all`, and the shim returns every state for `all`, so `run.sh`'s `--jq` alone picks MERGED or CLOSED.
+
+| Check                                                                     | Result                                                                                                                                                             |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every file belongs to the card                                            | pass: `run.sh`, `run-smoke.sh` (the runner's own probe set, as the Test line allows), the work artifacts                                                           |
+| interfaces follow `ts-style.md`; mutations in actions; Prisma in lib      | pass (n/a): no `src/`. `in_flight`'s new output, the skip line and the new `gh` call are pasted; exit codes and `CAP=3` unchanged                                  |
+| follows `advice.md` or states the deviation                               | pass: no advice, card `Tier: quick`                                                                                                                                |
+| ≤ 7 criteria, every Then measurable                                       | fail: one Acceptance, but "whose PR is merged … is not counted" does not hold when the merged head is not the local tip, and the plan does not state it (reason 1) |
+| verification lists exact commands with expected numbers                   | pass: red `1 of 18 probes FAILED`, green `18 probes OK`, both reproduced; `pnpm test` 241 passed (39 files)                                                        |
+| work breakdown skeleton → red → green → map → review, convention subjects | pass: the tooling shape red → green → review (B1.79, B1.86); no skeleton or map without `src/` or a section                                                        |
+| `Lead approves spec` box, ticked only by a human                          | pass (n/a): no section. `Plan approved by:` empty; tier high → the lead's `approve` (D-28)                                                                         |
+| no settled D-n contradicted                                               | pass: D-19, D-27, D-28 followed                                                                                                                                    |
+| `next-task.sh --check` says no overlap                                    | pass: `[next-task] B1.82: no overlap with any Doing or Review card`                                                                                                |
+
+Verdict: changes requested
+
+1. **Rule (b) keeps counting a branch whose PR merged at a commit the runner never had, so the 2026-11-06 skip
+   comes back (confirmed by probe; the shape happened on PR #200).** (b) stops counting a local branch only when a
+   MERGED or CLOSED PR's `headRefOid` equals its tip. When the PR's head moves on GitHub after the run's last push
+   (GitHub's Update branch, or a commit the lead pushes to the PR), the local tip is the parent of the merged head.
+   `main` squashes, so (a) never fires either, and the branch counts until `worktree-prune.sh` runs. That is the
+   card's own defect for a branch "whose PR is merged". Trigger: PR #200 merged at `db95f93`, a GitHub-made merge
+   whose parent `5e23968` is the run's last push; a runner that still holds `chore/B1.66-agent` at `5e23968` counts
+   it forever. The probe above reproduces it with the prototype: the merged branch is named in the skip line.
+   Pick one before the lead's gate and state its cost:
+   - (i) MERGED: not counted whatever the tip; CLOSED: only at its tip (round 1's finding 1 is about a closed PR).
+     Cost: a run resumed on a merged PR's branch (issue reopened and relabeled, worktree still there) is not counted.
+     Add an R18 case with the #200 shape (merged head = a child of the tip, want run).
+   - (ii) Keep equality and add to the Costs list: a PR whose head moved on GitHub after the run's last push stays
+     counted after merge until `worktree-prune.sh` runs. The lead's recent practice of not updating runner PRs
+     narrows it, but a lead commit on the PR still produces it.
+     An ancestor test (local tip is an ancestor of the merged head) does not help without a fetch of the PR head:
+     `worktree.sh` fetches only `origin/main`, so the runner may not have `db95f93`.
+2. **(minor)** `run-smoke.sh`'s header still says "Probes R1–R17" and lists R4 as "three agent branches in flight"
+   in the prototype. The round-1 plan's Files row said "header names it"; the revised row dropped it. Name R18 in
+   the header (the Files row already covers the file).
+
+Riskiest spot I could not falsify: the runner container's local branch state after a merge. The probe proves what
+`in_flight` does for a given tip; whether the runner's leftover branches sit at the pushed tip, or something else
+moves them (a pull, a resumed run), I traced from `run.sh` and `worktree.sh` but did not observe in the container.
