@@ -6,7 +6,8 @@ Files:
 
 - `backlog/plan/E5-todos-keys.md`: B5.4 `**Status: Done** — bd99f86 (#229)`, 7 AC-26.n tests green (unit 222, e2e
   50), mutation 92.31 (`page-title.ts` 100, 6 of 6 killed); unattended and no-rework 1/1 (D-29), one runner run
-- `backlog/README.md`: Remaining row 91 out; `~~B5.4~~` in node 91; totals updated (E5 4/0/2, total 66/0/31 of 97)
+- `backlog/README.md`: Remaining row 91 out; `~~B5.4~~` in node 91; totals updated (E5 4/0/2, total 66/0/32 of 98,
+  after B1.82's filing #231; B5.5 stays Open until its own closing lane)
 - `spec/technical-requirements.md`: §26 index row ✗ → ✅
 - `docs/metrics.md`: B5.4 Green column on the merged sha (bd99f86)
 - `backlog/work/B5.4/closing-pr-body.md`: this body (Closing step 6)
