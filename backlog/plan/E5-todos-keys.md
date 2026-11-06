@@ -54,7 +54,7 @@ _F24 · section 26_
 ### B5.5 · Escape clears the search box
 
 _F25 · section 27_
-**Status: Open** — clearing a search takes §21's link or deleting the text by hand (`grep -n 'Escape' src/components/todo-search-form.tsx` → 0)
+**Status: Done** — 7f72998 (#232), 6 AC-27.n tests green (unit 227, e2e 51), mutation 92.62 (escape-search.ts 100); unattended and no-rework 1/1 (D-29), one runner run
 
 - **Spec:** §27 — unchanged (section written from `work/B5.5/analysis.md`; contract `spec/contracts/25-escape-search.md`; Escape in the search box lifted from §16 and §21 Out of scope, D-32)
 - **Test:** `src/lib/escape-search.test.ts::AC-27.1: isSearchEscape is true only for Escape with no modifier` — red because: `isSearchEscape` is not exported yet (`src/lib/escape-search.ts` does not exist)
