@@ -1043,7 +1043,7 @@ _tooling · no §_
 ### B1.83 · unattended.sh takes the first ready_for_review, whoever made it
 
 _tooling · no §_
-**Status: Open** — `scripts/metrics/unattended.sh:49` ends the D-29 window at the PR's first `ready_for_review` event, and the runner's `gh` acts under the lead's account, so the timeline cannot tell the runner's ready from a person's. On 2026-11-06 the lead clicked "Ready for review" on runner PR #232 at 00:34:32Z while run 224 was still in diff review (only plan and PR-body commits pushed, and no ready step of the PR wrapper in `runs/224/*.jsonl`); the lead undid it, but `unattended.sh 224` will still close the window at 00:34:32Z, before the code existed, and a merge at that moment would have landed docs only
+**Status: Done** — 5ab5ff0 (#241), pr-step-smoke R7/R16 (red 14 ok 2 FAIL, green 16 ok), metrics-smoke M44-M49 (red 36 ok 9 FAIL, green 45, review pass 1 adds M48/M49, 47 ok); live: first wrapper ready on #241 at 06:13:02Z labeled pr-step-ready at 06:13:04Z; unattended columns 1-7 unchanged (7/8), touches 0; no-rework 6/6 unchanged; vitest 241, hook-smoke 601, no src/; plan review 2 rounds, diff review 2 passes
 
 - **Spec:** none — tooling (D-29 metrics, runner); no `src/` change, no section
 - **Test:** a fixture timeline for `unattended.sh` with ready_for_review at t1, convert_to_draft at t2 and the runner's ready at t3 — red because: the script reports ready = t1
