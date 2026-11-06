@@ -70,4 +70,4 @@ repo, `origin/main` = `om`, a merge of `m1–m3` into `b0`; issue 7 = B1.44):
 
 Not in scope: `--poll`'s order, the lock, `worktree-prune.sh`, the runner container, a fetch in `run.sh`.
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: round 2 reasons addressed in c85fe96, no round 3 (lead) · Plan approved by: lead, 2026-11-06 · Rounds: 1
