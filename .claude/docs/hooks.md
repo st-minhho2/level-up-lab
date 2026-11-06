@@ -36,14 +36,19 @@ every git subcommand outside a read list (`log show diff status rev-parse …` a
 worktree reflog remote config apply`), which writes its directory and its git dirs. A command with a write is refused
 unless `TMPDIR` is set, an existing absolute directory, disjoint from the project and not inside the cwd's worktree,
 and every target resolves (symlinks followed) under it; a target built at run time, a relative one after a `cd` that
-may not have run, `xargs` into a writer and a run-time command name are refused too. `/dev/null`-type targets and fd
-duplications are not writes; commands without a write pass with `TMPDIR` unset. Costs: the runner's container has no
+may not have run, `xargs` into a writer and a run-time command name are refused too, and so are `git push`, git writes
+with `GIT_DIR`/`GIT_WORK_TREE` in the command, a write through a symlink `ln -s` makes in the same command, and a
+`$TMPDIR` in a command that sets `TMPDIR` or sources a file (the word `TMPDIR` as data is fine). Launchers (`time`,
+`caffeinate`, `nice`, `sudo`, `pnpm exec`, `npx`, …) are looked through; a `)` closing a `case` pattern keeps the cwd.
+`/dev/null`-type targets and fd duplications are not writes; commands without a write pass with `TMPDIR` unset.
+Costs: the runner's container has no
 `TMPDIR`, so the reviewer's probes there are refused; the session scratchpad is not under `TMPDIR`; a `cp -r .` copy's
 git writes are refused (its `.git` points back); `git version`, `git fetch` and other harmless subcommands off the read
 list fail closed. Out of reach: a program's own writes (`node -e`, `python3 -c`, `pnpm install`, `prettier --write`,
 `eslint --fix`, `make`, a script, sed's or awk's write commands, an output option of a program not listed), a program a
-git setting runs from a read subcommand (`git -c diff.external=…`), an alias or function from an earlier call, a hard
-link from the copy into the worktree. `hook-smoke.sh` RW1–RW94.
+git setting runs from a read subcommand (`git -c diff.external=…`), a launcher not on the list, `GIT_DIR` exported by
+an earlier call or the profile, a symlink a `cp`, `tar` or `rsync` of the same command brings in, an alias or function
+from an earlier call, a hard link from the copy into the worktree. `hook-smoke.sh` RW1–RW107.
 
 `path-guard.sh` matches the path relative to the worktree that holds the file, not to `CLAUDE_PROJECT_DIR` (the main
 checkout when a session writes into `.worktrees/<slug>/` or the desktop app's `.claude/worktrees/<name>/`): it asks
