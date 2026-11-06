@@ -87,4 +87,4 @@ Costs:
   card worktree. If step 2's first push is refused here, dev-lead stops and the lead picks: open a session in the card
   worktree to finish steps 2–4, or push and open the draft by hand. Never worked around.
 
-Plan review: approved, round 2 · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: lead, 2026-11-06 · Rounds: 1
