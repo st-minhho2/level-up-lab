@@ -73,3 +73,46 @@ Notes (not blocking):
 - Costs that are stated correctly and that I confirmed: `ci.yml` runs on `labeled` (line 7) and not on
   `ready_for_review`, so each wrapper `ready` adds one CI run on the same SHA. Re-adding a label already present adds
   no event, so the BEHIND round trip adds none. The default-set history is unchanged (7/8, touches 0).
+
+## Plan review (round 2)
+
+Plan at f70c124 (round 1 committed as b1d2ba1); round-2 prototype in the same scratch repo.
+
+Runs:
+
+- `scripts/next-task.sh --check B1.83` → `[next-task] B1.83: no overlap with any Doing or Review card`
+- `scripts/agent/tier.sh backlog/work/B1.83/plan.md` → `high`
+- prototype, `/bin/bash` 3.2: `[pr-step-smoke] 16 ok, 0 FAIL` (R16 covers refused 8 and 9, plus each of `label
+create`, `pr ready` and `api --method` failing, with the failing call last in the log); `[metrics-smoke] 45 ok, 0 FAIL`
+- runner image, offline: `docker run --rm --network none --entrypoint /usr/bin/gh level-up-lab-runner-runner:latest
+--version` → `gh version 2.23.0 (2023-02-27 Debian 2.23.0+dfsg1-1)`. With `GH_DEBUG=api` and a dummy token,
+  `gh api --method POST repos/o/r/issues/1/labels -f 'labels[]=pr-step-ready'` sends
+  `POST /repos/o/r/issues/1/labels` with a JSON body starting `{"labels": [`. That matches the plan's Verification.
+  I did not run `{owner}/{repo}` expansion in the image (I used literal `o/r`).
+
+| Check                                                                             | Result                                                                                   |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: Files unchanged from round 1 (4 scripts and paperwork), the lead's list            |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass (n/a): bash only                                                                    |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: no advice, stated                                                                  |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: 6 probes with exact Wants                                                          |
+| verification lists exact commands with expected numbers                           | pass: 14/2 and 36/9 red; 16/45 green; live 7/8 and 6/6; the gh 2.23 request bodies       |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass with round-1 note: map rows deferred to a named follow-up (filing lane after merge) |
+| the section has a `Lead approves spec` box, ticked only by a human                | pass (n/a): no section; high tier → the lead's `approve`                                 |
+| no settled D-n contradicted                                                       | pass: D-19, D-28 followed                                                                |
+| `scripts/next-task.sh --check B1.83` says no overlap                              | pass: `[next-task] B1.83: no overlap with any Doing or Review card`                      |
+
+Round-1 reasons:
+
+1. Resolved. The Costs now name the refusal and the lead's choice: open a session in the card worktree for steps 2–4,
+   or push and open the draft by hand. The plan cites B1.26's layout (session in a Claude worktree, card worktree under
+   its `.worktrees/`, every later wrapper call ran). I could not check that against B1.26's session record, because my
+   read was refused. The repo's own record (B1.26 pr-body: "rule 5 compared the wrapper with the card worktree's own
+   copy") agrees. Either way the lead approves knowing both outcomes.
+2. Resolved. The label add is now REST `gh api --method POST "repos/{owner}/{repo}/issues/<n>/labels"`. I confirmed
+   offline that the runner image's gh 2.23.0 sends that request.
+3. Resolved. The order is now create → `gh pr ready` → add. Only the add can fail after the PR turns ready. That cost
+   (`ended` run, old rule until the label lands) and the recovery (rerun `ready <n>`) are stated, and R16 probes each
+   failing call.
+
+Verdict: approved (ready for the lead's gate; high tier, so the lead's `approve` is required before step 1)
