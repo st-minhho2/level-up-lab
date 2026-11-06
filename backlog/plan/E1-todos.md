@@ -1032,7 +1032,7 @@ _tooling · no §_
 ### B1.82 · run.sh counts merged agent branches as in flight and skips the next issue
 
 _tooling · no §_
-**Status: Open** — `scripts/agent/run.sh:176-180` (`in_flight`) counts every local `<type>/B<e>.<n>-agent` branch plus open PR heads, merged or not, and `run.sh:220` skips the issue once that count reaches `CAP=3` (line 33). On 2026-11-06 the runner container still held the merged `feat/B5.1-agent`, `feat/B5.3-agent` and `feat/B5.4-agent` worktrees, so `scripts/agent/run.sh 224` printed `skip #224: 3 agent branches in flight` and started no run (no `runs/224/` directory) although #224 was eligible (`eligible.sh 224 B5.5` exit 0). It ran only after the lead ran `scripts/worktree-prune.sh` by hand
+**Status: Done** — 0de8773 (#242), run-smoke R18 (red a332d16: R18 FAIL all 7 cases, 1 of 18; green 9b58695: 18 probes OK, bash 3.2), vitest 241, e2e 52, mutation 92.62 (no src/); plan review 2 rounds, diff review 1 pass
 
 - **Spec:** none — tooling (D-26 runner, sequential cap); no `src/` change, no section
 - **Test:** a probe in `scripts/hook-smoke.sh` (or the runner's own probe set) with three local `feat/B9.<n>-agent` branches already merged into the base and no open PR, expecting `in_flight` to report 0 and the issue to start — red because: `in_flight` reports 3 and `run.sh` prints `skip #<n>: 3 agent branches in flight`
