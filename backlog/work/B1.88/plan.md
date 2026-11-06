@@ -88,4 +88,4 @@ typecheck` clean; `pnpm test` unchanged; CI green.
 
 Not in scope: the runner image or container, `reviewer.md` (its "TMPDIR unset" rule stays for sessions), guard-bash.
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: · Rounds: 1
