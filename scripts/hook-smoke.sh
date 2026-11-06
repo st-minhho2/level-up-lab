@@ -958,6 +958,28 @@ RW
 rw 2 "$RWT" "$RWW" 'git -C "$TMPDIR/c" push origin HEAD:refs/heads/x' 'push'
 # RW107: a case pattern is not a command
 rw 0 - "$RWW" 'case "$f" in *.ts) echo ts;; esac'
+# RW108 (review pass 2 [1]): a write to the symlink itself that the same command makes
+rw 2 "$RWT" "$RWW" "ln -s \"$RWW/README.md\" \"\$TMPDIR/l3\" && echo x >> \"\$TMPDIR/l3\"" 'symlink'
+# RW109–RW111 (review pass 2 [2]): a pattern's leading ( and its | alternatives are no subshell or pipe
+rw 2 "$RWT" "$RWW" '( cd "$TMPDIR/probe" && case x in (x) true;; esac ) && touch zz2' 'outside TMPDIR'
+rw 2 "$RWT" "$RWW" "cd \"\$TMPDIR/probe\" && ( cd \"$RWW\" && case x in a|x) touch zz3;; esac )" 'outside TMPDIR'
+rw 0 "$RWT" "$RWW" 'cd "$TMPDIR/probe" && case x in a|x) touch zz;; (y) touch y;; esac'
+# RW112–RW113 (review pass 2 [3]): a git alias, given with -c or from the repository's config
+rw 2 "$RWT" "$RWW" 'git -C "$TMPDIR/c" -c alias.p=push p origin HEAD:refs/heads/x' 'git subcommand'
+rw 2 "$RWT" "$RWW" 'git -C "$TMPDIR/c" p origin HEAD:refs/heads/x' 'git subcommand'
+# RW114–RW116 (review pass 2 [4]): core.worktree set in the command, set earlier, and -c on a git write
+git init -q "$RWT/cw"; git -C "$RWT/cw" config core.worktree "$RWW"
+rw 2 "$RWT" "$RWW" 'git -C "$TMPDIR/c" config core.worktree x && git -C "$TMPDIR/c" checkout -- a' 'core.worktree'
+rw 2 "$RWT" "$RWW" 'git -C "$TMPDIR/cw" checkout -- a' 'outside TMPDIR'
+rw 2 "$RWT" "$RWW" 'git -C "$TMPDIR/g" -c user.name=x commit -m x' 'git -c'
+# RW117–RW119 (review pass 2 [5]): more ways a command sets or drops TMPDIR
+rw 2 "$RWT" "$RWW" 'while read -r TMPDIR; do touch "$TMPDIR/zz"; done < notes.md' 'sets TMPDIR'
+rw 2 "$RWT" "$RWW" 'IFS= read -r TMPDIR < notes.md && touch "$TMPDIR/a"' 'sets TMPDIR'
+rw 2 "$RWT" "$RWW" "env -u TMPDIR bash -c 'touch \"\${TMPDIR}src/zz\"'" 'sets TMPDIR'
+# RW120–RW121 (review pass 2 [6]): the operand a launcher takes before the command
+rw 2 "$RWT" "$RWW" 'timeout 5 rm src/a.ts' 'outside TMPDIR'
+rw 2 "$RWT" "$RWW" 'flock "$TMPDIR/lk" rm src/a.ts' 'outside TMPDIR'
+rm -rf "$RWT/cw/.git"; rmdir "$RWT/cw" 2>/dev/null
 rm -f "$RWT/probe/.git" "$RWT/link"; rmdir "$RWT/probe" "$RWT" "$RWS" 2>/dev/null
 
 echo; [[ $fail -eq 0 ]] && echo "hook-smoke: $n probes OK" || { echo "hook-smoke: FAILURES above"; exit 1; }
