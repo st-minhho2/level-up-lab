@@ -92,3 +92,97 @@ cat-file blame grep merge-base rev-list for-each-ref describe shortlog name-rev`
 Riskiest unfalsified: the cwd tracking across `cd X && … ; …` combined with `$( )` recursion. The 28 refusal rows
 and my 70 commands did not break it, but the lexer is ~490 lines of hand-written shell grammar. Its edge cases
 (nested quotes inside `$( )` inside a heredoc) have only the plan's probes as evidence.
+
+## Plan review (round 2)
+
+SCOPE: all (tooling, no §). Plan at `d2d3dcb`. The base is unchanged since round 1: `git diff --stat 7c4300e HEAD`
+shows only `backlog/work/B1.84/{plan,review}.md`. The dev-lead's prototype is `reviewer-writes.mjs` (684 lines; 785
+after `prettier --stdin-filepath .claude/hooks/reviewer-writes.mjs`, as the plan says) and `try.sh` in the session
+scratchpad. I ran copies of both under `$TMPDIR`. Nothing ran on the tree.
+
+Commands run:
+
+- `scripts/next-task.sh --check B1.84` gave `[next-task] B1.84: no overlap with any Doing or Review card` (exit 0).
+- `scripts/agent/tier.sh backlog/work/B1.84/plan.md` gave `high`.
+- `scripts/ci/plan-files.sh --any B1.84 HEAD` gave the 7 rows of the Files table.
+- `try.sh` on the prototype gave `n=83 fail=0`, the Want column of RW1–RW83. RW84–RW85 are guard-bash's
+  `agent_type` switch and are not in the prototype.
+- Recount: want 2 is 5 + 28 + 18 + 1 = 52 (RW1–RW52). Want 0 is 16 + 15 + 2 = 33. 601 + 85 = 686. Red gives 52 FAIL
+  and 634 ok. guard-bash rules 1–5 block none of the 85 commands today (no `rm -rf`, push, prisma, secret path or
+  pr-step), so every want-2 row fails red on its exit code, and every want-0 row passes red and green.
+- 140 commands of my own through the prototype, listed below.
+- `scripts/hook-smoke.sh:765-769`: RP5 greps reviewer.md for `still write with Bash` and RP9 for the forbidden-forms
+  line. The reviewer.md change at lines 15 and 22 must keep both strings, or "601 existing verdicts unchanged" breaks.
+
+Round 1 reasons:
+
+| #   | Round 1 reason                      | Now                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| --- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | denylist lets worktree writes pass  | fixed. git fails closed outside `GIT_READS` and the list forms. RW34–RW52 add the 18 commands. I tried 70 more writes (`git log --output=`, `git format-patch -o`, `>&`, `&>`, `&>>`, `>\|`, `<>`, `exec 3>`, `cp/mv/install -t`, `pushd`, `cd -`, `cd "$OLDPWD"`, `for TMPDIR in`, `export TMPDIR=`, `env/command/sudo/nice/timeout` prefixes, `sed --in-place`, `sed … -i`, `patch`, `find -exec … +`, brace lists, `git restore`, `git stash drop/clear`, `git branch -D`, `git tag`, `git config --unset`, `git worktree add/prune`, `git remote add`, `git reflog expire`, `--work-tree`, `--git-dir`). Every one was refused. |
+| 2   | `[` and `[[` refused                | fixed (RW69–RW71). 29 git read forms pass with TMPDIR unset (`stash show -p`, `tag -l`, `remote -v`, `config user.name`, `worktree list --porcelain`, `reflog -5`, `branch -vv`, `apply --stat`, `--no-pager`, `-P`, `--remerge-diff` and others). Also the diff-review command block, `diff <(…)`, `xargs wc`, and heredocs to stdout.                                                                                                                                                                                                                                                                                             |
+| 3   | scratchpad cost unnamed             | fixed: Cost (2) and the reviewer.md row name it. RW52 refuses a write to the scratchpad.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| 4   | red count off by one                | fixed: 52 FAIL and 634 ok, then 686 (recount above).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| 5   | device targets, TMPDIR source, size | fixed: the Approach states the device and fd rule and the profile assumption. The size is 785 lines after prettier (confirmed), "M in fact".                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+
+| Check                                                                | Result                                                                                                                                                              |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file belongs to the card                                       | pass: as in round 1. The two doc rows are named as outside the card's list, with a "drop docs" opt-out                                                              |
+| interfaces follow `ts-style.md`; mutations in actions; Prisma in lib | pass (n/a): no `src/`. guard-bash exits 0/2. The `.mjs` contract is stdin JSON, stdout reason, and a non-zero exit fails closed                                     |
+| follows `advice.md` or states the deviation                          | pass: "No advice (tier quick, no section)"                                                                                                                          |
+| ≤ 7 criteria, every Then measurable                                  | fail: one Acceptance, measured by RW exit codes and cause text. Its clause "the refusal names the cause" is false for a compound command after `cd X &&` (reason 1) |
+| verification lists exact commands with expected numbers              | pass: red 52 FAIL and 634 ok, green "686 probes OK", vitest 241, named CI scripts (recount above)                                                                   |
+| work breakdown, convention subjects                                  | pass: red → green → review, the tooling shape. The red subject has no `(red)` marker, as `docs/mistake-log.md:31` (B1.62) requires                                  |
+| `Lead approves spec` box, ticked only by a human                     | pass (n/a): no section. `Plan approved by:` is empty. Tier high → the lead's `approve` (D-28)                                                                       |
+| no settled D-n contradicted                                          | pass: D-19 label, D-27/D-28 high-tier gate. The runner's TMPDIR goes to a follow-up card, and `run.sh` stays B1.82's                                                |
+| `next-task.sh --check` says no overlap                               | pass: `[next-task] B1.84: no overlap with any Doing or Review card`                                                                                                 |
+
+Plan length: 85 lines against "≈ 40". B1.78's plan (82 lines) was accepted at this size, so it is not a reason here.
+
+Verdict: changes requested
+
+1. **After `cd "$TMPDIR/probe" &&`, a loop, an `if` or `{ a; b; }` loses the cwd. The refusal then names the wrong
+   cause (confirmed).** With the fixture TMPDIR and cwd = this worktree, the prototype refuses each of these:
+   - `cd "$TMPDIR/probe" && for i in 1 2; do sed -i "" "s/a/b/" src/x.ts; done`
+   - `cd "$TMPDIR/probe" && while read -r m; do sed -i "" "$m" src/x.ts; done < "$TMPDIR/muts"`
+   - `cd "$TMPDIR/probe" && if true; then touch a; fi`
+   - `cd "$TMPDIR/probe" && { touch a; touch b; }`
+
+   Each refusal says `'src/x.ts' (sed) is relative to a directory a cd may not have reached (join the cd and the
+write with &&)`. The cd is already joined with `&&`, and the compound runs only if the cd succeeded.
+   - Cause: `reviewer-writes.mjs:530-540` treats every `;` after the cd as a joiner and makes the cwd unknown. Only
+     `(` saves and restores the cwd (`:549-552`). The plan's rule "any other joiner makes it unknown" reads the same
+     way, so the plan carries the defect.
+   - Why it matters: a loop of mutations in the copy is the very probe #225 ran. The refusal tells the reviewer to
+     make a change it has already made. That breaks the Acceptance clause "the refusal names the cause". The cost is
+     not named either, so the lead would approve a hook that refuses the main probe pattern under a misleading
+     message.
+   - Workaround today: absolute `"$TMPDIR/probe/…"` targets inside the loop. The prototype allows them.
+   - Fix (a), preferred: a compound command (`for`, `while`, `until`, `if`, `case`, `{`) opened right after
+     `cd X &&` keeps that cwd until its closing word, the way `(` already does. Any `cd` inside a loop body makes the
+     cwd unknown for the rest of the loop, because the cd repeats on each pass. Add probes:
+     - want 0: `cd "$TMPDIR/probe" && for i in 1 2; do sed -i … src/x.ts; done` and
+       `cd "$TMPDIR/probe" && { touch a; touch b; }`.
+     - want 2: `cd "$TMPDIR/probe"; for i in 1; do touch a; done` and
+       `cd "$TMPDIR/probe" && for i in 1 2 3 4 5 6; do cd .. && touch a; done`.
+   - Fix (b): keep the rule, and name the cost in Costs. The message must then say what to do: "inside a loop, `if`
+     or `{ }`, write `$TMPDIR/…` targets". reviewer.md must say the same.
+   - Either way, recount the red and green numbers.
+
+Notes, not blocking (state them or leave them; each is fail-closed or out of reach):
+
+- A `cp -r .` copy keeps the worktree's `.git` file, so git writes in the copy are refused (RW33). This is correct:
+  `git checkout -- f` there would write the real worktree's index. So the "revert one line" probe has to restore
+  with `cp`, `sed` or `patch`, or work from `git clone . "$TMPDIR/c"`, which the prototype allows. Name this in the
+  reviewer.md row, which today says only "git".
+- `sort a.txt -o /dev/stdout` is refused with TMPDIR unset. The device exemption covers only redirections, not
+  writer options.
+- `git version`, `git notes show`, `git merge-tree` and `git fsck` are refused with TMPDIR unset. This is the stated
+  fail-closed cost.
+- `git -c diff.external=… diff` and `git -c core.pager=… log` pass: a `-c` setting runs a program from a read
+  subcommand. Add "`git -c` that runs a program" to the out-of-reach list in the hook header and in hooks.md.
+- The reviewer.md change must keep RP5's `still write with Bash` and RP9's forbidden-forms line (above).
+
+Riskiest unfalsified: the cwd tracking itself. 140 commands of mine did not break the escape side: every write into
+the worktree was refused. The fix for reason 1 changes that same code, though, and the lead approves before it
+exists. A cwd that survives into a compound command is where a regression would let a relative write escape. The
+two want-2 probes in reason 1 are the guard against that.
