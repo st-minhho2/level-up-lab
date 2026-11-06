@@ -31,6 +31,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §24 | [contracts/22-escape-edit-title.md](contracts/22-escape-edit-title.md) | Todos: Escape cancels a title edit                                     | ✅     |
 | §25 | [contracts/23-search-shortcut.md](contracts/23-search-shortcut.md)     | Todos: the slash key focuses the search box                            | ✅     |
 | §26 | [contracts/24-page-title.md](contracts/24-page-title.md)               | Todos: the browser tab title shows the remaining count                 | ✅     |
+| §27 | [contracts/25-escape-search.md](contracts/25-escape-search.md)         | Todos: Escape clears the search box                                    | ✗      |
 
 Reading order: §1 → §2 → the section your backlog card names → [features-map.md](features-map.md).
 

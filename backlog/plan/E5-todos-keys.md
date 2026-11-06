@@ -56,6 +56,8 @@ _F24 · section 26_
 _F25 · section 27_
 **Status: Open** — clearing a search takes §21's link or deleting the text by hand (`grep -n 'Escape' src/components/todo-search-form.tsx` → 0)
 
+- **Spec:** §27 — unchanged (section written from `work/B5.5/analysis.md`; contract `spec/contracts/25-escape-search.md`; Escape in the search box lifted from §16 and §21 Out of scope, D-32)
+- **Test:** `src/lib/escape-search.test.ts::AC-27.1: isSearchEscape is true only for Escape with no modifier` — red because: `isSearchEscape` is not exported yet (`src/lib/escape-search.ts` does not exist)
 - **Acceptance:** Escape in the "Search" box empties it and shows the list §21's link shows (same address); mounts in `src/components/todo-search-form.tsx` only (B5.3 changed it in batch 1); contract `spec/contracts/25-escape-search.md` (section 27); batch 2
 - **Tier:** full · **Depends on:** ~~D-30~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B5.5/`
