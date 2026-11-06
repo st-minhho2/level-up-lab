@@ -58,4 +58,4 @@ killed by AC-28.4/28.5 per advice "Mutation hot spots", read by the reviewer) ·
 | 4    | dev-lead        | F26 ✅                                               | `docs(map): F26 … [B5.6]`         |
 | 5    | reviewer (diff) | `review.md` diff section                             | `docs(backlog): B5.6 review …`    |
 
-Plan review: pending, round 2 (round 1: 1 reason, unit counts stated) · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 (round 1: 1 reason, unit counts stated, applied be6294a) · Plan approved by: · Rounds: 1
