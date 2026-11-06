@@ -1,10 +1,21 @@
 'use client';
 
 // §15 TodoDueDate: a todo's due-date text and its edit control, rendered inside the TodoItem row; §17 adds the
-// overdue marker after the date.
-import { useLayoutEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from 'react';
+// overdue marker after the date; §28 Escape in the field closes the editor without saving.
+import {
+  useLayoutEffect,
+  useRef,
+  useState,
+  useTransition,
+  type FormEvent,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react';
 import { setTodoDueDateAction } from '@/actions/todos';
 import { isOverdue, OVERDUE_LABEL, todayOf } from '@/lib/todo-overdue';
+
+// §28 REQ-28.1: the key that cancels the edit.
+const CANCEL_KEY = 'Escape';
 
 // §17: the row's completed state is the first checkbox of the nearest `li`; no `li` or no checkbox is not completed.
 function rowIsCompleted(wrapper: HTMLElement | null): boolean {
@@ -46,6 +57,19 @@ export function TodoDueDate({
     setEditing(true);
   }
 
+  // Ignored while pending so an in-flight save ends the edit through its own result (REQ-28.5); a modified Escape or
+  // any other key keeps §15 (REQ-28.6).
+  function onDueDateKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
+    const modified = event.ctrlKey || event.metaKey || event.altKey || event.shiftKey;
+    if (event.key !== CANCEL_KEY || modified || pending) {
+      return;
+    }
+    event.preventDefault();
+    setEditing(false);
+    setDraft(dueDate ?? '');
+    setError(undefined);
+  }
+
   // The draft is sent as typed ('' clears); a rejection or a failed save keeps the field open with it (REQ-15.7,
   // REQ-15.10) and the next success removes the message (REQ-15.11).
   function onSave(event: FormEvent<HTMLFormElement>): void {
@@ -73,6 +97,7 @@ export function TodoDueDate({
             type="date"
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={onDueDateKeyDown}
             aria-invalid={error !== undefined}
             aria-describedby={error !== undefined ? errorId : undefined}
             className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
