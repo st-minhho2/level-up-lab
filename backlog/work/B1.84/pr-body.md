@@ -3,8 +3,14 @@
 B1.84 — The reviewer's probes edit the worktree when `TMPDIR` is unset (tooling, no spec section)
 
 - spec: none — tooling (invariant 8 review, the reviewer is read-only on code); no `src/` change, no section
-- test: `scripts/hook-smoke.sh` RW1–RW94 (new). Red: pending. Green: pending.
-- acceptance: pending
+- test: `scripts/hook-smoke.sh` RW1–RW125 (new). Red `b1597f2` (no `(red)` marker, plan): 55 FAIL (RW1–RW55), 640
+  ok. Green `677506f`: "hook-smoke: 695 probes OK". Review passes add RW95–RW125, each red before its fix:
+  `0366484` → `8e0e0dd` (11 FAIL), `340a978` → `13721df` (11 FAIL), `f9225a6` → `bee3701` (2 FAIL). Now
+  "hook-smoke: 726 probes OK"; the 601 probes from before keep their verdicts.
+- acceptance: 5 of 5 — a reviewer Bash write is refused unless its target resolves under a set `TMPDIR` outside the
+  worktree (RW1–RW55, RW95–RW125); each refusal names its cause (every refusing probe checks the cause text); reads,
+  gates and `review.md` writes keep working (RW56–RW92, path-guard probes unchanged); probes landed red first, old
+  verdicts unchanged; label `config-change-approved`
 - risk tier: high (`.claude/`); label `config-change-approved` (D-19)
 
 ## Plan
@@ -107,11 +113,39 @@ None: tooling card, no `spec/features-map.md` row.
 
 ## Review
 
-Pending.
+`/review-loop`: 3 passes of 3 (`backlog/work/B1.84/review.md`, "Diff review (round 1)" to "(round 3)"). Each pass
+ran vitest 241 passed, playwright 52 passed, mutation 92.62 (no `src/` change) and hook-smoke. 14 findings, all fixed
+with a red probe first; pass 3's fix was committed without a fourth pass at the lead's choice.
+
+| Pass | Finding                                                                                      | Disposition                      |
+| ---- | -------------------------------------------------------------------------------------------- | -------------------------------- |
+| 1    | [1] the word `TMPDIR` as data (`grep TMPDIR`) refused with a wrong cause                     | fix: RW95–RW96, `8e0e0dd`        |
+| 1    | [2] a write through a symlink `ln -s` makes in the same command passes                       | fix: RW100, `8e0e0dd`            |
+| 1    | [3] a `case` pattern's `)` read as a subshell close restores the cwd                         | fix: RW98–RW99, RW107, `8e0e0dd` |
+| 1    | [4] `GIT_DIR=`/`GIT_WORK_TREE=` prefixes pass                                                | fix: RW101–RW102, `8e0e0dd`      |
+| 1    | [5] launchers (`/usr/bin/time`, `caffeinate`, `pnpm exec`) hide the writer                   | fix: RW103–RW105, `8e0e0dd`      |
+| 1    | [6] `git push` from a clone under TMPDIR writes the real repository                          | fix: RW106, `8e0e0dd`            |
+| 2    | [1] a write to the link itself (`echo x >> "$TMPDIR/l3"`) passes                             | fix: RW108, `13721df`            |
+| 2    | [2] a pattern's leading `(` and `\|` alternatives move the paren stack                       | fix: RW109–RW111, `13721df`      |
+| 2    | [3] a git alias (`-c alias.p=push p`) gets past the push rule                                | fix: RW112–RW113, `13721df`      |
+| 2    | [4] `core.worktree` moves git's writes into the worktree                                     | fix: RW114–RW116, `13721df`      |
+| 2    | [5] `while read -r TMPDIR`, `IFS= read`, `env -u TMPDIR` rebind TMPDIR unseen                | fix: RW117–RW119, `13721df`      |
+| 2    | [6] the `timeout`/`flock` operand skip is unpinned                                           | probes: RW120–RW121              |
+| 3    | [1] regression from `13721df`: a builtin's name in data (`s/for/while/`) counts as rebinding | fix: RW122–RW123, `bee3701`      |
+| 3    | [2] a pattern after `;;` and `;&` is unpinned                                                | probes: RW124–RW125              |
+
+Costs added after the plan (lead accepted, 2026-11-06):
+
+- Threat model: the hook stops a reviewer's honest mistakes (#225). A command built on purpose to get past a text
+  check is out of reach (hook header, `hooks.md`); passes 1–3 were mostly such commands. Containment against that is
+  the runner's sandbox (B1.58), not this hook.
+- Riskiest unfalsified (pass 3): the Bash tool here runs zsh, the lexer reads bash grammar (zsh-only syntax not
+  probed); the hook's `TMPDIR` equals the Bash tool's (assumed, untested).
+- Follow-up: the runner exports a `TMPDIR`, so container reviews can probe (card to be filed after this merges).
 
 ## Evidence
 
-- AC met: pending
+- AC met: 5/5
 - tier: high
 - plan deviations: none
 - trace: n/a
