@@ -11,8 +11,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0      | 5      |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3      |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4      |
-| E5 Todos keys    | [plan/E5-todos-keys.md](plan/E5-todos-keys.md)       | 3      | 0       | 3      | 6      |
-| **Total**        |                                                      | **65** | **0**   | **33** | **98** |
+| E5 Todos keys    | [plan/E5-todos-keys.md](plan/E5-todos-keys.md)       | 4      | 0       | 2      | 6      |
+| **Total**        |                                                      | **66** | **0**   | **32** | **98** |
 
 ## Execution order
 
@@ -122,7 +122,7 @@ flowchart TD
   S88["88 · overdue count<br/>~~B5.1~~"]
   S89["89 · Escape cancels a title edit<br/>~~B5.2~~"]
   S90["90 · slash focuses search<br/>~~B5.3~~"]
-  S91["91 · tab title shows the count<br/>B5.4"]
+  S91["91 · tab title shows the count<br/>~~B5.4~~"]
   S92["92 · Escape clears search<br/>B5.5"]
   S93["93 · Escape closes the due-date editor<br/>B5.6"]
   S94["94 · dev-lead write guard stops at dev-lead headless<br/>~~B1.78~~"]
@@ -167,7 +167,6 @@ at most 3 cards Doing (B1.18).
 | 83   | B1.72 | The scripts guide lists sandbox probes S1–S10                                                            | —      | Open   | ~~B1.62~~                       | Lead  | S [estimate] |
 | 84   | B1.73 | The runner's setup steps check out a branch that exists                                                  | —      | Open   | ~~B1.69~~                       | Lead  | S [estimate] |
 | 87   | B1.77 | guard-bash blocks commands that print a git or gh credential                                             | —      | Open   | —                               | Lead  | S [estimate] |
-| 91   | B5.4  | The browser tab title shows the remaining count                                                          | —      | Open   | ~~D-30~~                        | Lead  | S [estimate] |
 | 92   | B5.5  | Escape clears the search box                                                                             | —      | Open   | ~~D-30~~                        | Lead  | S [estimate] |
 | 93   | B5.6  | Escape closes the due-date editor without saving                                                         | —      | Open   | ~~D-30~~                        | Lead  | S [estimate] |
 | 96   | B1.80 | The components guide says the search form is a client component once section 25 lands                    | —      | Open   | ~~B5.3~~                        | Lead  | S [estimate] |
