@@ -72,3 +72,75 @@ Costs the lead should know before approving (none blocks; round 1's five stand, 
 5. The §28 `Lead approves spec` box is still unticked; the lead's gate (D-7) may tick it.
 
 Verdict: approved (ready for the lead's gate, not approved for build)
+
+## Diff review (round 1)
+
+Reviewed at HEAD 6e04aba (commits b5e0219 pin, c4f38ea red, 7e16b8f feat, 8df2de3 mistake log, 6e04aba docs(map)).
+
+**Worktree incident (reviewer's own, not the change's).** A probe of mine ran with `TMPDIR` unset, so its `cd` was a
+no-op and ten `sed -i` mutations landed on the worktree's `src/components/todo-due-date.tsx` (uncommitted; HEAD is
+intact, `git status` shows ` M src/components/todo-due-date.tsx`). `path-guard.sh` blocks the reviewer from restoring
+`src/`. The orchestrator must run `git -C <worktree> restore src/components/todo-due-date.tsx` and confirm
+`git status --short` is empty before anything else is committed or pushed. Every gate below ran on the clean HEAD
+before the incident. The probes were re-run on a `git archive HEAD` copy.
+
+### Commands (last line of each)
+
+| Command                               | Result                                                                                            |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                           | `All matched files use Prettier code style!` (exit 0)                                             |
+| `pnpm typecheck`                      | `tsc --noEmit` (exit 0, no output)                                                                |
+| `pnpm test`                           | `Tests  241 passed (241)` (39 files; plan: 241)                                                   |
+| `pnpm test:e2e`                       | `52 passed (1.3m)` (plan: 52; AC-28.7 ✓ 1.3s)                                                     |
+| `pnpm test:mutation`                  | `Final mutation score of 92.62 is greater than or equal to break threshold 70`                    |
+| `scripts/ci/check-suppressions.sh`    | `OK: no new suppressions`                                                                         |
+| `scripts/ci/check-config-change.sh`   | `OK: no protected config changed`                                                                 |
+| `scripts/ci/check-feat-commits.sh`    | `OK: no feat commit touches tests`                                                                |
+| `scripts/ci/check-ac-coverage.sh`     | `OK: every criterion of a shipped section has a test` (§28 ✗ until closing, 7 criteria)           |
+| `scripts/ci/check-spec-sections.sh`   | `OK: sections cited: 1 … 28`                                                                      |
+| `scripts/ci/check-features-map.sh`    | `OK`                                                                                              |
+| `scripts/verify-red.sh B5.6`          | `RESULT: red for the right reason` (4 new, 4 failed, base b5e0219; e2e skipped, needs a server)   |
+| `scripts/ci/check-plan-scope.sh`      | `OK: feat/B5.6-agent stays inside the approved plan of B5.6 (D-27 approval)`                      |
+| `git diff --stat main...HEAD`         | local `main` is stale (range includes B5.5, #232); the CI range `3804abe..HEAD` is the card's own |
+| pin commit b5e0219 on an archive copy | `todo-due-date.test.tsx`: `Tests  15 passed (15)` (AC-28.4–28.6 green before code, as planned)    |
+
+### Checklist
+
+| Check                                                                                            | pass / fail: reason                                                                                                                                                                                                                                                                                                           |
+| ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-28.n has a test whose assertion matches its Then                                        | pass: 28.1 (0 fields, text ×1, 1 button, `defaultPrevented` true, 0 calls), 28.2 (both rows), 28.3 (0 alerts, 0 fields, 1 call), 28.4, 28.5 (Enter + 5 keys), 28.6 (3 targets), 28.7 e2e                                                                                                                                      |
+| no test weakened after the red commit                                                            | pass: `git log --first-parent --no-merges c4f38ea..HEAD -- '*.test.*' e2e/` empty; no merge commits in range                                                                                                                                                                                                                  |
+| every changed file in `plan.md`                                                                  | pass: the component, its test, the e2e file, the features map; `docs/metrics.md` and `docs/mistake-log.md` are exempt paperwork; `check-plan-scope.sh` OK                                                                                                                                                                     |
+| interfaces match §28 Function contracts                                                          | pass: props unchanged, no new export; private `onDueDateKeyDown` on the input only; guard, `preventDefault`, leave edit, `setDraft(dueDate ?? '')`, clear message as written                                                                                                                                                  |
+| Zod at action boundary / Prisma only in lib / no raw SQL / migration                             | n/a: no action, lib, Prisma or migration change                                                                                                                                                                                                                                                                               |
+| no secret, no suppression                                                                        | pass (`check-suppressions.sh`, diff read)                                                                                                                                                                                                                                                                                     |
+| features map row moved                                                                           | pass: F26 added ✗ in 7e16b8f, ✅ in 6e04aba (code-writer re-dispatch, mistake-log row 8df2de3)                                                                                                                                                                                                                                |
+| UI: accessible names, row text, Server/Client boundary                                           | pass: no markup, label or text added (REQ-28.7); still `'use client'` for state/events; the document-level §25 listener ignores Escape (`isSearchShortcut` is `/` only)                                                                                                                                                       |
+| one reverted line makes a test fail (archive copy, `todo-due-date.test.tsx`, baseline 19 passed) | pass with one equivalent survivor: `preventDefault` 1 fail · `setEditing(false)` 4 · `setError` 1 · each of ctrl/meta/alt/shift 1 · `pending` 1 · `CANCEL_KEY='Esc'` 4 · `setDraft` 0 failed (equivalent: `onEdit` reseeds the draft on every open, so the Escape reset is unobservable; already named in plan review cost 3) |
+
+### Questions from the dev-lead
+
+1. **Can `pending` be stale in `onDueDateKeyDown` between `startTransition` and the next render?** Not as far as I
+   can show. The submit is a discrete event. React 19.1 sets the transition's `pending = true` at the event's sync
+   priority and flushes it in the microtask at the end of that event. A later Escape is its own task, and React
+   dispatches through the fiber's current props, so it runs the closure that sees `pending === true`. Escape cannot
+   share a task with the submit: Enter's implicit submission follows Enter's own keydown, which returns early. After
+   an `ok` result, a stale `pending === false` read could only arrive after the save has ended, when closing is
+   already the right outcome. AC-28.4 kills the `pending` term (probe above). It checks the rendered state, not a
+   same-task race, which no browser produces.
+2. **Is AC-28.7's POST count flaky?** Low risk. The listener is attached after `fill` and before Escape. A wrong
+   save would `POST /` synchronously from `startTransition` at submit, before the field could close, and the field
+   closes only on the result. So the assertion catches a regression on every run, without depending on timing. A
+   false positive needs another `POST /` in that window. The app has none: Server Actions are the only POSTs, and
+   `fill` on a date input calls none. It passed once here (1.3s). I could not repeat it after the incident because
+   the worktree source is dirty.
+
+### Findings
+
+None blocking.
+
+Verdict: ready for PR, after the worktree is restored to HEAD (incident above). The diff itself needs no change.
+
+Riskiest unfalsified: the window after an `ok` save where `setEditing(false)` runs after the `await` and is not part
+of the transition, while `pending` turns false in a separate commit. Escape in that window should be harmless, since
+the save is already stored and closing is correct. Neither test covers it, and no browser can time a key press into it.
