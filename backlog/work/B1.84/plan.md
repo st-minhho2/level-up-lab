@@ -88,4 +88,4 @@ not in the writer list), a program a git setting runs from a read subcommand (`g
 `core.pager`), an alias or function from an earlier call, a hard link from the copy into the worktree.
 Size: S on the card, M in fact (the lexer).
 
-Plan review: · Plan approved by: · Rounds: 1
+Plan review: changes requested, round 2 (round 3 waived by the lead: r3 fixes r2's one reason) · Plan approved by: lead, 2026-11-06 · Rounds: 1
