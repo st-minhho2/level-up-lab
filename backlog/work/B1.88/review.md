@@ -94,3 +94,88 @@ Not reasons, for the lead to weigh at the gate (each falls under the plan's stat
 
 Riskiest unfalsified: unchanged from round 1. Whether Claude Code gives the process's `TMPDIR` unchanged to the Bash
 tool and to a subagent's hook. The plan marks it `[unverified]` until the first E6 batch; nothing offline can show it.
+
+## Diff review (round 1)
+
+SCOPE: tooling (`scripts/agent/run.sh`, `scripts/agent/run-smoke.sh`, `.claude/docs/hooks.md`; no `src/`, `prisma/`,
+`e2e/`; no section). Range 296afed..05f681d; red 6708888, green 05f681d.
+
+### Commands (run by the reviewer, last line each)
+
+| Command                                              | Result                                                                                                                                                                                               |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                          | `All matched files use Prettier code style!` (rc 0)                                                                                                                                                  |
+| `pnpm typecheck`                                     | `tsc --noEmit` (rc 0)                                                                                                                                                                                |
+| `pnpm test`                                          | `Tests  241 passed (241)`                                                                                                                                                                            |
+| `pnpm test:e2e`                                      | `52 passed (1.2m)` (the `e2e: insert rejected` server log is the suite's own failure-path probe)                                                                                                     |
+| `pnpm test:mutation`                                 | `Final mutation score of 92.62 is greater than or equal to break threshold 70` (`src/` unchanged)                                                                                                    |
+| `/bin/bash scripts/agent/run-smoke.sh` at HEAD       | `19 probes OK`; `/tmp/level-up-lab-run.*` count 0 before and after                                                                                                                                   |
+| same, at 6708888 (clone under `$TMPDIR`)             | `1 of 19 probes FAILED` (R19 only; every case: "the host's TMPDIR", shared, mktemp cases `calls=1 stopped=gate`)                                                                                     |
+| `bash scripts/hook-smoke.sh`                         | `hook-smoke: 726 probes OK`                                                                                                                                                                          |
+| `scripts/ci/check-suppressions.sh`                   | `[check-suppressions] OK: no new suppressions`                                                                                                                                                       |
+| `scripts/ci/check-config-change.sh`                  | rc 1: `Protected configuration changed without the 'config-change-approved' label` (hooks.md, run-smoke.sh, run.sh): expected locally, the PR carries it                                             |
+| `scripts/ci/check-feat-commits.sh`                   | `[check-feat-commits] OK: no feat commit touches tests`                                                                                                                                              |
+| `scripts/ci/check-ac-coverage.sh`                    | `[check-ac-coverage] OK: every criterion of a shipped section has a test`                                                                                                                            |
+| `scripts/ci/check-spec-sections.sh`                  | `[check-spec-sections] OK: sections cited: 1 … 28`                                                                                                                                                   |
+| `scripts/ci/check-features-map.sh`                   | `[check-features-map] OK`                                                                                                                                                                            |
+| `scripts/ci/check-backlog.sh`, `check-plan-scope.sh` | `OK: README matches the cards`; `OK: chore/B1.88-runner-tmpdir stays inside the approved plan of B1.88`                                                                                              |
+| `scripts/verify-red.sh B1.88`                        | rc 1 "no … (red) commit": n/a, no `*.test.ts` in the card (the red is the smoke run above); `--auto --range 296afed..HEAD` (CI's form) → "nothing to verify", rc 0; same subject form as B1.82/B1.84 |
+| `scripts/next-task.sh --check B1.88`                 | `[next-task] B1.88: no overlap with any Doing or Review card`                                                                                                                                        |
+| `git diff --stat 296afed..HEAD`                      | 6 files, +417 −5 (hooks.md 4, run-smoke.sh 78, run.sh 24, work/B1.88/* 316)                                                                                                                          |
+
+### Checklist
+
+- Acceptance (card): set, existing absolute directory, outside the worktree and the project, private per run → R19
+  "one run", "retry", "two runs at once", "--check-binary"; interactive sessions unchanged (only `run.sh`); run-smoke
+  R1–R18 and hook-smoke 726 keep their verdicts; label named for the PR. pass
+- No test changed after the red: `git log --first-parent --no-merges 6708888..HEAD -- '*.test.*' e2e/ scripts/agent/run-smoke.sh`
+  empty; no merges in the range. pass
+- Every changed file is in the plan's Files table; `check-plan-scope.sh` agrees. pass
+- Interfaces match the plan: child `TMPDIR=/private/tmp/level-up-lab-run.XXXXXX` (observed in the shim log), mode 700
+  (`drwx------`), new per call, outcome `no-tmpdir` with comment and `stopped`, no new flag or exit code. pass
+- Zod, Prisma, raw SQL, migration, features-map row: n/a (no `src/`, no section). No secret, no suppression. pass
+- `/bin/bash -n` clean on both scripts (shellcheck not installed here).
+
+### Probes (copies under `$TMPDIR`, `/bin/bash` 3.2)
+
+Mutants of `run.sh` at HEAD, full smoke each:
+
+| Mutant                                 | Result                                                                                                                                                                                                              |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| no `drop_tmp` in `on_signal`           | killed, R19: "TERM: left after the run", "TERM during --poll: left …"                                                                                                                                               |
+| no `drop_tmp` after `wait`             | killed, R19: one run, retry, two runs, --check-binary "left after the run"                                                                                                                                          |
+| no `TMPDIR="$RUN_TMP"` on the env line | killed, R19 (the host's TMPDIR, shared)                                                                                                                                                                             |
+| no `is_run_tmp` at creation            | killed, R19: `mktemp <victim>: calls=1 stopped=gate`                                                                                                                                                                |
+| no `return` on a failed check          | killed, R19: all three mktemp cases `calls=1 stopped=gate`                                                                                                                                                          |
+| `mktemp -d` under the host's TMPDIR    | killed, 14 of 19 (R4–R14, R16, R18, R19)                                                                                                                                                                            |
+| one fixed shared directory             | killed, R19: retry and two runs "shared a TMPDIR", entries "2 2"                                                                                                                                                    |
+| `is_run_tmp` accepts any parent        | survives: the victim's basename is not `level-up-lab-run.*`; second lock                                                                                                                                            |
+| no `cd … && pwd -P` resolve            | survives: macOS `mktemp` prints `/tmp/…`, which `is_run_tmp` accepts; the child then sees `/tmp/…` not `/private/tmp/…`, which `reviewer-writes.mjs:858` resolves itself (`real(tmpRaw)`), so equivalent for rule 6 |
+
+Caller's doubts, each traced:
+
+- R19 "two runs at once" overlap: the shim's log in a HEAD copy reads `START a`, `START b`, `END b 1`, `END a 1`, so
+  the two `-p` calls did overlap; and the "shared a TMPDIR" assertion compares names, so it holds without overlap.
+- `on_signal` removing the directory without waiting for the child: stated in the plan's Costs. Not probed with a live
+  `claude`; the smoke's shim dies on TERM.
+- TERM between `mktemp` and `RUN_TMP="$t"`: one empty directory left, stated at plan review round 2.
+- `is_run_tmp` in the Linux runner: `node:24…-bookworm`, `/tmp` a real directory, no `read_only` or `/tmp` tmpfs in
+  `.devcontainer/runner/docker-compose.yml` (only `/run`, pgdata), so `pwd -P` gives `/tmp/level-up-lab-run.*`.
+  Traced, not run in the container.
+- R19's `cp -R` of `scripts/` and `backlog/plan/`: under the smoke's `$TMP`, removed by its `EXIT` trap; at the red
+  commit the copy ran a full run (`stopped=gate`), so it is a working `run.sh`, and the guard `-f $COPY/scripts/agent/run.sh`
+  would catch a `cd ""` removal of its cwd.
+
+### Findings
+
+None blocking.
+
+Not findings (stated costs or second locks): the two surviving mutants above; `no-tmpdir` writes no `.jsonl` while
+the comment's `log:` names one (round 2 note); a `--check-binary` + failing `mktemp` case is traced, not probed.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: after a TERM, `on_signal` runs `rm -rf` while the killed `claude`'s tool children (a reviewer's
+`cp -r .` or vitest in `$TMPDIR/probe`) may still write there, so a large copy can survive the signal; the smoke's
+shim cannot show it, and whether Claude Code passes `TMPDIR` on to the Bash tool and hooks is still `[unverified]`
+until the first E6 batch.
