@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, createEvent, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ActionResult } from '@/lib/action-result';
@@ -124,4 +124,110 @@ describe('<TodoDueDate> (§15)', () => {
     await waitFor(() => expect(screen.queryAllByRole('alert')).toHaveLength(1));
     expect(screen.getByRole('alert').textContent).toBe('Todo not found');
   });
+});
+
+// A cancelable keydown dispatched through React's act, returned so the test can read defaultPrevented.
+function pressKey(target: Element, init: KeyboardEventInit): Event {
+  const event = createEvent.keyDown(target, { bubbles: true, cancelable: true, ...init });
+  fireEvent(target, event);
+  return event;
+}
+
+// Opens the editor on 2026-11-05 and sets the field to 2026-12-01 without saving.
+async function openEditorWithDraft(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+  await user.click(screen.getByRole('button', { name: 'Edit due date' }));
+  fireEvent.change(dueDateField(), { target: { value: '2026-12-01' } });
+}
+
+function deferred<T>(): { readonly promise: Promise<T>; readonly resolve: (value: T) => void } {
+  let resolve: (value: T) => void = () => undefined;
+  const promise = new Promise<T>((settle) => {
+    resolve = settle;
+  });
+  return { promise, resolve };
+}
+
+describe('<TodoDueDate> Escape in the due-date field (§28)', () => {
+  it('AC-28.4: Escape while the save is in flight keeps the field holding 2026-12-01 with defaultPrevented false; after the save resolves ok 0 "Due date" fields and the action called exactly once', async () => {
+    const save = deferred<ActionResult<Todo>>();
+    actions.setTodoDueDateAction.mockReturnValue(save.promise);
+    const user = userEvent.setup();
+    render(<TodoDueDate todoId="todo-9" dueDate="2026-11-05" />);
+    await openEditorWithDraft(user);
+    await user.click(screen.getByRole('button', { name: 'Update due date' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Update due date' })).toBeDisabled());
+
+    const escape = pressKey(dueDateField(), { key: 'Escape' });
+
+    expect(screen.getAllByLabelText('Due date')).toHaveLength(1);
+    expect(dueDateField()).toHaveValue('2026-12-01');
+    expect(escape.defaultPrevented).toBe(false);
+
+    await act(async () => {
+      save.resolve(saved('2026-12-01'));
+      await save.promise;
+    });
+
+    await waitFor(() => expect(screen.queryAllByLabelText('Due date')).toHaveLength(0));
+    expect(actions.setTodoDueDateAction).toHaveBeenCalledTimes(1);
+  });
+
+  it('AC-28.5: Enter in the field holding 2026-12-01 calls setTodoDueDateAction once with (todo-9, 2026-12-01)', async () => {
+    actions.setTodoDueDateAction.mockResolvedValue(saved('2026-12-01'));
+    const user = userEvent.setup();
+    render(<TodoDueDate todoId="todo-9" dueDate="2026-11-05" />);
+    await openEditorWithDraft(user);
+    await user.click(dueDateField());
+
+    await user.keyboard('{Enter}');
+
+    await waitFor(() => expect(actions.setTodoDueDateAction.mock.calls).toEqual([['todo-9', '2026-12-01']]));
+  });
+
+  it.each<{ readonly name: string; readonly init: KeyboardEventInit }>([
+    { name: 'ArrowLeft', init: { key: 'ArrowLeft' } },
+    { name: 'Ctrl+Escape', init: { key: 'Escape', ctrlKey: true } },
+    { name: 'Meta+Escape', init: { key: 'Escape', metaKey: true } },
+    { name: 'Alt+Escape', init: { key: 'Escape', altKey: true } },
+    { name: 'Shift+Escape', init: { key: 'Escape', shiftKey: true } },
+  ])(
+    'AC-28.5: $name in the field keeps the field with value 2026-12-01, defaultPrevented false and the action not called',
+    async ({ init }) => {
+      const user = userEvent.setup();
+      render(<TodoDueDate todoId="todo-9" dueDate="2026-11-05" />);
+      await openEditorWithDraft(user);
+
+      const event = pressKey(dueDateField(), init);
+
+      expect(screen.getAllByLabelText('Due date')).toHaveLength(1);
+      expect(dueDateField()).toHaveValue('2026-12-01');
+      expect(event.defaultPrevented).toBe(false);
+      expect(actions.setTodoDueDateAction).toHaveBeenCalledTimes(0);
+    },
+  );
+
+  it.each<{ readonly name: string; readonly target: () => Element }>([
+    { name: 'document.body', target: () => document.body },
+    { name: 'the button "Update due date"', target: () => screen.getByRole('button', { name: 'Update due date' }) },
+    { name: 'the text box "New todo"', target: () => screen.getByRole('textbox', { name: 'New todo' }) },
+  ])(
+    'AC-28.6: Escape on $name keeps the field with value 2026-12-01, defaultPrevented false and the action not called',
+    async ({ target }) => {
+      const user = userEvent.setup();
+      render(
+        <>
+          <input type="text" aria-label="New todo" />
+          <TodoDueDate todoId="todo-9" dueDate="2026-11-05" />
+        </>,
+      );
+      await openEditorWithDraft(user);
+
+      const event = pressKey(target(), { key: 'Escape' });
+
+      expect(screen.getAllByLabelText('Due date')).toHaveLength(1);
+      expect(dueDateField()).toHaveValue('2026-12-01');
+      expect(event.defaultPrevented).toBe(false);
+      expect(actions.setTodoDueDateAction).toHaveBeenCalledTimes(0);
+    },
+  );
 });
