@@ -937,6 +937,27 @@ rw 0 - "$RWW" 'sort src/a.ts -o /dev/stdout'
 # RW93–RW94: rule 6 is the reviewer's only
 rw 0 - "$RWW" "sed -i 's/a/b/' src/a.ts" '' code-writer
 rw 0 - "$RWW" "sed -i 's/a/b/' src/a.ts" '' -
+# RW95–RW99 (review pass 1 [1], [3]): the word TMPDIR as data is no reassignment; a case pattern's ) is no subshell
+rw 0 "$RWT" "$RWW" 'grep -rn TMPDIR .claude/agents > "$TMPDIR/hits.txt"'
+rw 0 "$RWT" "$RWW" 'cd "$TMPDIR/probe" && sed -i "" "s/TMPDIR/X/" src/a.ts'
+rw 2 "$RWT" "$RWW" 'read -r TMPDIR < notes.md; touch "$TMPDIR/a"' 'sets TMPDIR'
+rw 0 "$RWT" "$RWW" 'cd "$TMPDIR/probe" && case x in x) touch zz;; esac'
+rw 2 "$RWT" "$RWW" "cd \"\$TMPDIR/probe\" && ( cd \"$RWW\" && case x in x) touch zz;; esac )" 'outside TMPDIR'
+# RW100 (review pass 1 [2]): a write through a symlink the same command makes
+rw 2 "$RWT" "$RWW" "ln -s \"$RWW/src\" \"\$TMPDIR/l2\" && sed -i '' s/a/b/ \"\$TMPDIR/l2/a.ts\"" 'symlink'
+# RW101–RW102 (review pass 1 [4]): GIT_DIR / GIT_WORK_TREE place git's writes elsewhere
+rw 2 "$RWT" "$RWW" "GIT_DIR=\"$RWW/.git\" git -C \"\$TMPDIR/g\" checkout -- a" 'GIT_DIR'
+rw 2 "$RWT" "$RWW" "GIT_WORK_TREE=\"$RWW\" git -C \"\$TMPDIR/g\" checkout -- a" 'GIT_DIR'
+# RW103–RW105 (review pass 1 [5]): launchers in front of a writer
+while IFS= read -r c; do rw 2 "$RWT" "$RWW" "$c" 'outside TMPDIR'; done <<'RW'
+/usr/bin/time rm src/a.ts
+caffeinate -i rm src/a.ts
+pnpm exec rm src/a.ts
+RW
+# RW106 (review pass 1 [6]): a push from a clone under TMPDIR writes the repository it was cloned from
+rw 2 "$RWT" "$RWW" 'git -C "$TMPDIR/c" push origin HEAD:refs/heads/x' 'push'
+# RW107: a case pattern is not a command
+rw 0 - "$RWW" 'case "$f" in *.ts) echo ts;; esac'
 rm -f "$RWT/probe/.git" "$RWT/link"; rmdir "$RWT/probe" "$RWT" "$RWS" 2>/dev/null
 
 echo; [[ $fail -eq 0 ]] && echo "hook-smoke: $n probes OK" || { echo "hook-smoke: FAILURES above"; exit 1; }
