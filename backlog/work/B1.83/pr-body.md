@@ -3,8 +3,8 @@
 B1.83 — unattended.sh takes the first ready_for_review, whoever made it (tooling, no spec section)
 
 - spec: none — tooling (D-29 metrics, runner); no `src/` change, no section
-- test: `scripts/pr-step-smoke.sh` R7 (changed), R16 (new); `scripts/metrics-smoke.sh` M44–M47 (new), M30, M31, M33, M39, M41 rows pin `touches` 0. Red: pending. Green: pending.
-- acceptance: pending
+- test: `scripts/pr-step-smoke.sh` R7 (changed), R16 (new); `scripts/metrics-smoke.sh` M44–M47 (new), M30, M31, M33, M39, M41 rows pin `touches` 0; review pass 1 adds M48, M49. Red `4539715`: pr-step-smoke 14 ok, 2 FAIL (R7, R16); metrics-smoke 36 ok, 9 FAIL (M44, M45 read ready 01:10). Green `5deb3d1`: 16 ok, 45 ok; after `dfd3602` metrics-smoke 47 ok. hook-smoke 601 OK; vitest 241 (unchanged); e2e and mutation not run (no `src/`). Live: `unattended.sh` columns 1–7 identical to origin/main's (7/8 = 87.5 %), touches 0 on all 8; `no-rework.sh 211 216 221 229 232 235` unchanged (6/6 yes).
+- acceptance: 6 of 7 met — label added by the wrapper's ready step, created on first use (R7, R16); window ends at the ready paired with that label, fallback for older PRs (M44, M46–M49, M30–M41); undone ready in `touches`, not a message (M44, M45); `no-rework.sh` verdicts kept; label `config-change-approved` on the PR. Pending: the first live `ready` (this PR's own Loop 9 step) shows `pr-step-ready` on GitHub.
 - risk tier: high (`scripts/pr-step.sh`, D-28); label `config-change-approved` (D-19)
 
 ## Plan
@@ -106,12 +106,28 @@ None: tooling, no `spec/features-map.md` row.
 
 ## Review
 
-pending
+Plan review: 2 rounds (round 1: guard-bash rule 5, gh 2.23's `gh pr edit`, failure order; all fixed in round 2).
+Diff review: 2 of 3 passes, full text in `backlog/work/B1.83/review.md`.
+
+| Pass | Finding                                                                                | Disposition                                |
+| ---- | -------------------------------------------------------------------------------------- | ------------------------------------------ |
+| 1    | [1] coverage: no probe pins the label name (dropping `$4 == "pr-step-ready"` survived) | fix now: M48 (`dfd3602`), kills the mutant |
+| 1    | [2] coverage: "the first label" not pinned (`head -1` → `tail -1` survived)            | fix now: M49 (`dfd3602`), kills the mutant |
+| 2    | none; 10 of 10 one-line mutants killed                                                 | ready for PR                               |
+
+Riskiest unfalsified: `gh pr ready` on an already-ready PR must exit 0 for the rerun recovery and the "click left
+in place" cost. Both gh 2.23 (runner image) and 2.103 (host) carry the `Pull request #%d is already "ready for
+review"` branch (binary strings, not a run); the live `ready` on this PR is the first real check.
+
+Process note: the first push after the green commit was refused by guard-bash rule 5 (the hooks compare the card
+worktree's wrapper with the main checkout's copy), against the plan's B1.26-based expectation; the lead pushes and runs the
+ready step from the card worktree. Once main carries the new wrapper, a card worktree with the old one is refused the
+same way until it merges `origin/main`.
 
 ## Evidence
 
-- AC met: pending
-- tier: pending
+- AC met: 6/7
+- tier: high
 - plan deviations: none
 - trace: n/a
 
