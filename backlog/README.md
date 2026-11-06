@@ -5,14 +5,14 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 ## Status summary
 
-| Epic             | File                                                 | Done   | Partial | Open   | Total  |
-| ---------------- | ---------------------------------------------------- | ------ | ------- | ------ | ------ |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 51     | 0       | 30     | 81     |
-| E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0      | 5      |
-| E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3      |
-| E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4      |
-| E5 Todos keys    | [plan/E5-todos-keys.md](plan/E5-todos-keys.md)       | 5      | 0       | 1      | 6      |
-| **Total**        |                                                      | **67** | **0**   | **32** | **99** |
+| Epic             | File                                                 | Done   | Partial | Open   | Total   |
+| ---------------- | ---------------------------------------------------- | ------ | ------- | ------ | ------- |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 51     | 0       | 31     | 82      |
+| E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0      | 5       |
+| E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3       |
+| E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4       |
+| E5 Todos keys    | [plan/E5-todos-keys.md](plan/E5-todos-keys.md)       | 5      | 0       | 1      | 6       |
+| **Total**        |                                                      | **67** | **0**   | **33** | **100** |
 
 ## Execution order
 
@@ -132,6 +132,7 @@ flowchart TD
   S97["97 · .env.example no longer exempts a whole command<br/>B1.81"]
   S98["98 · run.sh skips issues while merged agent branches remain<br/>B1.82"]
   S99["99 · unattended.sh tells the runner's ready from a person's<br/>B1.83"]
+  S102["102 · check-ac-coverage reads multi-line it.each titles<br/>B1.86"]
 ```
 
 ## Remaining
@@ -173,6 +174,7 @@ at most 3 cards Doing (B1.18).
 | 97   | B1.81 | guard-bash's secret-read rule lets any command through once it names `.env.example`                      | —      | Open   | —                               | Lead  | S [estimate] |
 | 98   | B1.82 | run.sh counts merged agent branches as in flight and skips the next issue                                | —      | Open   | —                               | Lead  | S [estimate] |
 | 99   | B1.83 | unattended.sh takes the first ready_for_review, whoever made it                                          | —      | Open   | —                               | Lead  | S [estimate] |
+| 102  | B1.86 | check-ac-coverage misses a test title written on the line after `it.each(…)(`                            | —      | Open   | —                               | Lead  | S [estimate] |
 
 ## Waiting on human
 

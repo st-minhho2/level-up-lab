@@ -1050,3 +1050,14 @@ _tooling · no §_
 - **Acceptance:** the runner's own ready is identifiable without reading the actor: the PR wrapper's `ready` step adds a label (e.g. `runner-ready`, created on first use) in the same step, and `unattended.sh` ends the window at the `ready_for_review` paired with that label, falling back to today's rule for PRs that predate it; a ready that is later undone is reported in a new `touches` column, not counted as a message; `no-rework.sh` keeps its verdicts on #211, #216, #221 and #229; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.83/`
+
+### B1.86 · check-ac-coverage misses a test title written on the line after `it.each(…)(`
+
+_tooling · no §_
+**Status: Open** — `scripts/ci/check-ac-coverage.sh:6` collects titles with a line-based `grep -oE "(it|test)(\.each\([^)]*\))?\((['\"\`])AC-…:"`, so a title on its own line after a multi-line `it.each<…>([ … ])(`is never seen.`src/components/todo-due-date.test.tsx:267–272`is AC-28.6's only test, an`it.each`with 3 cases and the title`'AC-28.6: Escape on $name …'`on line 272; the feature PR #235 passed because §28 was still ✗ in the index, and B5.6's closing PR #237 (§28 → ✅) fails the`guards`job with`§28 criteria=7 covered=6 MISSING: AC-28.6`
+
+- **Spec:** none — tooling (CI guard for invariant 2 and `.claude/rules/testing.md`); no `src/` change, no section
+- **Test:** `scripts/ci/check-ac-coverage.sh` on a tree where §28's index row is ✅ (branch `docs/B5.6-done`) — red because: it exits 1 with `MISSING: AC-28.6`
+- **Acceptance:** a title passed to `it.each(…)(` or `test.each(…)(` counts when the table spans lines, carries a generic type argument, or puts the title on the next line; a string `'AC-n.m:'` that is not the first argument of `it`/`test`/`it.each(…)`/`test.each(…)` still does not count; the guard reports §28 `covered=7` once §28 is ✅ and keeps every other section's count; bash 3.2-safe; the PR carries `config-change-approved` (D-19); B5.6's closing PR #237 goes green after merging `origin/main`
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.86/`
