@@ -52,7 +52,7 @@ list fail closed. Out of reach: a program's own writes (`node -e`, `python3 -c`,
 git setting runs from a read subcommand (`git -c diff.external=…`), a launcher not on the list, `GIT_DIR` exported by
 an earlier call or the profile, a symlink a `cp`, `tar` or `rsync` of the same command brings in, an alias or function
 from an earlier call, a hard link from the copy into the worktree, any command built on purpose to get past a text
-check. `hook-smoke.sh` RW1–RW121.
+check. `hook-smoke.sh` RW1–RW125.
 
 `path-guard.sh` matches the path relative to the worktree that holds the file, not to `CLAUDE_PROJECT_DIR` (the main
 checkout when a session writes into `.worktrees/<slug>/` or the desktop app's `.claude/worktrees/<name>/`): it asks
