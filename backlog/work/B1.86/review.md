@@ -267,3 +267,99 @@ Verdict: back to test-writer (finding 1; findings 2 and 3 travel with it, neithe
 Riskiest unfalsified: that no real test shape makes the `.each` group, mis-parsed across an apostrophe outside a
 string (finding 3's JSX text or a comment), close right before a `('AC-…` that is not a title, so the id counts. I
 did not build one that does; I did not prove none exists.
+
+## Diff review (round 2)
+
+SCOPE: all (tooling, no §: `scripts/`, `backlog/`). Range `origin/main` (80773ee) `..57aff35`, the PR #239 head. New
+since round 1: `73a53a9` (`test(scripts): B1.86 review pass 1 -- …`, `scripts/hook-smoke.sh` +2 −0: A9, A10) and
+`57aff35` (`scripts/CLAUDE.md`: the `hook-smoke.sh` row says A1–A10 instead of A1–A8; the rest of the diff is
+Prettier re-padding). The guard is unchanged since `2f05f54`. Nothing on the tree was edited. Probes ran on
+`git archive` snapshots and fixtures under `$TMPDIR/b186-rev2.s65i/`.
+
+Command results (last line of each):
+
+| Command                                                  | Result                                                                                                   |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                              | `All matched files use Prettier code style!` (exit 0)                                                    |
+| `pnpm typecheck`                                         | `tsc --noEmit`, exit 0                                                                                   |
+| `pnpm test`                                              | `Tests  241 passed (241)` (39 files), the plan's number                                                  |
+| `pnpm test:e2e`                                          | `52 passed (1.1m)`                                                                                       |
+| `pnpm test:mutation`                                     | `Final mutation score of 92.62 is greater than or equal to break threshold 70`                           |
+| `scripts/ci/check-suppressions.sh`                       | `[check-suppressions] OK: no new suppressions`                                                           |
+| `scripts/ci/check-config-change.sh`                      | without the label: `::error::` on `scripts/ci/check-ac-coverage.sh` (expected); with the label: allowed. |
+|                                                          | PR #239 carries `config-change-approved`                                                                 |
+| `scripts/ci/check-feat-commits.sh`                       | `[check-feat-commits] OK: no feat commit touches tests`                                                  |
+| `scripts/ci/check-ac-coverage.sh`                        | `[check-ac-coverage] OK: every criterion of a shipped section has a test`                                |
+| `scripts/ci/check-spec-sections.sh`                      | `OK: sections cited: 1 … 28`                                                                             |
+| `scripts/ci/check-features-map.sh`                       | `[check-features-map] OK`                                                                                |
+| `scripts/ci/check-plan-scope.sh`, `check-backlog.sh`     | `OK: … stays inside the approved plan of B1.86`; `OK: README matches the cards`                          |
+| `scripts/verify-red.sh B1.86`                            | `::error::no 'test(<pkg>): B1.86 … (red)' commit`. Expected: a hook-smoke-only red has no marker (B1.62) |
+| `hook-smoke.sh` at `57aff35` (snapshot, `/bin/bash` 3.2) | `hook-smoke: 601 probes OK` (599 + A9 + A10)                                                             |
+| `hook-smoke.sh` at `2f05f54` (snapshot, `/bin/bash` 3.2) | `hook-smoke: 599 probes OK` (the round 1 number, reproduced)                                             |
+| PR #239 CI at `57aff35`                                  | lint, typecheck, test, e2e, mutation, semgrep, guards: SUCCESS; claude-review SKIPPED                    |
+| `git diff --stat origin/main...HEAD`                     | `6 files changed, 531 insertions(+), 45 deletions(-)`                                                    |
+
+Round 1 findings:
+
+1. Fixed. A9 (`it('emits', () => { emit('AC-9.1: x'); });`, want 1). On a copy, I deleted the left boundary
+   `(?<![\w.\$])`. A9 then fails (`exit 0 (want 1)`), and so does nothing else. The mutant that survived round 1 is now
+   killed.
+2. Fixed. A10 (`it.each<Array<number>>([1])('AC-9.1: nested type', …)`, want 0). On a copy, I deleted `|<[^<>]*>`
+   from `$gen`. A10 then fails (`exit 1 (want 0)`). The mutant is now killed.
+3. Disposition: no code change; one sentence goes into the PR body's Costs. Not yet done: PR #239's body (and
+   `pr-body.md`) at `57aff35` still has the plan's Costs list, "A1–A8 (new) — pending", and no A9/A10 line. This is
+   dev-lead's post-review step. I list it as a condition below, not as a finding.
+
+Checklist:
+
+| Check                                                     | Result                                                                                                                                                                                                |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every Acceptance clause has a probe whose verdict matches | pass: A1, A3 (title and table over lines), A1, A10 (type argument and one nesting), A5–A7, A9 (an id that is not the first argument), §28 `covered=7` (round 1), bash 3.2 (snapshot run)              |
+| no test weakened after the red commit                     | pass: `git log --first-parent --no-merges 22429b9..HEAD -- '*.test.*' e2e/ scripts/hook-smoke.sh` lists only `73a53a9`, a `test(scripts)` commit with numstat `2 0` (additions only). 0 merge commits |
+| every changed file is in `plan.md`                        | pass: `check-plan-scope.sh` OK. A9/A10 are probe rows inside a planned file, not a new file or interface. `plan.md` stays as the lead approved it, and the PR body records A9/A10 (condition below)   |
+| interfaces match                                          | pass: no arguments, same output lines, same exit codes. The guard is byte-identical to `2f05f54`                                                                                                      |
+| Zod / Prisma / raw SQL / migration                        | n/a: no `src/`, no `prisma/`                                                                                                                                                                          |
+| no secret, no suppression                                 | pass                                                                                                                                                                                                  |
+| features map row moved                                    | n/a: no section                                                                                                                                                                                       |
+| would a probe fail if one changed line were reverted?     | yes: the `print` line turns A1, A3, A4 red (round 1). Sub-rule mutants: 8 of 10 killed. Survivors: `\s*` before the title's `(`, the backtick quote (both fail closed)                                |
+| `config-change-approved` on the PR (D-19)                 | pass: label present on #239, head `57aff35`                                                                                                                                                           |
+
+Bounding round 1's riskiest spot. The `.each` branch counts an id only where the file holds `)`, optional
+whitespace, `(`, a quote and `AC-n.m:`. In `src/` and `e2e/` that sequence occurs twice, at
+`todo-due-date.test.tsx:251` (AC-28.5) and `:271` (AC-28.6), and both are real `.each` titles. So the guard counts no
+false id on today's tree. I then built the shape that round 1 could not:
+
+```
+[1] KIND: plan-mismatch
+    WHERE: scripts/ci/check-ac-coverage.sh:9–12 ($str, $par); backlog/work/B1.86/plan.md "Costs" (fails open)
+    DEFECT: an apostrophe outside a string in a one-line .each table (finding 3's mechanism) can make $par close at
+            a later unmatched `)`, so an id that is not a test title counts. The Costs name F2 as the only fail-open.
+    TRIGGER: src/x.test.tsx = it.each([[<p>don't</p>]])("runs", () => { render(<p>It's</p>)('AC-9.1: x'); });
+    WRONG BEHAVIOUR: old guard exit 1 (MISSING: AC-9.1), new guard exit 0. AC-9.1 is counted, but no test is titled
+            with it.
+    CONFIDENCE: confirmed (fixture G1, old vs new)
+```
+
+This finding does not block. Three things must all hold for the trigger to fire: an odd number of apostrophes in
+JSX text or a comment inside an `.each` table, a second apostrophe outside a string later in the file, and a call
+on an expression's result whose first argument is an `'AC-n.m:` string. Test code does not call results that way,
+and the tree has 0 such sequences outside titles. Related fixtures (old → new) behave as stated: G2, the same file
+with `render(…); f('AC-9.1: x')`, gives 1 → 1. G3, a `// it's` comment, then `g(1)('AC-9.1: x')`, gives 1 → 1. G5
+`(x)('AC-9.1: x')` after an `.each` gives 1 → 1. G6 `test.each([1])('runs', (n) => n)('AC-9.1: x')` gives 1 → 1. G7, a
+`)` in JSX text inside a table, gives 1 → 1 (fails closed, loud). G4, `it('AC-9.1: …')` inside a string literal, gives
+0 → 0 (inherited). One sentence next to finding 3's in the PR body's Costs is enough: "an apostrophe outside a string
+in an `.each` table can also fail open, but only before a `)('AC-…` call that is not a title (none in the tree)".
+
+Condition for ready (dev-lead, PR body only, no code). Before #239 leaves draft, its body records:
+
+- A9 and A10 as review-pass probes.
+- Round 1 finding 3's regression in Costs.
+- The fail-open sentence above.
+- The test, acceptance and Review lines in place of "pending".
+
+Verdict: ready for PR
+
+Riskiest unfalsified: G1 shows that an apostrophe outside a string can make the `.each` group mis-parse. I have not
+shown that this cannot also happen with a realistic multi-line table (an odd apostrophe in a comment, or JSX text,
+across lines). Such a mis-parse would close the group before a `)(…'AC-` that is not a title. Every such case I built
+without G1's curried call either counts nothing extra (G2, G3) or fails closed.
