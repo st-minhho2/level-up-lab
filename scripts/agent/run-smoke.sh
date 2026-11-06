@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Probes R1–R17 of scripts/agent/run.sh (B1.44) offline: a `claude` shim that replays fixture stream-json, a `gh` shim
+# Probes R1–R18 of scripts/agent/run.sh (B1.44) offline: a `claude` shim that replays fixture stream-json, a `gh` shim
 # that applies run.sh's own --jq to fixture JSON (real jq), and fakes for the eligibility, claim and worktree seams.
 #   scripts/agent/run-smoke.sh
 #   R1 not logged in            R2 unverified version          R3 ineligible issue        R4 three agent branches in flight
@@ -9,6 +9,7 @@
 #   R15 --mode on the host is dontAsk, whatever uname, curl or the environment say (B1.58)
 #   R16 the exact prompt: Loop 5's D-27 path at the plan gate, no unconditional gate stop (B1.65)
 #   R17 a run or --poll without a git identity is refused before any call (B1.69)
+#   R18 a merged agent branch is not in flight; an unmerged one or an open PR is; the skip names them (B1.82)
 set -uo pipefail
 command -v jq >/dev/null || { echo "run-smoke: needs jq" >&2; exit 2; }
 HERE="$(cd "$(dirname "$0")" && pwd -P)"
@@ -52,7 +53,11 @@ SHIM
 cat > "$TMP/bin/gh" <<'SHIM'
 #!/bin/bash
 echo "GH cwd=$(pwd -P) GH_REPO=${GH_REPO:-} $*" >> "$SMOKE_LOG"
-jqf=""; prev=""; for a in "$@"; do [[ "$prev" == --jq ]] && jqf="$a"; prev="$a"; done
+jqf=""; st=""; head=""; prev=""
+for a in "$@"; do
+  case "$prev" in --jq) jqf="$a" ;; --state) st="$a" ;; --head) head="$a" ;; esac
+  prev="$a"
+done
 case "$1 $2" in
   "issue view") file="issue-$3.json" ;;
   "issue list") file=issues.json ;;
@@ -61,7 +66,10 @@ case "$1 $2" in
   *) exit 9 ;;
 esac
 [[ -f "$SMOKE_FIX/$file" ]] || { echo "gh: Not Found (HTTP 404)" >&2; exit 1; }
-jq -r "$jqf" "$SMOKE_FIX/$file"
+[[ "$file" == prs.json ]] || { jq -r "$jqf" "$SMOKE_FIX/$file"; exit; }
+# pr list keeps gh's own filters, --state (a fixture PR without one is open) and --head (B1.82)
+jq -c --arg s "$st" --arg h "$head" '[.[] | select(($s == "" or $s == "all" or ((.state // "OPEN") | ascii_downcase) == $s)
+  and ($h == "" or .headRefName == $h))]' "$SMOKE_FIX/$file" | jq -r "$jqf"
 SHIM
 cat > "$TMP/bin/fake-eligible" <<'SHIM'
 #!/bin/bash
@@ -99,7 +107,17 @@ result() { # result <is_error> <subtype> <text>
 }
 GATE='Plan for B1.44 is ready. Reply `approve` or list changes.'
 issue() { printf '{"number":%s,"body":"### Card id\\n\\n%s\\n\\n### Spec section or change\\n\\nnone"}\n' "$1" "$2" > "$FIX/issue-$1.json"; }
-prs() { local h out=""; for h in "$@"; do out="$out${out:+,}{\"headRefName\":\"$h\"}"; done; echo "[$out]" > "$FIX/prs.json"; }
+prs() { # prs <head>[:<STATE>[:<oid>]]…: the PRs gh lists, OPEN unless a state follows the head; the head's oid is
+  # the scratch repository's branch tip unless given
+  local h s o out=""
+  for h in "$@"; do
+    s=OPEN; o=""; [[ "$h" == *:* ]] && { s="${h#*:}"; h="${h%%:*}"; }
+    [[ "$s" == *:* ]] && { o="${s#*:}"; s="${s%%:*}"; }
+    [[ -n "$o" ]] || o="$(git -C "$REPO" rev-parse -q --verify "refs/heads/$h" || echo 0000000)"
+    out="$out${out:+,}{\"headRefName\":\"$h\",\"state\":\"$s\",\"headRefOid\":\"$o\"}"
+  done
+  echo "[$out]" > "$FIX/prs.json"
+}
 reset() {
   rm -rf "$FIX" "$RUNS" "$WT"; mkdir -p "$FIX" "$RUNS" "$WT"; : > "$LOG"
   echo "$VERSION" > "$RUNS/verified-versions"
@@ -396,6 +414,54 @@ reset; : > "$RUNS/verified-versions"; SMOKE_AUTH=false GITCFG=/dev/null run --ch
 reset; GITCFG=/dev/null run --mode
 [[ $RC -eq 0 && "$(cat "$TMP/out")" == dontAsk ]] || { say "--mode: rc=$RC $(tr '\n' '|' < "$TMP/out")"; r=1; }
 [[ $r -eq 0 ]] && ok R17 || fail R17
+# R18 (B1.82): a merged agent branch is not in flight; an unmerged one or an open PR is, and the skip names them
+r=0
+b0="$(git -C "$REPO" rev-parse HEAD)"
+tip() { git -C "$REPO" -c user.name=s -c user.email=s@x commit-tree "$b0^{tree}" -p "$b0" -m "$1"; }
+mk() { git -C "$REPO" branch -q -f "$1" "${2:-$(tip "$1")}"; } # mk <branch> [<commit>]: by default a tip no other ref holds
+drop() {
+  git -C "$REPO" for-each-ref --format='%(refname)' refs/heads/feat/ refs/heads/chore/ \
+    | while read -r ref; do git -C "$REPO" update-ref -d "$ref"; done
+}
+# origin/main merges three branch tips m1–m3 into b0 (merge commits); its first-parent line is om, b0
+m1="$(tip m1)"; m2="$(tip m2)"; m3="$(tip m3)"
+om="$(git -C "$REPO" -c user.name=s -c user.email=s@x commit-tree "$b0^{tree}" -p "$b0" -p "$m1" -p "$m2" -p "$m3" -m om)"
+git -C "$REPO" update-ref refs/remotes/origin/main "$om"
+reset; drop; mk feat/B9.1-agent "$m1"; mk chore/B9.2-agent "$m2"; mk feat/B9.3-agent "$m3"; run 7
+[[ $RC -eq 0 && $(calls) -eq 1 ]] && ! has 'in flight' "$TMP/out" \
+  || { say "tips merged into origin/main: rc=$RC calls=$(calls) $(tr '\n' '|' < "$TMP/out")"; r=1; }
+# a run's branch before its first commit sits on origin/main's first-parent line: started, not merged
+reset; drop; mk feat/B9.1-agent "$om"; mk chore/B9.2-agent "$b0"; mk feat/B9.3-agent "$om"; run 7
+[[ $RC -eq 0 && $(calls) -eq 0 ]] && has 'chore/B9.2-agent feat/B9.1-agent feat/B9.3-agent' "$TMP/out" \
+  || { say "fresh branches: rc=$RC calls=$(calls) $(tr '\n' '|' < "$TMP/out")"; r=1; }
+# a squash merge: the tip stays outside origin/main, its PR merged or closed at that very tip
+reset; drop; mk feat/B9.1-agent; mk chore/B9.2-agent; mk feat/B9.3-agent
+prs feat/B9.1-agent:MERGED chore/B9.2-agent:CLOSED feat/B9.3-agent:MERGED; run 7
+[[ $RC -eq 0 && $(calls) -eq 1 ]] && ! has 'in flight' "$TMP/out" \
+  && grep -qE '^GH .* pr list --head chore/B9\.2-agent --state all ' "$LOG" \
+  || { say "PRs merged or closed: rc=$RC calls=$(calls) $(tr '\n' '|' < "$TMP/out") $(grep -c ' --head ' "$LOG") --head calls"; r=1; }
+# a run resumed on a branch after its PR closed: a commit past the PR's head counts again (plan review 1, finding 1)
+# a merged PR whose head GitHub moved past the local tip (Update branch, #200) does not count (plan review 2)
+reset; drop; mk feat/B9.1-agent; mk chore/B9.2-agent; mk feat/B9.3-agent; mk feat/B9.5-agent; mk feat/B9.6-agent
+prs feat/B9.1-agent:CLOSED:"$m1" chore/B9.2-agent:CLOSED feat/B9.3-agent:MERGED:"$m3"; run 7
+[[ $RC -eq 0 && $(calls) -eq 0 ]] \
+  && has 'skip #7: 3 agent branches in flight (cap 3): feat/B9.1-agent feat/B9.5-agent feat/B9.6-agent' "$TMP/out" \
+  || { say "PR closed at an older tip, merged past the tip: rc=$RC calls=$(calls) $(tr '\n' '|' < "$TMP/out")"; r=1; }
+reset; drop; mk feat/B9.1-agent; mk chore/B9.2-agent; mk feat/B9.3-agent; run 7
+[[ $RC -eq 0 && $(calls) -eq 0 ]] && has 'skip #7: 3 agent branches in flight' "$TMP/out" \
+  && has 'chore/B9.2-agent feat/B9.1-agent feat/B9.3-agent' "$TMP/out" \
+  || { say "three unmerged: rc=$RC calls=$(calls) $(tr '\n' '|' < "$TMP/out")"; r=1; }
+# counted: a branch whose closed PR was followed by an open one, an unmerged branch with no PR, an open PR's head;
+# not counted: a tip in origin/main, a branch whose PR merged
+reset; drop; mk feat/B9.1-agent; mk chore/B9.2-agent; mk feat/B9.3-agent "$m3"; mk feat/B9.4-agent
+prs feat/B9.1-agent:CLOSED feat/B9.1-agent feat/B9.6-agent feat/B9.4-agent:MERGED; run 7
+[[ $RC -eq 0 && $(calls) -eq 0 ]] && has 'chore/B9.2-agent feat/B9.1-agent feat/B9.6-agent' "$TMP/out" \
+  && ! has 'B9.3' "$TMP/out" && ! has 'B9.4' "$TMP/out" \
+  || { say "mixed: rc=$RC calls=$(calls) $(tr '\n' '|' < "$TMP/out")"; r=1; }
+reset; drop; mk feat/B9.1-agent; mk chore/B9.2-agent; mk feat/B9.3-agent "$m3"; run 7
+[[ $RC -eq 0 && $(calls) -eq 1 ]] || { say "two unmerged, one merged: rc=$RC calls=$(calls) $(tr '\n' '|' < "$TMP/out")"; r=1; }
+drop; git -C "$REPO" update-ref -d refs/remotes/origin/main
+[[ $r -eq 0 ]] && ok R18 || fail R18
 
 echo
 if [[ $fails -eq 0 ]]; then echo "$oks probes OK"; exit 0; fi
