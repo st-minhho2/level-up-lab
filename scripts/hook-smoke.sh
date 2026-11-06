@@ -769,4 +769,32 @@ done
 states reviewer 'still write with Bash'    # RP5: probes on the $TMPDIR copy
 states dev-lead 'are commands, not edits'  # RP6: Prettier in "Committing a review"
 
+echo "== check-ac-coverage.sh (B1.86): a test title counts wherever its it/test/.each call breaks lines"
+ACG="$PWD/scripts/ci/check-ac-coverage.sh"
+acx() { # acx <expected-exit> <label> <test file text>: §9 ✅ with one criterion AC-9.1, one src/x.test.tsx
+  local want="$1" label="$2" d rc; d="$(mktemp -d)"; n=$((n+1))
+  git -C "$d" init -q; mkdir -p "$d/spec/contracts" "$d/src" "$d/e2e"
+  printf '| §   | File | Title | Status |\n| --- | --- | --- | --- |\n| §9 | x | x | ✅     |\n' > "$d/spec/technical-requirements.md"
+  printf '| AC-9.1 | x |\n' > "$d/spec/contracts/09-x.md"
+  printf '%s\n' "$3" > "$d/src/x.test.tsx"
+  (cd "$d" && "$ACG") >/dev/null 2>&1; rc=$?; rm -rf "$d"
+  if [[ $rc -eq $want ]]; then echo "ok   check-ac-coverage exit $rc  $label"; else echo "FAIL check-ac-coverage exit $rc (want $want)  $label"; fail=1; fi
+}
+acx 0 'A1 it.each with a type argument and a table over lines, title on the next line' "  it.each<{ readonly t: () => Element }>([
+    { t: () => document.body },
+  ])(
+    'AC-9.1: Escape on \$name keeps the field',
+    async ({ t }) => {},
+  );"
+acx 0 'A2 test.each title on one line' "test.each([1, 2])('AC-9.1: one line', () => {});"
+acx 0 'A3 it( with the title on the next line' "it(
+  'AC-9.1: title on the next line',
+  () => {},
+);"
+acx 0 'A4 a paren inside a table string' "it.each([['a)']])('AC-9.1: paren in a table string', () => {});"
+acx 1 'A5 the id only as a non-first argument' "it('adds', () => { f('AC-9.1: x'); });"
+acx 1 'A6 describe is not a test call' "describe('AC-9.1: not a test call', () => {});"
+acx 1 'A7 the id inside an .each body' "it.each([1])('runs', () => { f('AC-9.1: x'); });"
+acx 0 'A8 an escaped paren in a regex literal inside the table' "it.each([[/\\(/]])('AC-9.1: escaped paren', () => {});"
+
 echo; [[ $fail -eq 0 ]] && echo "hook-smoke: $n probes OK" || { echo "hook-smoke: FAILURES above"; exit 1; }
