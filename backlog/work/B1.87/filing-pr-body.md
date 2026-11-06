@@ -5,7 +5,7 @@ Files card **B1.87** through the "Filing a card" lane (`backlog/CLAUDE.md`). The
 Files:
 
 - `backlog/plan/E1-todos.md`: card B1.87 (quick, no dependency).
-- `backlog/README.md`: totals (E1 53/0/32/85, total 70/0/33/103), node S103 (after S99), Remaining row 103.
+- `backlog/README.md`: totals (E1 54/0/31/85, total 71/0/32/103, recounted after B1.83's closing #245), node S103 (after S99), Remaining row 103.
 - `backlog/work/B1.87/filing-pr-body.md`: this body.
 
 B1.83's closing PR (`docs/B1.83-done`) edits the same README totals line; whichever merges second merges `origin/main` and recounts.
