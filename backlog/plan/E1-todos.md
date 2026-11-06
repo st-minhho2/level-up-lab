@@ -1072,3 +1072,14 @@ _tooling · no §_
 - **Acceptance:** the loop and the plan template name `code-writer` as the author of the `docs(map)` commit (its own commit after `feat`, as `backlog/CLAUDE.md` orders it); dev-lead's path list is unchanged; the next headless run's log shows no path-guard refusal on `spec/features-map.md`; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.85/`
+
+### B1.86 · check-ac-coverage misses a test title written on the line after `it.each(…)(`
+
+_tooling · no §_
+**Status: Open** — `scripts/ci/check-ac-coverage.sh:6` collects titles with a line-based `grep -oE "(it|test)(\.each\([^)]*\))?\((['\"\`])AC-…:"`, so a title on its own line after a multi-line `it.each<…>([ … ])(`is never seen.`src/components/todo-due-date.test.tsx:267–272`is AC-28.6's only test, an`it.each`with 3 cases and the title`'AC-28.6: Escape on $name …'`on line 272; the feature PR #235 passed because §28 was still ✗ in the index, and B5.6's closing PR #237 (§28 → ✅) fails the`guards`job with`§28 criteria=7 covered=6 MISSING: AC-28.6`
+
+- **Spec:** none — tooling (CI guard for invariant 2 and `.claude/rules/testing.md`); no `src/` change, no section
+- **Test:** `scripts/ci/check-ac-coverage.sh` on a tree where §28's index row is ✅ (branch `docs/B5.6-done`) — red because: it exits 1 with `MISSING: AC-28.6`
+- **Acceptance:** a title passed to `it.each(…)(` or `test.each(…)(` counts when the table spans lines, carries a generic type argument, or puts the title on the next line; a string `'AC-n.m:'` that is not the first argument of `it`/`test`/`it.each(…)`/`test.each(…)` still does not count; the guard reports §28 `covered=7` once §28 is ✅ and keeps every other section's count; bash 3.2-safe; the PR carries `config-change-approved` (D-19); B5.6's closing PR #237 goes green after merging `origin/main`
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.86/`

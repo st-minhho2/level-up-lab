@@ -9,7 +9,7 @@ Files:
   10 pinned tests for AC-28.4–28.6 landed green first, 4 red tests for AC-28.1–28.3 proven by `verify-red.sh`; e2e
   51 → 52, AC-28.7), mutation 92.62 (the component is out of mutation scope); unattended and no-rework 1/1 (D-29), one
   runner run
-- `backlog/README.md`: Remaining row 93 out; `~~B5.6~~` in node 93; totals updated (E5 6/0/0, total 68/0/33 of 101, after the filing #236)
+- `backlog/README.md`: Remaining row 93 out; `~~B5.6~~` in node 93; totals updated (E5 6/0/0, total 68/0/34 of 102, after the filings #236 and #238)
 - `spec/technical-requirements.md`: §28 index row ✗ → ✅
 - `docs/metrics.md`: B5.6 Green column on the merged sha (8d61eda)
 - `backlog/work/B5.6/closing-pr-body.md`: this body (Closing step 6)
@@ -31,14 +31,14 @@ Mistake log: the run added 2 rows to `docs/mistake-log.md` (2026-11-06), both wi
 
 Cards for both preventions were filed in a separate backlog PR, #236 (B1.84, B1.85), not here.
 
-`check-ac-coverage.sh` fails on this PR with `§28 criteria=7 covered=6 MISSING: AC-28.6`: AC-28.6's only test is
-a multi-line `it.each` (`src/components/todo-due-date.test.tsx:267–272`) whose title the line-based guard does not
-read; #235 passed because §28 was still ✗. The guard fix is card B1.86 (filed in #238); this PR waits for it and then
-merges `origin/main`.
+`check-ac-coverage.sh` first failed on this PR with `§28 criteria=7 covered=6 MISSING: AC-28.6`: AC-28.6's only
+test is a multi-line `it.each` (`src/components/todo-due-date.test.tsx:267–272`) whose title the line-based guard did
+not read; #235 passed because §28 was still ✗. Card B1.86 (filed in #238) fixed the guard in #239 (34787f8); after
+merging `origin/main` the guard prints `§28  criteria=7 covered=7`.
 
 Known deviation, from the feature PR body: step 4's `docs(map)` commit was written by `code-writer`, not `dev-lead`
 (same file and content as the plan's Files table).
 
-`check-backlog.sh`, `check-features-map.sh`, `check-spec-sections.sh` OK.
+`check-backlog.sh`, `check-features-map.sh`, `check-spec-sections.sh`, `check-ac-coverage.sh` OK.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)

@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
 # Every AC-§.n of a section whose index status is ✅ or ◐ appears as a test title "AC-§.n:" in src/**/*.test.ts(x)
-# or e2e/**. Also enforces the 7-criteria cap per section. Exit 1 on any gap.
+# or e2e/**. A title is the first argument of it(…)/test(…), or of the call after it.each(…)/test.each(…); files are
+# read whole, so a table, a type argument or the title itself may span lines (B1.86). Also enforces the 7-criteria
+# cap per section. Exit 1 on any gap.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
-titles="$(grep -rhoE "(it|test)(\.each\([^)]*\))?\((['\"\`])AC-[0-9]+\.[0-9]+:" src e2e 2>/dev/null | grep -oE 'AC-[0-9]+\.[0-9]+' | sort -u || true)"
+titles="$(find src e2e -type f -exec perl -0777 -ne '
+  my $str = qr/\x27(?:[^\x27\\]|\\.)*\x27|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`/s; # a quoted string may hold parens
+  my $par; $par = qr/\((?:$str|\\.|[^()\x27"`\\]|(??{ $par }))*\)/s;          # one balanced (…) group; \( is no paren
+  my $gen = qr/<(?:=>|<[^<>]*>|[^<>])*>/s;                                       # <…>, with => and one nested <…>
+  print "$1\n" while /(?<![\w.\$])(?:it|test)(?:\.each\s*$gen?\s*$par)?\s*\(\s*[\x27"`](AC-[0-9]+\.[0-9]+):/g;
+' {} + 2>/dev/null | sort -u || true)"
 fail=0
 while IFS='|' read -r _ sec _ _ status _; do
   sec="$(echo "$sec" | xargs)"; n="${sec#§}"; [[ "$n" =~ ^[0-9]+$ ]] || continue
