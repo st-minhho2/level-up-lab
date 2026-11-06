@@ -156,3 +156,114 @@ becomes a perl regex with a recursive subpattern; A1–A8 are the safety net for
 Riskiest unfalsified: that no real test shape makes the `.each` group, mis-parsed across an unbalanced quote (a regex
 literal or a comment in the table), close right before a `('AC-…` that is not a title, so the id counts. O1 is the
 closest I built, and it does not count (1 → 1). I found no such case, but I did not prove that none exists.
+
+## Diff review (round 1)
+
+SCOPE: all (tooling, no §: `scripts/`, `backlog/`). Range `origin/main` (80773ee) `..2f05f54`: red `22429b9`, green
+`2f05f54`. The local `main` ref is stale (8d61eda), so `git diff --stat main...HEAD` also lists #236/#238's files;
+against `origin/main` the diff is the 6 files below. Nothing on the tree was edited; probes ran on `git archive`
+snapshots under `$TMPDIR/b186-rev1/`.
+
+Command results (last line of each):
+
+| Command                                                  | Result                                                                                                     |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                              | `All matched files use Prettier code style!` (exit 0)                                                      |
+| `pnpm typecheck`                                         | `tsc --noEmit`, exit 0                                                                                     |
+| `pnpm test`                                              | `Tests  241 passed (241)` (39 files), the plan's number                                                    |
+| `pnpm test:e2e`                                          | `52 passed (1.2m)`                                                                                         |
+| `pnpm test:mutation`                                     | `Final mutation score of 92.62 is greater than or equal to break threshold 70` (no `src/` change)          |
+| `scripts/ci/check-suppressions.sh`                       | `[check-suppressions] OK: no new suppressions`                                                             |
+| `scripts/ci/check-config-change.sh`                      | without the label: `::error::` on `scripts/ci/check-ac-coverage.sh` (expected); with                       |
+|                                                          | `CONFIG_CHANGE_APPROVED=true`: allowed. PR #239 carries `config-change-approved`                           |
+| `scripts/ci/check-feat-commits.sh`                       | `[check-feat-commits] OK: no feat commit touches tests`                                                    |
+| `scripts/ci/check-ac-coverage.sh`                        | `[check-ac-coverage] OK: every criterion of a shipped section has a test`, exit 0                          |
+| `scripts/ci/check-spec-sections.sh`                      | `OK: sections cited: 1 … 28`                                                                               |
+| `scripts/ci/check-features-map.sh`                       | `[check-features-map] OK`                                                                                  |
+| `scripts/ci/check-plan-scope.sh`, `check-backlog.sh`     | `OK: … stays inside the approved plan of B1.86`; `OK: README matches the cards`                            |
+| `scripts/verify-red.sh B1.86`                            | `::error::no 'test(<pkg>): B1.86 … (red)' commit` — expected: hook-smoke-only red has no marker (B1.62)    |
+| `hook-smoke.sh` at `22429b9` (snapshot, `/bin/bash` 3.2) | 3 FAIL: A1, A3, A4 (`exit 1 (want 0)`); A2, A5–A8 ok; `hook-smoke: FAILURES above` — the red is real       |
+| `hook-smoke.sh` at `2f05f54` (snapshot, `/bin/bash` 3.2) | `hook-smoke: 599 probes OK`                                                                                |
+| A1–A8 in `node:24-bookworm` (bash 5.2.15, perl 5.36.0)   | `fail=0 n=8`                                                                                               |
+| old vs new guard on this tree                            | output identical, exit 0                                                                                   |
+| old vs new on `git archive origin/docs/B5.6-done`        | old exit 1 `§28  criteria=7 covered=6  MISSING: AC-28.6`; new exit 0 `§28  criteria=7 covered=7` + OK line |
+| `git diff --stat origin/main...HEAD`                     | 6 files changed, 418 insertions(+), 45 deletions(-)                                                        |
+
+Checklist:
+
+| Check                                                     | Result                                                                                                                                                 |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every Acceptance clause has a probe whose verdict matches | partial: multi-line table, type argument, next-line title (A1, A3), id not first argument (A5–A7), §28 `covered=7`, bash 3.2 all hold; see finding 1   |
+| no test weakened after the red commit                     | pass: `git log --first-parent --no-merges 22429b9..HEAD -- '*.test.*' e2e/ scripts/hook-smoke.sh` empty; no merge commits in the range                 |
+| every changed file is in `plan.md`                        | pass: `check-plan-scope.sh` OK; the `scripts/CLAUDE.md` diff is the one row (A1–A8, plus RP1–RP10 drift fixed) and Prettier's re-padding of that table |
+| interfaces match                                          | pass: no arguments, same output lines, same exit codes (identical output on this tree)                                                                 |
+| Zod / Prisma / raw SQL / migration                        | n/a: no `src/`, `prisma/`                                                                                                                              |
+| no secret, no suppression                                 | pass                                                                                                                                                   |
+| features map row moved                                    | n/a: no section                                                                                                                                        |
+| would a probe fail if one changed line were reverted?     | yes for the whole `print` line (A1, A3, A4 go red). Sub-rule mutants on a copy: 6 of 10 killed; 4 survive, findings 1 and 2                            |
+| `config-change-approved` on the PR (D-19)                 | pass: label present on #239 (PR head is still `dae699a`; the red and green commits are not pushed yet)                                                 |
+
+Mutants of `check-ac-coverage.sh` (copy, A1–A8 re-run): killed — `=>` in `$gen` (A1), `\\.` in `$par` (A8), `$str`
+in `$par` (A4), the recursion `(??{ $par })` (A1), `\s*` after the title's `(` (A1, A3), the whole `.each` group
+(A1, A2, A4, A8). Survived — the left boundary `(?<![\w.\$])`, the nested `<[^<>]*>` alternative in `$gen`, the
+`\s*` between the `.each` group and the title's `(`, the backtick in the title's quote class. None of the four
+changes the id set on `origin/docs/B5.6-done` (146 ids, 0 differ).
+
+Findings:
+
+```
+[1] KIND: coverage
+    WHERE: scripts/ci/check-ac-coverage.sh:12 (`(?<![\w.\$])`); scripts/hook-smoke.sh:795 (A5)
+    DEFECT: the left boundary is the only thing that makes a call whose name ends in "it"/"test" not count, and no
+            probe pins it; deleting it leaves A1–A8 green.
+    TRIGGER: src/x.test.tsx = it('emits', () => { emit('AC-9.1: x'); });   (also submit(, xit(, r.test()
+    WRONG BEHAVIOUR: with the lookbehind removed the guard exits 0 (AC-9.1 counted from a non-title argument),
+            against the Acceptance "a string 'AC-n.m:' that is not the first argument of it/test/… still does not
+            count". Old guard 0, new guard 1, no-lookbehind mutant 0: this is a fail-open the change fixes, and it
+            would be red at 22429b9, but A5 uses `f(`, whose name cannot end in "it", so the probe set cannot see
+            it regress.
+    CONFIDENCE: confirmed (fixture run against old, new and the mutant)
+```
+
+Fix (test-writer, a `test(scripts): B1.86 review pass 1 -- …` commit, no `(red)` marker): add one `acx 1` probe with
+the trigger above (A9). It is a probe row, not a file or interface change; record it in the plan's probe table and the
+PR body. The guard needs no change.
+
+```
+[2] KIND: coverage
+    WHERE: scripts/ci/check-ac-coverage.sh:11 (`<[^<>]*>` in $gen)
+    DEFECT: the plan's rule "an optional type argument may hold one nested <…>" has no probe; deleting the
+            alternative leaves A1–A8 green.
+    TRIGGER: it.each<Array<number>>([1])('AC-9.1: g', () => {});
+    WRONG BEHAVIOUR: with the alternative removed the guard exits 1 (MISSING: AC-9.1) and no probe notices;
+            fails closed, loud. Old guard 1, new guard 0, mutant 1.
+    CONFIDENCE: confirmed (fixture against old, new and the mutant; A1–A8 stay ok under the mutant)
+```
+
+Not blocking: fails closed, and no `.each` with a nested type argument exists today. Folding it into the A9 commit
+costs one line.
+
+```
+[3] KIND: plan-mismatch
+    WHERE: backlog/work/B1.86/plan.md "Costs" (regressions list); scripts/ci/check-ac-coverage.sh:9–10
+    DEFECT: a one-line .each table holding an apostrophe outside a string literal (JSX text, a /* … */ comment)
+            counts today and not after this change; the Costs name only regex literals.
+    TRIGGER: it.each([[<p>don't</p>]])('AC-9.1: j', () => {});
+    WRONG BEHAVIOUR: old guard exit 0, new guard exit 1 (MISSING: AC-9.1); the lead approved a cost list
+            without this case.
+    CONFIDENCE: confirmed (fixture, old vs new)
+```
+
+Not blocking: fails closed (CI red, `MISSING`), and `src/` and `e2e/` hold 3 `.each` calls, none with JSX in the table.
+One sentence in the PR body's Costs is enough.
+
+Other fixtures (old → new exit code, 0 = counted), all as the plan intends or states: `xit('AC-9.1: …')` 0 → 1;
+tagged-template `it.each` 1 → 1; `])` newline `('AC-9.1: …'` 1 → 0; `'it\'s )'` in a table 1 → 0; a two-level type
+argument 1 → 1; `it(/* c */ 'AC-9.1: …')` 1 → 1; `it.concurrent` 1 → 1; `describe.each` 1 → 1; `// don't` in a
+multi-line table 1 → 1; `` `a)${f()}` `` in a table 1 → 0; a CRLF file with the title on the next line 1 → 0.
+
+Verdict: back to test-writer (finding 1; findings 2 and 3 travel with it, neither blocks on its own)
+
+Riskiest unfalsified: that no real test shape makes the `.each` group, mis-parsed across an apostrophe outside a
+string (finding 3's JSX text or a comment), close right before a `('AC-…` that is not a title, so the id counts. I
+did not build one that does; I did not prove none exists.
