@@ -88,3 +88,71 @@ Riskiest unfalsified: that no reachable test shape makes the new regex count an 
 a running test call, beyond the comment case F2. My 15 fixtures found no such case (F6 id in an `.each` body, F7 id in
 the table, F11 `test.step`, F14 nested `it` are all handled as intended), but A1–A6 give only one negative probe
 (A5) for the `it(` branch and none for the `.each` branch.
+
+## Plan review (round 2)
+
+SCOPE: all (tooling, no §: `scripts/`, `backlog/`). Plan at `7ce84e8`. Read: round 1 above, `git diff 0b5020f 7ce84e8`
+(plan only), card B1.86, `proto/new.sh` (now with `\\.` in the `.each` group), `proto/fx.sh` (A1–A8),
+`.github/workflows/ci.yml` (`guards` job). `scripts/` is unchanged since `origin/main` (80773ee), so round 1's
+hook-smoke baseline of 591 still holds.
+
+Commands run (nothing on the tree; fixtures and copies under `$TMPDIR` = `/var/folders/…/T/`):
+
+- `scripts/next-task.sh --check B1.86` gave `[next-task] B1.86: no overlap with any Doing or Review card` (exit 0).
+- `scripts/agent/tier.sh backlog/work/B1.86/plan.md` gave `high`; `scripts/ci/plan-files.sh --any B1.86 HEAD` gave the
+  4 Files rows; `scripts/ci/check-backlog.sh` gave OK.
+- `proto/old.sh` is byte-identical to `scripts/ci/check-ac-coverage.sh`. `fx.sh` under `/bin/bash` 3.2.57: old gives
+  A1–A8 = 1 0 1 1 1 1 1 0, new gives 0 0 0 0 1 1 1 0: the Today and Want columns exactly.
+- `git archive origin/main`: title ids old 145, new 146, the only difference AC-28.6; guard output identical, exit 0.
+- `git archive origin/docs/B5.6-done`: old exits 1 with `§28  criteria=7 covered=6  MISSING: AC-28.6`; new exits 0
+  with `§28  criteria=7 covered=7` and the OK line; no other line differs.
+- `pnpm test` gave `Test Files 39 passed (39)`, `Tests 241 passed (241)`: the plan's number.
+- The `guards` job runs in `container: node:24-bookworm` (`ci.yml:125–126`), where round 1 found `perl-base` 5.36.
+- 19 fixtures of my own (old → new exit code, 0 = counted): F2 1 → 0, F4 1 → 1, F5 1 → 1, `/[(]/` in a table
+  0 → 1, `/'/` in a table 0 → 1 (all as the Costs state); O1 a `/'/` table then the id in a body call 1 → 1;
+  O2 a nested `it.each` with the id 0 → 0; O3 `r.test('AC-9.1: x')` 0 → 1; O4 `expect(test('AC-9.1: x'))` inside a
+  test body 0 → 0; O5 `"a'"` in a table 0 → 0; O6 `` `a${')'}` `` in a table 1 → 0; O7 `.each([1])` then the title
+  call on the next line 1 → 0; O8 a tagged-template ``it.each`…`('AC-9.1: …')`` 1 → 1; O9 `test.each` 0 → 0;
+  O10 `as const` table 0 → 0; O11 `<[string, (a: number) => void]>` 1 → 0; O12 `'AC-9.1' + ': x'` 1 → 1;
+  O13 `'a\\'` in a table 0 → 0; O14 a `// a ) paren` comment inside a table 1 → 1.
+
+Round 1 reasons:
+
+1. Fixed: `plan.md:4–5` now says perl is new to the guards, names `prune-smoke.sh:134` as outside CI and gives
+   `perl-base` Essential in `node:24-bookworm` as the reason.
+2. Fixed: Costs list F2 (fails open), F4 and F5 (fails closed as today), and the regex-literal regressions; F9 is now
+   handled (`\\.` in the group) and probed as A8. A7 adds the `.each`-branch negative probe round 1 asked about.
+3. Fixed: `pnpm test` → 241 passed (39 files), confirmed above; the code spans in "Narrowing" are spaced.
+
+| Check                                                                     | Result                                                                                                                                        |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file belongs to the card                                            | pass: guard, its hook-smoke probes, their `scripts/CLAUDE.md` row, work artifacts; no section, no map row                                     |
+| interfaces follow `ts-style.md`; mutations in actions; Prisma in lib      | pass (n/a): no `src/`; no arguments, same output lines and exit codes (identical output on `origin/main`)                                     |
+| follows `advice.md` or states the deviation                               | pass: "No advice (tier quick, no section)"                                                                                                    |
+| ≤ 7 criteria, every Then measurable                                       | pass: one Acceptance, measured by A1–A8 exit codes, the §28 line, identical output elsewhere, bash 3.2.57                                     |
+| verification lists exact commands with expected numbers                   | pass: 3 FAIL / 596 ok, then 599 OK (591 + 8); 241 vitest; §28 `covered=7`. Minor wording (note a)                                             |
+| work breakdown skeleton → red → green → map → review, convention subjects | pass: red → green → review, the tooling shape (B1.78, B1.79); red subject without `(red)` (hook-smoke only, B1.62); A2/A5–A8 are green guards |
+| `Lead approves spec` box, ticked only by a human                          | pass (n/a): no section. `Plan approved by:` empty; tier high → lead's `approve` (D-28)                                                        |
+| no settled D-n contradicted                                               | pass: D-19 label stated, D-27/D-28 followed                                                                                                   |
+| `next-task.sh --check` says no overlap                                    | pass: `[next-task] B1.86: no overlap with any Doing or Review card`                                                                           |
+
+Verdict: approved
+
+Notes for the lead (not blocking; none of these shapes is in `src/` or `e2e/` today):
+
+a. The guard prints `§28  criteria=7 covered=7` (two spaces, `printf '§%-3s'`); the plan and card write one space.
+Checking by eye is fine; a literal `grep` for the plan's string would miss.
+b. Fails closed, as today, beyond the stated F5: a comment holding an unbalanced `)` inside an `.each` table (O14),
+and a tagged-template table ``it.each`…`(…)`` (O8). The plan's rule ("one balanced `(…)` group") already
+excludes O8. Both are loud (`MISSING`).
+c. One more narrowing in the good direction: `r.test('AC-…')` (a RegExp method) counted before and no longer does
+(O3), the same left-boundary change as `foo.it(`.
+d. Inherited fail-open, unchanged: a `test('AC-…')` call nested inside another test's body counts (O4, 0 → 0).
+e. The plan is about 70 lines against `planning.md`'s ≈ 40; the excess is the probe table and the Costs that round 1
+asked for. It is one task, not two.
+f. Steps 1–2 have dev-lead write `scripts/`, so the card runs from an interactive session (now stated). The guard
+becomes a perl regex with a recursive subpattern; A1–A8 are the safety net for later edits.
+
+Riskiest unfalsified: that no real test shape makes the `.each` group, mis-parsed across an unbalanced quote (a regex
+literal or a comment in the table), close right before a `('AC-…` that is not a title, so the id counts. O1 is the
+closest I built, and it does not count (1 → 1). I found no such case, but I did not prove that none exists.
