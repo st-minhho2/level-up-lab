@@ -1054,7 +1054,7 @@ _tooling · no §_
 ### B1.84 · The reviewer's probes edit the worktree when `TMPDIR` is unset
 
 _tooling · no §_
-**Status: Open** — `.claude/agents/reviewer.md:15,22` tells the reviewer to probe a copy under `$TMPDIR` with Bash, but nothing checks that `TMPDIR` is set. In the headless run of #225 (B5.6, 2026-11-06) the diff-review probe's `cd "$TMPDIR/…"` was a no-op, and ten `sed -i` mutations landed on the worktree's `src/components/todo-due-date.tsx` (uncommitted; `dev-lead` restored it with `git restore`); B5.5's plan review (#224) also wrote a probe file into the worktree with `TMPDIR` unset. Logged in `docs/mistake-log.md` (2026-11-06), "Prevented by: none yet"
+**Status: Done** — a0979ab (#243), hook-smoke RW1–RW125 (red 55 FAIL of 695; green 695; review passes 1–3 add RW95–RW125, each red first: 11, 11, 2 FAIL; 726 probes OK, the 601 earlier verdicts unchanged), vitest 241, e2e 52, mutation 92.62 (no src/); plan review 2 rounds (round 3 waived by the lead), diff review 3 passes (14 findings fixed), a command built to get past a text check out of reach (lead, 2026-11-06)
 
 - **Spec:** none — tooling (invariant 8 review, the reviewer is read-only on code); no `src/` change, no section
 - **Test:** a probe in `scripts/hook-smoke.sh`: a reviewer-role Bash call that runs `sed -i` (or `cp`, `>`, `tee`) on a path inside the worktree while `TMPDIR` is unset or points into the worktree — red because: no hook refuses it today

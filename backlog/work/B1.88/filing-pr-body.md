@@ -5,10 +5,10 @@ Files card **B1.88** through the "Filing a card" lane (`backlog/CLAUDE.md`). The
 Files:
 
 - `backlog/plan/E1-todos.md`: card B1.88 (quick, no dependency).
-- `backlog/README.md`: totals (E1 54/0/32/86, total 71/0/33/104), node S104 (after S100), Remaining row 104.
+- `backlog/README.md`: totals (E1 55/0/31/86, total 72/0/32/104, recounted after B1.84's closing #247), node S104 (after S100), Remaining row 104.
 - `backlog/work/B1.88/filing-pr-body.md`: this body.
 
-B1.84's closing PR #247 (`docs/B1.84-done`) edits the same README totals line; whichever merges second merges `origin/main` and recounts.
+B1.84's closing PR #247 edited the same README totals lines and merged first (4b3c1a4); this branch merged `origin/main` after it and recounted.
 
 `scripts/ci/check-backlog.sh` → OK.
 
