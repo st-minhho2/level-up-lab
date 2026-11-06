@@ -5,7 +5,7 @@ Problem: `scripts/metrics/unattended.sh` ends the D-29 window at a PR's first `r
 Files:
 
 - `backlog/plan/E1-todos.md`: card B1.83 (quick, no dependency).
-- `backlog/README.md`: totals (E1 51/0/30/81, total 65/0/34/99), node S99, Remaining row 99.
+- `backlog/README.md`: totals (E1 51/0/30/81, total 66/0/33/99 after B5.4's closing), node S99, Remaining row 99.
 - `backlog/work/B1.83/filing-pr-body.md`: this body.
 
 `scripts/ci/check-backlog.sh` → OK.

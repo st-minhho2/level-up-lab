@@ -43,7 +43,7 @@ _F23 · section 25_
 ### B5.4 · The browser tab title shows the remaining count
 
 _F24 · section 26_
-**Status: Open** — the tab title is fixed (`grep -rn 'generateMetadata' src/app` → 0): a person with the list in a background tab cannot see what is left
+**Status: Done** — bd99f86 (#229), 7 AC-26.n tests green (unit 222, e2e 50), mutation 92.31 (page-title.ts 100); unattended and no-rework 1/1 (D-29), one runner run
 
 - **Spec:** §26 — unchanged (section written from `work/B5.4/analysis.md`; contract `spec/contracts/24-page-title.md`; "a count in the page title" lifted from §13's Out of scope in the same lane, D-32)
 - **Test:** `src/lib/page-title.test.ts::AC-26.1: pageTitle returns Todos for 0 and (N) Todos for 1, 2, 11 and 1000` — red because: `pageTitle` is not exported yet (`src/lib/page-title.ts` does not exist)
@@ -56,6 +56,8 @@ _F24 · section 26_
 _F25 · section 27_
 **Status: Open** — clearing a search takes §21's link or deleting the text by hand (`grep -n 'Escape' src/components/todo-search-form.tsx` → 0)
 
+- **Spec:** §27 — unchanged (section written from `work/B5.5/analysis.md`; contract `spec/contracts/25-escape-search.md`; Escape in the search box lifted from §16 and §21 Out of scope, D-32)
+- **Test:** `src/lib/escape-search.test.ts::AC-27.1: isSearchEscape is true only for Escape with no modifier` — red because: `isSearchEscape` is not exported yet (`src/lib/escape-search.ts` does not exist)
 - **Acceptance:** Escape in the "Search" box empties it and shows the list §21's link shows (same address); mounts in `src/components/todo-search-form.tsx` only (B5.3 changed it in batch 1); contract `spec/contracts/25-escape-search.md` (section 27); batch 2
 - **Tier:** full · **Depends on:** ~~D-30~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B5.5/`
