@@ -1051,6 +1051,28 @@ _tooling · no §_
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.83/`
 
+### B1.84 · The reviewer's probes edit the worktree when `TMPDIR` is unset
+
+_tooling · no §_
+**Status: Open** — `.claude/agents/reviewer.md:15,22` tells the reviewer to probe a copy under `$TMPDIR` with Bash, but nothing checks that `TMPDIR` is set. In the headless run of #225 (B5.6, 2026-11-06) the diff-review probe's `cd "$TMPDIR/…"` was a no-op, and ten `sed -i` mutations landed on the worktree's `src/components/todo-due-date.tsx` (uncommitted; `dev-lead` restored it with `git restore`); B5.5's plan review (#224) also wrote a probe file into the worktree with `TMPDIR` unset. Logged in `docs/mistake-log.md` (2026-11-06), "Prevented by: none yet"
+
+- **Spec:** none — tooling (invariant 8 review, the reviewer is read-only on code); no `src/` change, no section
+- **Test:** a probe in `scripts/hook-smoke.sh`: a reviewer-role Bash call that runs `sed -i` (or `cp`, `>`, `tee`) on a path inside the worktree while `TMPDIR` is unset or points into the worktree — red because: no hook refuses it today
+- **Acceptance:** a Bash write by the `reviewer` role is refused unless its target resolves under a `TMPDIR` that is set, non-empty and outside the worktree (or the runner sets `TMPDIR` for every run so the copy never lands in the tree); the refusal names the cause; the reviewer's reads, gate runs and `review.md` write (Write/Edit) keep working; existing hook-smoke probes keep their verdicts; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.84/`
+
+### B1.85 · Card plans give the `docs(map)` step to dev-lead, whose hook refuses `spec/features-map.md`
+
+_tooling · no §_
+**Status: Open** — `.claude/agents/dev-lead.md:59,94` lists step 4 `docs(map): F<n> … [<card>]` in dev-lead's own loop, but dev-lead's path guard allows only `backlog/*`, `docs/metrics.md` and `docs/mistake-log.md`, so the Edit of `spec/features-map.md` is refused. Seen in all three batch-2 headless runs: B5.4 (#223) and B5.6 (#225) re-dispatched the commit to `code-writer` after the refusal, and B5.5 (#224) folded the flip into the feat commit instead of a `docs(map)` commit. Logged in `docs/mistake-log.md` (2026-11-06), "Prevented by: none yet"
+
+- **Spec:** none — tooling (the card loop in `dev-lead.md`, `/tdd-loop`); no `src/` change, no section
+- **Test:** `git grep -n 'docs(map)' .claude/agents/dev-lead.md .claude/skills/tdd-loop/SKILL.md .claude/skills/work-next/SKILL.md` shows the `docs(map)` step assigned to `code-writer` (or a hook-smoke probe on the plan template) — red because: today it sits in dev-lead's loop with no role named
+- **Acceptance:** the loop and the plan template name `code-writer` as the author of the `docs(map)` commit (its own commit after `feat`, as `backlog/CLAUDE.md` orders it); dev-lead's path list is unchanged; the next headless run's log shows no path-guard refusal on `spec/features-map.md`; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.85/`
+
 ### B1.86 · check-ac-coverage misses a test title written on the line after `it.each(…)(`
 
 _tooling · no §_
