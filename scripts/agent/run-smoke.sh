@@ -10,6 +10,7 @@
 #   R16 the exact prompt: Loop 5's D-27 path at the plan gate, no unconditional gate stop (B1.65)
 #   R17 a run or --poll without a git identity is refused before any call (B1.69)
 #   R18 a merged agent branch is not in flight; an unmerged one or an open PR is; the skip names them (B1.82)
+#   R19 each claude -p run has a TMPDIR of its own outside the worktree and the project, removed at its end (B1.88)
 set -uo pipefail
 command -v jq >/dev/null || { echo "run-smoke: needs jq" >&2; exit 2; }
 HERE="$(cd "$(dirname "$0")" && pwd -P)"
@@ -40,14 +41,21 @@ case "$1" in
 esac
 n=$(( $(cat "$SMOKE_FIX/count" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$SMOKE_FIX/count"
 cat > "$SMOKE_FIX/stdin-$n"
+# the run's TMPDIR (B1.88): "START <TMPDIR> <y: an absolute directory>" leaving a file of its own there, and at the end
+# "END <TMPDIR> <entries in it>", one line each, appended
+t="${TMPDIR-unset}"; d=n
+[[ "$t" == /* && -d "$t" ]] && d=y && : > "$t/claude-$$"
+echo "START $t $d" >> "$SMOKE_FIX/tmpdirs"
 f="$SMOKE_FIX/stream-$n.jsonl"; [[ -f "$f" ]] || f="$SMOKE_FIX/stream.jsonl"
 while IFS= read -r l; do
   case "$l" in
     SLEEP) echo $$ > "$SMOKE_FIX/claude.pid"; sleep 30 & wait $! ;;
+    NAP) sleep 2 ;;
     WRITE:*) mkdir -p "$(dirname "${l#WRITE:}")"; echo probe > "${l#WRITE:}" ;;
     *) echo "$l" ;;
   esac
 done < "$f"
+echo "END $t $([[ $d == y ]] && ls -A "$t" | grep -c . || echo -)" >> "$SMOKE_FIX/tmpdirs"
 exit 0
 SHIM
 cat > "$TMP/bin/gh" <<'SHIM'
@@ -462,6 +470,76 @@ reset; drop; mk feat/B9.1-agent; mk chore/B9.2-agent; mk feat/B9.3-agent "$m3"; 
 [[ $RC -eq 0 && $(calls) -eq 1 ]] || { say "two unmerged, one merged: rc=$RC calls=$(calls) $(tr '\n' '|' < "$TMP/out")"; r=1; }
 drop; git -C "$REPO" update-ref -d refs/remotes/origin/main
 [[ $r -eq 0 ]] && ok R18 || fail R18
+# R19 (B1.88): each claude -p run gets a TMPDIR of its own (guard-bash rule 6 lets the reviewer write only there): set,
+# an existing absolute directory, outside the run's worktree and the project, not the host's, not another run's, and
+# gone when the run ends, also on TERM; without one no run starts
+r=0
+HOST_TMP="$TMP/host"
+own() { # own <TMPDIR a run saw>: why it is not the run's own, empty when it is
+  local d
+  case "$1" in /*) ;; *) echo "unset or relative: '$1'"; return ;; esac
+  [[ "$1" != "$HOST_TMP" ]] || { echo "the host's TMPDIR"; return; }
+  for d in "$WT" "$ROOT" "${ROOT%%/.worktrees/*}"; do
+    case "$1/" in "$d"/*) echo "inside $d: $1"; return ;; esac
+    case "$d/" in "$1"/*) echo "holds $d: $1"; return ;; esac
+  done
+  [[ ! -e "$1" ]] || echo "left after the run: $1"
+}
+seen() { # seen <case> <runs> [term]: the START lines (and, unless term, END lines) of the shim's tmpdirs file
+  local l t d k why n=0 all=""
+  while read -r l t d; do
+    n=$((n + 1)); all="$all$t "
+    why="$(own "$t")"; [[ -n "$why" || "$d" == y ]] || why="not an existing directory at the start: $t"
+    [[ -z "$why" ]] || { say "$1: $why"; r=1; }
+    [[ "${3:-}" == term ]] && continue
+    k="$(awk -v t="$t" '$1 == "END" && $2 == t { print $3 }' "$FIX/tmpdirs" | tr '\n' ' ')"
+    [[ "$k" == "1 " ]] || { say "$1: $t held '$k' entries at the end, not its run's one"; r=1; }
+  done < <(grep '^START ' "$FIX/tmpdirs" 2>/dev/null)
+  [[ $n -eq $2 ]] || { say "$1: $n runs seen, want $2"; r=1; }
+  [[ $(tr ' ' '\n' <<< "$all" | grep . | sort -u | grep -c .) -eq $n ]] || { say "$1: runs shared a TMPDIR: $all"; r=1; }
+}
+fresh() { rm -rf "$HOST_TMP"; mkdir -p "$HOST_TMP"; }
+reset; fresh; TMPDIR="$HOST_TMP" run 7
+[[ $RC -eq 0 && $(calls) -eq 1 ]] || { say "one run: rc=$RC calls=$(calls)"; r=1; }
+seen "one run" 1
+reset; fresh; { start; init; result true success 'API Error: 500'; } > "$FIX/stream-1.jsonl"; TMPDIR="$HOST_TMP" run 7
+seen "retry" 2
+reset; fresh; issue 8 B1.45; { start; init; echo NAP; result false success "$GATE"; } > "$FIX/stream.jsonl"
+(TMPDIR="$HOST_TMP" run 7) & p7=$!; (TMPDIR="$HOST_TMP" run 8) & p8=$!; wait "$p7"; wait "$p8"
+seen "two runs at once" 2
+reset; fresh; : > "$RUNS/verified-versions"; { init '["Write"]'; echo "$pass"; result false success done; } > "$FIX/stream.jsonl"
+TMPDIR="$HOST_TMP" run --check-binary
+[[ $RC -eq 0 ]] || { say "--check-binary: rc=$RC $(tail -1 "$TMP/out")"; r=1; }
+seen "--check-binary" 1
+reset; fresh; { start; echo SLEEP; } > "$FIX/stream.jsonl"
+(cd "$ROOT" && SMOKE_LOG="$LOG" SMOKE_FIX="$FIX" SMOKE_WT="$WT" SMOKE_ROOT="$ROOT" PATH="$TMP/bin:$PATH" GIT_DIR="$REPO/.git" \
+  RUNNER_CLAUDE="$TMP/bin/claude" RUNNER_RUNS="$RUNS" RUNNER_ELIGIBLE="$TMP/bin/fake-eligible" \
+  RUNNER_CLAIM="$TMP/bin/fake-claim" RUNNER_WORKTREE="$TMP/bin/fake-worktree" TMPDIR="$HOST_TMP" \
+  exec env "${IDENT[@]}" "$SRC" 7) > "$TMP/out" 2>&1 &
+bg=$!; i=0; while [[ ! -s "$FIX/claude.pid" ]] && [[ $i -lt 20 ]]; do sleep 1; i=$((i + 1)); done
+kill -TERM "$bg" 2>/dev/null; wait "$bg" 2>/dev/null; sleep 1
+seen "TERM" 1 term
+reset; fresh; echo '[{"number":7}]' > "$FIX/issues.json"; { start; echo SLEEP; } > "$FIX/stream.jsonl"
+(cd "$ROOT" && SMOKE_LOG="$LOG" SMOKE_FIX="$FIX" SMOKE_WT="$WT" SMOKE_ROOT="$ROOT" PATH="$TMP/bin:$PATH" GIT_DIR="$REPO/.git" \
+  RUNNER_CLAUDE="$TMP/bin/claude" RUNNER_RUNS="$RUNS" RUNNER_ELIGIBLE="$TMP/bin/fake-eligible" \
+  RUNNER_CLAIM="$TMP/bin/fake-claim" RUNNER_WORKTREE="$TMP/bin/fake-worktree" TMPDIR="$HOST_TMP" \
+  exec env "${IDENT[@]}" "$SRC" --poll) > "$TMP/out" 2>&1 &
+bg=$!; i=0; while [[ ! -s "$FIX/claude.pid" ]] && [[ $i -lt 20 ]]; do sleep 1; i=$((i + 1)); done
+kill -TERM "$bg" 2>/dev/null; wait "$bg" 2>/dev/null; sleep 1
+seen "TERM during --poll" 1 term
+# a mktemp that fails, prints nothing or prints a directory of its own: no run starts, and nothing is removed. On a
+# copy of the scripts, so a run.sh that turned an empty answer into its cwd (`cd ""`) removes only the copy (plan r1)
+COPY="$TMP/copy"; mkdir -p "$COPY/backlog" "$TMP/mk" "$TMP/victim"; : > "$TMP/victim/keep"
+cp -R "$ROOT/scripts" "$COPY/"; cp -R "$ROOT/backlog/plan" "$COPY/backlog/"
+printf '#!/bin/sh\ncase "$SMOKE_MKTEMP" in fail) exit 1 ;; empty) exit 0 ;; *) echo "$SMOKE_MKTEMP" ;; esac\n' > "$TMP/mk/mktemp"
+chmod +x "$TMP/mk/mktemp"
+for m in fail empty "$TMP/victim"; do
+  reset; fresh; SRC="$COPY/scripts/agent/run.sh" DIR="$COPY" SMOKE_MKTEMP="$m" PATH="$TMP/mk:$PATH" TMPDIR="$HOST_TMP" run 7
+  [[ $RC -eq 0 && $(calls) -eq 0 && "$(cat "$RUNS/7/stopped" 2>/dev/null)" == no-tmpdir ]] && has 'no-tmpdir' "$FIX/comments" \
+    && [[ -f "$COPY/scripts/agent/run.sh" && -f "$TMP/victim/keep" ]] \
+    || { say "mktemp $m: rc=$RC calls=$(calls) stopped=$(cat "$RUNS/7/stopped" 2>/dev/null) copy/victim: $(ls "$COPY" "$TMP/victim" 2>&1 | tr '\n' ' ')"; r=1; }
+done
+[[ $r -eq 0 ]] && ok R19 || fail R19
 
 echo
 if [[ $fails -eq 0 ]]; then echo "$oks probes OK"; exit 0; fi
