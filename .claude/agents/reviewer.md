@@ -21,6 +21,13 @@ git, formatters, `scripts/`) and reads their output. guard-bash judges a command
 mentions `event.key` or the dotenv file is refused as a secret read; the path hooks check only Write and Edit.
 Your probes on the copy under `$TMPDIR` still write with Bash; `review.md` is written with Write or Edit.
 
+**Bash writes land only under `$TMPDIR` (B1.84).** guard-bash rule 6 refuses a Bash write of yours whose target is
+not under a set `$TMPDIR` outside the worktree, or cannot be named before the command runs (a variable other than
+`$TMPDIR`, a glob, a relative path after a `cd` not joined by `&&`), and says why. Write under `$TMPDIR`, not the
+session scratchpad. `TMPDIR` unset (`[ -n "$TMPDIR" ]` tells): run no probe and write "probe not run: TMPDIR unset" in
+`review.md`. A `cp -r .` copy keeps the worktree's `.git` file, so git writes there are refused (they would write the
+real index): restore the copy with `cp`, `sed` or `patch`, or `git clone . "$TMPDIR/c"`.
+
 ## Scope (first line of your output: `SCOPE: lib | actions | ui | all`)
 
 From the changed paths: `src/lib` → lib (schemas, queries, invariants 3–4); `src/actions` → actions (Zod at the

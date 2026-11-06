@@ -2,7 +2,7 @@
 # PreToolUse hook for Bash. Exit 2 + reason on stderr blocks the command and shows the agent why.
 # Blocks: rm -rf in any flag spelling, force pushes and remote branch deletes, destructive Prisma commands, Prisma
 # migrations against a non-local DATABASE_URL, reads of .env*/keys/credentials, printing secret-looking variables or
-# the whole env.
+# the whole env, a reviewer's write outside a set TMPDIR (B1.84).
 set -uo pipefail
 . "$(dirname "$0")/lib.sh"
 CMD="$(json_field tool_input.command)"
@@ -140,6 +140,17 @@ if [[ $invokes_pr_step -eq 1 ]]; then
   own="$(cd "$(dirname "$0")/../.." && pwd -P)/scripts/pr-step.sh"
   [[ -f "$own" ]] && cmp -s "$top/scripts/pr-step.sh" "$own" \
     || block "$ME" "scripts/pr-step.sh in $top differs from the hooks' own copy ($own): open the session from a checkout with the same wrapper."
+fi
+
+# 6. The reviewer's Bash writes (B1.84): reviewer.md sends probes to a copy under $TMPDIR, and with TMPDIR unset a
+#    `cd "$TMPDIR/…"` did nothing and ten `sed -i` edits landed in the worktree (#225). For agent_type `reviewer`,
+#    reviewer-writes.mjs names each write target of the command and prints why one is refused: TMPDIR unset, not an
+#    absolute directory or overlapping the worktree, or a target outside it or not known before the command runs.
+#    A check that cannot run refuses.
+if [[ "$(json_field agent_type)" == reviewer ]]; then
+  why="$(printf '%s' "$HOOK_JSON" | node "$(dirname "$0")/reviewer-writes.mjs" 2>&1)" \
+    || block "$ME" "reviewer: the write check failed (${why:-no output}), so the command is refused."
+  [[ -z "$why" ]] || block "$ME" "reviewer: $why"
 fi
 
 exit 0
