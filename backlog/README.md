@@ -7,12 +7,12 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open   | Total  |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ------ | ------ |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 51     | 0       | 29     | 80     |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 51     | 0       | 30     | 81     |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0      | 5      |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3      |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4      |
 | E5 Todos keys    | [plan/E5-todos-keys.md](plan/E5-todos-keys.md)       | 3      | 0       | 3      | 6      |
-| **Total**        |                                                      | **65** | **0**   | **33** | **98** |
+| **Total**        |                                                      | **65** | **0**   | **34** | **99** |
 
 ## Execution order
 
@@ -131,6 +131,7 @@ flowchart TD
   S90 --> S96
   S97["97 · .env.example no longer exempts a whole command<br/>B1.81"]
   S98["98 · run.sh skips issues while merged agent branches remain<br/>B1.82"]
+  S99["99 · unattended.sh tells the runner's ready from a person's<br/>B1.83"]
 ```
 
 ## Remaining
@@ -173,6 +174,7 @@ at most 3 cards Doing (B1.18).
 | 96   | B1.80 | The components guide says the search form is a client component once section 25 lands                    | —      | Open   | ~~B5.3~~                        | Lead  | S [estimate] |
 | 97   | B1.81 | guard-bash's secret-read rule lets any command through once it names `.env.example`                      | —      | Open   | —                               | Lead  | S [estimate] |
 | 98   | B1.82 | run.sh counts merged agent branches as in flight and skips the next issue                                | —      | Open   | —                               | Lead  | S [estimate] |
+| 99   | B1.83 | unattended.sh takes the first ready_for_review, whoever made it                                          | —      | Open   | —                               | Lead  | S [estimate] |
 
 ## Waiting on human
 
