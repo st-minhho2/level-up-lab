@@ -1108,12 +1108,7 @@ the wrapper changed was refused and the lead pushed by hand. No `docs/mistake-lo
 ### B1.88 · The runner gives its run no TMPDIR, so the reviewer's probes are refused
 
 _tooling · no §_
-**Status: Open** — B1.84 (#243, a0979ab) made guard-bash rule 6 refuse a `reviewer` Bash write unless its target
-lies under a set `TMPDIR` outside the worktree. The runner never sets one: `git grep -n TMPDIR scripts/agent
-.devcontainer` finds nothing, `scripts/agent/run.sh:132-133` starts `claude -p` with `env -u …` and no `TMPDIR`, and
-`.devcontainer/runner/Dockerfile:52,59` sets other `ENV`s only. In #225 (B5.6) `TMPDIR` was empty in the container, so
-from now on every probe a headless reviewer tries is refused ("TMPDIR is unset or empty") and reported "not run",
-which weakens the diff review of the E6 batches that run three cards in parallel
+**Status: Done** — decc052 (#250), run-smoke R19 (red 6708888: R19 FAIL all 9 cases, 1 of 19; green 05f681d: 19 probes OK, bash 3.2), hook-smoke 726, vitest 241, e2e 52, mutation 92.62 (no src/); plan review 2 rounds, diff review 1 pass
 
 - **Spec:** none — tooling (the headless runner, invariant 8 review); no `src/` change, no section
 - **Test:** a probe that runs the runner's child environment (`run.sh`'s `env` line, or the runner image) and checks
