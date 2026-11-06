@@ -82,17 +82,30 @@ Plan review: approved, round 2 (round 1: 2 reasons, pin AC-27.4/27.5 before the 
 
 ## Map delta
 
-pending
+- F25 · §27 · ✗ → ✅ — `isSearchEscape` in `src/lib/escape-search.ts`, the box's `onKeyDown` in `src/components/todo-search-form.tsx`; evidence: `pnpm test` → 227 passed, `pnpm test:e2e` → 51 passed, mutation 92.62 (`escape-search.ts` 100). The ✗ row landed in the skeleton e7cbbbe; the ✅ flip landed in the feat commit 7a0b815, not in plan step 4's separate `docs(map)` commit (same file, same content; not split, to avoid rewriting history).
 
 ## Review
 
-pending
+`/review-loop`: passes 1/3, verdict ready for PR, 0 findings. Plan review: approved in round 2 (round 1: 2 reasons, applied 7e027d9).
+
+| Pass | #   | Finding (file:line)                                             | Source   | Kind        | Disposition      | Justification                                                                                     |
+| ---- | --- | --------------------------------------------------------------- | -------- | ----------- | ---------------- | ------------------------------------------------------------------------------------------------- |
+| 1    | O1  | F25 ✅ flip in the feat commit, not a `docs(map)` commit        | reviewer | process     | no change needed | same file and content as the plan; `check-plan-scope.sh` OK; splitting means rewriting history    |
+| 1    | O2  | `docs/metrics.md` row written by code-writer                    | reviewer | process     | no change needed | exempt paperwork named in the plan; numbers match this run (6/6, 92.62, `escape-search.ts` 100)   |
+| 1    | O3  | `e2e/27-escape-search.spec.ts` second Escape counts any request | reviewer | flake risk  | no change needed | 10/10 under `pnpm dev`, 5/5 on a production build; an expired Link prefetch is the remaining risk |
+| 1    | O4  | local `CI=1` Playwright needs `NODE_ENV=production`             | reviewer | environment | out of scope     | not caused by this card; GitHub CI is the judge                                                   |
+
+Probes (one change each, on a copy): synthetic `key` instead of `nativeEvent` → AC-27.4 fails; any-modifier Escape → AC-27.4 fails; no `preventDefault` / no `value = ''` → AC-27.2, AC-27.3 fail; no link `click()` → AC-27.2 fails; `if (isSearchInEffect(query))` → `if (true)` is equivalent (the ref is null when the link is absent).
+
+Riskiest unfalsified: AC-27.6's "0 requests of any method" after the second Escape, under a production server with an expired prefetch.
+
+Full text: `backlog/work/B5.5/review.md` "Diff review (round 1)".
 
 ## Evidence
 
-- AC met: pending
+- AC met: 6/6 (AC-27.1 … AC-27.6)
 - tier: medium
-- plan deviations: none
+- plan deviations: none (the F25 ✅ flip is in the feat commit instead of a separate `docs(map)` commit; same file, in the Files table)
 - trace: n/a
 
 ## Checklist
