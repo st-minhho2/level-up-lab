@@ -68,4 +68,4 @@ Costs (review round 1, fixtures old → new; none of these shapes is in `src/` o
 - Fails closed where today counts (regression): a regex literal inside an `.each` table holding an unescaped paren
   (`/[(]/`) or a quote (`/'/`); an escaped paren (`/\(/`, F9) is fixed and probed (A8).
 
-Plan review: approved, round 2 · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: lead, 2026-11-06 · Rounds: 1
