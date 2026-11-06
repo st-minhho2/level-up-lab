@@ -1076,7 +1076,7 @@ _tooling · no §_
 ### B1.86 · check-ac-coverage misses a test title written on the line after `it.each(…)(`
 
 _tooling · no §_
-**Status: Open** — `scripts/ci/check-ac-coverage.sh:6` collects titles with a line-based `grep -oE "(it|test)(\.each\([^)]*\))?\((['\"\`])AC-…:"`, so a title on its own line after a multi-line `it.each<…>([ … ])(`is never seen.`src/components/todo-due-date.test.tsx:267–272`is AC-28.6's only test, an`it.each`with 3 cases and the title`'AC-28.6: Escape on $name …'`on line 272; the feature PR #235 passed because §28 was still ✗ in the index, and B5.6's closing PR #237 (§28 → ✅) fails the`guards`job with`§28 criteria=7 covered=6 MISSING: AC-28.6`
+**Status: Done** — 34787f8 (#239), hook-smoke A1–A10 (red 3 FAIL A1/A3/A4 of 599; green 599, review pass 1 adds A9/A10, 601 probes OK); old vs new guard identical on main, §28 covered=7 on B5.6's closing branch; vitest 241, e2e 52, mutation 92.62 (no src/); plan review 2 rounds, diff review 2 passes
 
 - **Spec:** none — tooling (CI guard for invariant 2 and `.claude/rules/testing.md`); no `src/` change, no section
 - **Test:** `scripts/ci/check-ac-coverage.sh` on a tree where §28's index row is ✅ (branch `docs/B5.6-done`) — red because: it exits 1 with `MISSING: AC-28.6`
