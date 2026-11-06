@@ -62,8 +62,8 @@ tests are not changed, because none of them asserts that a link is absent.
 
 ## Out of scope
 
-A "clear" control inside the search box (the `x` of a browser's `type="search"` input), a button or a keyboard shortcut
-for clearing, clearing the filter as well (the filter links of §12 do that), keeping the search when a filter link is
+A "clear" control inside the search box (the `x` of a browser's `type="search"` input), a button for clearing, a keyboard shortcut other than Escape in the search box (§27)
+clearing the filter as well (the filter links of §12 do that), keeping the search when a filter link is
 followed (§16), a link shown when no search is in effect, an animation or a focus move after following the link,
 client-side navigation by script, a count of the matches cleared, remembering the cleared search, a change to the
 remaining count, "Clear completed" or "Mark all complete" (§12, §13, §14), any change to the page layout outside the
