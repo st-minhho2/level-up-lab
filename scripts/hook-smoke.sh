@@ -796,5 +796,7 @@ acx 1 'A5 the id only as a non-first argument' "it('adds', () => { f('AC-9.1: x'
 acx 1 'A6 describe is not a test call' "describe('AC-9.1: not a test call', () => {});"
 acx 1 'A7 the id inside an .each body' "it.each([1])('runs', () => { f('AC-9.1: x'); });"
 acx 0 'A8 an escaped paren in a regex literal inside the table' "it.each([[/\\(/]])('AC-9.1: escaped paren', () => {});"
+acx 1 'A9 a call whose name ends in it is not a test call (review pass 1)' "it('emits', () => { emit('AC-9.1: x'); });"
+acx 0 'A10 a type argument holding one nested <…> (review pass 1)' "it.each<Array<number>>([1])('AC-9.1: nested type', () => {});"
 
 echo; [[ $fail -eq 0 ]] && echo "hook-smoke: $n probes OK" || { echo "hook-smoke: FAILURES above"; exit 1; }
