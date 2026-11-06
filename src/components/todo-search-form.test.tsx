@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { isSearchInEffect } from '@/lib/clear-search';
 import type { TodoFilter } from '@/lib/todo-filter';
@@ -275,7 +276,74 @@ function countClearLinkClicks(): { readonly count: () => number } {
   return { count: () => clicks };
 }
 
+// Watches the form for a submit and the window for an address change; a navigation would show as either.
+function watchNavigation(): { readonly submits: () => number; readonly addressChanged: () => boolean } {
+  let submits = 0;
+  screen.getByRole('search').addEventListener('submit', (event) => {
+    event.preventDefault();
+    submits += 1;
+  });
+  const addressBefore = window.location.href;
+  return { submits: () => submits, addressChanged: () => window.location.href !== addressBefore };
+}
+
+function searchBoxValue(): string {
+  return (searchBox() as HTMLInputElement).value;
+}
+
 describe('<TodoSearchForm> Escape key (§27)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('AC-27.2: on (active, milk) with milkx typed, Escape in the box leaves the value \'\', defaultPrevented true, exactly 1 click on the "Clear search" link whose href is /?filter=active, and 0 requests', async () => {
+    const user = userEvent.setup();
+    renderForm('active', 'milk');
+    await user.clear(searchBox());
+    await user.type(searchBox(), 'milkx');
+    expect(searchBoxValue()).toBe('milkx');
+    expect(document.activeElement).toBe(searchBox());
+    const clearLink = countClearLinkClicks();
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+    const event = pressKey(searchBox(), { key: 'Escape' });
+
+    expect(searchBoxValue()).toBe('');
+    expect(event.defaultPrevented).toBe(true);
+    expect(clearLink.count()).toBe(1);
+    expect(screen.getByRole('link', { name: 'Clear search' }).getAttribute('href')).toBe('/?filter=active');
+    expect(fetchSpy).toHaveBeenCalledTimes(0);
+  });
+
+  it("AC-27.3: on (all, '') and on (completed, '  ') with zzz typed, Escape in the box each time leaves the value '', defaultPrevented true, 0 links in the document and 0 navigations", async () => {
+    const cases: readonly SearchCase[] = [
+      { filter: 'all', query: '' },
+      { filter: 'completed', query: '  ' },
+    ];
+
+    for (const { filter, query } of cases) {
+      const user = userEvent.setup();
+      const { unmount } = renderForm(filter, query);
+      await user.type(searchBox(), 'zzz');
+      expect(searchBoxValue()).toContain('zzz');
+      const navigation = watchNavigation();
+      const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+      const event = pressKey(searchBox(), { key: 'Escape' });
+
+      expect(searchBoxValue()).toBe('');
+      expect(event.defaultPrevented).toBe(true);
+      expect(screen.queryAllByRole('link')).toHaveLength(0);
+      expect(document.querySelectorAll('a')).toHaveLength(0);
+      expect(navigation.submits()).toBe(0);
+      expect(navigation.addressChanged()).toBe(false);
+      expect(fetchSpy).toHaveBeenCalledTimes(0);
+
+      fetchSpy.mockRestore();
+      unmount();
+    }
+  });
+
   it('AC-27.4: Enter, a, /, Esc, Ctrl+Escape, Meta+Escape, Alt+Escape and Shift+Escape in the box each leave defaultPrevented false, the value milk and 0 clicks on the link', () => {
     renderForm('all', 'milk');
     const clearLink = countClearLinkClicks();
