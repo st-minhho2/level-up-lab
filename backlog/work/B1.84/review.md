@@ -329,3 +329,148 @@ Riskiest unfalsified: the lexer's `closing()` paren matching for `$( … )` that
 comment or a heredoc containing `)`. I did not build an input where the early close lets a write escape rather than
 refuse. The other unfalsified spot is the plan's stated assumption that the hook's TMPDIR is the Bash tool's
 TMPDIR, which no probe here can test.
+
+## Diff review (round 2)
+
+Range `main...8e0e0dd`. This round covers the pass-1 probes `0366484` (red) and the fixes `8e0e0dd`. Every probe ran
+on a `git clone` of the branch under `$TMPDIR` (`b184r2-62484`, which stands in for the worktree), with a fixture
+TMPDIR `b184fix2` that holds `probe/` and a clone `c/` of the stand-in. The probes called guard-bash directly with
+`agent_type` `reviewer`. Nothing in the worktree was written.
+
+### Command results (last line each)
+
+- `pnpm lint`: `All matched files use Prettier code style!`
+- `pnpm typecheck`: `tsc --noEmit` (exit 0)
+- `pnpm test`: `Tests  241 passed (241)`
+- `pnpm test:e2e`: `52 passed (1.2m)`
+- `pnpm test:mutation`: `Final mutation score of 92.62 is greater than or equal to break threshold 70` (no `src/`
+  change)
+- `scripts/hook-smoke.sh` at `8e0e0dd`: `hook-smoke: 708 probes OK`
+- `scripts/hook-smoke.sh` at `0366484` (clone): `hook-smoke: FAILURES above`, 11 FAIL, as the commit body says
+- `check-suppressions.sh`: `OK: no new suppressions`
+- `check-config-change.sh`: exit 1 on the four `.claude/` files. This is expected: the PR carries
+  `config-change-approved` (D-19)
+- `check-feat-commits.sh`: `OK: no feat commit touches tests`
+- `check-ac-coverage.sh`: `OK: every criterion of a shipped section has a test`
+- `check-spec-sections.sh`: `OK: sections cited: 1 … 28`
+- `check-features-map.sh`: `OK`
+- `check-agent-frontmatter.sh` · `check-plan-scope.sh` · `check-backlog.sh`: `OK: 13 files` ·
+  `OK: … stays inside the approved plan of B1.84` · `OK: README matches the cards`
+- `scripts/verify-red.sh B1.84`: `::error::no 'test(<pkg>): B1.84 … (red)' commit`. Not applicable, as in round 1:
+  the red commits are in hook-smoke and were proven by hand above
+- `git diff --stat main...HEAD`: `9 files changed, 1690 insertions(+), 54 deletions(-)`
+
+### Checklist
+
+- Pass-1 findings 1 to 6 each have a probe (RW95–RW107) and a fix: pass, with gaps in findings 1 to 4 below. The
+  pass-1 [1] probes (RW95, RW96) pass, and `grep TMPDIR … > "$TMPDIR/g"` is allowed.
+- No test weakened after red: pass. `git log --first-parent --no-merges b1597f2..HEAD -- '*.test.*' e2e/
+scripts/hook-smoke.sh` lists only `0366484` (a `test(scripts)` commit, 21 lines added, 0 deleted). The
+  `--remerge-diff` form is empty.
+- Every changed file is in `plan.md`: pass. `8e0e0dd` touches the hook, `hooks.md` and `scripts/CLAUDE.md`. The
+  `scripts/CLAUDE.md` change is a table reflow plus `RW1–RW107`.
+- Interfaces: unchanged (exit 0/2, stdout reason).
+- Zod, Prisma, raw SQL, migration, features map: n/a.
+- No secret, no suppression: pass.
+- Reverting one changed line (on the clone):
+  - Case `kept` line: 5 FAIL. `gitEnv = false`: 2 FAIL.
+  - The `timeout`/`flock`/`taskset` operand skip: 0 FAIL (finding 6).
+  - The trailing `esac` → `cases.pop()` after the loop: 0 FAIL. Nothing reads `cases` after the loop, so this line
+    is dead code, not a gap.
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: .claude/hooks/reviewer-writes.mjs:873
+    DEFECT: `abs !== l` exempts the link path itself, so a write to a symlink that the same command made follows
+            the link out of TMPDIR.
+    TRIGGER: ln -s "<worktree>/README.md" "$TMPDIR/l3" && echo INJECTED >> "$TMPDIR/l3"
+             (also: ln -s /tmp "$TMPDIR/l5" && touch "$TMPDIR/l5")
+    WRONG BEHAVIOUR: exit 0. Run on the clone, README.md ends in "INJECTED" (` M README.md`). The fix to pass-1 [2]
+            covers only paths below the link; RW100 pins only that form.
+    CONFIDENCE: confirmed (verdict and run-time write both run)
+    FIX: exempt the link path only for the `ln` command's own target, and probe `>>`, `touch` and `sed -i` on it.
+
+[2] KIND: correctness
+    WHERE: .claude/hooks/reviewer-writes.mjs:688-695 (`(` pushes, `)` matches `case` only when words[0] is `case`)
+    DEFECT: a `case` pattern written `(x)` or `a|x)` still moves the paren stack. In `(x)` the `(` pushes a frame
+            that the subshell's `)` then pops. In `a|x)` the `|` ends the command, so words[0] is no longer `case`
+            and the `)` pops the enclosing subshell.
+    TRIGGER: (a) ( cd "$TMPDIR/probe" && case x in (x) true;; esac ) && touch zz2
+             (b) cd "$TMPDIR/probe" && ( cd "<worktree>" && case x in a|x) touch zz3;; esac )
+    WRONG BEHAVIOUR: exit 0 for both. The hook places zz2 and zz3 in $TMPDIR/probe. Run on the clone, both appear
+            at the stand-in worktree's root (`?? zz2`, `?? zz3`).
+    CONFIDENCE: confirmed (verdict and run-time write both run)
+    FIX: while a `case` is open and before its `in`-list body, treat `(`, `|` and `)` as pattern syntax. A `(` right
+         after `in` or `;;` (`;&`, `;;&`) opens a pattern, not a subshell. Probe (a) and (b).
+
+[3] KIND: correctness
+    WHERE: .claude/hooks/reviewer-writes.mjs:546 (push refused by its name only)
+    DEFECT: a git alias runs `push` under another name, and an unknown subcommand counts as a write of its own
+            directory, which is under TMPDIR.
+    TRIGGER: git -C "$TMPDIR/c" -c alias.p=push p origin HEAD:refs/heads/zz-pushed (c = a clone of the worktree)
+             (also: git -C "$TMPDIR/c" config alias.p push && git -C "$TMPDIR/c" p origin HEAD:refs/heads/x)
+    WRONG BEHAVIOUR: exit 0. Run on the clone, branch `zz-pushed` appears in the stand-in repository, which is the
+            write pass-1 [6] was fixed to refuse. `-c alias.x='!cmd'` runs any shell command the same way.
+    CONFIDENCE: confirmed (verdict and run-time write both run)
+    FIX: refuse `-c alias.*`, `--config-env`, `git config alias.*` writes, and a subcommand that is neither in
+         GIT_READS nor a built-in git subcommand (so it may be an alias). Or name the alias in the out-of-reach list.
+         Probe whichever is chosen.
+
+[4] KIND: correctness
+    WHERE: .claude/hooks/reviewer-writes.mjs:851-861 (a git write = its directory, git dir and common dir)
+    DEFECT: the work tree that git writes (`core.worktree`) is never asked for, so a clone under TMPDIR whose config
+            names the worktree checks out into the worktree.
+    TRIGGER: git -C "$TMPDIR/c" config core.worktree "<worktree>" && git -C "$TMPDIR/c" checkout -- :/src/lib/todos.ts
+             (also in two calls: the config in one, the checkout in the next)
+    WRONG BEHAVIOUR: exit 0. On the clone, the stand-in's modified src/lib/todos.ts was overwritten from c's index
+            (status went from ` M` to clean). Any `checkout <rev> -- :/src` writes arbitrary content the same way.
+    CONFIDENCE: confirmed (verdict and run-time write both run)
+    FIX: add `--show-toplevel` to the rev-parse at :854 (covers the two-call form). Refuse `git config core.worktree`
+         and `-c core.worktree` (covers the one-call form). Probe both.
+
+[5] KIND: spec-mismatch
+    WHERE: .claude/hooks/reviewer-writes.mjs:87-92 (AT_COMMAND, tmpRebound)
+    DEFECT: `read` and `unset` count as rebinding TMPDIR only after `^ ; & | ( { \n then do else`. A `while`/`if`/
+            `until`/`!` keyword or an assignment prefix in front of them is missed, and so is `env -u TMPDIR` / `env -i`
+            in front of a child shell.
+    TRIGGER: (a) while read -r TMPDIR; do touch "$TMPDIR/zz-read"; done < "$TMPDIR/line" (line holds "src")
+             (b) IFS= read -r TMPDIR < notes.md; touch "$TMPDIR/zz"
+             (c) if read -r TMPDIR < notes.md; then touch "$TMPDIR/zz"; fi
+             (d) TMPDIR ending in "/" (the macOS default): env -u TMPDIR bash -c 'touch "${TMPDIR}src/zz-envu"'
+    WRONG BEHAVIOUR: exit 0 for all four. Run on the clone, (a) created src/zz-read and (d) created src/zz-envu in
+            the stand-in worktree. hooks.md promises "a `$TMPDIR` in a command that sets `TMPDIR` … is refused".
+    CONFIDENCE: confirmed ((a) and (d) run; (b) and (c) are the same regex miss, verdict only)
+    FIX: drop the AT_COMMAND anchor for the builtin alternation, i.e. match the builtin name followed by
+         `[^;&|\n]*\bTMPDIR\b` anywhere. The `grep TMPDIR` data case does not start with a builtin name, so it still
+         passes. Treat `env -u TMPDIR`, `env -i` and `unset` in a nested `bash -c` as a rebind too. Probe (a), (b),
+         (d).
+
+[6] KIND: coverage
+    WHERE: .claude/hooks/reviewer-writes.mjs:741 (the timeout/flock/taskset operand skip)
+    DEFECT: no RW probe puts a writer behind `timeout <duration>`, so removing this line leaves hook-smoke green.
+    TRIGGER: on the clone, replace :741 with a comment. `timeout 5 rm src/a.ts` goes from exit 2 to exit 0, and
+             hook-smoke still reports 708 OK.
+    WRONG BEHAVIOUR: a regression that lets `timeout 5 rm …` through would pass CI.
+    CONFIDENCE: confirmed (ran it)
+    FIX: add `timeout 5 rm src/a.ts` (and `flock /tmp/l rm src/a.ts`) as rw 2 probes.
+```
+
+Not a finding: `sh -c`, `zsh -c` and `/bin/rm` are refused. `$( … )` holding a `case` pattern, a `)` inside quotes,
+or a heredoc whose body is `)` is refused, not let through. So round 1's riskiest spot did not open an escape.
+`npx -c '<writer>'` passes (exit 0), but it is a program running a shell string, which falls under "a program's own
+writes" in the out-of-reach list.
+
+None of the six would trip on an honest probe; each one is a command built to get past the hook. But findings 1 to 4
+are gaps in the pass-1 fixes themselves (symlinks, case patterns, push, git placement), and finding 5 breaks a
+sentence that hooks.md now states. As in round 1, each needs either a code fix or an out-of-reach entry, plus an RW
+probe that pins the verdict, landed as `test(scripts): B1.84 review pass 2 -- …` before the fix.
+
+Verdict: back to code-writer (dev-lead writes `.claude/` here). This is round 2 of ≤ 3. If round 3 still finds
+built bypasses, the lead should decide whether a fail-closed lexer can close this class or whether the out-of-reach
+list should say "a command built to get past the check".
+
+Riskiest unfalsified: the other `case` pattern forms (`;&`, `;;&`, a pattern with `$( )`) and `select`/`coproc`
+around a `cd`. I did not build those inputs. The plan's assumption that the hook's TMPDIR is the Bash tool's TMPDIR
+is still untestable here.
