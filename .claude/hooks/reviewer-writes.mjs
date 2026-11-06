@@ -87,11 +87,12 @@ const tmpRaw = process.env.TMPDIR ?? '';
 // A command that may set or drop TMPDIR (an assignment, `${TMPDIR:=…}`, a builtin given it as a variable name,
 // `env -u TMPDIR` or `env -i`, a sourced file) makes every $TMPDIR in it unknown; the word TMPDIR as data
 // (`grep TMPDIR`) does not (review passes 1, 2).
-const AT_COMMAND = String.raw`(^|[;&|({\n]|\b(then|do|else)\b)\s*`;
+// in command position: after an operator or a keyword, behind any `NAME=value` prefixes (review pass 3)
+const AT_COMMAND = String.raw`(^|[;&|({\n!]|\b(then|do|else|elif|if|while|until|time)\b)\s*([A-Za-z_]\w*=\S*\s+)*`;
 const tmpRebound = new RegExp(
   String.raw`(^|[^\w$])TMPDIR\+?=|\$\{TMPDIR:?=|printf\s+-v\s*TMPDIR\b|` +
-    String.raw`\b(export|unset|declare|typeset|local|readonly|read|for|select|getopts|mapfile|readarray)\b[^;&|\n]*\bTMPDIR\b|` +
-    String.raw`\benv\b[^;&|\n]*\s(-\w*i\w*|--ignore-environment|-u\s*TMPDIR|--unset=?\s*TMPDIR)\b|` +
+    String.raw`${AT_COMMAND}(export|unset|declare|typeset|local|readonly|read|for|select|getopts|mapfile|readarray)\b[^;&|\n]*\bTMPDIR\b|` +
+    String.raw`${AT_COMMAND}env\b[^;&|\n]*\s(-\w*i\w*|--ignore-environment|-u\s*TMPDIR|--unset=?\s*TMPDIR)\b|` +
     String.raw`${AT_COMMAND}(source|\.)\s`,
 ).test(command);
 // GIT_DIR, GIT_WORK_TREE, core.worktree and kin anywhere in the command move git's writes away from its directory.
