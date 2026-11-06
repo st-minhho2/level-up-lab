@@ -65,7 +65,7 @@ _F25 · section 27_
 ### B5.6 · Escape closes the due-date editor without saving
 
 _F26 · section 28_
-**Status: Open** — §15's editor closes only on save (`grep -n 'Escape' src/components/todo-due-date.tsx` → 0)
+**Status: Done** — 8d61eda (#235), 15 AC-28.n tests green (unit 227 → 241: 10 pinned AC-28.4–28.6 green first, 4 red AC-28.1–28.3 proven by verify-red.sh; e2e 51 → 52, AC-28.7), mutation 92.62 (component out of mutation scope); unattended and no-rework 1/1 (D-29), one runner run
 
 - **Spec:** §28 — unchanged (section written from `work/B5.6/analysis.md`; contract `spec/contracts/26-escape-due-date.md`; Escape lifted from §15 Out of scope, D-32)
 - **Test:** `src/components/todo-due-date.test.tsx::AC-28.1: Escape in the "Due date" field closes the editor, shows Due 2026-11-05 once, prevents default and calls setTodoDueDateAction 0 times` — red because: the field has no keydown handler yet, so it stays open (assertion, not import)
