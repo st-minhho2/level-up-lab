@@ -64,4 +64,4 @@ green · `pnpm test:mutation` ≥ 70 with `src/lib/escape-search.ts` in scope ·
 | 4    | dev-lead            | F25 ✅                                                 | `docs(map): F25 … [B5.5]`         |
 | 5    | reviewer (diff)     | `review.md` diff section                               | `docs(backlog): B5.5 review …`    |
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 (round 1: 2 reasons, pin AC-27.4/27.5 before the red commit and baseline 222, applied 7e027d9) · Plan approved by: reviewer (D-27, tier medium, issue #224) · Rounds: 1
