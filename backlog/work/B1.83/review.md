@@ -195,3 +195,41 @@ Riskiest unfalsified: the plan's recovery ("rerun `ready <n>`: gh skips the read
 click-left-in-place cost both assume `gh pr ready` on an already-ready PR exits 0, under gh 2.23 (runner) and 2.103
 (host). If it exits non-zero, `set -e` stops before the label add and the PR never gets the label. I did not run it:
 checking needs a live write.
+
+## Diff review (pass 2)
+
+Range `origin/main` 7c4300e..dfd3602. New since pass 1: 3c22078 (pass 1 review) and dfd3602 `test(scripts): B1.83
+review pass 1 -- label name and first pairing`. dfd3602 touches only `scripts/metrics-smoke.sh` (+15 lines: M48, M49
+and a header line) and changes no code. Still unpushed (guard-bash rule 5), so CI has not run. Probes ran on a fresh
+clone under `$TMPDIR/b183-probe2.2oB7/`.
+
+| Command                                                      | Result                                                                           |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| `/bin/bash scripts/metrics-smoke.sh`                         | `[metrics-smoke] 47 ok, 0 FAIL`                                                  |
+| `/bin/bash scripts/pr-step-smoke.sh`                         | `[pr-step-smoke] 16 ok, 0 FAIL`                                                  |
+| `scripts/hook-smoke.sh`                                      | `hook-smoke: 601 probes OK`                                                      |
+| `pnpm lint && pnpm typecheck && pnpm test`                   | Prettier clean · `tsc --noEmit` clean · `Tests  241 passed (241)`                |
+| `check-plan-scope.sh` · `check-backlog.sh`                   | `OK: … stays inside the approved plan of B1.83` · `OK: README matches the cards` |
+| `check-feat-commits.sh` · `check-suppressions.sh`            | `OK: no feat commit touches tests` · `OK: no new suppressions`                   |
+| mutant: drop `&& $4 == "pr-step-ready"` (clone at dfd3602)   | `FAIL M48 522 … 01:10:00Z 0 yes 0` · `46 ok, 1 FAIL`                             |
+| mutant: tag `sort \| head -1` → `tail -1` (clone at dfd3602) | `FAIL M49 523 … 04:30:00Z 0 yes 1` · `46 ok, 1 FAIL`                             |
+
+Checklist:
+
+| Check                                     | Result                                                                                                                                                                       |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| pass-1 finding 1 (label name unpinned)    | resolved: M48 asserts ready 03:00 and touches 1 with `config-change-approved` at 00:40; it fails under the mutant (run above)                                                |
+| pass-1 finding 2 (first pairing unpinned) | resolved: M49 asserts ready 03:00 and touches 0 with the label added again at 04:30; it fails under the mutant (run above)                                                   |
+| no test weakened after red                | pass: `git log 4539715..HEAD -- 'scripts/*smoke*' '*.test.*' e2e/` lists only dfd3602, which is a `test(...)` commit; `git diff 4539715 HEAD` on both smokes removes no line |
+| every changed file in `plan.md`           | pass: `scripts/metrics-smoke.sh` is a Files row; `check-plan-scope.sh` OK                                                                                                    |
+| code unchanged since pass 1               | pass: `git diff 5deb3d1 HEAD` touches only `review.md` and `metrics-smoke.sh`                                                                                                |
+| mutants                                   | 10 of 10 killed now (pass 1's 8, plus the 2 above)                                                                                                                           |
+
+Findings: none.
+
+Verdict: ready for PR. The draft carries `config-change-approved` (D-19): `check-config-change.sh` still exits 1 on
+`scripts/pr-step.sh` until the label is on the PR.
+
+Riskiest unfalsified: unchanged from pass 1. `gh pr ready` on an already-ready PR must exit 0 (gh 2.23 and 2.103) for
+the plan's rerun recovery and its "click left in place" cost to hold. Still not run; the live `ready` on #241 is the
+first check.
