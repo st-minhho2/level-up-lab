@@ -474,3 +474,128 @@ list should say "a command built to get past the check".
 Riskiest unfalsified: the other `case` pattern forms (`;&`, `;;&`, a pattern with `$( )`) and `select`/`coproc`
 around a `cd`. I did not build those inputs. The plan's assumption that the hook's TMPDIR is the Bash tool's TMPDIR
 is still untestable here.
+
+## Diff review (round 3)
+
+Range `main...13721df`. This round covers the pass-2 probes `340a978` (red) and the fixes `13721df`. Every probe
+ran on a `git clone` of the branch under `$TMPDIR` (`b184r3-52063/wt`, standing in for the worktree), with a fixture
+TMPDIR `b184r3-52063/fix` holding `probe/` and clones `c/`, `c2/` (`core.worktree` set to the stand-in). Probes
+called `reviewer-writes.mjs` directly with `agent_type` `reviewer`, or ran the RW section of hook-smoke (RW1–RW121)
+on the clone. Nothing in the worktree was written.
+
+### Command results (last line each)
+
+- `pnpm lint`: `All matched files use Prettier code style!`
+- `pnpm typecheck`: exit 0
+- `pnpm test`: `Tests  241 passed (241)`
+- `pnpm test:e2e`: `52 passed (1.2m)`
+- `pnpm test:mutation`: `Final mutation score of 92.62 is greater than or equal to break threshold 70` (no `src/`
+  change)
+- `scripts/hook-smoke.sh` at `13721df`: `hook-smoke: 722 probes OK`
+- RW section at `340a978` (clone): `hook-smoke: FAILURES above`, 11 FAIL (RW108–RW110, RW112–RW119), as the commit
+  body says. RW111, RW120 and RW121 pass at red, which is expected (a want-0 row and two pins of existing behavior)
+- `check-suppressions.sh`: `OK: no new suppressions`
+- `check-config-change.sh`: exit 1 on the `.claude/` files. Expected: the PR carries `config-change-approved` (D-19)
+- `check-feat-commits.sh`: `OK: no feat commit touches tests`
+- `check-ac-coverage.sh`: `OK: every criterion of a shipped section has a test`
+- `check-spec-sections.sh`: `OK: sections cited: 1 … 28`
+- `check-features-map.sh`: `OK`
+- `check-agent-frontmatter.sh` · `check-plan-scope.sh` · `check-backlog.sh`: `OK: 13 files` ·
+  `OK: chore/B1.84-reviewer-tmpdir stays inside the approved plan of B1.84` · `OK: README matches the cards`
+- `scripts/verify-red.sh B1.84`: `::error::no 'test(<pkg>): B1.84 … (red)' commit`. Not applicable, as in rounds 1
+  and 2: the red commits are in hook-smoke and were proven by hand above
+- `git diff --stat main...HEAD`: `9 files changed, 1900 insertions(+), 54 deletions(-)`
+
+### Checklist
+
+- Pass-2 findings 1 to 6 are closed: pass. Each round-2 TRIGGER, and its variants, is now refused: `>>`, `touch` and
+  `sed -i` on a link the same command makes; `(x)` and `a|x)` patterns; `-c alias.p=push`; `config alias.p` then
+  `p`; `config core.worktree` in one call; a clone with `core.worktree` set earlier, by `-C` and by `cd`;
+  `while`/`if`/`IFS=` `read -r TMPDIR`; `env -i`, `env -uTMPDIR`, `env --unset=TMPDIR`, `/usr/bin/env -u TMPDIR sh -c`;
+  `bash -c 'unset TMPDIR; …'`.
+- No test weakened after red: pass. `git log --first-parent --no-merges b1597f2..HEAD -- '*.test.*' e2e/
+scripts/hook-smoke.sh` lists only `0366484` and `340a978` (both `test(scripts)`; `340a978` adds 22 lines and deletes
+  0). The `--remerge-diff` form is empty.
+- Every changed file is in `plan.md`: pass. `13721df` touches `hooks.md`, `reviewer-writes.mjs`, `scripts/CLAUDE.md`.
+- Interfaces: unchanged (exit 0/2, stdout reason).
+- Zod, Prisma, raw SQL, migration, features map: n/a. No secret, no suppression: pass.
+- Honest reviewer commands still pass: the gate chain with TMPDIR unset, `git log … --remerge-diff`,
+  `next-task.sh --check`, `cp -r . "$TMPDIR/probe2" && cd … && sed -i … && pnpm test`,
+  `git clone -q . "$TMPDIR/c3" && git -C "$TMPDIR/c3" apply …`, and a `for`/`case` mutation loop after
+  `cd "$TMPDIR/probe" &&`. Exception: finding 1.
+- Reverting one changed line of `13721df` (on the clone, RW section):
+  - `ln` link exemption: 1 FAIL. `--show-toplevel` query: 1 FAIL. `configured` return: 1 FAIL. Unknown-subcommand
+    check: 2 FAIL. `env` rebind alternative: 1 FAIL. `core.worktree` in `gitEnv`: 1 FAIL.
+  - `if (word === 'esac') cases.pop()`: 0 FAIL. A stale `cases` entry matters only for a `;;` after `esac`, which is a
+    syntax error, so I found no input that turns this into a gap.
+  - `pattern = true` after `;;`, and `;;&|;&` in the lexer: 0 FAIL each (finding 2).
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: .claude/hooks/reviewer-writes.mjs:93-94 (tmpRebound: the builtin and `env` alternatives lost their
+           AT_COMMAND anchor)
+    DEFECT: a builtin's name anywhere in the text (`for`, `read`, `export`, `local`, `readonly`, … in a sed
+            expression, a grep pattern, a format string or a path) followed by `$TMPDIR` in the same segment counts
+            as rebinding TMPDIR. Every `$TMPDIR` then becomes unknown, so an honest write under TMPDIR is refused,
+            and the reason names a cause that is false.
+    TRIGGER: sed -i "" "s/for (const/while (/" "$TMPDIR/probe/src/lib/todos.ts"
+             grep -n readonly src/lib/todos.ts > "$TMPDIR/g"
+             grep -rn "export function" src/lib > "$TMPDIR/exports.txt"
+             git log --format="%s for %h" > "$TMPDIR/log"
+             pnpm vitest run src/lib/env.test.ts -i 2>&1 | tee "$TMPDIR/out"   (the `env` alternative)
+    WRONG BEHAVIOUR: exit 2, "the command sets TMPDIR (or drops it, or sources a file), so $TMPDIR in it is not
+            known". At 8e0e0dd all five are allowed (I ran the old hook), so this is a regression from 13721df. The
+            first trigger is the absolute-path mutation probe the card exists to permit (the RW58 form). The
+            acceptance says "the refusal names the cause", and pass-1 [1] was fixed so that TMPDIR as data does not
+            rebind. The workaround (`cd "$TMPDIR/probe" && sed -i … src/…`) works only because `$TMPDIR` comes
+            before the builtin's name.
+    CONFIDENCE: confirmed (ran all five against 13721df and 8e0e0dd)
+    FIX: put the anchor back, and widen it to the positions round 2 found:
+         AT = (^|[;&|({\n!]|\b(then|do|else|elif|if|while|until|time)\b)\s*([A-Za-z_]\w*=\S*\s+)*
+         Use it before (builtin\s+|command\s+)?(export|…|readarray)\b…TMPDIR and before (\S*/)?env\b…. I checked
+         this regex (in a scratch file) against RW117–RW119, round 2's (c), `/usr/bin/env -i`,
+         `export TMPDIR=src`: matched. It does not match the five triggers or `grep -n TMPDIR … > "$TMPDIR/g"`.
+         Add the first two triggers as rw 0 probes.
+
+[2] KIND: coverage
+    WHERE: .claude/hooks/reviewer-writes.mjs:729 (`pattern = true` after `;;`) and :282 (`;;&|;&` in the lexer)
+    DEFECT: no RW probe puts a `(`, `|` or `)` pattern after the first one, or uses `;&`, so reverting either line
+            leaves hook-smoke green. Both lines close round 2's [2] bypass for every pattern after the first.
+    TRIGGER: revert :729 on the clone, then
+               cd "$TMPDIR/probe" && ( cd "<worktree>" && case x in y) true;; a|x) touch zz4;; esac )
+             goes from exit 2 to exit 0. Revert `;;&|;&` to `;;`, then
+               cd "$TMPDIR/probe" && ( cd "<worktree>" && case x in y) true;& x) touch zz5;; esac )
+             goes from exit 2 to exit 0. RW1–RW121 stay OK in both. Run for real, the first command creates `zz4`
+             at the stand-in's root.
+    WRONG BEHAVIOUR: a regression that reopens round 2's [2] for second patterns would pass CI (the same class as
+            round 2's [6]).
+    CONFIDENCE: confirmed (both mutations run against the RW section; zz4 written on the clone)
+    FIX: add both commands as rw 2 probes ('outside TMPDIR').
+```
+
+Not a finding: `coproc touch src/x` and `trap 'touch src/x' EXIT` pass (exit 0). `coproc` is not in KEYWORDS, and
+`trap`'s string is code that runs later. Neither is a command a reviewer types by mistake. Both fall under the new
+out-of-reach entry "any command built on purpose to get past a text check". `case esac in esac)` is a syntax error
+in bash 3.2, so its effect on the paren stack runs nothing. `git -c advice.x=… checkout` in a clone is refused; this
+is the documented cost "a git write with `-c`".
+
+For the lead, at the PR gate (not findings):
+
+- `13721df` adds "any command built on purpose to get past a text check (the threat is a reviewer's mistake, not an
+  attacker)" to the out-of-reach list in the hook header and in `hooks.md`. Round 2 left that choice to the lead,
+  and the approved plan's cost (4) does not list it. It changes what the card claims: the hook stops honest
+  mistakes like #225's, not a reviewer trying to get past it. Accept it explicitly, or ask for the class to be
+  closed in code.
+- `pr-body.md` is still the pre-build draft (RW1–RW94, "Red: pending", 695 probes). dev-lead's step 4 has to refresh
+  it to RW1–RW121 / 722 and copy in the out-of-reach entry above.
+
+Verdict: back to code-writer (dev-lead writes `.claude/` here). The changes are small: a regex anchor plus 2 rw 0
+rows for [1], and 2 rw 2 rows for [2]. This was pass 3 of ≤ 3, so no fourth review pass is scheduled. Waiting on
+human: the lead decides whether the [1]/[2] fix lands on the strength of hook-smoke (the probes above pin it) or
+gets a fourth pass.
+
+Riskiest unfalsified: the shell grammar. The lexer reads bash, and the Bash tool on this machine runs zsh. I did not
+probe zsh-only syntax: `=(…)`, `&|`, `>>|`, `${~x}`, `**/` globs, or `setopt` changing word splitting. The plan's
+assumption that the hook's TMPDIR is the Bash tool's TMPDIR is still untested.
