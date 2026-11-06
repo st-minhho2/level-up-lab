@@ -116,3 +116,82 @@ Round-1 reasons:
    failing call.
 
 Verdict: approved (ready for the lead's gate; high tier, so the lead's `approve` is required before step 1)
+
+## Diff review (pass 1)
+
+SCOPE: all (scripts + backlog paperwork; tooling, no §, no `src/`). Range `origin/main` 7c4300e..5deb3d1. Red commit
+4539715 `test(scripts): …`, green 5deb3d1 `chore(scripts): …`. Not pushed, so CI has not run. Everything below ran
+locally on the host (`/bin/bash` 3.2.57, gh 2.103). Probes ran on a clone under `$TMPDIR/b183-probe.oBIu/`.
+
+Command results (last line of each):
+
+| Command                                                                     | Result                                                                                                                                                      |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/bin/bash scripts/pr-step-smoke.sh`                                        | `[pr-step-smoke] 16 ok, 0 FAIL`                                                                                                                             |
+| `/bin/bash scripts/metrics-smoke.sh`                                        | `[metrics-smoke] 45 ok, 0 FAIL`                                                                                                                             |
+| `scripts/hook-smoke.sh`                                                     | `hook-smoke: 601 probes OK`                                                                                                                                 |
+| `pnpm lint && pnpm typecheck && pnpm test`                                  | `All matched files use Prettier code style!` · `tsc --noEmit` clean · `Tests  241 passed (241)`                                                             |
+| `pnpm test:e2e`, `pnpm test:mutation`                                       | not run: no `src/`, `prisma/` or `e2e/` change; the caller's gate list for a tooling card leaves them out                                                   |
+| `scripts/ci/check-plan-scope.sh`                                            | `OK: chore/B1.83-runner-ready-label stays inside the approved plan of B1.83`                                                                                |
+| `scripts/ci/check-backlog.sh`                                               | `OK: README matches the cards`                                                                                                                              |
+| `scripts/ci/check-suppressions.sh` · `check-feat-commits.sh`                | `OK: no new suppressions` · `OK: no feat commit touches tests`                                                                                              |
+| `scripts/ci/check-config-change.sh`                                         | rc 1, `Protected configuration changed without the 'config-change-approved' label: scripts/pr-step.sh`. Expected: the label goes on the PR at step 4 (D-19) |
+| `check-ac-coverage.sh` · `check-spec-sections.sh` · `check-features-map.sh` | `OK: every criterion of a shipped section has a test` · `OK: sections cited: 1 … 28` · `OK`                                                                 |
+| `scripts/verify-red.sh B1.83`                                               | `no 'test(<pkg>): B1.83 … (red)' commit`. Expected: the plan has no `(red)` marker for smoke-only red, as B1.79 and B1.86 did. Red proven by hand below     |
+| red at 4539715 (clone, `/bin/bash`)                                         | `[pr-step-smoke] 14 ok, 2 FAIL` (R7, R16) · `[metrics-smoke] 36 ok, 9 FAIL` (M30, M31, M33, M39, M41, M44–M47). Matches the plan exactly                    |
+| live `unattended.sh` (default set) vs origin/main's copy                    | columns 1–7 identical on 8 rows; `unattended 7/8 = 87.5 % (pending 0)`; touches 0 on all 8                                                                  |
+| live `no-rework.sh 211 216 221 229 232 235`                                 | `no-rework 6/6 = 100.0 % (pending 0)`; `no-rework.sh` untouched                                                                                             |
+| runner image gh 2.23, offline: `gh label create --help`                     | `-f, --force  Update the label color and description if label already exists`; `-c/--color` and `-d/--description` present                                  |
+| `git diff --stat origin/main...HEAD`                                        | `7 files changed, 419 insertions(+), 19 deletions(-)`                                                                                                       |
+
+Checklist:
+
+| Check                                                                                     | Result                                                                                                                                                                               |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every acceptance clause has a probe whose assertion matches it                            | partial: label added in the same step (R7, R16), fallback (M47, M30–M41), touches (M44, M46), not a message (M44/M45). "Paired with **that** label" is not pinned: finding 1         |
+| no test weakened after red (`git log 4539715..HEAD -- 'scripts/*smoke*' '*.test.*' e2e/`) | pass: empty. No merge commits in range. The red commit's M30/M31/M33/M39/M41 edits only add `\t0`, so they are stricter                                                              |
+| every changed file in `plan.md`                                                           | pass: 4 scripts and `backlog/work/B1.83/*`; `check-plan-scope.sh` OK                                                                                                                 |
+| interfaces match the plan                                                                 | pass: call order create → `pr ready` → REST add, exact arguments (R7 log); `--undo` makes no label call; refusals still exit 3 with no gh label call (R16); TSV header has 8 columns |
+| Zod / Prisma / raw SQL / migration                                                        | n/a: bash only                                                                                                                                                                       |
+| no secret, no suppression                                                                 | pass                                                                                                                                                                                 |
+| `$n` reaches the API path only after `^[0-9]+$` and the own-branch check                  | pass (traced: `pr-step.sh:58-60` comes before line 66)                                                                                                                               |
+| features map row moved                                                                    | n/a: no §. `scripts/CLAUDE.md` (R1–R15, M1–M43) and `docs/metrics.md` row 28 go stale. Deferred to a filing-lane card by the approved plan                                           |
+| would a test fail if a changed line were reverted? (10 mutants on the clone)              | 8 killed: `<= t`→`< t`, ready `tail`→`head`, touches `<`→`<=`, touches forced to 0, fallback removed, create removed, add removed, add `\|\| true`. 2 survive: findings 1 and 2      |
+
+Findings:
+
+```
+[1] KIND: coverage
+    WHERE: scripts/metrics/unattended.sh:54 (`$1 == "labeled" && $4 == "pr-step-ready"`); scripts/metrics-smoke.sh M44–M47
+    DEFECT: no probe pins the label name. Every fixture PR timeline holds either no label or only `pr-step-ready`, so
+            dropping `&& $4 == "pr-step-ready"` (any label counts as the wrapper's) leaves metrics-smoke at 45 ok, 0 FAIL.
+    TRIGGER: an agent PR labeled `config-change-approved` at 00:40 (D-19: the agent adds it at PR creation), a click at
+             01:10 undone at 01:20, then the wrapper's ready + `pr-step-ready` at 03:00. Probe M48 on the clone.
+    WRONG BEHAVIOUR: HEAD gives the right row (ready 03:00, touches 1; M48 ok). Under the surviving mutant the row reads
+             ready 01:10, touches 0: the click ends the window, which is the exact bug this card fixes, and the suite
+             stays green. The acceptance's "paired with that label" is the card's one discriminator and has no probe.
+    CONFIDENCE: confirmed (mutant run on the clone: base 45/0; with M48 added, HEAD 47 ok, mutant `FAIL M48 … 01:10 … 0`)
+    ASK: add the M48 fixture (a non-wrapper label earlier on the PR) in a `test(scripts): B1.83 review pass 1 -- …`
+         commit. `scripts/metrics-smoke.sh` is already in the Files list.
+
+[2] KIND: coverage (not blocking on its own)
+    WHERE: scripts/metrics/unattended.sh:54 (`| sort | head -1` on the tag)
+    DEFECT: "the PR's first `pr-step-ready` label" is not pinned. `head -1`→`tail -1` survives (45 ok, 0 FAIL), because
+            no fixture has two `labeled pr-step-ready` events.
+    TRIGGER: wrapper ready + label 03:00, the label removed by hand, BEHIND undo 04:00, wrapper ready 04:30 that re-adds
+             the label (a new `labeled` event, since the label was absent). Probe M49 on the clone.
+    WRONG BEHAVIOUR: HEAD gives ready 03:00, touches 0 (M49 ok). The mutant gives ready 04:30, touches 1, so the wrapper's
+             own first ready is counted as a person's touch.
+    CONFIDENCE: confirmed (mutant `FAIL M49 … 04:30 … 1`). Rare in practice: it needs someone to remove the label.
+             Worth adding with [1] in the same commit.
+```
+
+No correctness finding against HEAD. Every plan Want reproduces, red and green both.
+
+Verdict: back to test-writer. Add M48 (and M49) as a `test(scripts): B1.83 review pass 1 -- …` commit; expect
+`[metrics-smoke] 47 ok, 0 FAIL` on HEAD's `unattended.sh`. No code change is asked for.
+
+Riskiest unfalsified: the plan's recovery ("rerun `ready <n>`: gh skips the ready of a ready PR") and the
+click-left-in-place cost both assume `gh pr ready` on an already-ready PR exits 0, under gh 2.23 (runner) and 2.103
+(host). If it exits non-zero, `set -e` stops before the label add and the PR never gets the label. I did not run it:
+checking needs a live write.
