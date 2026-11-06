@@ -50,3 +50,47 @@ where `RUN_TMP` lives in `run_issue`'s subshell and the parent's is empty. The e
 Riskiest unfalsified: whether Claude Code passes the process's `TMPDIR` unchanged to the Bash tool _and_ to the hook
 of a subagent (`reviewer-writes.mjs:6-7` assumes they share it). The plan marks this `[unverified]` until the first
 E6 batch, which is right; nothing offline can show it.
+
+## Plan review (round 2)
+
+SCOPE: tooling (`scripts/agent/`, `.claude/docs/`; no `src/`, no section)
+
+Round 1's reasons, checked against `4784b54`:
+
+- **1 (a)–(d), resolved.** The snippet checks `mktemp`'s status, a non-empty output, `-d`, the `cd … && pwd -P` status
+  and `is_run_tmp` on the resolved path, and assigns `RUN_TMP` only after all of them; `drop_tmp` removes only a value
+  `is_run_tmp` accepts. Traced with `/bin/bash` 3.2 on a copy under `$TMPDIR`, the snippet run with `cwd` = a scratch
+  dir and a `mktemp` shim first on `PATH`: exits 1, exits 0 printing nothing, prints a victim directory holding `keep`
+  → each gives `rc=0 PROBLEM=[no-tmpdir: mktemp -d under /tmp failed] RUN_TMP=[]`, `drop_tmp` removes nothing, `keep`
+  is still there. `is_run_tmp` refuses `""`, `/tmp/level-up-lab-run.` (empty suffix), a trailing `/`, `/tmp//…`,
+  `/tmp/x/level-up-lab-run.a`, `…/..`, `…/../..`; it accepts `/private/tmp/level-up-lab-run.ab`. The `mktemp` cases
+  and the mutants run on a copy of `scripts/` + `backlog/plan/` under the smoke's `$TMP` (d).
+- **2, resolved.** "Disk (review r1)" names N × ~855 MB per run, three times that for three E6 runs, the system volume,
+  and that the reviewer cannot remove its copy before the call ends.
+- **Round 1's note, taken:** the `--poll` TERM case is in R19.
+
+| Check                                                                          | Result                                                                                                                                                                                                                                                            |
+| ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the card                                     | pass: unchanged from round 1 (`run.sh`, `run-smoke.sh`, `hooks.md` rule 6 Costs line 47, `work/B1.88/*`). `git grep` finds no other doc saying the runner has no `TMPDIR`; `reviewer.md:27` stays for sessions, as stated                                         |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib | pass (n/a): bash only. Child env, mode 700, per call, outcome `no-tmpdir` (comment, `stopped`, never retried: the loop retries only `error:*`, `run.sh:261`), no new flag, variable or exit code                                                                  |
+| plan follows `advice.md` or states the deviation                               | pass: no advice (tier quick, no section), stated                                                                                                                                                                                                                  |
+| ≤ 7 criteria, every Then measurable                                            | pass: 6 R19 rows (9 cases), each a count, a path relation, an outcome string or a file that must survive                                                                                                                                                          |
+| verification lists exact commands with expected numbers                        | pass: red "1 of 19 probes FAILED" (R19, all 9 cases; each fails today: TMPDIR = the host's `$TMP/host`, which is not removed, and no `mktemp` stops the `-p` call), green "19 probes OK", hook-smoke 726 OK, mutants 6 of 8 killed with the 2 survivors explained |
+| work breakdown: skeleton → red → green → map → review, convention subjects     | pass: as round 1 (`test(scripts)` red, `chore(scripts)` green, `docs(backlog)` review; no skeleton or map for a tooling card)                                                                                                                                     |
+| `Lead approves spec` box, human-ticked only                                    | pass (n/a): no spec change. `scripts/agent/tier.sh backlog/work/B1.88/plan.md` → `high`, so the lead's `approve` is the gate; `config-change-approved` (D-19) named                                                                                               |
+| no settled D-n contradicted                                                    | pass: D-19, D-27, D-28 followed; no TMPDIR ruling in `00-decisions.md`. No hook keeps state under `TMPDIR` (`require-review.sh` does not), so a new directory per call loses nothing between a run and its retry                                                  |
+| `next-task.sh --check B1.88`                                                   | pass: `[next-task] B1.88: no overlap with any Doing or Review card`                                                                                                                                                                                               |
+
+Verdict: approved (ready for the lead's gate, not for build)
+
+Not reasons, for the lead to weigh at the gate (each falls under the plan's stated costs or needs no change):
+
+- A TERM in the few lines between `mktemp` and `RUN_TMP="$t"` leaves that empty directory behind (`on_signal` sees
+  `RUN_TMP` empty). This is the same class as the stated `kill -9` cost, one empty directory, and it is the price of (b).
+- On `no-tmpdir` no `.jsonl` or `.exit` is written, so the comment's `log:` line names a file that does not exist. The
+  reason is in `.err` (the `mktemp` stderr goes there). Worth one word in the comment's detail, not a blocker.
+- R19 has no `--check-binary` + failing `mktemp` case. That path ends in `die "… no-tmpdir: …; not verified"`
+  (`run.sh:294`) and writes no version line, by tracing only.
+
+Riskiest unfalsified: unchanged from round 1. Whether Claude Code gives the process's `TMPDIR` unchanged to the Bash
+tool and to a subagent's hook. The plan marks it `[unverified]` until the first E6 batch; nothing offline can show it.
