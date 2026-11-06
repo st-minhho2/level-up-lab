@@ -979,6 +979,12 @@ rw 2 "$RWT" "$RWW" "env -u TMPDIR bash -c 'touch \"\${TMPDIR}src/zz\"'" 'sets TM
 # RW120–RW121 (review pass 2 [6]): the operand a launcher takes before the command
 rw 2 "$RWT" "$RWW" 'timeout 5 rm src/a.ts' 'outside TMPDIR'
 rw 2 "$RWT" "$RWW" 'flock "$TMPDIR/lk" rm src/a.ts' 'outside TMPDIR'
+# RW122–RW123 (review pass 3 [1]): a builtin's name inside data is no rebinding of TMPDIR
+rw 0 "$RWT" "$RWW" 'sed -i "" "s/for (const/while (/" "$TMPDIR/probe/src/lib/todos.ts"'
+rw 0 "$RWT" "$RWW" 'grep -n readonly src/lib/todos.ts > "$TMPDIR/g"'
+# RW124–RW125 (review pass 3 [2]): a pattern after ;; and after ;& is still a pattern
+rw 2 "$RWT" "$RWW" "cd \"\$TMPDIR/probe\" && ( cd \"$RWW\" && case x in y) true;; a|x) touch zz4;; esac )" 'outside TMPDIR'
+rw 2 "$RWT" "$RWW" "cd \"\$TMPDIR/probe\" && ( cd \"$RWW\" && case x in y) true;& a|x) touch zz4;; esac )" 'outside TMPDIR'
 rm -rf "$RWT/cw/.git"; rmdir "$RWT/cw" 2>/dev/null
 rm -f "$RWT/probe/.git" "$RWT/link"; rmdir "$RWT/probe" "$RWT" "$RWS" 2>/dev/null
 
