@@ -7,12 +7,12 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open   | Total   |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ------ | ------- |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 54     | 0       | 31     | 85      |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 54     | 0       | 32     | 86      |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0      | 5       |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3       |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4       |
 | E5 Todos keys    | [plan/E5-todos-keys.md](plan/E5-todos-keys.md)       | 6      | 0       | 0      | 6       |
-| **Total**        |                                                      | **71** | **0**   | **32** | **103** |
+| **Total**        |                                                      | **71** | **0**   | **33** | **104** |
 
 ## Execution order
 
@@ -137,6 +137,8 @@ flowchart TD
   S102["102 · check-ac-coverage reads multi-line it.each titles<br/>~~B1.86~~"]
   S103["103 · docs follow B1.83's label and touches column<br/>B1.87"]
   S99 --> S103
+  S104["104 · the runner gives each run a private TMPDIR<br/>B1.88"]
+  S100 --> S104
 ```
 
 ## Remaining
@@ -178,6 +180,7 @@ at most 3 cards Doing (B1.18).
 | 100  | B1.84 | The reviewer's probes edit the worktree when `TMPDIR` is unset                                           | —      | Open   | —                               | Lead  | S [estimate] |
 | 101  | B1.85 | Card plans give the `docs(map)` step to dev-lead, whose hook refuses `spec/features-map.md`              | —      | Open   | —                               | Lead  | S [estimate] |
 | 103  | B1.87 | Docs still describe unattended.sh and pr-step.sh as they were before B1.83                               | —      | Open   | —                               | Lead  | S [estimate] |
+| 104  | B1.88 | The runner gives its run no TMPDIR, so the reviewer's probes are refused                                 | —      | Open   | —                               | Lead  | S [estimate] |
 
 ## Waiting on human
 

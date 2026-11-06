@@ -1104,3 +1104,23 @@ the wrapper changed was refused and the lead pushed by hand. No `docs/mistake-lo
   `docs/mistake-log.md` has a 2026-11-06 row for the rule 5 assumption, naming what prevents it now; no script changes
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.87/`
+
+### B1.88 · The runner gives its run no TMPDIR, so the reviewer's probes are refused
+
+_tooling · no §_
+**Status: Open** — B1.84 (#243, a0979ab) made guard-bash rule 6 refuse a `reviewer` Bash write unless its target
+lies under a set `TMPDIR` outside the worktree. The runner never sets one: `git grep -n TMPDIR scripts/agent
+.devcontainer` finds nothing, `scripts/agent/run.sh:132-133` starts `claude -p` with `env -u …` and no `TMPDIR`, and
+`.devcontainer/runner/Dockerfile:52,59` sets other `ENV`s only. In #225 (B5.6) `TMPDIR` was empty in the container, so
+from now on every probe a headless reviewer tries is refused ("TMPDIR is unset or empty") and reported "not run",
+which weakens the diff review of the E6 batches that run three cards in parallel
+
+- **Spec:** none — tooling (the headless runner, invariant 8 review); no `src/` change, no section
+- **Test:** a probe that runs the runner's child environment (`run.sh`'s `env` line, or the runner image) and checks
+  `TMPDIR` — red because: today it is unset there
+- **Acceptance:** every `claude -p` run that `scripts/agent/run.sh` starts sees a `TMPDIR` that is set, an existing
+  absolute directory outside the run's worktree and the project, and private to the run (two parallel runs do not
+  share one); interactive sessions are unchanged; the existing run-smoke and hook-smoke probes keep their verdicts;
+  the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.88/`
