@@ -1083,3 +1083,24 @@ _tooling · no §_
 - **Acceptance:** a title passed to `it.each(…)(` or `test.each(…)(` counts when the table spans lines, carries a generic type argument, or puts the title on the next line; a string `'AC-n.m:'` that is not the first argument of `it`/`test`/`it.each(…)`/`test.each(…)` still does not count; the guard reports §28 `covered=7` once §28 is ✅ and keeps every other section's count; bash 3.2-safe; the PR carries `config-change-approved` (D-19); B5.6's closing PR #237 goes green after merging `origin/main`
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.86/`
+
+### B1.87 · Docs still describe unattended.sh and pr-step.sh as they were before B1.83
+
+_tooling · no §_
+**Status: Open** — B1.83 (#241, 5ab5ff0) changed `scripts/pr-step.sh ready` (it now labels the PR `pr-step-ready`)
+and `scripts/metrics/unattended.sh` (window ends at the ready paired with that label; new `touches` column), but kept
+its Files to the scripts and smokes. `docs/metrics.md:28` still says the window ends at "the PR's first
+`ready_for_review`"; `scripts/CLAUDE.md:29,31` still list probes M1–M43 and R1–R15 (now M1–M49, R1–R16), and its
+`pr-step.sh` and `unattended.sh` rows name neither the label nor `touches`. B1.83's plan also assumed guard-bash rule
+5 compares the wrapper with the session's checkout; it compares with the main checkout's copy, so every push after
+the wrapper changed was refused and the lead pushed by hand. No `docs/mistake-log.md` row records it
+
+- **Spec:** none — tooling docs (D-29 metrics, the PR wrapper); no `src/` change, no section
+- **Test:** `git grep -n "first \`ready_for_review\`" docs/metrics.md`and`git grep -nE "M1–M43|R1–R15" scripts/CLAUDE.md`
+  — red because: both match today
+- **Acceptance:** `docs/metrics.md` row 28 states the window as `unattended.sh`'s header does (the latest
+  `ready_for_review` at or before the PR's first `pr-step-ready` label, else the first ready) and names `touches`;
+  `scripts/CLAUDE.md` rows name M1–M49, R1–R16, the label step of `ready` and the `touches` column;
+  `docs/mistake-log.md` has a 2026-11-06 row for the rule 5 assumption, naming what prevents it now; no script changes
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.87/`
