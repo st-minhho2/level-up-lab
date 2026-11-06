@@ -3,8 +3,15 @@
 B1.88 — The runner gives its run no TMPDIR, so the reviewer's probes are refused (tooling, no spec section)
 
 - spec: none — tooling (the headless runner, invariant 8 review); no `src/` change, no section
-- test: `scripts/agent/run-smoke.sh` R19 (new, 9 cases). Red: pending. Green: pending
-- acceptance: pending
+- test: `scripts/agent/run-smoke.sh` R19 (new, 9 cases). Red `6708888` (no `(red)` marker: smoke only, as B1.82):
+  R1–R18 ok, R19 FAIL (all 9 cases), "1 of 19 probes FAILED". Green `05f681d`: "19 probes OK", no
+  `/tmp/level-up-lab-run.*` left (bash 3.2.57; run locally, `run-smoke.sh` is in no CI job). `hook-smoke.sh` 726 OK.
+  `pnpm test` 241, e2e 52, mutation 92.62 (no `src/` change; reviewer).
+- acceptance: 5 of 5 — every `claude -p` run sees a `TMPDIR` that is set, an existing absolute directory (R19 one run,
+  `--check-binary`); outside the run's worktree and the project (one run); private to the run (retry, two runs at
+  once); interactive sessions unchanged (`run.sh` only); R1–R18 and hook-smoke keep their verdicts; label
+  `config-change-approved`. Beyond the card, approved in the plan: removed at the end and on TERM; a failed `mktemp`
+  starts no run (`no-tmpdir`)
 - risk tier: high (`scripts/agent/`, `.claude/`); label `config-change-approved` (D-19)
 
 ## Plan
@@ -108,11 +115,26 @@ None: tooling card, no `spec/features-map.md` row.
 
 ## Review
 
-pending
+`/review-loop`: 1 pass of 3 (`backlog/work/B1.88/review.md`, "Diff review (round 1)"). Verdict: ready for PR. Findings:
+none. Mutants of the green `run.sh` on copies, full smoke each: 7 of 9 killed (no `drop_tmp` in `on_signal`, none
+after `wait`, no `TMPDIR=` on the env line, no `is_run_tmp` at creation, no `return` on a failed check, `mktemp`
+under the host's TMPDIR, one shared directory). 2 survive as equivalents: `is_run_tmp` accepting any parent (second
+lock), no `pwd -P` resolve (`reviewer-writes.mjs` resolves `TMPDIR` itself). The two runs of "two runs at once"
+overlapped (shim log `START a`, `START b`, `END b 1`, `END a 1`).
+
+Plan review: 2 rounds (round 1 changes requested: a failed `mktemp` could make bash 3.2's `cd ""` turn the checkout
+into the directory removed; the disk cost; round 2 approved).
+
+Riskiest unfalsified: after a TERM, `on_signal` removes the directory while the killed `claude`'s tool children (a
+reviewer's `cp -r .`, vitest) may still write there (a stated cost); and whether Claude Code passes `TMPDIR` on to the
+Bash tool and hooks is `[unverified]` until the first E6 batch.
+
+`verify-red.sh B1.88` prints "no (red) commit": expected for a smoke-only red (B1.82); CI's `--auto` form says "nothing
+to verify". `docs/metrics.md` per-card row: not added (as B1.82).
 
 ## Evidence
 
-- AC met: pending
+- AC met: 5/5
 - tier: high
 - plan deviations: none
 - trace: n/a
