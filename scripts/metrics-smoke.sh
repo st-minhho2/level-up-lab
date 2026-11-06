@@ -42,6 +42,7 @@
 #       M44 a click undone, then the wrapper's labeled ready → that ready, touches 1, no message
 #       M45 a lead comment after the click and before the labeled ready → a message   M46 the wrapper's BEHIND round trip
 #       with the label → its first ready, touches 0   M47 no label → the old rule: the click, touches 0
+#   B1.83 review pass 1: M48 another PR label is not the pairing   M49 a label added again later keeps the first pairing
 set -uo pipefail
 command -v jq >/dev/null || { echo "metrics-smoke: needs jq (B1.57 probes apply the scripts' --jq)" >&2; exit 2; }
 cd "$(git rev-parse --show-toplevel)"
@@ -456,6 +457,20 @@ run unattended.sh 520 > "$TMP/out"
 pr 622 chore/B6.21-agent MERGED false 06:00; tl 622 "$CLICK" "$UNDO" "$OWN"
 run unattended.sh 521 > "$TMP/out"
 [[ "$(row 521)" == "$(printf '521\tB6.21\t622\t%s\t%s\t0\tyes\t0' "$(ts 00:30)" "$(ts 01:10)")" ]] && ok M47 || fail "M47 $(row 521)"
+
+# review pass 1: issues #522–#523 and PRs #623–#624 (cards B6.22–B6.23)
+jq '. + [{"number":623,"headRefName":"chore/B6.22-agent"},{"number":624,"headRefName":"chore/B6.23-agent"}]' \
+  "$J/prs.json" > "$J/prs.next" && mv "$J/prs.next" "$J/prs.json"
+for i in 22 23; do printf '{"state":"OPEN","body":"### Card id\\n\\nB6.%s\\n"}\n' "$i" > "$J/issue.5$i.json"; tl "5$i" "$(label 00:30)"; done
+# M48: another label on the PR (config-change-approved at 00:40, D-19) is not the pairing: the labeled ready wins
+pr 623 chore/B6.22-agent MERGED false 06:00; tl 623 "$(label 00:40 config-change-approved)" "$CLICK" "$UNDO" "$OWN" "$TAG"
+run unattended.sh 522 > "$TMP/out"
+[[ "$(row 522)" == "$(printf '522\tB6.22\t623\t%s\t%s\t0\tyes\t1' "$(ts 00:30)" "$R")" ]] && ok M48 || fail "M48 $(row 522)"
+# M49: the label taken off by hand and added again by a later wrapper round trip (04:00/04:30): the first pairing stays
+pr 624 chore/B6.23-agent MERGED false 06:00
+tl 624 "$OWN" "$TAG" "$(draft 04:00)" "$(ready 04:30)" "$(label 04:30 pr-step-ready)"
+run unattended.sh 523 > "$TMP/out"
+[[ "$(row 523)" == "$(printf '523\tB6.23\t624\t%s\t%s\t0\tyes\t0' "$(ts 00:30)" "$R")" ]] && ok M49 || fail "M49 $(row 523)"
 
 [[ -s "$FIX/denied.log" ]] && { fail "gh shim denied:"; sed 's/^/  /' "$FIX/denied.log"; }
 echo "[metrics-smoke] $oks ok, $fails FAIL"
