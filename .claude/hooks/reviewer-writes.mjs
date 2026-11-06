@@ -5,14 +5,16 @@
 // `eval`), follows the cwd through `cd X &&`, and names the write targets of the programs in WRITERS and of git (any
 // subcommand outside GIT_READS writes its directory and its git dirs). `$TMPDIR` is expanded from this process's
 // environment, which Claude Code gives the Bash tool too (a profile that exports another TMPDIR breaks that).
-// /dev/null-type targets and fd duplications (`2>&1`) are not writes. Also refused: `git push`, git writes with
-// GIT_DIR/GIT_WORK_TREE in the command, a write through a symlink `ln -s` makes in the same command; a launcher in
-// LAUNCHERS (`time`, `caffeinate`, `pnpm exec`, …) is looked through.
+// /dev/null-type targets and fd duplications (`2>&1`) are not writes. Also refused: `git push`, a git subcommand
+// outside GIT_READS and GIT_WRITES (an alias), a git write with -c or with GIT_DIR/GIT_WORK_TREE/core.worktree in the
+// command, a write to or through a symlink `ln -s` makes in the same command; a launcher in LAUNCHERS (`time`,
+// `caffeinate`, `pnpm exec`, …) is looked through.
 // Out of reach: a program's own writes from inside (node -e, python3 -c, pnpm install, prettier --write,
 // eslint --fix, make, a script file, sed's or awk's own write commands, an output option of a program not in
 // WRITERS), a program a git setting runs from a read subcommand (`git -c diff.external=…`, `core.pager`), a launcher
 // not in LAUNCHERS, GIT_DIR exported by an earlier call or the profile, a symlink a `cp`/`tar`/`rsync` of the same
-// command brings in, an alias or function defined by an earlier call, a hard link from the copy into the worktree.
+// command brings in, an alias or function defined by an earlier call, a hard link from the copy into the worktree,
+// any command built on purpose to get past a text check (the threat is a reviewer's mistake, not an attacker).
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -82,16 +84,18 @@ const GIT_READS = new Set([
 const input = JSON.parse(fs.readFileSync(0, 'utf8') || '{}');
 const command = String(input.tool_input?.command ?? '');
 const tmpRaw = process.env.TMPDIR ?? '';
-// A command that may set TMPDIR (an assignment, `${TMPDIR:=…}`, a builtin given it as a variable name, a sourced
-// file) makes every $TMPDIR in it unknown; the word TMPDIR as data (`grep TMPDIR`) does not (review pass 1).
+// A command that may set or drop TMPDIR (an assignment, `${TMPDIR:=…}`, a builtin given it as a variable name,
+// `env -u TMPDIR` or `env -i`, a sourced file) makes every $TMPDIR in it unknown; the word TMPDIR as data
+// (`grep TMPDIR`) does not (review passes 1, 2).
 const AT_COMMAND = String.raw`(^|[;&|({\n]|\b(then|do|else)\b)\s*`;
 const tmpRebound = new RegExp(
   String.raw`(^|[^\w$])TMPDIR\+?=|\$\{TMPDIR:?=|printf\s+-v\s*TMPDIR\b|` +
-    `${AT_COMMAND}(export|unset|declare|typeset|local|readonly|read|for|select|getopts|mapfile|readarray)\\b[^;&|\\n]*\\bTMPDIR\\b|` +
+    String.raw`\b(export|unset|declare|typeset|local|readonly|read|for|select|getopts|mapfile|readarray)\b[^;&|\n]*\bTMPDIR\b|` +
+    String.raw`\benv\b[^;&|\n]*\s(-\w*i\w*|--ignore-environment|-u\s*TMPDIR|--unset=?\s*TMPDIR)\b|` +
     String.raw`${AT_COMMAND}(source|\.)\s`,
 ).test(command);
-// GIT_DIR, GIT_WORK_TREE and kin anywhere in the command move git's writes away from its directory.
-const gitEnv = /\bGIT_(DIR|WORK_TREE|INDEX_FILE|COMMON_DIR|OBJECT_DIRECTORY)\b/.test(command);
+// GIT_DIR, GIT_WORK_TREE, core.worktree and kin anywhere in the command move git's writes away from its directory.
+const gitEnv = /\bGIT_(DIR|WORK_TREE|INDEX_FILE|COMMON_DIR|OBJECT_DIRECTORY)\b|core\.worktree/i.test(command);
 
 const real = (p) => {
   try {
@@ -275,9 +279,9 @@ function lex(src) {
       }
     } else if (c === ';' || c === '&' || c === '|' || c === '(' || c === ')') {
       end();
-      const op = /^(&&|\|\||;;|\|&|[;&|()])/.exec(src.slice(i))[0];
+      const op = /^(&&|\|\||;;&|;;|;&|\|&|[;&|()])/.exec(src.slice(i))[0];
       i += op.length;
-      toks.push({ t: 'op', v: op === ';;' ? ';' : op === '|&' ? '|' : op });
+      toks.push({ t: 'op', v: op.startsWith(';') && op.length > 1 ? ';;' : op === '|&' ? '|' : op });
     } else {
       start();
       if (c === '=' && !w.quoted && !w.dyn && /^[A-Za-z_]\w*$/.test(w.text)) w.assign = true;
@@ -522,11 +526,21 @@ function editor(a) {
   return parse(a, 'cSuUTiswW').operands;
 }
 
-// git: a subcommand outside GIT_READS (and the list forms below) writes its directory and its git dirs.
+// git: a subcommand in GIT_WRITES (or a write form of the list commands below) writes its directory, its work tree
+// and its git dirs; any other name (an alias, an external git-*) is refused (review pass 2).
+const GIT_WRITES = new Set(
+  (
+    'add am apply bisect branch checkout checkout-index cherry-pick clean clone commit commit-tree config fetch ' +
+    'format-patch gc hash-object init maintenance merge mktree mv notes prune pull read-tree rebase reflog remote ' +
+    'repack replace reset restore revert rm sparse-checkout stash submodule switch symbolic-ref tag update-index ' +
+    'update-ref worktree write-tree'
+  ).split(' '),
+);
 function gitWrite(args) {
   let k = 0;
   let dir = '.';
   let unplaceable = false;
+  let configured = false; // -c / --config-env: a setting can move or extend the writes (core.worktree, hooksPath)
   while (k < args.length && args[k].text.startsWith('-') && !args[k].dyn) {
     const t = args[k].text;
     if (t === '-C' && args[k + 1]) {
@@ -536,7 +550,10 @@ function gitWrite(args) {
     } else if (/^--(git-dir|work-tree)/.test(t)) {
       unplaceable = true;
       k += t.includes('=') ? 1 : 2;
-    } else k += /^(-c|--exec-path|--namespace|--config-env)$/.test(t) ? 2 : 1;
+    } else if (/^(-c|--config-env)/.test(t)) {
+      configured = true;
+      k += t === '-c' || t === '--config-env' ? 2 : 1;
+    } else k += /^(--exec-path|--namespace)$/.test(t) ? 2 : 1;
   }
   if (k < args.length && args[k].dyn)
     return { problem: `runs git with a subcommand built at run time ('${args[k].raw}')` };
@@ -545,6 +562,10 @@ function gitWrite(args) {
   // a push writes the repository it names, which for a clone of the worktree is the worktree's (review pass 1)
   if (sub === 'push' || sub === 'send-pack')
     return { problem: `runs 'git ${sub}', which writes another repository; the reviewer never pushes` };
+  if (!GIT_READS.has(sub) && !GIT_WRITES.has(sub))
+    return {
+      problem: `runs 'git ${sub}', which is not a git subcommand this check knows (an alias, an external git-${sub} or a typo)`,
+    };
   const p = parse(args.slice(k + 1), 'mFCcSU', [
     'contains',
     'no-contains',
@@ -631,8 +652,9 @@ function gitWrite(args) {
   if (read) return { words: p.vals('output') };
   if (unplaceable || gitEnv)
     return {
-      problem: `runs 'git ${sub}' with -C built at run time, --git-dir/--work-tree, or GIT_DIR/GIT_WORK_TREE in the command`,
+      problem: `runs 'git ${sub}' with -C built at run time, --git-dir/--work-tree, or GIT_DIR/GIT_WORK_TREE/core.worktree in the command`,
     };
+  if (configured) return { problem: `runs 'git -c … ${sub}': a setting given with -c can move or extend its writes` };
   if (sub === 'init') return { words: p.operands.length ? p.operands.slice(0, 1) : [literal(dir)] };
   if (sub === 'clone') return { words: [p.operands.length > 1 ? p.operands[p.operands.length - 1] : literal(dir)] };
   return { git: `git ${sub}`, dir };
@@ -663,6 +685,7 @@ function analyze(src, cwd0, depth = 0) {
       if (!kept && unsure && prev === '&&' && cwd !== null) kept = blocks;
     }
     const cd = simple(cmd, cwd, depth);
+    if (word === 'esac') cases.pop();
     if (CLOSERS.has(word)) {
       if (kept === blocks) kept = 0;
       blocks = Math.max(0, blocks - 1);
@@ -675,35 +698,41 @@ function analyze(src, cwd0, depth = 0) {
     } else if (op !== '&&' && unsure && !kept) cwd = null;
     prev = op;
   };
-  // A `)` at the paren depth where a `case` opened ends a pattern, not a subshell (review pass 1): the pattern words
-  // are dropped, and the cwd stays.
-  const cases = [];
+  // `case`: its header (to `in`) and each pattern (after `in` or `;;`, to its `)`, with any `(` and `|` in it) are
+  // dropped, never read as commands, pipes or subshells (review passes 1, 2); the case is a block for the cwd rule.
+  const cases = []; // the paren depth of each open case
+  let header = false;
+  let pattern = false;
   for (const t of lex(src)) {
     if (t.t === 'subs') for (const s of t.subs) analyze(s, cwd, depth + 1);
     else if (t.t === 'redir') pending = { ...t, pos: cmd.words.length };
     else if (t.t === 'word') {
-      if (pending) cmd.redirs.push({ ...pending, word: t });
+      const bare = !t.quoted && !t.dyn;
+      if (header || pattern) {
+        for (const s of t.subs) analyze(s, cwd, depth + 1);
+        if (header && bare && t.text === 'in') [header, pattern] = [false, true];
+        else if (pattern && bare && t.text === 'esac') [pattern, cmd.words] = [false, [t]];
+      } else if (bare && t.text === 'case' && cmd.words.length === 0) {
+        blocks++;
+        if (!kept && unsure && prev === '&&' && cwd !== null) kept = blocks;
+        cases.push(stack.length);
+        header = true;
+      } else if (pending) cmd.redirs.push({ ...pending, word: t });
       else cmd.words.push(t);
       pending = null;
+    } else if (pattern) {
+      if (t.v === ')') pattern = false;
+    } else if (header) {
+      // an operator inside the header is a syntax error; nothing runs
+    } else if (t.v === ';;') {
+      finish(';');
+      if (cases.length && cases[cases.length - 1] === stack.length) pattern = true;
     } else if (t.v === '(') stack.push({ cwd, unsure, blocks, kept });
-    else if (t.v === ')' && cmd.words[0]?.text === 'case' && !cmd.words[0].quoted) {
-      for (const w of cmd.words) for (const s of w.subs) analyze(s, cwd, depth + 1);
-      blocks++;
-      if (!kept && unsure && prev === '&&' && cwd !== null) kept = blocks;
-      cases.push(stack.length);
-      cmd = { words: [], redirs: [] };
-    } else if (t.v === ')' && cases.length && cases[cases.length - 1] === stack.length) {
-      for (const w of cmd.words) for (const s of w.subs) analyze(s, cwd, depth + 1);
-      cmd = { words: [], redirs: [] };
-    } else if (t.v === ')') {
+    else if (t.v === ')') {
       finish(')');
       ({ cwd, unsure, blocks, kept } = stack.pop() ?? { cwd, unsure, blocks, kept });
-    } else {
-      if (cmd.words[0]?.text === 'esac' && !cmd.words[0].quoted) cases.pop();
-      finish(t.v);
-    }
+    } else finish(t.v);
   }
-  if (cmd.words[0]?.text === 'esac') cases.pop();
   finish(';');
 }
 
@@ -858,6 +887,16 @@ function verdict() {
       } catch {
         // not a repository (yet): only its directory
       }
+      try {
+        // the work tree, which core.worktree set by an earlier call can move out of the directory (review pass 2)
+        const out = execFileSync('git', ['-C', dir, 'rev-parse', '--show-toplevel'], {
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore'],
+        });
+        dirs.push(out.trim());
+      } catch {
+        // a bare repository or none: no work tree
+      }
       const outside = dirs.map((d) => physical('/', d)).find((d) => !inside(d, tmp));
       if (outside)
         return `'${wr.git}' writes '${outside}', outside TMPDIR '${tmp}' (a copy whose .git points back at the repository writes the repository). ${RULE}: restore the copy with cp, sed or patch, or git clone it under $TMPDIR.`;
@@ -865,12 +904,12 @@ function verdict() {
     }
     const w = wr.word;
     if (w.dyn && tmpRebound && w.raw.includes('TMPDIR'))
-      return `'${w.raw}' (${wr.cmd}) is built at run time: the command sets TMPDIR (or sources a file), so $TMPDIR in it is not known. ${RULE}: use the TMPDIR the session has.`;
+      return `'${w.raw}' (${wr.cmd}) is built at run time: the command sets TMPDIR (or drops it, or sources a file), so $TMPDIR in it is not known. ${RULE}: use the TMPDIR the session has.`;
     if (w.dyn)
       return `'${w.raw}' (${wr.cmd}) is built at run time (a variable other than $TMPDIR, a substitution, a glob or ~), so its target is not known. ${RULE}: name it as a literal path under $TMPDIR.`;
     if (!w.text.startsWith('/') && wr.cwd === null) return `'${w.raw}' (${wr.cmd}) ${UNSURE}. ${RULE}.`;
     const abs = physical(wr.cwd ?? '/', w.text);
-    const via = links.find((l) => abs !== l && inside(abs, l));
+    const via = links.find((l) => inside(abs, l) && !(wr.cmd === 'ln' && abs === l)); // ln's own link is its write
     if (via)
       return `'${w.raw}' (${wr.cmd}) goes through '${via}', a symlink this same command makes, so its target is not known before it runs. ${RULE}: make the link in one call and write through it in the next.`;
     if (!inside(abs, tmp))
