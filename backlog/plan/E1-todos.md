@@ -1032,7 +1032,7 @@ _tooling · no §_
 ### B1.82 · run.sh counts merged agent branches as in flight and skips the next issue
 
 _tooling · no §_
-**Status: Open** — `scripts/agent/run.sh:176-180` (`in_flight`) counts every local `<type>/B<e>.<n>-agent` branch plus open PR heads, merged or not, and `run.sh:220` skips the issue once that count reaches `CAP=3` (line 33). On 2026-11-06 the runner container still held the merged `feat/B5.1-agent`, `feat/B5.3-agent` and `feat/B5.4-agent` worktrees, so `scripts/agent/run.sh 224` printed `skip #224: 3 agent branches in flight` and started no run (no `runs/224/` directory) although #224 was eligible (`eligible.sh 224 B5.5` exit 0). It ran only after the lead ran `scripts/worktree-prune.sh` by hand
+**Status: Done** — 0de8773 (#242), run-smoke R18 (red a332d16: R18 FAIL all 7 cases, 1 of 18; green 9b58695: 18 probes OK, bash 3.2), vitest 241, e2e 52, mutation 92.62 (no src/); plan review 2 rounds, diff review 1 pass
 
 - **Spec:** none — tooling (D-26 runner, sequential cap); no `src/` change, no section
 - **Test:** a probe in `scripts/hook-smoke.sh` (or the runner's own probe set) with three local `feat/B9.<n>-agent` branches already merged into the base and no open PR, expecting `in_flight` to report 0 and the issue to start — red because: `in_flight` reports 3 and `run.sh` prints `skip #<n>: 3 agent branches in flight`
@@ -1043,7 +1043,7 @@ _tooling · no §_
 ### B1.83 · unattended.sh takes the first ready_for_review, whoever made it
 
 _tooling · no §_
-**Status: Open** — `scripts/metrics/unattended.sh:49` ends the D-29 window at the PR's first `ready_for_review` event, and the runner's `gh` acts under the lead's account, so the timeline cannot tell the runner's ready from a person's. On 2026-11-06 the lead clicked "Ready for review" on runner PR #232 at 00:34:32Z while run 224 was still in diff review (only plan and PR-body commits pushed, and no ready step of the PR wrapper in `runs/224/*.jsonl`); the lead undid it, but `unattended.sh 224` will still close the window at 00:34:32Z, before the code existed, and a merge at that moment would have landed docs only
+**Status: Done** — 5ab5ff0 (#241), pr-step-smoke R7/R16 (red 14 ok 2 FAIL, green 16 ok), metrics-smoke M44-M49 (red 36 ok 9 FAIL, green 45, review pass 1 adds M48/M49, 47 ok); live: first wrapper ready on #241 at 06:13:02Z labeled pr-step-ready at 06:13:04Z; unattended columns 1-7 unchanged (7/8), touches 0; no-rework 6/6 unchanged; vitest 241, hook-smoke 601, no src/; plan review 2 rounds, diff review 2 passes
 
 - **Spec:** none — tooling (D-29 metrics, runner); no `src/` change, no section
 - **Test:** a fixture timeline for `unattended.sh` with ready_for_review at t1, convert_to_draft at t2 and the runner's ready at t3 — red because: the script reports ready = t1
@@ -1083,3 +1083,24 @@ _tooling · no §_
 - **Acceptance:** a title passed to `it.each(…)(` or `test.each(…)(` counts when the table spans lines, carries a generic type argument, or puts the title on the next line; a string `'AC-n.m:'` that is not the first argument of `it`/`test`/`it.each(…)`/`test.each(…)` still does not count; the guard reports §28 `covered=7` once §28 is ✅ and keeps every other section's count; bash 3.2-safe; the PR carries `config-change-approved` (D-19); B5.6's closing PR #237 goes green after merging `origin/main`
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.86/`
+
+### B1.87 · Docs still describe unattended.sh and pr-step.sh as they were before B1.83
+
+_tooling · no §_
+**Status: Open** — B1.83 (#241, 5ab5ff0) changed `scripts/pr-step.sh ready` (it now labels the PR `pr-step-ready`)
+and `scripts/metrics/unattended.sh` (window ends at the ready paired with that label; new `touches` column), but kept
+its Files to the scripts and smokes. `docs/metrics.md:28` still says the window ends at "the PR's first
+`ready_for_review`"; `scripts/CLAUDE.md:29,31` still list probes M1–M43 and R1–R15 (now M1–M49, R1–R16), and its
+`pr-step.sh` and `unattended.sh` rows name neither the label nor `touches`. B1.83's plan also assumed guard-bash rule
+5 compares the wrapper with the session's checkout; it compares with the main checkout's copy, so every push after
+the wrapper changed was refused and the lead pushed by hand. No `docs/mistake-log.md` row records it
+
+- **Spec:** none — tooling docs (D-29 metrics, the PR wrapper); no `src/` change, no section
+- **Test:** `git grep -n "first \`ready_for_review\`" docs/metrics.md`and`git grep -nE "M1–M43|R1–R15" scripts/CLAUDE.md`
+  — red because: both match today
+- **Acceptance:** `docs/metrics.md` row 28 states the window as `unattended.sh`'s header does (the latest
+  `ready_for_review` at or before the PR's first `pr-step-ready` label, else the first ready) and names `touches`;
+  `scripts/CLAUDE.md` rows name M1–M49, R1–R16, the label step of `ready` and the `touches` column;
+  `docs/mistake-log.md` has a 2026-11-06 row for the rule 5 assumption, naming what prevents it now; no script changes
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.87/`

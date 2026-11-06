@@ -2,15 +2,20 @@
 # Unattended share (D-29, B1.57): an `agent-ready` issue reaches a ready PR with no lead message in between, an
 # expected high-tier gate stop (D-27) excepted. Read-only; bash 3.2; gh only (its --jq). Rulings: work/B1.57/analysis.md.
 #   PR       the highest-numbered `<prefix>/<card>-agent` PR (run.sh's branch), card from the issue form's "Card id"
-#   window   the latest `agent-ready` label at or before ready → ready (the PR's first ready_for_review, else its
-#            creation when it is not a draft; a later ready is the run's own BEHIND round trip)
+#   window   the latest `agent-ready` label at or before ready → ready: the latest ready_for_review at or before the
+#            PR's first `pr-step-ready` label (scripts/pr-step.sh adds it right after its own ready, B1.83: gh acts
+#            under the lead's login, so the label is what tells the wrapper's ready from a click); a PR without that
+#            pairing (it predates the label) keeps the old rule: its first ready_for_review, else its creation when it
+#            is not a draft. A later ready is the run's own BEHIND round trip
+#   touches  ready_for_review events before ready: each was undone (a ready event needs a draft), so a person's; never
+#            a message, and 0 under the old rule, which cannot see them
 #   message  an issue or PR comment or review by a user account (bots out) inside the window, except run.sh's own
 #            comments (posted with the lead's login) and one comment starting with the word `approve` after a runner
 #            `**gate**` comment with `- tier: high` and before the next runner comment (the expected gate)
 #   verdict  yes (0 messages) · no (≥ 1, or closed with no ready PR) · pending (open, no ready PR: out of the share)
 #   scripts/metrics/unattended.sh [<issue>…]   default: every issue labeled agent-ready now (a batch: give its ids,
 #                                              an issue unlabeled after a stopped run is not listed)
-#   output: TSV "issue card pr labeled ready messages unattended" (UTC ISO times, - none), then
+#   output: TSV "issue card pr labeled ready messages unattended touches" (UTC ISO times, - none), then
 #           "unattended <k>/<n> = <x.y> % (pending <m>)", or "unattended n/a (pending <m>)" when n = 0
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
@@ -33,7 +38,7 @@ prs="$(gh pr list --state all --limit 1000 --json number,headRefName --jq '.[] |
 if [[ $# -gt 0 ]]; then issues="$*"; else
   issues="$(gh issue list --label agent-ready --state all --limit 1000 --json number --jq '.[].number' </dev/null | sort -n)"
 fi
-printf 'issue\tcard\tpr\tlabeled\tready\tmessages\tunattended\n'
+printf 'issue\tcard\tpr\tlabeled\tready\tmessages\tunattended\ttouches\n'
 k=0; n=0; p=0
 for i in $issues; do
   info="$(gh issue view "$i" --json state,body --jq '.state, .body' </dev/null)"
@@ -43,10 +48,15 @@ for i in $issues; do
   esc="${card//./[.]}" # awk -v would read \. as a plain dot
   pr=""; [[ -n "$card" ]] && pr="$(awk -F'\t' -v re="^[a-z]+/$esc-agent\$" '$2 ~ re { print $1 }' <<< "$prs" | sort -n | tail -1)"
   gh api --paginate "repos/{owner}/{repo}/issues/$i/timeline" --jq "$TL" </dev/null > "$TMPD/i"
-  : > "$TMPD/p"; ready="-"
+  : > "$TMPD/p"; ready="-"; touches=0
   if [[ -n "$pr" ]]; then
     gh api --paginate "repos/{owner}/{repo}/issues/$pr/timeline" --jq "$TL" </dev/null > "$TMPD/p"
-    ready="$(awk -F'\t' '$1 == "ready_for_review" { print $2 }' "$TMPD/p" | sort | head -1)"
+    tag="$(awk -F'\t' '$1 == "labeled" && $4 == "pr-step-ready" { print $2 }' "$TMPD/p" | sort | head -1)"
+    ready=""; [[ -n "$tag" ]] && ready="$(awk -F'\t' -v t="$tag" '$1 == "ready_for_review" && $2 <= t { print $2 }' "$TMPD/p" \
+      | sort | tail -1)"
+    if [[ -n "$ready" ]]; then
+      touches="$(awk -F'\t' -v r="$ready" '$1 == "ready_for_review" && $2 < r { c++ } END { print c + 0 }' "$TMPD/p")"
+    else ready="$(awk -F'\t' '$1 == "ready_for_review" { print $2 }' "$TMPD/p" | sort | head -1)"; fi
     [[ -n "$ready" ]] || ready="$(gh pr view "$pr" --json state,headRefName,isDraft,createdAt,mergedAt \
       --jq 'if .isDraft then "-" else .createdAt end' </dev/null)"
   fi
@@ -65,7 +75,7 @@ for i in $issues; do
     if [[ "$state" == OPEN ]]; then verdict=pending; else verdict=no; fi
   elif [[ "$msgs" -eq 0 ]]; then verdict=yes; else verdict=no; fi
   case "$verdict" in pending) p=$((p + 1)) ;; yes) k=$((k + 1)); n=$((n + 1)) ;; *) n=$((n + 1)) ;; esac
-  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$i" "${card:--}" "${pr:--}" "$labeled" "$ready" "$msgs" "$verdict"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$i" "${card:--}" "${pr:--}" "$labeled" "$ready" "$msgs" "$verdict" "$touches"
 done
 if [[ $n -eq 0 ]]; then echo "unattended n/a (pending $p)"; else
   awk -v k="$k" -v n="$n" -v p="$p" 'BEGIN { printf "unattended %d/%d = %.1f %% (pending %d)\n", k, n, 100 * k / n, p }'

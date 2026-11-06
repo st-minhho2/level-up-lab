@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # The three PR steps a card session runs itself (B1.23; dev-lead Loop 5 and 9): the only command `.claude/settings.json`
 # allows without asking, so every argument is checked here and `guard-bash.sh` lets a call through only as one plain
-# segment from the top level. Labels and body edits stay outside (asked). A refusal exits 3 with "pr-step: <why>".
+# segment from the top level. Labels and body edits stay outside (asked), except the one label `ready` adds. A refusal
+# exits 3 with "pr-step: <why>".
 #   scripts/pr-step.sh push                 git push -u origin HEAD:refs/heads/<branch>
 #   scripts/pr-step.sh draft "<title>"      gh pr create --draft, body from backlog/work/<card>/pr-body.md; prints the PR number
-#   scripts/pr-step.sh ready <n> [--undo]   gh pr ready <n> [--undo], only for this branch's own PR
+#   scripts/pr-step.sh ready <n> [--undo]   gh pr ready <n> [--undo], only for this branch's own PR; `ready` also labels the
+#                                           PR pr-step-ready (created on first use): gh acts under the lead's login, so the
+#                                           label is what tells the wrapper's ready from a click (B1.83, unattended.sh)
 #   scripts/pr-step.sh open "<title>"       gh pr create (not a draft) on a lane branch only (B1.26): docs/<card>-done or
 #                                           -partial (closing) from backlog/work/<card>/closing-pr-body.md, docs/<card>-card
 #                                           (filing) from filing-pr-body.md, changed on this branch; prints the PR number
@@ -55,7 +58,13 @@ case "${1:-}" in
     n="$2"; [[ "$n" =~ ^[0-9]+$ ]] || refuse "<n> must be digits"
     head="$(gh pr view "$n" --json headRefName,isCrossRepository --jq '[.headRefName, .isCrossRepository] | @tsv')"
     [[ "$head" == "$branch"$'\t'false ]] || refuse "PR $n is not this branch's own PR ($head)"
-    if [[ $# -eq 3 ]]; then gh pr ready "$n" --undo; else gh pr ready "$n"; fi
+    if [[ $# -eq 3 ]]; then gh pr ready "$n" --undo; else
+      # the label exists before the PR turns ready, so only the add can fail after it (rerun: gh skips a ready PR);
+      # REST, not `gh pr edit`: the runner image's gh 2.23 also queries Projects (classic), which GitHub has retired
+      gh label create pr-step-ready --force --color 0E8A16 --description "Made ready by scripts/pr-step.sh (B1.83)" >/dev/null
+      gh pr ready "$n"
+      gh api --method POST "repos/{owner}/{repo}/issues/$n/labels" -f 'labels[]=pr-step-ready' >/dev/null
+    fi
     ;;
   open)
     [[ $# -eq 2 ]] || refuse 'open takes one argument: "<title>"'

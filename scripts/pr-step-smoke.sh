@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
-# Probes R1–R15 of scripts/pr-step.sh (B1.23, B1.26) on a throwaway repo with a bare origin and a `gh` shim that logs every
-# call. A refusal must be the wrapper's own: exit 3, a "pr-step:" message, and no gh call and no push.
+# Probes R1–R16 of scripts/pr-step.sh (B1.23, B1.26, B1.83) on a throwaway repo with a bare origin and a `gh` shim that
+# logs every call. A refusal must be the wrapper's own: exit 3, a "pr-step:" message, and no gh call and no push.
 #   scripts/pr-step-smoke.sh
 #   R1 push runs the exact git line                    R2 main, detached refused       R3 an argument to push refused
 #   R4 draft runs the exact gh line, prints the number R5 body file missing, symlink, hard link, symlinked dir refused
-#   R6 bad title refused                               R7 ready, ready --undo exact    R8 bad <n>, other head, fork refused
+#   R6 bad title refused                               R8 bad <n>, other head, fork refused
+#   R7 ready, ready --undo exact (ready: label pr-step-ready created, PR ready, label added; --undo: no label, B1.83)
 #   R9 unknown subcommand, a subdirectory refused      R10 a caller's GH_REPO never reaches gh
 #   R11 open on docs/<card>-done|-partial exact line  R12 open on docs/<card>-card exact line
 #   R13 open: wrong branch, title, body refused        R14 draft on a lane branch refused
 #   R15 a caller's GIT_CONFIG_GLOBAL, GIT_CONFIG_COUNT/KEY/VALUE, GIT_CONFIG_SYSTEM never reach the push (B1.76)
+#   R16 a refused ready makes no label call; a failing label create, ready or label add fails the step there (B1.83)
 set -uo pipefail
 SRC="$(cd "$(dirname "$0")" && pwd)/pr-step.sh"
 TMP="$(mktemp -d)"; trap 'rm -f -- "$TMP"/bin/gh; rm -rf -- "$TMP"' EXIT
@@ -25,6 +27,7 @@ printf 'body\n' > "$REPO/backlog/work/B9.1/pr-body.md"
 cat > "$TMP/bin/gh" <<SHIM
 #!/bin/bash
 echo "GH_REPO=\${GH_REPO:-} \$*" >> '$LOG'
+[[ "\$1 \$2" == "\${GH_FAIL:-}" ]] && exit 1
 case "\$1 \$2" in
   "pr create") echo "https://github.com/o/r/pull/41" ;;
   "pr view") case "\$3" in 7) printf 'feat/B9.1-x\tfalse\n' ;; 8) printf 'feat/B9.2-y\tfalse\n' ;; 9) printf 'feat/B9.1-x\ttrue\n' ;; esac ;;
@@ -77,7 +80,10 @@ t80="feat(todos): B9.1 $(printf 'x%.0s' $(seq 1 57)) (§9)" # 80 characters, 81 
 [[ $r6 -eq 0 ]] && ok R6 || fail R6
 # R7
 : > "$LOG"; a="$(run ready 7)"; b="$(run ready 7 --undo)"
-want="$(printf 'GH_REPO= pr view 7 --json headRefName,isCrossRepository --jq [.headRefName, .isCrossRepository] | @tsv\nGH_REPO= pr ready 7\nGH_REPO= pr view 7 --json headRefName,isCrossRepository --jq [.headRefName, .isCrossRepository] | @tsv\nGH_REPO= pr ready 7 --undo')"
+VIEW='GH_REPO= pr view 7 --json headRefName,isCrossRepository --jq [.headRefName, .isCrossRepository] | @tsv'
+LABEL='GH_REPO= label create pr-step-ready --force --color 0E8A16 --description Made ready by scripts/pr-step.sh (B1.83)'
+ADD='GH_REPO= api --method POST repos/{owner}/{repo}/issues/7/labels -f labels[]=pr-step-ready'
+want="$(printf '%s\n' "$VIEW" "$LABEL" 'GH_REPO= pr ready 7' "$ADD" "$VIEW" 'GH_REPO= pr ready 7 --undo')"
 [[ "$a" == 0 && "$b" == 0 && "$(cat "$LOG")" == "$want" ]] && ok R7 || fail "R7 $a $b log=$(cat "$LOG")"
 # R8
 r8=0; refused digits ready 7a || r8=1; refused 'extra word' ready 7 now || r8=1
@@ -177,6 +183,19 @@ for c in global count system; do
   [[ "$rc" == 0 && ! -e "$TMP/seen" ]] && pushed || { echo "     $c: rc=$rc hook=$(cat "$TMP/seen" 2>/dev/null)"; r15=1; }
 done
 [[ $r15 -eq 0 ]] && ok R15 || fail R15
+
+# R16 (B1.83): a refused ready touches no label; each failing gh call fails the step and stops the calls after it
+r16=0
+for n in 8 9; do
+  : > "$LOG"; rc="$(run ready "$n")"
+  [[ "$rc" == 3 ]] && ! grep -qE ' label | api ' "$LOG" || { echo "     refused ready $n: rc=$rc log=$(tr '\n' '|' < "$LOG")"; r16=1; }
+done
+for f in 'label create' 'pr ready' 'api --method'; do
+  case "$f" in 'label create') last="$LABEL" ;; 'pr ready') last='GH_REPO= pr ready 7' ;; *) last="$ADD" ;; esac
+  : > "$LOG"; rc="$(GH_FAIL="$f" run ready 7)"
+  [[ "$rc" != 0 && "$(tail -1 "$LOG")" == "$last" ]] || { echo "     $f fails: rc=$rc log=$(tr '\n' '|' < "$LOG")"; r16=1; }
+done
+[[ $r16 -eq 0 ]] && ok R16 || fail R16
 
 echo "[pr-step-smoke] $oks ok, $fails FAIL"
 [[ $fails -eq 0 ]]

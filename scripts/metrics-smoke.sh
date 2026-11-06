@@ -38,6 +38,11 @@
 #       M41 a relabel after ready keeps the window; the highest-numbered of two agent PRs for a card is its PR
 #   review pass 2: M42 a runner comment after a high-tier gate closes it: a later `approve` counts
 #   review pass 3: M43 `I would approve …` and `approved, …` after a high-tier gate both count (word at the start only)
+#   B1.83: unattended's rows end in `touches`; M30, M31, M33, M39, M41 now pin it at 0 (no label: the old rule)
+#       M44 a click undone, then the wrapper's labeled ready → that ready, touches 1, no message
+#       M45 a lead comment after the click and before the labeled ready → a message   M46 the wrapper's BEHIND round trip
+#       with the label → its first ready, touches 0   M47 no label → the old rule: the click, touches 0
+#   B1.83 review pass 1: M48 another PR label is not the pairing   M49 a label added again later keeps the first pairing
 set -uo pipefail
 command -v jq >/dev/null || { echo "metrics-smoke: needs jq (B1.57 probes apply the scripts' --jq)" >&2; exit 2; }
 cd "$(git rev-parse --show-toplevel)"
@@ -359,11 +364,11 @@ tl 610 "$(commit "$(sha h1)" 02:00 "$HUMAN")" "$(ready 03:00)"
 R="$(ts 03:00)"; M="$(ts 06:00)"
 script unattended.sh; cp "$TMP/out" "$TMP/u-default"
 r3=0; [[ -x "$SRC/unattended.sh" ]] && { run unattended.sh 501 502 503 504 505 506 507 508 > "$TMP/u-args"; r3=$?; }
-[[ "$(row 501)" == "$(printf '501\tB6.1\t601\t%s\t%s\t0\tyes' "$(ts 01:00)" "$R")" ]] && ok M30 || fail "M30 $(row 501)"
-[[ "$(row 502)" == "$(printf '502\tB6.2\t602\t%s\t%s\t1\tno' "$(ts 01:00)" "$R")" ]] && ok M31 || fail "M31 $(row 502)"
+[[ "$(row 501)" == "$(printf '501\tB6.1\t601\t%s\t%s\t0\tyes\t0' "$(ts 01:00)" "$R")" ]] && ok M30 || fail "M30 $(row 501)"
+[[ "$(row 502)" == "$(printf '502\tB6.2\t602\t%s\t%s\t1\tno\t0' "$(ts 01:00)" "$R")" ]] && ok M31 || fail "M31 $(row 502)"
 [[ "$(cut -f6,7 <<< "$(row 503)")" == $'0\tyes' && "$(cut -f6,7 <<< "$(row 504)")" == $'1\tno' ]] && ok M32 \
   || fail "M32 $(row 503) | $(row 504)"
-[[ "$(row 505)" == "$(printf '505\tB6.5\t605\t%s\t%s\t0\tyes' "$(ts 02:00)" "$R")" ]] && ok M33 || fail "M33 $(row 505)"
+[[ "$(row 505)" == "$(printf '505\tB6.5\t605\t%s\t%s\t0\tyes\t0' "$(ts 02:00)" "$R")" ]] && ok M33 || fail "M33 $(row 505)"
 [[ "$(cut -f3-7 <<< "$(row 506)")" == $'-\t'"$(ts 01:00)"$'\t-\t0\tpending' && "$(cut -f3,5,7 <<< "$(row 507)")" == $'-\t-\tno' \
   && "$(cut -f3,5,7 <<< "$(row 508)")" == $'608\t-\tpending' && $rc -eq 0 ]] \
   && tail -1 "$TMP/out" | grep -qx 'unattended 3/6 = 50.0 % (pending 2)' && ok M34 \
@@ -399,7 +404,7 @@ tl 513 "$(label 00:10)" "$(says 00:20 lead User '"note"')" "$(says 01:00 lead Us
 run no-rework.sh 613 > "$TMP/out"; m39a="$(row 613)"
 run unattended.sh 513 > "$TMP/out"; m39b="$(row 513)"
 [[ "$m39a" == "$(printf '613\tB6.13\t%s\t%s\t%s\t0\tno' "$(ts 00:30)" "$M" "$(sha j1 | cut -c1-7)")" \
-  && "$m39b" == "$(printf '513\tB6.13\t613\t%s\t%s\t1\tno' "$(ts 00:10)" "$(ts 00:30)")" ]] && ok M39 || fail "M39 $m39a | $m39b"
+  && "$m39b" == "$(printf '513\tB6.13\t613\t%s\t%s\t1\tno\t0' "$(ts 00:10)" "$(ts 00:30)")" ]] && ok M39 || fail "M39 $m39a | $m39b"
 # M40: one high-tier gate comment excepts one approve; a second approve counts
 pr 614 chore/B6.14-agent MERGED false 06:00; tl 614 "$(ready 03:00)"
 tl 514 "$(label 01:00)" "$(says 01:20 lead User "$GATE_HIGH")" "$(says 01:40 lead User '"approve"')" "$(says 01:50 lead User '"approve, and also X"')"
@@ -410,7 +415,7 @@ pr 615 chore/B6.15-agent CLOSED false; tl 615 "$(ready 01:10)"
 pr 616 feat/B6.15-agent MERGED false 06:00; tl 616 "$(ready 03:00)"
 tl 515 "$(label 01:00)" "$(says 01:30 lead User '"also handle Y"')" "$(label 04:00)"
 run unattended.sh 515 > "$TMP/out"
-[[ "$(row 515)" == "$(printf '515\tB6.15\t616\t%s\t%s\t1\tno' "$(ts 01:00)" "$R")" ]] && ok M41 || fail "M41 $(row 515)"
+[[ "$(row 515)" == "$(printf '515\tB6.15\t616\t%s\t%s\t1\tno\t0' "$(ts 01:00)" "$R")" ]] && ok M41 || fail "M41 $(row 515)"
 
 # review pass 2: M42 a runner comment after the high-tier gate closes it: a later `approve` counts
 jq '. + [{"number":617,"headRefName":"chore/B6.16-agent"}]' "$J/prs.json" > "$J/prs.next" && mv "$J/prs.next" "$J/prs.json"
@@ -429,6 +434,43 @@ tl 517 "$(label 01:00)" "$(says 01:20 lead User "$GATE_HIGH")" "$(says 01:30 lea
   "$(says 01:40 lead User '"approved, but redo Q3"')"
 run unattended.sh 517 > "$TMP/out"
 [[ "$(cut -f6,7 <<< "$(row 517)")" == $'2\tno' ]] && ok M43 || fail "M43 $(row 517)"
+
+# B1.83: issues #518–#521 and PRs #619–#622 (cards B6.18–B6.21). scripts/pr-step.sh labels its own ready
+# `pr-step-ready` in the same step (same second here); a click on "Ready for review" carries no label.
+jq '. + [{"number":619,"headRefName":"chore/B6.18-agent"},{"number":620,"headRefName":"chore/B6.19-agent"},{"number":621,"headRefName":"chore/B6.20-agent"},{"number":622,"headRefName":"chore/B6.21-agent"}]' \
+  "$J/prs.json" > "$J/prs.next" && mv "$J/prs.next" "$J/prs.json"
+for i in 18 19 20 21; do printf '{"state":"OPEN","body":"### Card id\\n\\nB6.%s\\n"}\n' "$i" > "$J/issue.5$i.json"; tl "5$i" "$(label 00:30)"; done
+CLICK="$(ready 01:10)"; UNDO="$(draft 01:20)"; OWN="$(ready 03:00)"; TAG="$(label 03:00 pr-step-ready)"
+# M44: a click at 01:10, undone at 01:20, then the wrapper's labeled ready at 03:00: the window ends at 03:00, touches 1
+pr 619 chore/B6.18-agent MERGED false 06:00; tl 619 "$CLICK" "$UNDO" "$(commit "$(sha k1)" 02:00 "$AR")" "$OWN" "$TAG"
+run unattended.sh 518 > "$TMP/out"
+[[ "$(row 518)" == "$(printf '518\tB6.18\t619\t%s\t%s\t0\tyes\t1' "$(ts 00:30)" "$R")" ]] && ok M44 || fail "M44 $(row 518)"
+# M45: the same with a lead comment at 02:00, after the click: inside the window, so a message
+pr 620 chore/B6.19-agent MERGED false 06:00; tl 620 "$CLICK" "$UNDO" "$(says 02:00 lead User '"why ready?"')" "$OWN" "$TAG"
+run unattended.sh 519 > "$TMP/out"
+[[ "$(row 519)" == "$(printf '519\tB6.19\t620\t%s\t%s\t1\tno\t1' "$(ts 00:30)" "$R")" ]] && ok M45 || fail "M45 $(row 519)"
+# M46: the wrapper's own BEHIND round trip (undo 04:00, ready 04:30, the label already on): the first labeled ready
+pr 621 chore/B6.20-agent MERGED false 06:00; tl 621 "$OWN" "$TAG" "$(draft 04:00)" "$(ready 04:30)"
+run unattended.sh 520 > "$TMP/out"
+[[ "$(row 520)" == "$(printf '520\tB6.20\t621\t%s\t%s\t0\tyes\t0' "$(ts 00:30)" "$R")" ]] && ok M46 || fail "M46 $(row 520)"
+# M47: no label (a PR before B1.83): the old rule, the first ready (the click), touches 0
+pr 622 chore/B6.21-agent MERGED false 06:00; tl 622 "$CLICK" "$UNDO" "$OWN"
+run unattended.sh 521 > "$TMP/out"
+[[ "$(row 521)" == "$(printf '521\tB6.21\t622\t%s\t%s\t0\tyes\t0' "$(ts 00:30)" "$(ts 01:10)")" ]] && ok M47 || fail "M47 $(row 521)"
+
+# review pass 1: issues #522–#523 and PRs #623–#624 (cards B6.22–B6.23)
+jq '. + [{"number":623,"headRefName":"chore/B6.22-agent"},{"number":624,"headRefName":"chore/B6.23-agent"}]' \
+  "$J/prs.json" > "$J/prs.next" && mv "$J/prs.next" "$J/prs.json"
+for i in 22 23; do printf '{"state":"OPEN","body":"### Card id\\n\\nB6.%s\\n"}\n' "$i" > "$J/issue.5$i.json"; tl "5$i" "$(label 00:30)"; done
+# M48: another label on the PR (config-change-approved at 00:40, D-19) is not the pairing: the labeled ready wins
+pr 623 chore/B6.22-agent MERGED false 06:00; tl 623 "$(label 00:40 config-change-approved)" "$CLICK" "$UNDO" "$OWN" "$TAG"
+run unattended.sh 522 > "$TMP/out"
+[[ "$(row 522)" == "$(printf '522\tB6.22\t623\t%s\t%s\t0\tyes\t1' "$(ts 00:30)" "$R")" ]] && ok M48 || fail "M48 $(row 522)"
+# M49: the label taken off by hand and added again by a later wrapper round trip (04:00/04:30): the first pairing stays
+pr 624 chore/B6.23-agent MERGED false 06:00
+tl 624 "$OWN" "$TAG" "$(draft 04:00)" "$(ready 04:30)" "$(label 04:30 pr-step-ready)"
+run unattended.sh 523 > "$TMP/out"
+[[ "$(row 523)" == "$(printf '523\tB6.23\t624\t%s\t%s\t0\tyes\t0' "$(ts 00:30)" "$R")" ]] && ok M49 || fail "M49 $(row 523)"
 
 [[ -s "$FIX/denied.log" ]] && { fail "gh shim denied:"; sed 's/^/  /' "$FIX/denied.log"; }
 echo "[metrics-smoke] $oks ok, $fails FAIL"
