@@ -3,8 +3,8 @@
 B1.86 — check-ac-coverage misses a test title written on the line after `it.each(…)(` (tooling, no spec section)
 
 - spec: none — tooling (CI guard for invariant 2 and `.claude/rules/testing.md`); no `src/` change, no section
-- test: `scripts/hook-smoke.sh` A1–A8 (new) — pending
-- acceptance: pending
+- test: `scripts/hook-smoke.sh` A1–A8 (new). Red `22429b9` (no `(red)` marker, plan): 3 FAIL (A1, A3, A4), 596 ok. Green `2f05f54`: "hook-smoke: 599 probes OK". Review pass 1 `73a53a9` adds A9 (a call whose name ends in `it` is not a test call; the old guard counted it) and A10 (a nested type argument): "hook-smoke: 601 probes OK". Old vs new guard on `origin/main`: identical output; on `docs/B5.6-done`: `§28 criteria=7 covered=6 MISSING: AC-28.6` → `covered=7`, exit 0. `pnpm test` 241, e2e 52, mutation 92.62 (no `src/` change; reviewer). A1–A8 also pass in `node:24-bookworm` (bash 5.2, perl 5.36; reviewer).
+- acceptance: 7 of 8 met — multi-line table, type argument, next-line title (A1, A3, A10); not a first argument still not counted (A5–A7, A9); §28 `covered=7` and every other section's count unchanged; bash 3.2-safe; label `config-change-approved`; #237 green after merging `origin/main` [after merge]
 - risk tier: high (CI script); label `config-change-approved` (D-19)
 - unblocks: B5.6's closing PR #237 (`guards` fails with `§28 criteria=7 covered=6 MISSING: AC-28.6`)
 
@@ -88,11 +88,34 @@ None: tooling card, no `spec/features-map.md` row.
 
 ## Review
 
-pending
+`/review-loop`: 2 passes of 3 (`backlog/work/B1.86/review.md`, "Diff review (round 1)" and "(round 2)"). Round 2
+verdict: ready for PR. Mutants of the guard's pattern: 6 of 10 killed at round 1, 8 of 10 at round 2; the 2
+survivors only make the guard fail closed.
+
+| Round | Finding                                                                                                   | Disposition                   |
+| ----- | --------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| 1     | [1] coverage: no probe pins the left boundary `(?<![\w.\$])` (`emit('AC-9.1: x')` counted by old)         | fix now: probe A9, `73a53a9`  |
+| 1     | [2] coverage: no probe pins one nested `<…>` in a type argument                                           | fix now: probe A10, `73a53a9` |
+| 1     | [3] plan-mismatch: an apostrophe outside a string (JSX text) in a one-line `.each` table now fails closed | no code change: Costs below   |
+| 2     | [1] plan-mismatch: the same mechanism can fail open (a curried call after such a table)                   | no code change: Costs below   |
+
+Costs added after the plan (none of these shapes is in `src/` or `e2e/` today; `'AC-n.m:` after `)(` appears only at
+`todo-due-date.test.tsx:251` and `:271`, both real `.each` titles):
+
+- Fails closed (regression): an apostrophe outside a string literal in a one-line `.each` table, e.g.
+  `it.each([[<p>don't</p>]])('AC-9.1: …')`, counted before and is missed now (round 1 [3]).
+- Fails open: the same apostrophe can close the table early, so a later call on an expression's result whose first
+  argument is `'AC-n.m:` counts, e.g. `render(<p>It's</p>)('AC-9.1: x')` inside a test after such a table (round 2 [1]).
+
+Riskiest unfalsified (round 2): an odd apostrophe in a comment or JSX text inside a multi-line `.each` table closing
+the group before a `)(…'AC-` that is not a title; only the curried-call shape above was built.
+
+Outside the plan's words, inside its files: `scripts/CLAUDE.md`'s `hook-smoke.sh` row also says RP1–RP10 (it still
+said RP1–RP6 after B1.79's review pass).
 
 ## Evidence
 
-- AC met: pending
+- AC met: 7/8 (the eighth, #237 green, follows this merge)
 - tier: high
 - plan deviations: none
 - trace: n/a
