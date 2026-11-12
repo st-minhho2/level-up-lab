@@ -13,7 +13,8 @@
 # Each run: a git identity (B1.69) → auth status → a verified version → eligible.sh → under 3 agent branches in flight → a per-issue lock →
 # next-task.sh --claim → worktree.sh <chore|feat>/<card>-agent → claude -p with the outcome read from the stream's last
 # line (is_error, then subtype; one retry on an error) → a comment on the issue → runs/<issue>/stopped.
-# Logs: $RUNNER_RUNS/<issue>/<UTC timestamp>-<pid>.jsonl, .err (line 1: --version), .exit. bash 3.2-safe; gh, git, jq.
+# Logs: $RUNNER_RUNS/<issue>/<UTC timestamp>-<pid>.jsonl, .err (line 1: --version), .exit. Each claude -p gets a TMPDIR
+# of its own, a mktemp -d under /tmp removed when it ends (B1.88). bash 3.2-safe; gh, git, jq.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
 cd "$ROOT" || exit 1
@@ -125,12 +126,19 @@ init_problem() { # init_problem <jsonl> <worktree>: why the run's init must stop
 }
 
 claude_run() { # claude_run <base> <worktree> <prompt> <args…>: one -p run; sets PROBLEM (init check), logs .err/.exit
-  local base="$1" wt="$2" prompt="$3" pid i=0
+  local base="$1" wt="$2" prompt="$3" pid i=0 t
   shift 3
   echo "$VERSION" > "$base.err"
   PROBLEM=""
+  # the run's own TMPDIR (B1.88): guard-bash rule 6 lets the reviewer write only under one outside the worktree (B1.84);
+  # the host's would be shared by parallel runs and the container has none. No run starts without it. Each step is
+  # checked: `cd ""` succeeds where it stands, which would make the checkout the directory drop_tmp removes (plan r1).
+  t="$(mktemp -d /tmp/level-up-lab-run.XXXXXX 2>> "$base.err")" && [[ -n "$t" && -d "$t" ]] \
+    && t="$(cd "$t" && pwd -P)" && is_run_tmp "$t" \
+    || { PROBLEM="no-tmpdir: mktemp -d under /tmp failed"; return; }
+  RUN_TMP="$t"
   printf '%s\n' "$prompt" | (cd "$wt" && exec env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_SESSION_ID \
-    RUNNER_CHILD=1 "$CLAUDE" "$@") > "$base.jsonl" 2>> "$base.err" &
+    RUNNER_CHILD=1 TMPDIR="$RUN_TMP" "$CLAUDE" "$@") > "$base.jsonl" 2>> "$base.err" &
   pid=$!; CHILD_PID=$pid
   while kill -0 "$pid" 2>/dev/null && ! grep -q '"subtype":"init"' "$base.jsonl" && [[ $i -lt $INIT_WAIT ]]; do
     sleep 1; i=$((i + 1))
@@ -140,6 +148,14 @@ claude_run() { # claude_run <base> <worktree> <prompt> <args…>: one -p run; se
     [[ -z "$PROBLEM" ]] || kill "$pid" 2>/dev/null
   fi
   wait "$pid"; echo $? > "$base.exit"; CHILD_PID=""
+  drop_tmp
+}
+is_run_tmp() { # is_run_tmp <path>: 0 for a name claude_run's mktemp makes, /tmp/level-up-lab-run.* (macOS: /private/tmp)
+  [[ "${1##*/}" == level-up-lab-run.?* && ( "${1%/*}" == /tmp || "${1%/*}" == /private/tmp ) ]]
+}
+drop_tmp() { # remove claude_run's TMPDIR, and nothing that is not one
+  ! is_run_tmp "$RUN_TMP" || rm -rf "$RUN_TMP"
+  RUN_TMP=""
 }
 
 outcome() { # outcome <jsonl> <card>: gate | ready | ended | limit:<subtype> | error:<subtype>, from the last result line
@@ -219,6 +235,7 @@ comment() { # comment <issue> <outcome> <card> <branch> <worktree> <base> <detai
 
 on_signal() { # on_signal <exit code>: stop the claude run (or --poll's issue subshell) before this process exits
   [[ -z "$CHILD_PID" ]] || kill -TERM "$CHILD_PID" 2>/dev/null
+  drop_tmp # claude_run's TMPDIR (B1.88)
   # --check-binary's probe worktree, which worktree-prune.sh never lists (review pass 4, finding 2)
   [[ -z "$PROBE" ]] || { git worktree remove --force "$PROBE/wt" >/dev/null 2>&1; rm -rf "$PROBE"; }
   exit "$1"
@@ -299,6 +316,7 @@ check_binary() { # dev-lead's path-guard must block a write to spec/ under -p --
 
 CHILD_PID=""
 PROBE=""
+RUN_TMP=""
 trap 'on_signal 143' TERM
 trap 'on_signal 130' INT
 case "${1:-}" in

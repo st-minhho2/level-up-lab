@@ -5,7 +5,7 @@ Every card PR appends a row to the same tables: `spec/features-map.md`, `docs/me
 Files:
 
 - `backlog/plan/E1-todos.md`: card B1.89 (quick, no dependency).
-- `backlog/README.md`: totals (E1 55/0/32/87, total 72/0/33/105), node S105, Remaining row 105.
+- `backlog/README.md`: totals (E1 56/0/31/87, total 73/0/32/105 after B1.88's closing), node S105, Remaining row 105.
 - `backlog/work/B1.89/filing-pr-body.md`: this body.
 
 `scripts/ci/check-backlog.sh` → OK.

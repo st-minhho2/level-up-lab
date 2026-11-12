@@ -44,8 +44,8 @@ write to or through a symlink `ln -s` makes in the same command, and a `$TMPDIR`
 `caffeinate`, `nice`, `sudo`, `timeout`, `flock`, `pnpm exec`, `npx`, …) are looked through; a `case` header and its
 patterns (with `(` and `|`) are no commands, pipes or subshells.
 `/dev/null`-type targets and fd duplications are not writes; commands without a write pass with `TMPDIR` unset.
-Costs: the runner's container has no
-`TMPDIR`, so the reviewer's probes there are refused; the session scratchpad is not under `TMPDIR`; a `cp -r .` copy's
+Costs: a session without `TMPDIR` gets
+the reviewer's probes refused (a `scripts/agent/run.sh` run has its own under `/tmp`, B1.88); the session scratchpad is not under `TMPDIR`; a `cp -r .` copy's
 git writes are refused (its `.git` points back); `git version`, `git fetch` and other harmless subcommands off the read
 list fail closed. Out of reach: a program's own writes (`node -e`, `python3 -c`, `pnpm install`, `prettier --write`,
 `eslint --fix`, `make`, a script, sed's or awk's write commands, an output option of a program not listed), a program a
