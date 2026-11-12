@@ -1119,3 +1119,27 @@ _tooling · no §_
   the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.88/`
+
+### B1.89 · Parallel runner PRs conflict on the rows they append to the shared tables
+
+_tooling · no §_
+**Status: Open** — every card PR appends a row to `spec/features-map.md` and `docs/metrics.md` and a section row to
+`spec/technical-requirements.md`, at the end of the same table, so two cards merged one after the other touch adjacent
+lines: B5.4's closing (#230) conflicted with B5.5 (#232) in `technical-requirements.md`, `metrics.md` and
+`E5-todos-keys.md`, and B5.3's closing (#226) with B1.79's (#227) in `backlog/README.md`. No `.gitattributes` exists
+(`ls .gitattributes` → none). With three `run.sh` runs in parallel (E6), the second and third runner PRs conflict at
+`dev-lead.md` step 9 (`git merge origin/main`), which sends each back to step 6 for code-writer to resolve, a turn and
+a review pass per card spent on table rows
+
+- **Spec:** none — tooling (the headless runner's merge step); no `src/` change, no section
+- **Test:** a probe in `scripts/agent/run-smoke.sh` (or a new smoke) that builds two branches from one base, each
+  appending a different row to the end of a copy of `spec/features-map.md`, and merges them — red because: the merge
+  conflicts today
+- **Acceptance:** a `.gitattributes` gives `merge=union` to the append-only tables (`spec/features-map.md`,
+  `docs/metrics.md`; `spec/technical-requirements.md` only if its index rows are append-only, else stated as out of
+  scope); two branches that each append a row merge cleanly with both rows kept; a row edited differently on both
+  sides is caught by `scripts/ci/check-features-map.sh` / `check-backlog.sh` (duplicate or missing row), with a probe;
+  `.gitattributes` joins `CONFIG_PROTECTED` in `scripts/ci/lib.sh`; whether GitHub's own mergeability check honours
+  `union` is stated as measured or `[unverified]`; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.89/`
