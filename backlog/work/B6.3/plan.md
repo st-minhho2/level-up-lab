@@ -62,6 +62,10 @@ passed, `e2e/15-due-date.spec.ts`, `e2e/17-overdue.spec.ts`, `e2e/23-overdue-cou
 | 4    | code-writer                       | F29 row ✅                                    | `docs(map): F29 … [B6.3]`      |
 | 5    | reviewer (diff)                   | `review.md` diff section                      | `docs(backlog): B6.3 review …` |
 
+Build note (inside Files, no re-approval): AC-31.6's "no reload" oracle in `e2e/31-due-today.spec.ts` counted
+`framenavigated`, which also fires on the App Router's same-document `history.replaceState`; per `/advise` (P3, spec
+governs) test-writer replaced it with a main-frame document-request count in its own red commit 2ee958c, before feat.
+
 Costs the lead takes: an F15 e2e (`e2e/17-overdue.spec.ts`) changes in the red commit (extended, never loosened);
 `src/components/CLAUDE.md` still names §15 and §17 as the only idle additions (D-33 keeps guides out of card plans).
 
