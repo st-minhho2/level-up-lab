@@ -7,13 +7,13 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open   | Total   |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ------ | ------- |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 58     | 0       | 34     | 92      |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 58     | 0       | 35     | 93      |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0      | 5       |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3       |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4       |
 | E5 Todos keys    | [plan/E5-todos-keys.md](plan/E5-todos-keys.md)       | 6      | 0       | 0      | 6       |
 | E6 Todos cues    | [plan/E6-todos-cues.md](plan/E6-todos-cues.md)       | 1      | 0       | 5      | 6       |
-| **Total**        |                                                      | **76** | **0**   | **40** | **116** |
+| **Total**        |                                                      | **76** | **0**   | **41** | **117** |
 
 ## Execution order
 
@@ -156,6 +156,7 @@ flowchart TD
   S114["114 · clear-completed says how many<br/>B6.4"]
   S115["115 · overdue count announced<br/>B6.5"]
   S116["116 · remaining count announced<br/>B6.6"]
+  S117["117 · run.sh refuses a clone behind origin/main<br/>B1.95"]
 ```
 
 ## Remaining
@@ -205,6 +206,7 @@ at most 3 cards Doing (B1.18).
 | 114  | B6.4  | The clear-completed button says how many it will clear                                                    | —      | Open   | ~~D-33~~                        | Lead  | S [estimate] |
 | 115  | B6.5  | The overdue count is announced to assistive technology                                                    | —      | Open   | ~~D-33~~                        | Lead  | S [estimate] |
 | 116  | B6.6  | The remaining count is announced to assistive technology                                                  | —      | Open   | ~~D-33~~                        | Lead  | S [estimate] |
+| 117  | B1.95 | run.sh runs its own scripts from a clone behind origin/main and never says so                             | —      | Open   | —                               | Lead  | S [estimate] |
 
 ## Waiting on human
 
