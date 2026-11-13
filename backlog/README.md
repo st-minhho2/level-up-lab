@@ -12,8 +12,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3       |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4       |
 | E5 Todos keys    | [plan/E5-todos-keys.md](plan/E5-todos-keys.md)       | 6      | 0       | 0      | 6       |
-| E6 Todos cues    | [plan/E6-todos-cues.md](plan/E6-todos-cues.md)       | 0      | 0       | 6      | 6       |
-| **Total**        |                                                      | **74** | **1**   | **41** | **116** |
+| E6 Todos cues    | [plan/E6-todos-cues.md](plan/E6-todos-cues.md)       | 1      | 0       | 5      | 6       |
+| **Total**        |                                                      | **75** | **1**   | **40** | **116** |
 
 ## Execution order
 
@@ -150,7 +150,7 @@ flowchart TD
   S109["109 · smokes check mktemp before their exit trap<br/>B1.93"]
   S110["110 · CI runs table-merge-smoke, host attributes out<br/>B1.94"]
   S105 --> S110
-  S111["111 · Escape clears the new-todo title<br/>B6.1"]
+  S111["111 · Escape clears the new-todo title<br/>~~B6.1~~"]
   S112["112 · filter links show their counts<br/>B6.2"]
   S113["113 · an open todo due today says so<br/>B6.3"]
   S114["114 · clear-completed says how many<br/>B6.4"]
@@ -201,13 +201,11 @@ at most 3 cards Doing (B1.18).
 | 108  | B1.92 | A union merge's duplicate row reaches CI before any guard reads it                                        | —      | Open    | ~~B1.89~~                       | Lead  | S [estimate] |
 | 109  | B1.93 | Eight smokes remove the caller's directory when `mktemp -d` fails                                         | —      | Open    | —                               | Lead  | S [estimate] |
 | 110  | B1.94 | CI never runs table-merge-smoke, whose verdict follows the host's own git attributes                      | —      | Open    | ~~B1.89~~                       | Lead  | S [estimate] |
-
-| 111 | B6.1 | Escape clears the new-todo title | — | Open | ~~D-33~~ | Lead | S [estimate] |
-| 112 | B6.2 | The filter links show how many todos each one lists | — | Open | ~~D-33~~ | Lead | S [estimate] |
-| 113 | B6.3 | An open todo due today says so | — | Open | ~~D-33~~ | Lead | S [estimate] |
-| 114 | B6.4 | The clear-completed button says how many it will clear | — | Open | ~~D-33~~ | Lead | S [estimate] |
-| 115 | B6.5 | The overdue count is announced to assistive technology | — | Open | ~~D-33~~ | Lead | S [estimate] |
-| 116 | B6.6 | The remaining count is announced to assistive technology | — | Open | ~~D-33~~ | Lead | S [estimate] |
+| 112  | B6.2  | The filter links show how many todos each one lists                                                       | —      | Open    | ~~D-33~~                        | Lead  | S [estimate] |
+| 113  | B6.3  | An open todo due today says so                                                                            | —      | Open    | ~~D-33~~                        | Lead  | S [estimate] |
+| 114  | B6.4  | The clear-completed button says how many it will clear                                                    | —      | Open    | ~~D-33~~                        | Lead  | S [estimate] |
+| 115  | B6.5  | The overdue count is announced to assistive technology                                                    | —      | Open    | ~~D-33~~                        | Lead  | S [estimate] |
+| 116  | B6.6  | The remaining count is announced to assistive technology                                                  | —      | Open    | ~~D-33~~                        | Lead  | S [estimate] |
 
 ## Waiting on human
 
