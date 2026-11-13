@@ -72,17 +72,26 @@ Plan review: approved, round 2 (round 1: 3 reasons, pin commit, counts, `userEve
 
 ## Map delta
 
-pending
+F27 · §29 · new row, ✅ — `onKeyDown` on the "New todo" input in `src/components/todo-form.tsx`; tests `src/components/todo-form.test.tsx` (AC-29.1–29.6), `e2e/29-escape-new-todo.spec.ts` (AC-29.7); evidence: `pnpm test` → 260 passed, `pnpm test:e2e` → 53 passed (docs(map) 7775102, by code-writer after feat 6a60e13).
 
 ## Review
 
-pending
+`/review-loop`: passes 1/3, verdict ready for PR, 0 findings (`backlog/work/B6.1/review.md` "Diff review (round 1)").
+
+| Pass | #   | Finding                                                                         | Source   | Kind     | Disposition      | Justification                                                                                                                                                                     |
+| ---- | --- | ------------------------------------------------------------------------------- | -------- | -------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | Q1  | `box.current.value = ''` after a failed save: next submit and §10/§18 reset ok? | dev-lead | question | no change needed | traced: Escape sets box and `draft` to `''`, so `defaultValue` follows; next success resets to `''`, a second failure keeps `Walk the dog`; AC-29.6 asserts 2 calls, 1 → 0 alerts |
+| 1    | Q2  | `docs/metrics.md` row inside feat 6a60e13 a plan deviation?                     | dev-lead | question | no change needed | the plan lists it as exempt paperwork; `check-plan-scope.sh` and `check-feat-commits.sh` OK; same as B5.6 (8d61eda)                                                               |
+
+Suites (reviewer): `Tests 260 passed (260)` · e2e `53 passed (1.3m)` · Stryker `Final mutation score of 92.62 is greater than or equal to break threshold 70`. Revert probes traced, not run (TMPDIR unset): dropping `pending ||`, `preventDefault()`, `box.current.value = ''`, `setDraft('')` or `.nativeEvent` each fails at least one AC-29.n test. `pnpm build` not run locally [unverified]; CI builds.
+
+Riskiest unfalsified: AC-29.6 (failed save, then Escape, then the next save resets the form) is proven only in jsdom; e2e AC-29.7 covers Escape without a prior failure.
 
 ## Evidence
 
-- AC met: pending
+- AC met: 7/7 (AC-29.1 … AC-29.7)
 - tier: medium
-- plan deviations: none
+- plan deviations: none (step 4's `docs(map)` commit was written by `code-writer`, as planned per B1.85)
 - trace: n/a
 
 ## Checklist
