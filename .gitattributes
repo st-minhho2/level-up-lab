@@ -1,0 +1,5 @@
+# B1.89: card PRs append a row at the end of these tables, so two of them merged one after the other used to conflict
+# on adjacent lines. union keeps both sides' lines; a row edited differently on both sides then comes back twice, and
+# scripts/ci/check-features-map.sh and scripts/ci/check-backlog.sh name it. Union applies to the whole file.
+spec/features-map.md merge=union
+docs/metrics.md merge=union
