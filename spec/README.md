@@ -9,7 +9,8 @@ The contract `src/` implements. Two parts:
   `Lead approves spec` box, then has: EARS requirements (`REQ-§.n`), measurable
   acceptance criteria (`AC-§.n`, at most 7 per section), function contracts (exact TypeScript signatures), out of
   scope, unchanged behavior.
-- `features-map.md`: feature ids `F<n>` → section → files → tests. Moves with the code, same commit.
+- `features-map.md`: feature ids `F<n>` → section → files → tests. Moves with the code, in code-writer's own `docs(map)`
+  commit right after `feat`.
 
 Status legend used in the index and the map: ✅ implemented · ◐ partial · ✗ open · 🔒 owner-only.
 
