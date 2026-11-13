@@ -148,3 +148,76 @@ Verdict: approved (ready for the lead's gate, not approved for build; tier high,
 
 Riskiest unfalsified: GitHub's mergeability for a BEHIND runner PR under `merge=union` (still `[unverified]`, a bare
 repository ignores the attribute), which decides whether batch 2 still needs a Loop 9 rerun.
+
+## Diff review (round 1)
+
+Scope: all (tooling). HEAD 6948df1, base `origin/main` dcad84c (the local `main` ref is stale; every range below is
+`dcad84c..HEAD`). Red 1b82a46, green 073668a, B1.92 card 6948df1.
+
+### Commands (run by the reviewer, last line each)
+
+| Command                                                | Result                                                                                                                                                               |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                            | `All matched files use Prettier code style!`                                                                                                                         |
+| `pnpm typecheck`                                       | `tsc --noEmit`, no error                                                                                                                                             |
+| `pnpm test`                                            | `Tests  269 passed (269)`, 43 files                                                                                                                                  |
+| `pnpm test:e2e`                                        | `57 passed (1.3m)`                                                                                                                                                   |
+| `pnpm test:mutation`                                   | `Final mutation score of 92.63 is greater than or equal to break threshold 70` (no `src/` change)                                                                    |
+| `/bin/bash scripts/table-merge-smoke.sh` (3.2.57)      | `12 probes OK`                                                                                                                                                       |
+| same, at 1b82a46 (clone under `$TMPDIR`)               | `4 of 12 probes FAILED` (T9–T12; T1–T8 ok), matching the red commit's body                                                                                           |
+| `scripts/ci/check-suppressions.sh`                     | `OK: no new suppressions`                                                                                                                                            |
+| `scripts/ci/check-config-change.sh`                    | locally `::error::` for `.gitattributes`, `scripts/ci/check-spec-sections.sh` (no label locally); PR #273 carries `config-change-approved` (`gh pr view`, read only) |
+| `scripts/ci/check-feat-commits.sh`                     | `OK: no feat commit touches tests`                                                                                                                                   |
+| `scripts/ci/check-ac-coverage.sh`                      | `OK: every criterion of a shipped section has a test`                                                                                                                |
+| `scripts/ci/check-spec-sections.sh`                    | `OK: sections cited: 1 … 31`                                                                                                                                         |
+| `scripts/ci/check-features-map.sh`                     | `OK`                                                                                                                                                                 |
+| `scripts/ci/check-backlog.sh`                          | `OK: README matches the cards`                                                                                                                                       |
+| `scripts/ci/check-plan-scope.sh`                       | `OK: chore/B1.96-index-union stays inside the approved plan of B1.96`                                                                                                |
+| `scripts/verify-red.sh B1.96`                          | `no 'test(<pkg>): B1.96 … (red)' commit`: expected, smoke-only red without the marker (B1.82, B1.88, B1.89); `--auto` → `nothing to verify`                          |
+| `scripts/hook-smoke.sh`, `scripts/agent/tier-smoke.sh` | `726 probes OK`, `9 probes OK`                                                                                                                                       |
+| `git diff --stat origin/main...HEAD`                   | 8 files, 453 insertions, 15 deletions; all in the plan's Files                                                                                                       |
+
+### Checklist
+
+| Check                                                                   | Result                                                                                                                                                                                                                                |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every criterion has a test whose assertion matches its Then             | pass: T9 `union union union`; T10 `kept_once` (clean merge, guard rc 0, each row once); T11 the full error prefix with `$LAST_S` and the keep rule; T12 "§1 has 2 rows"                                                               |
+| no test weakened after the red commit                                   | pass: `git log --first-parent --no-merges 1b82a46..HEAD -- '*.test.*' e2e/ scripts/table-merge-smoke.sh` empty; no merge commit in the range. T9's old expectation (`unspecified`) changed in the red commit itself, as the plan says |
+| every changed file is in `plan.md`                                      | pass: `.gitattributes`, the guard, the smoke, `scripts/CLAUDE.md`, `backlog/plan/E1-todos.md`, `backlog/work/B1.96/*`                                                                                                                 |
+| interfaces match the plan                                               | pass: the error line in `check-spec-sections.sh:14` is the plan's line verbatim; no flag, variable or exit code added                                                                                                                 |
+| Zod at action boundary · Prisma only in lib · no raw SQL · migration    | n/a: no `src/`, `prisma/` change                                                                                                                                                                                                      |
+| no secret, no suppression                                               | pass (guard above; diff read)                                                                                                                                                                                                         |
+| features map row moved                                                  | n/a: tooling, no feature                                                                                                                                                                                                              |
+| would a test fail if one changed line were reverted (probed on a clone) | pass: see probes                                                                                                                                                                                                                      |
+
+### Probes (clone of 6948df1 under `$TMPDIR`, each restored before the next)
+
+1. Duplicate loop removed from `check-spec-sections.sh` (lines 13–15): T10 ok, **T11 and T12 FAIL** (merge rc 0,
+   guard rc 0, `2 of 12 probes FAILED`). Both depend on the new loop; T12's "§1 has 2 rows" is printed by nothing else.
+2. Only the `spec/technical-requirements.md merge=union` line removed from `.gitattributes`: T9–T12 FAIL (`4 of 12`).
+3. T11's "open" commit on main (smoke lines 125–126) removed: **all 12 still OK**, T12 included. So the open commit
+   does not change T12's verdict (T12 branches from a main whose last row is ✗ or ✅; the re-pad doubles every row
+   either way). It also does not decide T11's verdict: `set_last_cell` rewrites the cell as `| ✅ |`, which differs
+   from the tree's padded `| ✅     |`, so side b is a whitespace edit of that row even without the ✗, and the union
+   still keeps it twice. The open commit makes T11 a true ✗ → ✅ flip as the plan says, but no probe fails without it.
+   Not a finding: the guard and the attribute are both pinned (probes 1, 2); the scenario T11 runs is the realistic one.
+4. Header and separator rows: a re-padded header `| §    |` duplicated next to `| §   |`, and the separator doubled →
+   guard OK. `^\| *§[0-9]+ ` needs a digit, so the header is never a key (answer to the dev-lead's question). A table
+   whose header alone is doubled is not caught; it needs both sides to edit the header, and no card does.
+5. Row key spacing: `|  §5  |` duplicated next to `| §5  |` → `::error::§5 has 2 rows …` (the ` *` absorbs extra
+   leading spaces; `§3` and the row of section 31 never collide, the regex needs the trailing space).
+
+Keep rule traced both directions: card branch merging main (T11: card's ✗ copy first, keep main's ✅) and a closing
+branch merging main whose sibling appended below the flipped row (keep main's ✗ "plus this branch's own change" → ✅).
+Both end with the right row.
+
+### Findings
+
+None blocking. Non-blocking note for `dev-lead`: `pr-body.md:9-10` still reads "pending" for test and acceptance, and
+PR #273's head is a9a8a93 (the red, green and B1.92 commits are not pushed yet); fill both before `ready`.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: GitHub's own merge of a BEHIND card PR under `merge=union` (still `[unverified]`; #273 reports
+`MERGEABLE`, but it has no sibling edit to union), which decides whether batch 2 still needs a Loop 9 rerun, and, until
+B1.92 lands, a duplicate index row from a clean Loop 9 merge is found only by CI after the push.
