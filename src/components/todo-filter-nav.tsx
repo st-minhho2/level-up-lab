@@ -1,6 +1,7 @@
 // §12 TodoFilterNav: links only, no state or events, so no 'use client'.
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import type { FilterCounts } from '@/lib/filter-counts';
 import type { TodoFilter } from '@/lib/todo-filter';
 
 interface FilterLink {
@@ -17,7 +18,13 @@ const FILTER_LINKS: readonly FilterLink[] = [
 ];
 
 // No <ul>: the links must never count as list items (REQ-12.1), the rows of the todo list are the only ones.
-export function TodoFilterNav({ selected }: { readonly selected: TodoFilter }): ReactNode {
+// §30 `counts` is accepted but not rendered yet (B6.2 skeleton).
+export function TodoFilterNav({
+  selected,
+}: {
+  readonly selected: TodoFilter;
+  readonly counts?: FilterCounts;
+}): ReactNode {
   return (
     <nav aria-label="Filter todos" className="flex gap-3 text-sm">
       {FILTER_LINKS.map((link) => (
