@@ -1,7 +1,8 @@
 'use client';
 
 // §15 TodoDueDate: a todo's due-date text and its edit control, rendered inside the TodoItem row; §17 adds the
-// overdue marker after the date; §28 Escape in the field closes the editor without saving.
+// overdue marker after the date; §28 Escape in the field closes the editor without saving; §31 adds the due-today
+// marker after the overdue slot.
 import {
   useLayoutEffect,
   useRef,
@@ -12,6 +13,7 @@ import {
   type ReactNode,
 } from 'react';
 import { setTodoDueDateAction } from '@/actions/todos';
+import { DUE_TODAY_LABEL, isDueToday } from '@/lib/todo-due-today';
 import { isOverdue, OVERDUE_LABEL, todayOf } from '@/lib/todo-overdue';
 
 // §28 REQ-28.1: the key that cancels the edit.
@@ -116,6 +118,9 @@ export function TodoDueDate({
           {dueDate !== undefined && <span className="text-sm text-zinc-500">{`Due ${dueDate}`}</span>}
           {today !== undefined && isOverdue(dueDate, today, completed) && (
             <span className="text-sm font-medium text-red-600">{OVERDUE_LABEL}</span>
+          )}
+          {today !== undefined && isDueToday(dueDate, today, completed) && (
+            <span className="text-sm font-medium text-amber-700 dark:text-amber-400">{DUE_TODAY_LABEL}</span>
           )}
           {/* Icon only: a row without a due date must show no text beyond §5 and §6 (REQ-15.5). */}
           <button
