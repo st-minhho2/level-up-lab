@@ -1123,13 +1123,7 @@ _tooling · no §_
 ### B1.89 · Parallel runner PRs conflict on the rows they append to the shared tables
 
 _tooling · no §_
-**Status: Open** — every card PR appends a row to `spec/features-map.md` and `docs/metrics.md` and a section row to
-`spec/technical-requirements.md`, at the end of the same table, so two cards merged one after the other touch adjacent
-lines: B5.4's closing (#230) conflicted with B5.5 (#232) in `technical-requirements.md`, `metrics.md` and
-`E5-todos-keys.md`, and B5.3's closing (#226) with B1.79's (#227) in `backlog/README.md`. No `.gitattributes` exists
-(`ls .gitattributes` → none). With three `run.sh` runs in parallel (E6), the second and third runner PRs conflict at
-`dev-lead.md` step 9 (`git merge origin/main`), which sends each back to step 6 for code-writer to resolve, a turn and
-a review pass per card spent on table rows
+**Status: Done** — 9f5e2dc (#253), table-merge-smoke T1-T9 (red 0a89057: 9 of 9 FAILED; green ac3db84 + review pass 1 4cee58f: 9 probes OK, bash 3.2), hook-smoke 726, tier-smoke 9, vitest 241, mutation 92.62 (no src/); union on spec/features-map.md and docs/metrics.md, technical-requirements out of scope; GitHub mergeability [unverified]; plan review 2 rounds, diff review 2 passes
 
 - **Spec:** none — tooling (the headless runner's merge step); no `src/` change, no section
 - **Test:** a probe in `scripts/agent/run-smoke.sh` (or a new smoke) that builds two branches from one base, each
