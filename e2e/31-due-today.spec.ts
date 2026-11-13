@@ -115,9 +115,11 @@ test.describe('§31 say "Due today" on an open todo due today', () => {
       { title: 'A', dueDate: days.yesterday },
     ]);
     const checkboxB = page.getByRole('checkbox', { name: 'B', exact: true });
+    // A reload is a main-frame document request; the App Router's same-document `history.replaceState` after a
+    // Server Action fires `framenavigated` but loads no document, so it is not counted.
     let navigations = 0;
-    page.on('framenavigated', (frame) => {
-      if (frame === page.mainFrame()) navigations += 1;
+    page.on('request', (request) => {
+      if (request.isNavigationRequest() && request.frame() === page.mainFrame()) navigations += 1;
     });
 
     await openHydrated(page, '/');
