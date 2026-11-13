@@ -363,6 +363,57 @@ describe('<TodoForm>', () => {
 
 // §29 Escape clears the new-todo title (B6.1).
 describe('<TodoForm> Escape clears the title (§29)', () => {
+  it('AC-29.1: Escape in the box holding Buy milk ("8 / 200") empties it, is prevented, reads exactly "0 / 200", calls createTodoAction 0 times and keeps the name "New todo"', async () => {
+    const user = userEvent.setup();
+    render(<TodoForm />);
+    const textbox = screen.getByRole('textbox', { name: 'New todo' });
+    const form = formOf(textbox);
+    await user.type(textbox, 'Buy milk');
+    expect(counterOf(form).textContent).toBe('8 / 200');
+
+    const prevented = pressKey(textbox, { key: 'Escape' });
+
+    expect(textbox).toHaveValue('');
+    expect(prevented).toBe(true);
+    expect(counterOf(form).textContent).toBe('0 / 200');
+    expect(actions.createTodoAction).toHaveBeenCalledTimes(0);
+    expect(textbox).toHaveAccessibleName('New todo');
+  });
+
+  it.each<{ name: string; fill: (box: HTMLInputElement, user: ReturnType<typeof userEvent.setup>) => Promise<void> }>([
+    { name: '(a) an empty box', fill: () => Promise.resolve() },
+    {
+      name: '(b) x ×201 set by a script with no input event',
+      fill: (box) => {
+        box.value = 'x'.repeat(201);
+        return Promise.resolve();
+      },
+    },
+    {
+      name: '(c) "  hi  " typed',
+      fill: async (box, user) => {
+        await user.type(box, '  hi  ');
+      },
+    },
+  ])(
+    'AC-29.2: Escape in $name empties the box, is prevented, reads exactly "0 / 200" and calls createTodoAction 0 times',
+    async ({ fill }) => {
+      const user = userEvent.setup();
+      render(<TodoForm />);
+      const textbox = inputOf(screen.getByRole('textbox', { name: 'New todo' }));
+      const form = formOf(textbox);
+      await user.click(textbox);
+      await fill(textbox, user);
+
+      const prevented = pressKey(textbox, { key: 'Escape' });
+
+      expect(textbox).toHaveValue('');
+      expect(prevented).toBe(true);
+      expect(counterOf(form).textContent).toBe('0 / 200');
+      expect(actions.createTodoAction).toHaveBeenCalledTimes(0);
+    },
+  );
+
   it.each<{ name: string; press: KeyPress }>([
     { name: 'a', press: { key: 'a' } },
     { name: 'ArrowLeft', press: { key: 'ArrowLeft' } },
@@ -465,5 +516,46 @@ describe('<TodoForm> Escape clears the title (§29)', () => {
       expect(counterOf(form).textContent).toBe('0 / 200');
     });
     expect(actions.createTodoAction).toHaveBeenCalledTimes(1);
+  });
+
+  it('AC-29.6: after a failed save Escape empties the box, reads "0 / 200" and keeps exactly 1 alert "Could not save, try again"; Walk the dog then saves as the second call, leaving an empty box, "0 / 200" and 0 alerts', async () => {
+    actions.createTodoAction
+      .mockResolvedValueOnce(failedSave())
+      .mockResolvedValueOnce({ ok: true, data: todo({ title: 'Walk the dog' }) });
+    const user = userEvent.setup();
+    render(<TodoForm />);
+    const textbox = screen.getByRole('textbox', { name: 'New todo' });
+    const button = screen.getByRole('button', { name: 'Add' });
+    const form = formOf(textbox);
+    await user.type(textbox, 'Buy milk');
+    await user.click(button);
+    await within(form).findAllByRole('alert');
+    await waitFor(() => {
+      expect(button).toBeEnabled();
+    });
+
+    pressKey(textbox, { key: 'Escape' });
+
+    expect(textbox).toHaveValue('');
+    expect(counterOf(form).textContent).toBe('0 / 200');
+    expect(
+      within(form)
+        .getAllByRole('alert')
+        .map((alert) => alert.textContent),
+    ).toEqual(['Could not save, try again']);
+
+    await user.type(textbox, 'Walk the dog');
+    await user.click(button);
+
+    await waitFor(() => {
+      expect(within(form).queryAllByRole('alert')).toHaveLength(0);
+    });
+    expect(actions.createTodoAction).toHaveBeenCalledTimes(2);
+    const formData = actions.createTodoAction.mock.calls[1]?.[1] as FormData;
+    expect(formData.get('title')).toBe('Walk the dog');
+    expect(textbox).toHaveValue('');
+    await waitFor(() => {
+      expect(counterOf(form).textContent).toBe('0 / 200');
+    });
   });
 });
