@@ -1065,7 +1065,7 @@ _tooling · no §_
 ### B1.85 · Card plans give the `docs(map)` step to dev-lead, whose hook refuses `spec/features-map.md`
 
 _tooling · no §_
-**Status: Open** — `.claude/agents/dev-lead.md:59,94` lists step 4 `docs(map): F<n> … [<card>]` in dev-lead's own loop, but dev-lead's path guard allows only `backlog/*`, `docs/metrics.md` and `docs/mistake-log.md`, so the Edit of `spec/features-map.md` is refused. Seen in all three batch-2 headless runs: B5.4 (#223) and B5.6 (#225) re-dispatched the commit to `code-writer` after the refusal, and B5.5 (#224) folded the flip into the feat commit instead of a `docs(map)` commit. Logged in `docs/mistake-log.md` (2026-11-06), "Prevented by: none yet"
+**Status: Partial** — merged 0781145 (#252), pending the next headless run (E6): no path-guard refusal on spec/features-map.md and a docs(map) commit by code-writer. git grep T1-T6 (base 2f1ff88 red: T1 2 lines without code-writer, T2 0, T3 0, T4 4; after: T1 4/4 name code-writer, T2 2/2, T3 4, T4 0, T5 0, T6 0), hook-smoke 726, vitest 241, e2e 52, mutation 92.62 (no src/); plan review 2 rounds, diff review 2 passes
 
 - **Spec:** none — tooling (the card loop in `dev-lead.md`, `/tdd-loop`); no `src/` change, no section
 - **Test:** `git grep -n 'docs(map)' .claude/agents/dev-lead.md .claude/skills/tdd-loop/SKILL.md .claude/skills/work-next/SKILL.md` shows the `docs(map)` step assigned to `code-writer` (or a hook-smoke probe on the plan template) — red because: today it sits in dev-lead's loop with no role named
