@@ -1236,13 +1236,18 @@ _tooling · no §_
 runs `scripts/hook-smoke.sh` and no other smoke, so a change that breaks T1–T9 merges with CI green. The smoke runs git
 with `GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1` but still reads the per-user attributes file: with
 `XDG_CONFIG_HOME` holding `git/attributes` = `*.md merge=binary`, the smoke prints "FAIL T9 …
-spec/technical-requirements.md: merge: binary", "1 of 9 probes FAILED" (measured on main at f1bc7fb)
+spec/technical-requirements.md: merge: binary", "1 of 9 probes FAILED" (measured on main at f1bc7fb). Also,
+`.github/CODEOWNERS` names `/scripts/ci/`, `/lefthook.yml` and `/.gitleaks.toml` but not `/.gitattributes`, which
+B1.89 added to `CONFIG_PROTECTED`; the lead chose (2026-11-13) to add it in this card, as it already changes `.github/`
+(`require_code_owner_review` is `false` in `.github/rulesets/main.json:27`, so the line requests a review and blocks
+nothing)
 
-- **Spec:** none — tooling (CI and the smoke's git setup); no `src/` change, no section
+- **Spec:** none — tooling (CI, the smoke's git setup, CODEOWNERS); no `src/` change, no section
 - **Test:** a CI step that runs `scripts/table-merge-smoke.sh`, and the smoke run with an `XDG_CONFIG_HOME` whose
   `git/attributes` sets `*.md merge=binary` — red because: CI has no such step, and that run fails T9
 - **Acceptance:** a CI job runs the smoke on every PR (bash 5 there; still bash 3.2-safe); the smoke's git calls set
   `core.attributesFile` to an empty file, so a per-user attributes file cannot change T1–T9; the scripts guide names
-  the CI step; the PR carries `config-change-approved` (D-19)
+  the CI step; `.github/CODEOWNERS` has a `/.gitattributes` line beside `/.gitleaks.toml`; the PR carries
+  `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** ~~B1.89~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.94/`
