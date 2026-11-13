@@ -135,6 +135,6 @@ as in batch 3. CFR is the 14-day mechanical bound; re-measure on 2026-11-16 for 
 | B5.4  | §26         | 7               | 7 (100 %) | 92.31 (page-title.ts 100)         | 0              | 019ecc7                                              | bd99f86          |
 | B5.5  | §27         | 6               | 6 (100 %) | 92.62 (escape-search.ts 100)      | 0              | 2f4b204 (pin dad111a)                                | 7f72998          |
 | B5.6  | §28         | 7               | 7 (100 %) | 92.62 (lib, actions unchanged)    | 0              | c4f38ea (pin b5e0219)                                | 8d61eda          |
-| B6.2  | §30         | 7               | 7 (100 %) | 92.68 (filter-counts.ts 100)      | 0              | dc761e0 (pin 3700b77)                                | feat B6.2        |
+| B6.2  | §30         | 7               | 7 (100 %) | 92.68 (filter-counts.ts 100)      | 0              | dc761e0 (pin 3700b77)                                | 3acc3b5          |
 
 A value below target for two consecutive measurements opens a row in `docs/mistake-log.md` and a fix in `.claude/`.
