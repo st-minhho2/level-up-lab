@@ -64,4 +64,4 @@ AC-30.1) · `pnpm build` ok · `scripts/ci/check-plan-scope.sh` OK.
 | 5    | code-writer                 | F28 row                                              | `docs(map): F28 … [B6.2]`         |
 | 6    | reviewer (diff)             | `review.md` diff section                             | `docs(backlog): B6.2 review …`    |
 
-Plan review: pending (round 1: 1 reason, AC-30.4 pinned before the red commit) · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 (round 1: 1 reason, AC-30.4 pinned before the red commit) · Plan approved by: reviewer (D-27, tier medium, issue #262) · Rounds: 1
