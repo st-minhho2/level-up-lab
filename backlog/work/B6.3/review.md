@@ -65,3 +65,57 @@ Costs the lead takes, as the plan states them: `e2e/17-overdue.spec.ts` (F15) is
 Riskiest unfalsified: AC-31.4's single `it` asserts identical server markup under 2026-11-01 and 2030-01-01 plus 0
 recoverable errors; both hold on today's code, so its red rests only on the final "1 `Due today` after the effects"
 assertion; a test-writer who orders or splits it differently turns it green at the red commit.
+
+## Diff review (round 1)
+
+Scope: all (`src/lib`, `src/components`, `e2e`). Reviewed at aebbe63 against origin/main; red c593dd6 + 2ee958c,
+feat 8f98c25, map aebbe63.
+
+### Command results (last line of each, run by the reviewer)
+
+| Command                              | Last line                                                                                           |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                          | All matched files use Prettier code style! (exit 0)                                                 |
+| `pnpm typecheck`                     | `tsc --noEmit`, no output (exit 0)                                                                  |
+| `pnpm test`                          | Tests 246 passed (246), Test Files 41 passed (41): plan's 241 → 246, 39 → 41                        |
+| `pnpm test:e2e`                      | 53 passed (2.2m): plan's 52 → 53                                                                    |
+| `pnpm test:mutation`                 | Final mutation score of 92.57 is greater than or equal to break threshold 70 (todo-due-today 90.91) |
+| `scripts/ci/check-suppressions.sh`   | OK: no new suppressions                                                                             |
+| `scripts/ci/check-config-change.sh`  | OK: no protected config changed                                                                     |
+| `scripts/ci/check-feat-commits.sh`   | OK: no feat commit touches tests                                                                    |
+| `scripts/ci/check-ac-coverage.sh`    | OK: every criterion of a shipped section has a test                                                 |
+| `scripts/ci/check-spec-sections.sh`  | OK: sections cited: 1 … 28 31                                                                       |
+| `scripts/ci/check-features-map.sh`   | OK                                                                                                  |
+| `scripts/ci/check-plan-scope.sh`     | OK: feat/B6.3-agent stays inside the approved plan of B6.3 (D-27 approval)                          |
+| `scripts/verify-red.sh B6.3`         | RESULT: red for the right reason (lib 1 new failed; component 4 new failed; 0 new passed), exit 0   |
+| `git diff --stat origin/main...HEAD` | 17 files changed, 893 insertions(+), 9 deletions(-)                                                 |
+
+### Checklist
+
+| Check                                                       | Result                                                                                                                                                                                                                                                                                                                                                                        |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-31.n has a test whose assertion matches its Then   | pass: AC-31.1 six cases in order + label; AC-31.2 (a)–(d) counts, order via `compareDocumentPosition`, no role/aria-label/button, (d) text `''`; AC-31.3 `[0, 1, 0]`; AC-31.4 identical strings, 1 `Due 2026-11-01`, 0 `Due today`, 0 `onRecoverableError`, 1 after effects; AC-31.5 every step incl. `[1, 1, 0]` across midnight; AC-31.6 every Then step incl. reload       |
+| no test weakened after the red commit                       | pass: `git log --first-parent --no-merges c593dd6..HEAD -- '*.test.*' e2e/` lists only 2ee958c, a `test(...)` commit before feat that swaps the AC-31.6 "no reload" oracle from `framenavigated` (also fires on same-document `history.replaceState`) to main-frame navigation requests; a reload is still counted, explained in body and plan build note. No merges in range |
+| every changed file is in `plan.md`                          | pass: 2 `src/` files, 3 test files, `e2e/17-overdue.spec.ts`, map row; `docs/metrics.md`, card lines, `technical-requirements.md` index row (✗) are paperwork the plan names; spec commits f63bb76, 5d56abc precede the plan                                                                                                                                                  |
+| interfaces match §31 Function contracts                     | pass: `DUE_TODAY_LABEL = 'Due today'`, `isDueToday(dueDate: string \| undefined, today: string, completed: boolean): boolean` = `!completed && dueDate !== undefined && dueDate === today`; `TodoDueDate` props unchanged                                                                                                                                                     |
+| Zod at every action boundary / Prisma only in lib / raw SQL | n/a: no action, query or Prisma change; `todo-due-today.ts` imports nothing                                                                                                                                                                                                                                                                                                   |
+| migration reversible and indexed                            | n/a: none                                                                                                                                                                                                                                                                                                                                                                     |
+| no secret, no suppression                                   | pass: check-suppressions OK; diff read                                                                                                                                                                                                                                                                                                                                        |
+| features map row moved                                      | pass: F29 §31 ✅ in aebbe63, paths resolve                                                                                                                                                                                                                                                                                                                                    |
+| would a test fail if one changed line were reverted?        | pass, probed on a copy under `$TMPDIR`: (1) component passes `false` for `completed` → AC-31.3 fails; (2) marker span moved before `Due <date>` → AC-31.2 fails; (3) marker computed at render from `todayOf(new Date())` without the `today` state → AC-31.4 and AC-31.5 fail; removing the span fails all four (verify-red)                                                 |
+
+### Findings
+
+No blocking finding.
+
+Notes (not blocking): the one surviving mutant in `src/lib/todo-due-today.ts` is `dueDate !== undefined` → `true`
+(line 7), equivalent because `undefined === today` is false for any string `today`. The `docs/metrics.md` row sits
+between B1.76 and B1.78 and holds `feat B6.3` in place of a merge sha, to fill at close. The overall score 92.57 vs
+the 93.40 earlier rows quote is not from this diff (one new survivor out of 11 cannot move it 0.8 points; the
+drop must lie in files this card does not touch, [unverified]: origin/main's score was not re-run).
+
+Verdict: ready for PR
+
+Riskiest unfalsified: AC-31.6's new oracle counts only main-frame `isNavigationRequest()` requests; a toggle that
+re-renders the whole RSC tree through a soft navigation (no document load) would pass it, which is what §31's
+"no page reload" allows, but no test pins that the row keeps its client state across the toggle.
