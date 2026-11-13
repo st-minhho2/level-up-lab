@@ -18,7 +18,14 @@ Costs, for the lead to accept:
   reading order). Prose edited near each other on both sides is kept twice, and no guard reads it. The prose changes
   rarely: 2 commits since §20.
 - **An edit against an append still costs a round trip**: a CI red that names the §, found after the push. Loop 9 runs
-  no guard after a clean merge, which is B1.92's gap; this guard joins B1.92's list when that card lands.
+  no guard after a clean merge, which is B1.92's gap. This plan amends B1.92's card so that its post-merge list holds
+  this guard too (review r1).
+- **Rows land in merge order, not § order** (review r1, measured): a clean merge left the index reading
+  `§31, §34, §32, §33`. D-33's batch 2, merged in any order other than ascending, leaves the index out of order on
+  main, as B1.89 already did to the map (`spec/features-map.md:35-38` reads `F26, F28, F29, F27`). Nothing reads row
+  order: each row carries its own § key and link, and the reading order line names §1 and §2. No guard is added for
+  it, because an order check would turn every out-of-order merge into a CI red on the next PR, which is the round
+  trip this card removes. A later edit of the index may sort it; nobody is assigned to.
 - **GitHub's mergeability is still `[unverified]`** (B1.89: a bare repository ignores `merge=union`). A runner PR left
   BEHIND by a sibling may still show as conflicting on GitHub, and still needs Loop 9's local merge (a rerun, as for
   #266). The gain is that this merge is clean: no `code-writer` resolution and no re-review, so a cheaper rerun.
@@ -30,13 +37,14 @@ needed, and the PR carries `config-change-approved` (D-19). `dev-lead` writes `s
 
 ## Files
 
-| File                                | Change                                                                                         | Why        |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------- | ---------- |
-| `.gitattributes`                    | `spec/technical-requirements.md merge=union`; the header comment names the index and its guard | Acceptance |
-| `scripts/ci/check-spec-sections.sh` | `::error::§<n> has <k> rows in the index …` + keep rule, for a `\| §n ` key in > 1 row         | Acceptance |
-| `scripts/table-merge-smoke.sh`      | T9 expects `union union union`; new T10–T12 below; header lists them                           | Test line  |
-| `scripts/CLAUDE.md`                 | the smoke's row names the index; the guard's row names the duplicate check                     | Acceptance |
-| `backlog/work/B1.96/*`              | plan, review, pr-body                                                                          | pipeline   |
+| File                                | Change                                                                                             | Why        |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------- | ---------- |
+| `.gitattributes`                    | `spec/technical-requirements.md merge=union`; the header comment names the index and its guard     | Acceptance |
+| `scripts/ci/check-spec-sections.sh` | `::error::§<n> has <k> rows in the index …` + keep rule, for a `\| §n ` key in > 1 row             | Acceptance |
+| `scripts/table-merge-smoke.sh`      | T9 expects `union union union`; new T10–T12 below; header lists them                               | Test line  |
+| `scripts/CLAUDE.md`                 | the smoke's row names the index; the guard's row names the duplicate check                         | Acceptance |
+| `backlog/plan/E1-todos.md`          | B1.92's Test and Acceptance lines add `scripts/ci/check-spec-sections.sh` to the post-merge guards | review r1  |
+| `backlog/work/B1.96/*`              | plan, review, pr-body                                                                              | pipeline   |
 
 ## Interfaces touched
 
@@ -44,11 +52,22 @@ No flag, variable or exit code. One new error line:
 `::error::§<n> has <k> rows in spec/technical-requirements.md: a union merge kept both sides of an edit. Keep the copy origin/main has, plus this branch's own change to that row if it made one; delete the rest`.
 New smoke probes, reusing `merge_sides`, `put_after`, `set_last_cell`, `kept_once`, `named`, with `IX=spec/technical-requirements.md`:
 
-- **T10**: § rows appended after the last on both sides → a clean merge, each kept once, the guard OK. The rows point
-  at an existing contract.
-- **T11** (Loop 9's direction): the card appends a § row, then merges main, where a sibling flipped the last row
-  ✗ → ✅ → the guard names that § with the keep rule.
-- **T12**: a re-padded index table against an appended row → the guard fails with "§1 has 2 rows".
+A side that adds a § also adds its contract, as a card does. `check-spec-sections.sh:8` fails on an index § that has
+no `# §n` heading (review r1, probed). So a new helper `add_section <n>` does three things:
+
+- writes `spec/contracts/9<n>-smoke.md` with `# §<n> Smoke`;
+- stages it with `"${G[@]}" add`, because `merge_sides` commits with `commit -qam`, which skips an untracked file;
+- appends `| §<n> | [contracts/9<n>-smoke.md](…) | Smoke | ✗ |` after the last index row.
+
+Each side writes its own contract path, so the contract files merge without union.
+
+- **T10**: `add_section 901` on one side and `add_section 902` on the other → a clean merge, §901 and §902 each kept
+  once, the guard OK.
+- **T11** (Loop 9's direction): first a commit on main sets the last index row's status cell to ✗, as at filing. The
+  key is read from the tree (`LAST_S`), not fixed. Side a (the card) runs `add_section 903`; side b (the sibling's
+  closing) sets that row's cell from ✗ to ✅, a real flip (review r1: today every row is ✅). The guard must fail, and
+  its output must hold "`$LAST_S` has 2 rows in spec/technical-requirements.md" and "Keep the copy origin/main has".
+- **T12**: a re-padded index table against `add_section 904` → the guard fails with "§1 has 2 rows".
 
 ## Verification
 
