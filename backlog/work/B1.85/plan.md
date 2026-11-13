@@ -73,4 +73,4 @@ Costs: no red commit (the test is the grep; the red is the base output above); n
 drifting back until the hook-smoke follow-up; a card's PR gains one commit; dev-lead (interactive, no role guard)
 writes the three `spec/` prose lines, no section and no map row changes.
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: · Rounds: 1
