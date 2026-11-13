@@ -63,7 +63,7 @@ takes a filter.
 ## Out of scope
 
 Searching by title, a due date, a remaining-items count, remembering the filter outside the address (cookie, local
-storage), a filter in the database query, counts on the links, keyboard shortcuts, any ordering other than creation time
+storage), a filter in the database query, keyboard shortcuts, any ordering other than creation time
 newest first (§1), filtering by text.
 
 ## Unchanged behavior
