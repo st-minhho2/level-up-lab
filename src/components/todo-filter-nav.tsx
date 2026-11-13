@@ -38,9 +38,7 @@ export function TodoFilterNav({
           >
             {link.label}
           </Link>
-          {counts === undefined ? undefined : (
-            <span className="text-zinc-500 dark:text-zinc-400">{`(${counts[link.filter]})`}</span>
-          )}
+          {counts === undefined ? undefined : <span>{`(${counts[link.filter]})`}</span>}
         </Fragment>
       ))}
     </nav>
