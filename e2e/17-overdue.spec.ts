@@ -81,13 +81,19 @@ interface RowText {
   readonly title: string;
   readonly day?: string;
   readonly overdue?: boolean;
+  readonly dueToday?: boolean;
 }
 
 // True when `text` is, in order: the title, then `Due <day>` (one literal space), then `Overdue` only when `overdue`,
-// with only whitespace (possibly none) around and between the parts and nothing else. Plain string checks, so no
-// RegExp is built from the day (semgrep detect-non-literal-regexp).
+// then `Due today` only when `dueToday` (§31), with only whitespace (possibly none) around and between the parts and
+// nothing else. Plain string checks, so no RegExp is built from the day (semgrep detect-non-literal-regexp).
 function readsAs(text: string, row: RowText): boolean {
-  const parts = [row.title, ...(row.day === undefined ? [] : [`Due ${row.day}`]), ...(row.overdue ? ['Overdue'] : [])];
+  const parts = [
+    row.title,
+    ...(row.day === undefined ? [] : [`Due ${row.day}`]),
+    ...(row.overdue ? ['Overdue'] : []),
+    ...(row.dueToday ? ['Due today'] : []),
+  ];
   let rest = text;
   for (const part of parts) {
     rest = rest.trimStart();
@@ -98,20 +104,26 @@ function readsAs(text: string, row: RowText): boolean {
 }
 
 function describeRow(row: RowText): string {
-  return [row.title, row.day === undefined ? '' : `Due ${row.day}`, row.overdue ? 'Overdue' : '']
+  return [
+    row.title,
+    row.day === undefined ? '' : `Due ${row.day}`,
+    row.overdue ? 'Overdue' : '',
+    row.dueToday ? 'Due today' : '',
+  ]
     .filter(Boolean)
     .join(' ');
 }
 
 // "the list reads [E, D, C, B, A] (5 rows, same order) and B's checkbox stays checked; B's row text reads `B` followed
 // by `Due <yesterday>` with no `Overdue`"; A's row reads `A`, `Due <aDue>` and `Overdue` exactly when `aOverdue`.
+// §31: open C, due today, also reads `Due today`, and so does A whenever it is due today (A is open then).
 async function expectRows(page: Page, days: Days, aDue: string, aOverdue: boolean): Promise<void> {
   const expected: readonly RowText[] = [
     { title: 'E' },
     { title: 'D', day: days.tomorrow },
-    { title: 'C', day: days.today },
+    { title: 'C', day: days.today, dueToday: true },
     { title: 'B', day: days.yesterday },
-    { title: 'A', day: aDue, overdue: aOverdue },
+    { title: 'A', day: aDue, overdue: aOverdue, dueToday: aDue === days.today },
   ];
   await expect(page.getByRole('listitem')).toHaveCount(5);
   // Each row that reads as expected maps to its description; one that does not keeps its raw text, so a failure diff
