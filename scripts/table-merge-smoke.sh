@@ -4,7 +4,8 @@
 #   scripts/table-merge-smoke.sh
 #   T1 rows appended to spec/features-map.md on both sides merge cleanly, each kept once; check-features-map.sh OK
 #   T2 rows appended to docs/metrics.md "Per card" on both sides merge cleanly, each kept once; check-backlog.sh OK
-#   T3 one features-map row edited differently on both sides: check-features-map.sh names the row kept twice
+#   T3 one features-map row edited differently on both sides: check-features-map.sh names the row kept twice and
+#      says to keep origin/main's copy
 #   T4 a card's appended row merged with main's closing edit of the row above it: check-backlog.sh names the row and
 #      says to keep origin/main's copy (the card's stale copy comes first)
 #   T5 one row of the metrics top table edited differently on both sides: check-backlog.sh names it
@@ -15,7 +16,11 @@
 # Reads this checkout's tracked files as they are on disk, plus .gitattributes; writes only under its own mktemp -d.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
-TMP="$(cd "$(mktemp -d)" && pwd -P)"; trap 'rm -rf -- "$TMP"' EXIT
+# Each step is checked before the EXIT trap exists: in bash 3.2 `cd ""` succeeds where it stands, so an unchecked
+# failed mktemp would make TMP the caller's directory and the trap would remove it (review pass 1)
+t="$(mktemp -d "${TMPDIR:-/tmp}/table-merge-smoke.XXXXXX")" && [[ -n "$t" && -d "$t" ]] && t="$(cd "$t" && pwd -P)" \
+  && [[ "${t##*/}" == table-merge-smoke.?* ]] || { echo "table-merge-smoke: mktemp -d failed" >&2; exit 2; }
+TMP="$t"; trap 'rm -rf -- "$TMP"' EXIT
 R="$TMP/repo"; mkdir -p "$R"
 oks=0; fails=0
 ok() { echo "ok   $1"; oks=$((oks + 1)); }
@@ -23,7 +28,8 @@ fail() { echo "FAIL $1"; shift; for l in "$@"; do echo "     $l"; done; fails=$(
 
 (cd "$ROOT" && { git ls-files; [[ -f .gitattributes ]] && echo .gitattributes; } | sort -u \
   | while IFS= read -r f; do [[ -f "$f" ]] && echo "$f"; done | tar -cf - -T -) | tar -xf - -C "$R"
-G=(git -C "$R" -c user.name=smoke -c user.email=smoke@x -c commit.gpgsign=false -c core.hooksPath=/dev/null)
+# the host's global and system git config stay out, so a merge.* or core.attributesFile there cannot change a verdict
+G=(env GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 git -C "$R" -c user.name=smoke -c user.email=smoke@x -c commit.gpgsign=false -c core.hooksPath=/dev/null)
 { "${G[@]}" init -q -b main && "${G[@]}" add -A && "${G[@]}" commit -qm base; } \
   || { echo "table-merge-smoke: could not build the base repository" >&2; exit 2; }
 
@@ -68,7 +74,8 @@ probe "T2 metrics rows appended on both sides merge, each kept once" kept_once $
 named() { [[ "$MERGED" == 0 && "$RC" != 0 && "$OUT" == *"$1"* ]]; }
 t3a() { set_last_cell $FM "$LAST_F" '✗'; }; t3b() { set_last_cell $FM "$LAST_F" '◐'; }
 merge_sides t3a t3b; guard check-features-map.sh
-probe "T3 a features-map row edited on both sides is named" named "$LAST_F has 2 rows"
+probe "T3 a features-map row edited on both sides is named with which copy to keep" \
+  named "$LAST_F has 2 rows in spec/features-map.md: a union merge kept both sides of an edit. Keep the copy origin/main has"
 
 # Loop 9's direction: the card branch (a) appends, then merges main (b), where a sibling's closing set the last row's sha
 t4a() { put_after $MT '^\| B[0-9]' "$(c_row B9.903)"; }; t4b() { set_last_cell $MT "$LAST_C" 'abc1234'; }
@@ -93,7 +100,7 @@ probe "T7 a re-padded Per card table against an appended row is caught" named "B
 MERGED=-; OUT=""; RC=-
 probe "T8 .gitattributes is CONFIG_PROTECTED" bash -c '. "$1/scripts/ci/lib.sh"; [[ .gitattributes =~ $CONFIG_PROTECTED ]]' _ "$ROOT"
 
-OUT="$(cd "$R" && git check-attr merge -- $FM $MT spec/technical-requirements.md)"
+OUT="$("${G[@]}" check-attr merge -- $FM $MT spec/technical-requirements.md)"
 probe "T9 merge=union on features-map and metrics only" \
   test "$(printf '%s\n' "$OUT" | sed 's/.*: //' | tr '\n' ' ')" = "union union unspecified "
 
