@@ -83,17 +83,25 @@ Plan review: approved, round 2 (round 1: 1 reason, exact test count and split, a
 
 ## Map delta
 
-pending
+F29 · §31 · new row, ✅ — `isDueToday` / `DUE_TODAY_LABEL` in `src/lib/todo-due-today.ts`, the marker span in `src/components/todo-due-date.tsx`; evidence: `pnpm test` 246 passed (265 after merging origin/main), `pnpm test:e2e` 53 passed (54 after merge), mutation 92.57 (aebbe63)
 
 ## Review
 
-pending
+`/review-loop`: passes 2/3, findings 0 (pass 1 at aebbe63 on the whole diff, pass 2 at 3e7d355 on the merge of origin/main), both "ready for PR". Full text: `backlog/work/B6.3/review.md` "Diff review (round 1)" and "(round 2)".
+
+| Finding | Disposition |
+| ------- | ----------- |
+| none    | —           |
+
+Notes (not blocking): one surviving mutant, `dueDate !== undefined` → `true` in `src/lib/todo-due-today.ts:7`, equivalent (`undefined === today` is false for any string `today`); the operand is in §31's contract text. Revert probes: `completed` forced `false` → AC-31.3 red; marker before the date → AC-31.2 red; marker computed in render → AC-31.4, AC-31.5 red.
+
+Riskiest unfalsified: AC-31.6's "no reload" oracle counts main-frame document requests (amended in red commit 2ee958c after `/advise`: `framenavigated` also fires on the App Router's same-document `history.replaceState`); no test pins that a row keeps its client state across a toggle.
 
 ## Evidence
 
-- AC met: pending
-- tier: pending
-- plan deviations: none
+- AC met: 6/6 (AC-31.1 … AC-31.6)
+- tier: medium
+- plan deviations: none (the AC-31.6 oracle change is inside the Files table, recorded as the plan's build note)
 - trace: n/a
 
 ## Checklist
