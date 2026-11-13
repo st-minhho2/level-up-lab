@@ -63,8 +63,8 @@ No file other than `src/lib/todo-overdue.ts` and `src/components/todo-due-date.t
 
 ## Out of scope
 
-A timer or focus listener that re-evaluates at midnight, the server's or a stored time zone, a due-soon highlight or
-any count of days late, sorting, grouping, filtering or searching by overdue, a different marker for a todo that was
+A timer or focus listener that re-evaluates at midnight, the server's or a stored time zone, a due-soon highlight
+other than the due-today text of §31, any count of days late, sorting, grouping, filtering or searching by overdue, a different marker for a todo that was
 done late, a visible change to completed rows, a locale-formatted date (§15), a browser clock that disagrees with
 the real day, a notification, a new control, and any change to what is stored.
 
