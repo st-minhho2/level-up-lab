@@ -58,3 +58,46 @@ Riskiest unfalsified: whether GitHub's mergeability check and its "Update branch
 tree. Nothing offline answers it (only git 2.39.5 here, whose bare repo ignores the attribute). The plan marks it
 `[unverified]` and measures it in the first E6 batch, which is right. The ruleset's up-to-date requirement
 (`git-workflow.md:43`) keeps a stale union result from reaching `main` unchecked either way.
+
+## Plan review (round 2)
+
+SCOPE: tooling (`.gitattributes`, `scripts/ci/`, `scripts/`; no `src/`, no section)
+
+Round 1's reasons, checked against `406197a` and the round-2 prototype:
+
+- **1, resolved.**
+  - (a) Both errors now end "Keep the copy origin/main has, plus this branch's own change to that row if it made one;
+    delete the rest". The prototype guards carry this text verbatim, and a comment says why the merging branch's copy
+    comes first.
+  - (b) T4 is in Loop 9's direction. `t4a` appends on the card side, `t4b` makes the closing edit, and `merge_sides`
+    merges b into a. T4 asserts the text "… has 2 rows: a union merge kept both sides of an edit. Keep the copy
+    origin/main has".
+  - (c) Costs name who fixes it: a map row goes to `code-writer`, a metrics row to `dev-lead`. The path guards match:
+    `code-writer.md:11` lists `spec/features-map.md` and `docs/metrics.md`; `dev-lead.md:11` lists `docs/metrics.md`.
+- **2, resolved.** The map count is now "3 of 17 since B2.1 (315b97e, 9bb37ab, 8d61eda)" and the metrics count
+  "twice (fee6a51, 6e6f3d8)". T7 is new and probes the re-padded "Per card" table.
+- The notes were taken up: deletion resurrection is in the "Union covers the whole file" cost. "A branch cut before
+  this merges still conflicts" is stated as measured (rc 1).
+
+| Check                                                                          | Result                                                                                                                                                                                                 |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every file in the plan belongs to the card                                     | pass: Files unchanged from round 1 except the error text and T1–T9                                                                                                                                     |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib | pass (n/a): bash only; two error lines, no flag, variable or exit code                                                                                                                                 |
+| plan follows `advice.md` or states the deviation                               | pass: no advice (tier quick, no section), stated                                                                                                                                                       |
+| ≤ 7 criteria, every Then measurable                                            | pass: Acceptance clauses map to T1–T9, each an exit code, a row count or an exact error substring                                                                                                      |
+| verification lists exact commands with expected numbers                        | pass: reproduced on clones of `406197a` under `$TMPDIR`: smoke alone `9 of 9 probes FAILED`; with the overlay `9 probes OK`, `[check-features-map] OK`, `[check-backlog] OK: README matches the cards` |
+| work breakdown: skeleton → red → green → map → review, convention subjects     | pass: unchanged (`test(scripts)` red, `chore(scripts)` green, `docs(backlog)` review)                                                                                                                  |
+| `Lead approves spec` box, human-ticked only                                    | pass (n/a): no spec change; `scripts/agent/tier.sh backlog/work/B1.89/plan.md` → `high`, so the lead's `approve` is the gate; `config-change-approved` (D-19) named                                    |
+| no settled D-n contradicted                                                    | pass: D-19, D-27, D-28; `.claude/` still out of scope (B1.85), the Loop 9 guard run filed as a follow-up                                                                                               |
+| `next-task.sh --check B1.89`                                                   | pass: `[next-task] B1.89: no overlap with any Doing or Review card`                                                                                                                                    |
+
+Verdict: approved (ready for the lead's gate, not approved for build)
+
+Not reasons:
+
+- `plan.md:86` still reads "Rounds: 1". dev-lead updates it when it records this verdict.
+- `.gitattributes` in `.github/CODEOWNERS` remains the lead's call (round 1 note).
+
+Riskiest unfalsified: GitHub's mergeability check and "Update branch" with `merge=union`. It is still
+`[unverified]` (git 2.39.5 only here). The plan measures it in the first E6 batch, and the up-to-date ruleset keeps an
+unchecked union result off `main`.
