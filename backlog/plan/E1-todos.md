@@ -1065,7 +1065,7 @@ _tooling · no §_
 ### B1.85 · Card plans give the `docs(map)` step to dev-lead, whose hook refuses `spec/features-map.md`
 
 _tooling · no §_
-**Status: Partial** — merged 0781145 (#252), pending the next headless run (E6): no path-guard refusal on spec/features-map.md and a docs(map) commit by code-writer. git grep T1-T6 (base 2f1ff88 red: T1 2 lines without code-writer, T2 0, T3 0, T4 4; after: T1 4/4 name code-writer, T2 2/2, T3 4, T4 0, T5 0, T6 0), hook-smoke 726, vitest 241, e2e 52, mutation 92.62 (no src/); plan review 2 rounds, diff review 2 passes
+**Status: Done** — 0781145 (#252), held on the first E6 headless run (B6.1, #264): code-writer's own docs(map) 7775102 right after feat 6a60e13, touching spec/features-map.md only, no path-guard refusal, no mistake-log row. git grep T1-T6 (base 2f1ff88 red: T1 2 lines without code-writer, T2 0, T3 0, T4 4; after: T1 4/4 name code-writer, T2 2/2, T3 4, T4 0, T5 0, T6 0), hook-smoke 726, vitest 241, e2e 52, mutation 92.62 (no src/); plan review 2 rounds, diff review 2 passes
 
 - **Spec:** none — tooling (the card loop in `dev-lead.md`, `/tdd-loop`); no `src/` change, no section
 - **Test:** `git grep -n 'docs(map)' .claude/agents/dev-lead.md .claude/skills/tdd-loop/SKILL.md .claude/skills/work-next/SKILL.md` shows the `docs(map)` step assigned to `code-writer` (or a hook-smoke probe on the plan template) — red because: today it sits in dev-lead's loop with no role named
@@ -1251,3 +1251,31 @@ nothing)
   `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** ~~B1.89~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.94/`
+
+### B1.95 · run.sh runs its own scripts from a clone behind origin/main and never says so
+
+_tooling · no §_
+**Status: Open** — `scripts/agent/run.sh` runs from the runner clone's checked-out `main` and never compares it with
+`origin/main` (`grep -c 'git fetch' scripts/agent/run.sh` → 0; `origin/main` appears only in `in_flight`, lines
+193–203, read "as last fetched").
+On 2026-11-13 the clone in the runner container was at bd99f86, 31 commits behind `origin/main` (278ee80). The
+`run.sh` it ran predated B1.82 and B1.88. So `run.sh 262` and `run.sh 263` printed "[run] skip #262: 3 agent branches
+in flight", counting the merged `feat/B5.5-agent` and `feat/B5.6-agent`. Run 261 (B6.1, #264) also got no per-run
+`TMPDIR`, and its diff-review `reviewer` wrote "Probe not run: TMPDIR unset" twice. The card worktree itself was cut
+from the fresh `origin/main`, so only the runner's own logic was stale, which made the gap silent. The lead's
+`git merge --ff-only origin/main` in the container fixed it by hand.
+
+- **Spec:** none — tooling (`scripts/agent/run.sh`, its smoke, the scripts guide); no `src/` change, no section
+- **Test:** a `scripts/agent/run-smoke.sh` probe whose fixture clone's `main` is one commit behind its `origin/main`
+  — red because: `run.sh <issue>` there goes on to claim the card instead of refusing
+- **Acceptance:**
+  - Before it claims anything, `run.sh` (per issue, and in `--poll` per issue) fetches `origin` and compares its own
+    checkout's `HEAD` with `origin/main`.
+  - When `HEAD` is behind, it refuses (exit 1) and prints the count, both shas and the fix (`git merge --ff-only
+origin/main`, then rerun). It never updates itself, since it is the script running.
+  - A `HEAD` ahead of `origin/main`, such as a card branch running its own `run.sh`, still runs.
+  - The fetch failing refuses with the reason, rather than comparing against a stale `origin/main`.
+  - The scripts guide and the compose header name the check.
+  - The PR carries `config-change-approved` (D-19).
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.95/`
