@@ -1296,7 +1296,7 @@ index row. On 2026-11-13, E6 batch 1 (D-33) paid the cost:
 - The lead reran `run.sh 262` to resolve it (32 turns, USD 1.00).
 - The two closing PRs (#270, #271) had to be stacked for the same reason.
 
-Batch 2 (B6.4–B6.6, §32–§34) will append three rows after §31 in parallel.
+Batch 2 (B6.4–B6.6, sections 32–34) will append three rows after §31 in parallel.
 
 - **Spec:** none — tooling (`.gitattributes`, `scripts/table-merge-smoke.sh`, `scripts/ci/check-spec-sections.sh`,
   the scripts guide); no `src/` change, no section
