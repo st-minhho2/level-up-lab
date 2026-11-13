@@ -1,4 +1,4 @@
-<!-- Title: chore(scripts): B1.96 section index merges by union, duplicate § named -->
+<!-- Title: chore(scripts): B1.96 section index merges by union, duplicate section named -->
 
 ## Item
 
@@ -6,8 +6,18 @@ B1.96 — Parallel card PRs conflict on the section index, which B1.89 left on g
 section)
 
 - spec: none — tooling (the shared section index's merge, its guard); no `src/` change, no section
-- test: `scripts/table-merge-smoke.sh` T9 changed, T10–T12 new — pending
-- acceptance: pending
+- test: `scripts/table-merge-smoke.sh` T9 changed, T10–T12 new (no `(red)` marker: smoke only, as B1.82/B1.88/B1.89).
+  - Red `1b82a46`: "4 of 12 probes FAILED". T9 reads `union union unspecified`, and T10–T12 conflict at `git merge`.
+  - Green `073668a`: "12 probes OK" (bash 3.2.57; run locally, the smoke is in no CI job, B1.94).
+  - `hook-smoke.sh` 726 OK, `tier-smoke.sh` 9 OK.
+  - `pnpm test` 269, e2e 57, mutation 92.63 (no `src/` change; reviewer).
+- acceptance: 6 of 6.
+  - `spec/technical-requirements.md merge=union`, T9 updated.
+  - `check-spec-sections.sh` names a § with more than one index row, with B1.89's keep rule (T11, T12).
+  - T1–T12 pass, bash 3.2-safe.
+  - The scripts guide names the index and the duplicate check.
+  - B1.92's card adds the guard to its post-merge list (`6948df1`).
+  - The PR carries `config-change-approved`.
 
 ## Plan
 
@@ -120,11 +130,40 @@ None: tooling card, no `spec/features-map.md` row.
 
 ## Review
 
-Pending.
+`/review-loop`: 1 pass of 3 (`backlog/work/B1.96/review.md`). Verdict: ready for PR, 0 findings.
+
+| Pass | Finding | Disposition |
+| ---- | ------- | ----------- |
+| 1    | none    | —           |
+
+Revert probes, run on a clone under `$TMPDIR`:
+
+- Removing the duplicate loop from `check-spec-sections.sh` → T11 and T12 FAIL. `2 of 12`.
+- Removing only the index's `merge=union` line → T9–T12 FAIL. `4 of 12`.
+- The header row `| §   |` is never a key, because the regex needs a digit. Extra leading spaces in a row key are
+  still named.
+- The keep rule was traced in both directions: a card branch merging main, and a closing branch merging main.
+
+Not blocking (reviewer's note 3): T11's "open" commit on main makes the sibling's edit a true ✗ → ✅ flip, as the plan
+says, but no probe fails without it. `set_last_cell` writes `| ✅ |` unpadded, so side b edits the row either way, and
+the guard and the attribute stay pinned by the two removals above.
+
+Plan review: 3 rounds.
+
+- r1: 4 reasons. T10 needed each side's contract; the merge-order cost was missing; T11 needed a real ✗ row; B1.92's
+  card had no owner for the new guard.
+- r2: 1 reason. Unheaded section numbers written with the section sign in the plan.
+- r3: approved.
+
+Riskiest unfalsified: whether GitHub's own merge or mergeability of a BEHIND card PR honours `merge=union`
+(`[unverified]`; #273 is MERGEABLE, but nothing in it needs a union merge). Until B1.92 lands, a duplicate index row
+from a clean Loop 9 merge shows up only in CI after the push. `verify-red.sh B1.96` prints "no (red) commit", which is
+expected for a red that lives only in the smoke. No `docs/metrics.md` per-card row is added (as B1.82, B1.88 and
+B1.89).
 
 ## Evidence
 
-- AC met: pending
+- AC met: 6/6
 - tier: high
 - plan deviations: none
 - trace: n/a
