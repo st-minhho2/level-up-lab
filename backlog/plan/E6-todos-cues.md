@@ -18,6 +18,8 @@ _F27 · section 29_
 - **Acceptance:** Escape in the "New todo" field empties it and calls no Server Action; §18's counter follows the
   emptied field; mounts in `src/components/todo-form.tsx` only; contract `spec/contracts/27-escape-new-todo.md`
   (section 29); batch 1
+- **Spec:** §29 — unchanged (section written from `work/B6.1/analysis.md`; contract `spec/contracts/27-escape-new-todo.md`; lifts nothing, D-33)
+- **Test:** `src/components/todo-form.test.tsx::AC-29.1: Escape in the "New todo" box with Buy milk typed empties it, sets defaultPrevented, shows the counter "0 / 200" and makes 0 createTodoAction calls` — red because: `TodoForm` has no Escape handling, so the box still holds `Buy milk`
 - **Tier:** full · **Depends on:** ~~D-33~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B6.1/`
 
