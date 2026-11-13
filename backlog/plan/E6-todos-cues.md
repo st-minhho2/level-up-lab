@@ -12,8 +12,7 @@ picks the card. No card changes `prisma/`, a dependency or the environment, so e
 ### B6.1 · Escape clears the new-todo title
 
 _F27 · section 29_
-**Status: Open** — the "New todo" field empties only after a successful add or by deleting the text by hand
-(`grep -n 'Escape' src/components/todo-form.tsx` → 0)
+**Status: Done** — 36846c1 (#264), 20 AC-29.n tests green (unit 241 → 260: 14 rows pinned AC-29.3–29.5 green first, 5 red AC-29.1, 29.2, 29.6 proven by verify-red.sh; e2e 52 → 53, AC-29.7), mutation 92.62 (component out of mutation scope); unattended and no-rework 1/1 (D-29), one runner run
 
 - **Acceptance:** Escape in the "New todo" field empties it and calls no Server Action; §18's counter follows the
   emptied field; mounts in `src/components/todo-form.tsx` only; contract `spec/contracts/27-escape-new-todo.md`
