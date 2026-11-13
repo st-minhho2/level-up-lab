@@ -5,8 +5,8 @@ Epic E6 runs autonomous delivery in parallel: each batch's three `agent-ready` i
 `no-rework.sh` against D-29's targets, with throughput and change failure rate held against parallel delivery's
 batches 6–7. Batch 1 is B6.1–B6.3, batch 2 is B6.4–B6.6. Every card moves a `spec/features-map.md` row, so each run
 also shows whether code-writer authors the `docs(map)` commit (B1.85's pending check). Section numbers, contract
-files, the component each card mounts in and the one card per batch that changes `src/app/page.tsx` wait on D-33
-(`work/B6.1/decision-request.md`); `spec-analyst` lands each section and the `Spec:` and `Test:` lines when the run
+files, the component each card mounts in and the one card per batch that changes `src/app/page.tsx` are fixed by D-33
+(`00-decisions.md`); `spec-analyst` lands each section and the `Spec:` and `Test:` lines when the run
 picks the card. No card changes `prisma/`, a dependency or the environment, so every plan is medium tier (D-28).
 
 ### B6.1 · Escape clears the new-todo title
@@ -18,7 +18,7 @@ _F27 · section 29_
 - **Acceptance:** Escape in the "New todo" field empties it and calls no Server Action; §18's counter follows the
   emptied field; mounts in `src/components/todo-form.tsx` only; contract `spec/contracts/27-escape-new-todo.md`
   (section 29); batch 1
-- **Tier:** full · **Depends on:** D-33 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** full · **Depends on:** ~~D-33~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B6.1/`
 
 ### B6.2 · The filter links show how many todos each one lists
@@ -31,7 +31,7 @@ must open a filter to learn whether it lists anything
   the current todos, before any search; lifts "counts on the links" from §12's Out of scope in its own `docs(spec)`
   commit; mounts in `src/components/todo-filter-nav.tsx`, with the counts passed from `src/app/page.tsx` (the batch's
   one `page.tsx` card); contract `spec/contracts/28-filter-counts.md` (section 30); batch 1
-- **Tier:** full · **Depends on:** D-33 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** full · **Depends on:** ~~D-33~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B6.2/`
 
 ### B6.3 · An open todo due today says so
@@ -44,7 +44,7 @@ _F29 · section 31_
   after its date; a completed or overdue todo does not; lifts the due-today case from §17's Out of scope in its own
   `docs(spec)` commit; mounts in `src/components/todo-due-date.tsx` only; contract `spec/contracts/29-due-today.md`
   (section 31); batch 1
-- **Tier:** full · **Depends on:** D-33 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** full · **Depends on:** ~~D-33~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B6.3/`
 
 ### B6.4 · The clear-completed button says how many it will clear
@@ -59,7 +59,7 @@ _F30 · section 32_
   deleted-count message; mounts in `src/components/clear-completed-button.tsx`, with the count passed from
   `src/app/page.tsx` (the batch's one `page.tsx` card); contract `spec/contracts/30-clear-completed-count.md`
   (section 32); batch 2
-- **Tier:** full · **Depends on:** D-33 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** full · **Depends on:** ~~D-33~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B6.4/`
 
 ### B6.5 · The overdue count is announced to assistive technology
@@ -72,7 +72,7 @@ _F31 · section 33_
   announced; its visible text is unchanged (§23, hidden at 0); lifts the line from §23's Out of scope in its own
   `docs(spec)` commit; mounts in `src/components/overdue-count.tsx` only; contract
   `spec/contracts/31-overdue-announce.md` (section 33); batch 2
-- **Tier:** full · **Depends on:** D-33 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** full · **Depends on:** ~~D-33~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B6.5/`
 
 ### B6.6 · The remaining count is announced to assistive technology
@@ -85,5 +85,5 @@ scope (`spec/contracts/11-remaining-count.md:53`; `grep -n 'role=\|aria-live' sr
   announced; their visible text is unchanged; lifts the line from §13's Out of scope in its own `docs(spec)` commit;
   mounts in `src/components/remaining-count.tsx` only; contract `spec/contracts/32-remaining-announce.md`
   (section 34); batch 2
-- **Tier:** full · **Depends on:** D-33 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** full · **Depends on:** ~~D-33~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B6.6/`
