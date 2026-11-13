@@ -106,3 +106,45 @@ Verdict: changes requested
 
 Riskiest unfalsified: GitHub's mergeability for a BEHIND runner PR under `merge=union` (still `[unverified]`, a bare
 repository ignores the attribute), which decides whether batch 2 still needs a Loop 9 rerun.
+
+## Plan review (round 3)
+
+Plan at 92072a0 (round 2's reason applied; round 3 allowed by the lead in the session). Runs, on the worktree:
+
+- `scripts/ci/check-spec-sections.sh` → `[check-spec-sections] OK: sections cited: 1 … 31`, rc 0 (round 2: rc 1).
+  The smoke copies this tracked tree, so T10's `kept_once` no longer inherits a stray citation.
+- `scripts/next-task.sh --check B1.96` → `[next-task] B1.96: no overlap with any Doing or Review card`.
+- `scripts/agent/tier.sh backlog/work/B1.96/plan.md` → `high`; `scripts/ci/check-plan-scope.sh` → OK (paperwork).
+- Index keys today: 31 rows match `^\| §[0-9]+ `, `uniq -d` empty, so the new duplicate check is OK on the tree.
+- Red count traced against `table-merge-smoke.sh` as it stands: T9 fails on its expected string; T10, T11, T12 conflict
+  under git's default merge (`merge_sides` aborts, `MERGED` ≠ 0, so `kept_once` / `named` fail); T1–T8 untouched →
+  "4 of 12 probes FAILED" holds. T11's base commit on main precedes `merge_sides`, which branches from main, so the
+  ✗ base reaches both sides; T12 branches from that main and is unaffected by the ✗.
+- Batch 1 history confirms the scenario: `git show 9337123 --remerge-diff` conflicts on the two appended rows (the
+  sections 30 and 31 rows) alone; B6.2's `pr-body.md:75-76` records two such conflicts, both resolved by `dev-lead`.
+
+| Check                                                                          | Result                                                                                                      |
+| ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                 | pass: tooling, no §; Files match the card's Spec line plus the B1.92 card row (round 1 reason 4)            |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib | pass: n/a (no TypeScript); error line verbatim; `add_section <n>` named with its three steps                |
+| plan follows `advice.md`'s recommendation or states the deviation              | pass: no advice, stated (tier quick, no section)                                                            |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number      | pass: T9–T12 each pin a string or a count; T11 pins `$LAST_S` and the keep rule                             |
+| verification lists exact commands with expected numbers                        | pass: "4 of 12 probes FAILED" / "12 probes OK" now reachable; guard OK on the tree (run above); every check |
+| work breakdown skeleton → red → green → map → review with convention subjects  | pass: red `test(scripts)`, green `chore(scripts)`, review `docs(backlog)`; no skeleton or map (as B1.89)    |
+| `Lead approves spec` box, ticked only by a human                               | pass: n/a, no section and no box; `Plan approved by:` empty                                                 |
+| no settled D-n contradicted                                                    | pass: D-19 label, D-28 tier `high` (lead's `approve` needed), D-33 numbering unaffected                     |
+| `scripts/next-task.sh --check B1.96` says no overlap                           | pass: `[next-task] B1.96: no overlap with any Doing or Review card`                                         |
+
+Round 2 reason 1: resolved (no unheaded section number after a § sign in `backlog/work/B1.96/*`; guard rc 0).
+
+Note for the lead, not a reason (plausible, not falsified): no runner role's path-guard lists
+`spec/technical-requirements.md` (spec-analyst's guard refuses it, probed: `'spec/technical-requirements.md' is
+outside this role's paths`; code-writer, dev-lead, test-writer, advisor, reviewer lists read). Yet `dev-lead` resolved
+both batch 1 index conflicts on the runner. The new error line says which copy to keep but not who deletes it, and
+the plan's B1.92 amendment adds the guard to the post-merge list without adding the index row to B1.92's owner routing
+("a map row → `code-writer`, a metrics row → `dev-lead`"). B1.92's own plan has to name that owner.
+
+Verdict: approved (ready for the lead's gate, not approved for build; tier high, so the lead's `approve` is required)
+
+Riskiest unfalsified: GitHub's mergeability for a BEHIND runner PR under `merge=union` (still `[unverified]`, a bare
+repository ignores the attribute), which decides whether batch 2 still needs a Loop 9 rerun.
