@@ -3,9 +3,9 @@ Closing lane (`backlog/CLAUDE.md` "Closing a card") for B6.2: the filter links s
 lead asked for this closing lane in the session. The checklist is the plan, so there is no `Plan approved by` line.
 Epic E6, batch 1 (D-33).
 
-**Stacked on #270 (B6.3 done).** Both closings change the same README totals line, so this branch starts from
-`docs/B6.3-done`, and its totals count both cards. Until #270 merges, this PR's diff also shows B6.3's commit. Once
-#270 merges, `origin/main` is merged in, and the diff narrows to B6.2's lines.
+Both closings change the same README totals line, so this branch started from `docs/B6.3-done` (#270). #270 merged
+as cd3896e, and `origin/main` was then merged in (41167af), keeping this branch's side, which already held B6.3's
+lines. The diff now holds B6.2's lines only.
 
 Files:
 
@@ -16,7 +16,7 @@ Files:
   - unattended and no-rework 1/1 (D-29), two runner runs.
 - `backlog/README.md`:
   - Remaining row 112 removed; `~~B6.2~~` in node 112.
-  - Totals updated: E6 3/0/3, total 78/0/39 of 117, counting B6.3 from #270.
+  - Totals updated: E6 3/0/3, total 78/0/39 of 117.
 - `spec/technical-requirements.md`: §30 index row ✗ → ✅.
 - `docs/metrics.md`: B6.2 Green column moved from the branch sha 3acc3b5 to the merged sha f2a571e.
 - `backlog/work/B6.2/closing-pr-body.md`: this body (Closing step 6).
