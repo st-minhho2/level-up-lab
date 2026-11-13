@@ -97,4 +97,4 @@ Run with `/bin/bash` (3.2) at each step and in review. The smoke joins no CI job
 
 Not in scope: Loop 9's post-merge guard run (B1.92), a CI job for the smoke (B1.94), `backlog/README.md`.
 
-Plan review: approved, round 3 (r1: 4 reasons, d0351b3; r2: 1 reason, 92072a0; round 3 allowed by the lead) · Plan approved by: · Rounds: 1
+Plan review: approved, round 3 (r1: 4 reasons, d0351b3; r2: 1 reason, 92072a0; round 3 allowed by the lead) · Plan approved by: lead, 2026-11-13 · Rounds: 1
