@@ -40,3 +40,35 @@ Verdict: changes requested
 
 No cost to the lead beyond these: approach A drops no behavior (markup, native POST, §10/§18 reset unchanged), and
 the alert is kept by REQ-29.7, not removed.
+
+## Plan review (round 2)
+
+Reviewed `plan.md` at 91013c5 (round 1 reasons applied).
+
+| Check                                                                                  | Result                                                                                                                                                                                                                                                                                                                                                                |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                         | pass: unchanged from round 1; F27 is free in `spec/features-map.md` (last row F26) and D-33 assigns F27 to B6.1                                                                                                                                                                                                                                                       |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | pass: inline `onKeyDown` typed `ReactKeyboardEvent<HTMLInputElement>` → `void`, `isSearchEscape(event.nativeEvent)` as `todo-search-form.tsx:22` does; no action, schema, Prisma, lib or export change (§29 Function contracts)                                                                                                                                       |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass: approach A                                                                                                                                                                                                                                                                                                                                                      |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass: 7 criteria, all Thens are values, counts or flags                                                                                                                                                                                                                                                                                                               |
+| verification lists exact commands with expected numbers                                | pass (reason 2 resolved): baseline 241 / 39 files, e2e 52; pin +14 (9 + 4 + 1) → 255; red +5 (1 + 3 + 1) failing, with the failing assertion per AC; green 260; e2e 52 → 53 with AC-29.7 failing on `Buy eggs` at red                                                                                                                                                 |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | pass (reason 1 resolved): pin → red → feat → map → review. Traced `scripts/verify-red.sh`: it selects only `(red)` subjects (line 63), takes the first red commit's parent (the pin commit) as base, and counts a test as new only if it did not run at the base, so the 14 pinned tests are old and the 5 red ones must fail. Same shape as B5.6 (b5e0219 → c4f38ea) |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by you | pass: `spec/contracts/27-escape-new-todo.md:5` `- [ ] Lead approves spec`, unticked                                                                                                                                                                                                                                                                                   |
+| no settled D-n contradicted                                                            | pass: D-33 (one `src/` file, F27, lifts nothing), D-7, D-27/D-28 (medium tier)                                                                                                                                                                                                                                                                                        |
+| `scripts/next-task.sh --check B6.1` on the committed plan                              | pass: `[next-task] B6.1: no overlap with any Doing or Review card` (exit 0)                                                                                                                                                                                                                                                                                           |
+
+Reason 3 resolved: Escape variants go through `fireEvent.keyDown`, so `Esc` reaches `nativeEvent.key` unnormalized and
+`defaultPrevented` comes from the return value; Enter and typing go through `userEvent`.
+
+Probe not run: TMPDIR unset. The claim that `userEvent` Enter in the box submits the form once (AC-29.3's Enter row,
+pinned green on today's code) is traced, not run: no existing `todo-form.test.tsx` test submits with Enter (all click
+"Add"). If it fails at the pin step, the test-writer must stop and report, not change the Enter row to a click.
+
+Non-blocking notes: the mutation line says components are outside Stryker and then that AC-29.1/29.3/29.5 kill
+mutants; only the first half applies (the score is unaffected). The plan runs about 55 lines, over the ≈ 40 line
+guide, but holds one file of `src/` and one task.
+
+Costs for the lead: none dropped. Approach A keeps the markup, the native POST, the §10 and §18 reset design and the
+§5/§10 alert (REQ-29.7). Escape while a save is pending does nothing, which REQ-29.4 asks for.
+
+Verdict: approved (ready for the lead's gate or, at medium tier, D-27's reviewer approval; not approved for build)
