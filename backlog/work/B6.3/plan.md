@@ -65,4 +65,4 @@ passed, `e2e/15-due-date.spec.ts`, `e2e/17-overdue.spec.ts`, `e2e/23-overdue-cou
 Costs the lead takes: an F15 e2e (`e2e/17-overdue.spec.ts`) changes in the red commit (extended, never loosened);
 `src/components/CLAUDE.md` still names §15 and §17 as the only idle additions (D-33 keeps guides out of card plans).
 
-Plan review: pending (round 1: 1 reason, exact test count and split, applied) · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 (round 1: 1 reason, exact test count and split, applied 8464fee) · Plan approved by: reviewer (D-27, tier medium, issue #263) · Rounds: 1
