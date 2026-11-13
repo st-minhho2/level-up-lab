@@ -44,6 +44,8 @@ _F29 · section 31_
   after its date; a completed or overdue todo does not; lifts the due-today case from §17's Out of scope in its own
   `docs(spec)` commit; mounts in `src/components/todo-due-date.tsx` only; contract `spec/contracts/29-due-today.md`
   (section 31); batch 1
+- **Spec:** §31 — unchanged
+- **Test:** `src/lib/todo-due-today.test.ts::AC-31.1: returns true, false, false, false, false, true for the six cases, and DUE_TODAY_LABEL is exactly 'Due today'` — red because: `isDueToday` is not exported from `src/lib/todo-due-today.ts` (file does not exist yet)
 - **Tier:** full · **Depends on:** ~~D-33~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B6.3/`
 
