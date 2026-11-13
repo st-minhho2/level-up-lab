@@ -1,7 +1,7 @@
 # Source only, shared by the guards (and plan_lists by .claude/hooks/plan-scope.sh). Bash 3.2 and 5 alike.
 # CONFIG_PROTECTED: the paths a PR changes only with the config-change-approved label (check-config-change.sh, D-19);
 # scripts/agent/tier.sh rates them high (D-28). One copy, so the label rule and the tier never drift apart.
-CONFIG_PROTECTED='^(eslint\.config\.(mjs|js|cjs)|\.eslintrc.*|\.prettierrc.*|\.prettierignore|tsconfig.*\.json|lefthook\.yml|\.gitleaks\.toml|stryker\.config\.(mjs|js|json)|vitest\.config\.(ts|mts)|vitest\.setup\.ts|playwright\.config\.ts|\.dependency-cruiser.*|\.mcp\.json|\.github/.*|scripts/ci/.*|scripts/agent/.*|scripts/verify-red\.sh|scripts/next-task\.sh|scripts/card-status\.sh|scripts/pr-step\.sh|\.claude/.*|\.devcontainer/.*)$'
+CONFIG_PROTECTED='^(eslint\.config\.(mjs|js|cjs)|\.eslintrc.*|\.prettierrc.*|\.prettierignore|tsconfig.*\.json|lefthook\.yml|\.gitleaks\.toml|\.gitattributes|stryker\.config\.(mjs|js|json)|vitest\.config\.(ts|mts)|vitest\.setup\.ts|playwright\.config\.ts|\.dependency-cruiser.*|\.mcp\.json|\.github/.*|scripts/ci/.*|scripts/agent/.*|scripts/verify-red\.sh|scripts/next-task\.sh|scripts/card-status\.sh|scripts/pr-step\.sh|\.claude/.*|\.devcontainer/.*)$'
 # resolve_range: the commit range the guards inspect: BASE_SHA..HEAD_SHA from CI, else merge-base with main.
 resolve_range() {
   HEAD_SHA="${HEAD_SHA:-HEAD}"
