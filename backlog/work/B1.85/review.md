@@ -185,3 +185,56 @@ needs one clause; [2] is optional.
 
 Riskiest unfalsified: whether a headless code-writer, given B5.6-style plan text ("code-writer's feat (✗)"), adds
 the ✗ row in `feat` or folds the ✅ flip into `feat` anyway. Only the pending E6 run shows it.
+
+## Diff review (round 2)
+
+Delta `73f2100..82b7ff3`: `5a02a04` (round 1 review) and `82b7ff3`
+`fix(agents): B1.85 review pass 1 -- map gate only when the plan holds the map`. The fix changes 3 files, +6 / −5:
+`code-writer.md`, `dev-lead.md`, `tdd-loop/SKILL.md`. Nothing under `src/`, `prisma/`, `e2e/` and no test file.
+
+### Command results (last line of each)
+
+| Command                                                          | Result                                                                                 |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `pnpm lint`                                                      | `All matched files use Prettier code style!`                                           |
+| `pnpm typecheck`                                                 | exit 0, no output                                                                      |
+| `pnpm test`                                                      | `Tests  241 passed (241)`                                                              |
+| `pnpm test:e2e`, `pnpm test:mutation`                            | not re-run: no file they load changed since round 1 (`52 passed (1.1m)`, `92.62` ≥ 70) |
+| `check-feat-commits`, `check-suppressions`, `check-features-map` | OK, OK, OK                                                                             |
+| `check-agent-frontmatter`, `check-plan-scope`                    | `OK: 13 files`; `OK: … stays inside the approved plan of B1.85`                        |
+| `scripts/next-task.sh --check B1.85`                             | `no overlap with any Doing or Review card`                                             |
+| `scripts/hook-smoke.sh`                                          | `hook-smoke: 726 probes OK`                                                            |
+| T1 / T2 / T3 / T4 / T6                                           | 4 lines (all name code-writer) / 2 (all name code-writer) / 4 / 0 / 0                  |
+
+### Dispositions of round 1
+
+- [1] resolved. `tdd-loop/SKILL.md:27` now opens with "when the plan's Files hold `spec/features-map.md`" and ends
+  "(… a plan without the map wants none)". Its condition now matches tdd-loop step 3, `dev-lead.md:92` and
+  `code-writer.md` step 7. Trigger re-traced: for a B1.9-shaped plan (no map row), the gate asks for nothing, and
+  code-writer's step 7 does not apply. The two agree.
+- [2] resolved. Step 7 now says "add or move the feature's row", and the subject is `docs(map): F<n> <feature> …
+[<card>]`. That matches the dev-lead template's `docs(map): F<n> … [<card>]`. For a B5.6-shaped card the row is
+  added in `docs(map)` under a subject that no longer claims "✗ → ✅".
+- Round 1's gate-checkability note is applied. `dev-lead.md:93` finds the card's first `feat(<pkg>): <card> ` by
+  card id, with `--first-parent`, and says why. The line break leaves `--format=…` at column 0 inside the inline
+  code span. Markdown renders that as a space and Prettier accepts it.
+- The closing-lane note is out of scope, per the dev-lead's disposition, and a follow-up card is named. Agreed: this
+  card did not introduce it.
+
+### Notes (not blocking)
+
+- The plan's Interfaces line `docs(map): F<n> <feature> ✗ → ✅ [<card>]` is now `… [<card>]` in code-writer.md.
+  This came from the review's own finding [2] and is a superset of the approved line. `pr-body.md:45` still copies
+  the old line, and the PR body has no deviation note yet. Add one before ready (planning.md: the reviewer compares
+  the diff against the plan), so the lead sees it at merge.
+- No grep guards the new condition. Reverting the step 4 clause leaves T2 at 2 lines. This is the plan's stated
+  cost ("nothing in CI keeps the prompts from drifting back until the hook-smoke follow-up").
+
+### Findings
+
+None.
+
+Verdict: ready for PR (after the PR-body deviation note above; that is paperwork, not a code change).
+
+Riskiest unfalsified: as in round 1, whether a headless code-writer moves the map in its own `docs(map)` rather
+than folding it into `feat`. Only the pending E6 run shows it.
