@@ -56,7 +56,7 @@ Approach: <A|B from advice.md> — one line why.
 ## Work breakdown   | Step | Role / skill | Produces | Commit |
                     1 skeleton: new-feature-slice (+ add-migration) → chore(<pkg>): <card> skeleton
                     2 red: test-writer → test(<pkg>): <card> … (red)     3 green: code-writer → feat(<pkg>): <card> …
-                    4 map: docs(map): F<n> … [<card>]                    5 review: reviewer (diff)
+                    4 map: code-writer → docs(map): F<n> … [<card>]      5 review: reviewer (diff)
 Plan review: <approved, round N> · Plan approved by: <empty until the lead approves> · Rounds: 1
 ```
 
@@ -89,10 +89,15 @@ Commit `docs(backlog): <card> plan`.
    `git log --first-parent --no-merges --stat <red>..HEAD -- '*.test.*' e2e/` empty, and
    `git log --first-parent --merges --remerge-diff --format= <red>..HEAD -- '*.test.*' e2e/` empty or a conflict resolution the
    reviewer read: a merged sibling's tests are not the card's, a resolution that touches the card's tests is). A `DISPUTED` line → `/advise`.
+   When the plan's Files hold `spec/features-map.md`, the gate also wants code-writer's `docs(map): F<n> … [<card>]`
+   commit: one after the card's first `feat(<pkg>): <card> ` commit (found by card id, `git log --first-parent
+--format='%h %s' <feat>..HEAD`, since a bare `^feat(` also matches main's merged cards), and `git show --stat` of it
+   names only `spec/features-map.md`. Missing → back to code-writer; you never write the map (your path guard refuses
+   it, B1.85). A later code-writer dispatch with no row left to move adds no second `docs(map)`.
 7. **Review the diff.** `/review-loop` (reviewer diff mode, dispositions, ≤ 3 passes, `mark-reviewed.sh`); each
    pass's `review.md` is committed as "Committing a review" says.
-8. **Map, card, metrics.** `docs(map): F<n> … [<card>]`; card status `Partial — merged pending` is set by the
-   closing commit after merge; `docs/metrics.md` per-card row now.
+8. **Card, metrics.** The map moved in step 6 (code-writer's `docs(map)` commit, before the review); card status
+   `Partial — merged pending` is set by the closing commit after merge; `docs/metrics.md` per-card row now.
 9. **Ready.** `git fetch origin && git merge origin/main` (never rebase, never force push). Clean merge →
    `.claude/hooks/mark-reviewed.sh` again; a conflict → back to step 6 (code-writer / test-writer resolve it) and step 7.
    `scripts/pr-step.sh push`; fill Map delta and Review (= review.md diff section) in the draft's body; wait until a `ci` run exists for

@@ -1,0 +1,143 @@
+## Item
+
+B1.85 — Card plans give the `docs(map)` step to dev-lead, whose hook refuses `spec/features-map.md` (tooling, no spec
+section)
+
+- spec: none — tooling (the card loop in `dev-lead.md`, `code-writer.md`, `/tdd-loop`); no `src/` change, no section
+- test: `git grep` T1–T6 (plan "Verification"), no red commit (plan "Costs"; `verify-red.sh B1.85` finds none). Base
+  2f1ff88 red: T1 2 lines without `code-writer`, T2 0, T3 0, T4 4 lines. After `82b7ff3`: T1 4 lines, all name
+  `code-writer`; T2 2, all name it; T3 4; T4 0; T5 0 (work-next unchanged); T6 0. Reverting `tdd-loop/SKILL.md` or
+  `spec/README.md` on a clone fails T2/T4 (reviewer). `hook-smoke.sh` 726 OK before and after;
+  `check-agent-frontmatter` (13), `check-plan-scope`, `check-backlog`, `check-features-map`, `check-spec-sections` OK;
+  lint, typecheck 0; `pnpm test` 241; e2e 52; mutation 92.62 (no `src/` change; reviewer).
+- acceptance: 3 of 4 met, 1 pending — the loop (`dev-lead.md` Loop 6 and 8), the plan template (step 4) and
+  `/tdd-loop` name `code-writer` as the author of `docs(map)`, its own commit right after `feat`, as `backlog/CLAUDE.md`
+  orders it (`code-writer.md` step 7; `spec/` prose agrees); dev-lead's path list unchanged (T6); label
+  `config-change-approved`. **Pending [unverified until E6]:** the next headless run's log shows no path-guard refusal
+  on `spec/features-map.md`; the closing PR will be `partial` with it.
+- risk tier: high (`.claude/`); label `config-change-approved` (D-19)
+
+## Plan
+
+### B1.85 plan — the `docs(map)` commit is code-writer's, its own commit after `feat` (tooling, no §)
+
+Approach: give the step to the role whose path guard already holds `spec/features-map.md`. Three prompts disagree
+today: `dev-lead.md` lists step 4 `docs(map)` as its own (template line 59, Loop 8 at line 94, after the review);
+`code-writer.md` Procedure 5–6 moves the row "same commit" inside `feat` (B5.5's fold came from there); only
+`backlog/CLAUDE.md` and `.claude/docs/git-workflow.md` give the order `feat` → `docs(map)` → `/review-loop`, while
+`spec/CLAUDE.md:18`, `spec/README.md:12` and `spec/features-map.md:4` say "same commit" (review r1). After this
+card, code-writer's green dispatch ends in two commits, `feat` then `docs(map)`; dev-lead's green gate checks the
+second; dev-lead's path list stays as it is. No advice (tier quick, no section). Risk tier **high** (`.claude/`,
+D-28) → the lead's `approve`; the PR carries `config-change-approved` (D-19). Dev-lead writes `.claude/` (interactive,
+as B1.79).
+
+#### Files
+
+| File                               | Change                                                                                                                                                         | Why          |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| `.claude/agents/dev-lead.md`       | template step 4 `4 map: code-writer → docs(map): F<n> … [<card>]`; Loop 6 green gate checks that commit; Loop 8 "Card, metrics" says the map is code-writer's  | Acceptance 1 |
+| `.claude/agents/code-writer.md`    | description; Procedure 5–6: `feat` = code + metrics (+ a ✗ row a new module needs); new step 7: the status move in its own `docs(map)` commit; MAP report line | Acceptance 1 |
+| `.claude/skills/tdd-loop/SKILL.md` | step 3: code-writer commits `feat`, then `docs(map)`; step 4: the gate checks the `docs(map)` commit                                                           | Acceptance 1 |
+| `spec/CLAUDE.md`                   | line 18 "Moves with the code, same commit:" → on the same branch; the map row: its own `docs(map)` commit after `feat`, by code-writer                         | review r1    |
+| `spec/README.md`                   | line 12 "Moves with the code, same commit." → its own `docs(map)` commit right after `feat`, by code-writer                                                    | review r1    |
+| `spec/features-map.md`             | header lines 3–4 (prose only, no row): "in the same commit" → in its own `docs(map)` commit right after `feat`, by code-writer                                 | review r1    |
+| `docs/mistake-log.md`              | 2026-11-06 row, "Prevented by": B1.85's prompts; held on the next headless run [unverified until E6]                                                           | mistake-log  |
+| `backlog/work/B1.85/*`             | plan, review, pr-body                                                                                                                                          | pipeline     |
+
+#### Interfaces touched
+
+Prompt text only; no frontmatter `hooks:`/`tools:` line, hook, script or path list changes. code-writer's commits
+on a card whose plan Files hold `spec/features-map.md`:
+
+```
+feat(<pkg>): <card> <what the user can now do>   # src/, prisma/, docs/metrics.md; a new ✗ row if a new module needs one
+docs(map): F<n> <feature> ✗ → ✅ [<card>]          # spec/features-map.md only, right after feat, before /review-loop
+MAP: <rows touched> in docs(map) <sha> | none      # code-writer report line
+```
+
+dev-lead green gate adds: after the card's first `feat`, `git log --format='%h %s'` holds one `docs(map): … [<card>]`
+whose `git show --stat` names only `spec/features-map.md` (a plan without that file: none). A later code-writer
+dispatch (a review-pass fix) with no row left to move adds no second `docs(map)` (review r1 note).
+
+#### Verification
+
+The card's test is a `git grep` (no probe file): `scripts/hook-smoke.sh`'s guide row lives in `scripts/CLAUDE.md`,
+which B1.89 holds now, so a hook-smoke probe waits for a follow-up card. From the worktree top:
+
+- T1 `git grep -n 'docs(map)' .claude/agents/dev-lead.md` → ≥ 2 lines, each names `code-writer`. Base 2f1ff88:
+  lines 59, 94, neither names it → red.
+- T2 `git grep -n 'docs(map)' .claude/skills/tdd-loop/SKILL.md` → ≥ 1 line, each names `code-writer`. Base: 0 → red.
+- T3 `git grep -n 'docs(map)' .claude/agents/code-writer.md` → ≥ 1 line (its own step). Base: 0 → red.
+- T4 `git grep -n 'same commit' .claude/agents/code-writer.md spec/CLAUDE.md spec/README.md spec/features-map.md`
+  → 0 lines. Base: 4 lines (code-writer.md:38, CLAUDE.md:18, README.md:12, features-map.md:4) → red.
+- T5 `.claude/skills/work-next/SKILL.md`: 0 `docs(map)` lines before and after (it defers to dev-lead's Loop; unchanged).
+- T6 dev-lead's path list unchanged: `git diff origin/main -- .claude/agents/dev-lead.md | grep -c '^[-+] .*path-guard'`
+  → 0; `scripts/ci/check-agent-frontmatter.sh` OK; `scripts/hook-smoke.sh` 726 OK before and after (HG1–HG13 hold).
+- `next-task.sh --check B1.85` no overlap; `check-plan-scope.sh`, `check-backlog.sh` OK; `pnpm lint && pnpm typecheck`
+  clean; `pnpm test` unchanged; CI green.
+- Pending, not a gate: the next headless card run's log shows no path-guard refusal on `spec/features-map.md` and a
+  `docs(map)` commit by code-writer (first E6 batch) → the closing PR is `partial` with that pending.
+
+#### Work breakdown
+
+| Step | Role     | Produces                       | Commit                                                                   |
+| ---- | -------- | ------------------------------ | ------------------------------------------------------------------------ |
+| 1    | dev-lead | three prompts, mistake-log row | `chore(agents): B1.85 the docs(map) commit is code-writer's, after feat` |
+| 2    | dev-lead | three `spec/` prose lines      | `docs(spec): B1.85 the map row moves in its own docs(map) commit`        |
+| 3    | reviewer | diff review                    | `docs(backlog): B1.85 review pass N`                                     |
+| 4    | dev-lead | draft PR, label                | —                                                                        |
+
+Not in scope: dev-lead's path list (acceptance), `backlog/CLAUDE.md` and `git-workflow.md` (already right), the
+closing lane's map flip (a different step: section status after merge), `scripts/` (B1.89's files).
+
+Costs: no red commit (the test is the grep; the red is the base output above); nothing in CI keeps the prompts from
+drifting back until the hook-smoke follow-up; a card's PR gains one commit; dev-lead (interactive, no role guard)
+writes the three `spec/` prose lines, no section and no map row changes.
+
+Plan review: approved, round 2 · Plan approved by: lead, 2026-11-13 · Rounds: 1
+
+Deviation from the plan's interface line (review pass 1, finding 2): the `docs(map)` subject is
+`docs(map): F<n> <feature> … [<card>]`, not `✗ → ✅`, since `main`'s map has no ✗ row and a card may add a row
+rather than flip one. Same as dev-lead's template.
+
+## Map delta
+
+None: tooling card, no `spec/features-map.md` row (`73f2100` changes the header prose only).
+
+## Review
+
+`/review-loop`: 2 passes of 3 (`backlog/work/B1.85/review.md`, "Diff review" rounds 1–2). Verdict: ready for PR.
+
+| Pass | #   | Finding                                                                                                  | Source   | Disposition  | Justification                                                                           |
+| ---- | --- | -------------------------------------------------------------------------------------------------------- | -------- | ------------ | --------------------------------------------------------------------------------------- |
+| 1    | 1   | `tdd-loop/SKILL.md:27` gate wants `docs(map)` on every card (B1.9, B1.8, B1.11 have no map row) → bounce | reviewer | fix now      | `82b7ff3`: conditioned on the plan's Files holding the map, as step 3 and `dev-lead.md` |
+| 1    | 2   | `code-writer.md` step 7 "move ✗ → ✅", but `main` has 0 ✗ rows                                           | reviewer | fix now      | `82b7ff3`: "add or move the feature's row", subject `… [<card>]`                        |
+| 1    | Q2  | a bare `^feat(` also matches `main`'s merged cards after Loop 9                                          | reviewer | fix now      | `82b7ff3`: dev-lead finds the card's `feat(<pkg>): <card> ` by id, `--first-parent`     |
+| 1    | Q1  | closing lane step 3 (`backlog/CLAUDE.md:61`) still names a map flip no card has done since B5.1          | reviewer | out of scope | follow-up card (closing lane checklist), not this card's acceptance                     |
+| 2    | —   | none (notes: pr-body interface line, nothing keeps step 4's condition until a hook-smoke probe)          | reviewer | —            | deviation note above; the probe is the planned follow-up                                |
+
+Plan review: 2 rounds (round 1 changes requested: three `spec/` lines still said "same commit"; round 2 approved).
+
+Riskiest unfalsified: whether a headless code-writer, handed B5.6-style plan text, moves the map in its own
+`docs(map)` commit rather than folding it into `feat`; only the first E6 run shows it.
+
+`check-config-change.sh` errors locally on the three `.claude/` files (no labels offline); this PR carries
+`config-change-approved`. `docs/metrics.md` per-card row: not added (tooling, as B1.88).
+
+## Evidence
+
+- AC met: 3/4
+- tier: high
+- plan deviations: none
+- trace: n/a
+
+## Checklist
+
+- [ ] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
+- [ ] Red commit precedes the feat commit; no `feat(` commit touches `*.test.*` or `e2e/**`.
+- [ ] Every `AC-§.n` of the section is a test title; mutation on `src/lib` + `src/actions` ≥ 70 %.
+- [ ] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; no protected config change (or label `config-change-approved` with the reason).
+- [ ] Migrations reviewed as SQL; `prisma/seed.ts` updated if a table changed.
+- [ ] `spec/features-map.md` row moved; `docs/metrics.md` per-card row filled; mistake-log updated if a known mistake repeated.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)

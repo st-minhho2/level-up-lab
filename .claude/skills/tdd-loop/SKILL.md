@@ -18,11 +18,14 @@ Preconditions: `plan.md` approved, skeleton committed (`chore(<pkg>): <card> ske
    `*.test.ts(x)` and `e2e/` files; `pnpm lint && pnpm typecheck` green; every pre-existing test still passes
    (`pnpm test` fails only on the new titles). Any miss → back to test-writer with the exact line.
 3. `Agent(subagent_type: "code-writer")` with the brief (`Mode: green`), the failing titles, and "Do not paraphrase
-   the tests; a test you think is wrong is reported, not special-cased."
+   the tests; a test you think is wrong is reported, not special-cased." When the plan's Files hold
+   `spec/features-map.md`, code-writer commits `feat` and then `docs(map): F<n> … [<card>]` on its own, touching only
+   the map (B1.85: dev-lead's path guard refuses `spec/features-map.md`, so the map commit is code-writer's).
 4. **Green gate, run by you**: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`;
    `git log --first-parent --no-merges --stat <red>..HEAD -- '*.test.*' e2e/` empty and
    `git log --first-parent --merges --remerge-diff --format= <red>..HEAD -- '*.test.*' e2e/` empty or read by the reviewer; `pnpm test:mutation` ≥ 70 on `src/lib` + `src/actions`;
-   `spec/features-map.md` row moved. A `DISPUTED` line → `/advise`, then decide: a wrong test goes back to
+   when the plan's Files hold `spec/features-map.md`, code-writer's `docs(map)` commit after the card's first `feat`,
+   naming only `spec/features-map.md` (missing → back to code-writer; a plan without the map wants none). A `DISPUTED` line → `/advise`, then decide: a wrong test goes back to
    test-writer as a new `test(...)` commit, never into the feat commit.
 5. `/review-loop`.
 

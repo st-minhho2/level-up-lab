@@ -15,7 +15,7 @@
 - Function contracts give exact signatures; tests copy them; `scripts/ci/check-features-map.sh` resolves every
   path the map names.
 
-Moves with the code, same commit:
+Moves with the code, on the same branch (the map in code-writer's own `docs(map)` commit, right after `feat`):
 
 | File                                     | When                                                    | Checked by                          |
 | ---------------------------------------- | ------------------------------------------------------- | ----------------------------------- |
