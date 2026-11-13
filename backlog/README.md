@@ -7,13 +7,13 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open   | Total   |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ------ | ------- |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 58     | 0       | 35     | 93      |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 58     | 0       | 36     | 94      |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0      | 5       |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3       |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4       |
 | E5 Todos keys    | [plan/E5-todos-keys.md](plan/E5-todos-keys.md)       | 6      | 0       | 0      | 6       |
 | E6 Todos cues    | [plan/E6-todos-cues.md](plan/E6-todos-cues.md)       | 3      | 0       | 3      | 6       |
-| **Total**        |                                                      | **78** | **0**   | **39** | **117** |
+| **Total**        |                                                      | **78** | **0**   | **40** | **118** |
 
 ## Execution order
 
@@ -157,6 +157,8 @@ flowchart TD
   S115["115 · overdue count announced<br/>B6.5"]
   S116["116 · remaining count announced<br/>B6.6"]
   S117["117 · run.sh refuses a clone behind origin/main<br/>B1.95"]
+  S118["118 · section index merges by union, duplicate § named<br/>B1.96"]
+  S105 --> S118
 ```
 
 ## Remaining
@@ -205,6 +207,7 @@ at most 3 cards Doing (B1.18).
 | 115  | B6.5  | The overdue count is announced to assistive technology                                                    | —      | Open   | ~~D-33~~                        | Lead  | S [estimate] |
 | 116  | B6.6  | The remaining count is announced to assistive technology                                                  | —      | Open   | ~~D-33~~                        | Lead  | S [estimate] |
 | 117  | B1.95 | run.sh runs its own scripts from a clone behind origin/main and never says so                             | —      | Open   | —                               | Lead  | S [estimate] |
+| 118  | B1.96 | Parallel card PRs conflict on the section index, which B1.89 left on git's default merge                  | —      | Open   | ~~B1.89~~                       | Lead  | S [estimate] |
 
 ## Waiting on human
 

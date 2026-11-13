@@ -1279,3 +1279,38 @@ origin/main`, then rerun). It never updates itself, since it is the script runni
   - The PR carries `config-change-approved` (D-19).
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.95/`
+
+### B1.96 · Parallel card PRs conflict on the section index, which B1.89 left on git's default merge
+
+_tooling · no §_
+**Status: Open** — `.gitattributes` gives `merge=union` to `spec/features-map.md` and `docs/metrics.md` only, and
+`scripts/table-merge-smoke.sh:15` pins T9 "spec/technical-requirements.md keeps git's default". B1.89 left the index
+out on purpose (`backlog/work/B1.89/plan.md:17`): its rows are not append-only, because the closing commit flips a
+card's row ✗ → ✅, and a union merge of that flip against a row appended below it would bring the row back twice.
+`scripts/ci/check-spec-sections.sh` checks only that every cited § has a heading, so it would not name a duplicated
+index row. On 2026-11-13, E6 batch 1 (D-33) paid the cost:
+
+- #265 (B6.3, §31) merged first, and #266 (B6.2, §30) then conflicted on `spec/technical-requirements.md` alone. Both
+  had appended a row after §29. The runner's local merge 9337123 shows the index as the only conflicting file;
+  `spec/features-map.md` and `docs/metrics.md` merged by union.
+- The lead reran `run.sh 262` to resolve it (32 turns, USD 1.00).
+- The two closing PRs (#270, #271) had to be stacked for the same reason.
+
+Batch 2 (B6.4–B6.6, §32–§34) will append three rows after §31 in parallel.
+
+- **Spec:** none — tooling (`.gitattributes`, `scripts/table-merge-smoke.sh`, `scripts/ci/check-spec-sections.sh`,
+  the scripts guide); no `src/` change, no section
+- **Test:** `scripts/table-merge-smoke.sh` probes — red because: T9 still expects git's default merge for the index,
+  and no probe merges two appended index rows or a closing flip against an appended row
+  - two branches that each append a § row after the last merge cleanly, each row kept once;
+  - a closing flip (✗ → ✅) merged against a row appended below it makes the guard name the § kept twice.
+- **Acceptance:**
+  - `spec/technical-requirements.md merge=union` in `.gitattributes`; T9 is updated to match.
+  - `check-spec-sections.sh` (or a guard beside it) fails on a § that has more than one index row, and names the row
+    to keep.
+  - The new probes and T1–T8 pass, still bash 3.2-safe.
+  - The scripts guide names the third union file and the new guard check.
+  - If B1.92 lands first, its post-merge guard list gains this check.
+  - The PR carries `config-change-approved` (D-19).
+- **Tier:** quick · **Depends on:** ~~B1.89~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.96/`
