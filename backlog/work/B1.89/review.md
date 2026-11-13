@@ -101,3 +101,94 @@ Not reasons:
 Riskiest unfalsified: GitHub's mergeability check and "Update branch" with `merge=union`. It is still
 `[unverified]` (git 2.39.5 only here). The plan measures it in the first E6 batch, and the up-to-date ruleset keeps an
 unchecked union result off `main`.
+
+## Diff review (round 1)
+
+SCOPE: tooling (`.gitattributes`, `scripts/ci/`, `scripts/`; no `src/`, `prisma/`, `e2e/`). Range `2f1ff88..ac3db84`
+(red `0a89057`, green `ac3db84`).
+
+### Command results (last line each)
+
+| Command                                      | Result                                                                                                                                                                                                                                                                                                               |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                  | `All matched files use Prettier code style!`                                                                                                                                                                                                                                                                         |
+| `pnpm typecheck`                             | `tsc --noEmit`, no error                                                                                                                                                                                                                                                                                             |
+| `pnpm test`                                  | `Tests  241 passed (241)`                                                                                                                                                                                                                                                                                            |
+| `pnpm test:e2e`                              | `1 passed (34.3s)` then `ELIFECYCLE Command failed with exit code 1`. Every other spec fails in `beforeEach`: "The table `wt_chore_b1_89_union_merge.todos` does not exist". This worktree's schema was never migrated; the diff touches no `src/`, `prisma/` or `e2e/`. Not a finding: CI's e2e job is the evidence |
+| `pnpm test:mutation`                         | `Final mutation score of 92.62 is greater than or equal to break threshold 70`                                                                                                                                                                                                                                       |
+| `check-suppressions.sh`                      | `[check-suppressions] OK: no new suppressions`                                                                                                                                                                                                                                                                       |
+| `check-config-change.sh`                     | unlabeled rc 1 (`.gitattributes`, both guards, `lib.sh`); with `CONFIG_CHANGE_APPROVED=true` rc 0, "allowed by label config-change-approved". PR #253 carries the label                                                                                                                                              |
+| `check-feat-commits.sh`                      | `[check-feat-commits] OK: no feat commit touches tests`                                                                                                                                                                                                                                                              |
+| `check-ac-coverage.sh`                       | `[check-ac-coverage] OK: every criterion of a shipped section has a test`                                                                                                                                                                                                                                            |
+| `check-spec-sections.sh`                     | `[check-spec-sections] OK: sections cited: 1 … 28`                                                                                                                                                                                                                                                                   |
+| `check-features-map.sh`                      | `[check-features-map] OK`                                                                                                                                                                                                                                                                                            |
+| `check-backlog.sh`                           | `[check-backlog] OK: README matches the cards`                                                                                                                                                                                                                                                                       |
+| `check-plan-scope.sh`                        | `[check-plan-scope] OK: chore/B1.89-union-merge stays inside the approved plan of B1.89`                                                                                                                                                                                                                             |
+| `verify-red.sh B1.89`                        | `::error::no 'test(<pkg>): B1.89 … (red)' commit`. This is expected: smoke-only red without the marker, as B1.82 and B1.88. `--auto` (CI) prints `nothing to verify`, rc 0                                                                                                                                           |
+| `table-merge-smoke.sh` (`/bin/bash`, clones) | at `0a89057`: `9 of 9 probes FAILED`; at `ac3db84`: `9 probes OK`                                                                                                                                                                                                                                                    |
+| `tier-smoke.sh`                              | `9 probes OK`                                                                                                                                                                                                                                                                                                        |
+| `git diff --stat origin/main...HEAD`         | 9 files, +427 −5: `.gitattributes`, `lib.sh`, both guards, `table-merge-smoke.sh`, `scripts/CLAUDE.md`, `work/B1.89/{plan,pr-body,review}.md`                                                                                                                                                                        |
+
+### Checklist
+
+- Every acceptance clause has a probe whose assertion matches it: pass. T1/T2 cover clean appends, each row kept once.
+  T3–T7 cover a named duplicate. T8 checks `CONFIG_PROTECTED` and T9 checks `check-attr`. GitHub mergeability is stated
+  `[unverified]` in the plan. The one gap is finding 2.
+- No test weakened after red: pass. `git log --first-parent --no-merges 0a89057..HEAD -- '*.test.*' e2e/
+scripts/table-merge-smoke.sh` is empty, and the range has no merges.
+- Every changed file is in `plan.md`: pass (`check-plan-scope.sh` OK, and the stat above matches the Files table).
+- Interfaces match the plan: pass. Both error lines carry the keep rule worded as in plan round 2, with no new flag,
+  variable or exit code.
+- Zod, Prisma, raw SQL, migration: n/a (no TypeScript).
+- No secret, no suppression: pass.
+- Features map: n/a (tooling, no §).
+- Would a test fail if one changed line were reverted? Mutants on clones:
+
+  | Mutant                                     | Result                      |
+  | ------------------------------------------ | --------------------------- |
+  | metrics line dropped from `.gitattributes` | 5 FAIL (T2 T4 T5 T7 T9)     |
+  | map duplicate threshold `> 1` → `> 9`      | 2 FAIL (T3 T6)              |
+  | metrics duplicate `== 2` → `== 3`          | 3 FAIL (T4 T5 T7)           |
+  | `\.gitattributes\|` removed from `lib.sh`  | 1 FAIL (T8)                 |
+  | keep rule removed from the map's error     | **9 probes OK** (finding 2) |
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: scripts/table-merge-smoke.sh:18
+    DEFECT: when mktemp fails, TMP becomes the directory the smoke runs from, and the EXIT trap `rm -rf -- "$TMP"`
+            deletes it.
+    TRIGGER: mktemp -d exits 1 with empty output (GNU mktemp in the dev container or runner with TMPDIR pointing at a
+             removed or unwritable directory; a full disk). Probed on a throwaway clone with a PATH shim
+             `mktemp` that prints to stderr and exits 1, run as `/bin/bash scripts/table-merge-smoke.sh` from the
+             clone's root.
+    WRONG BEHAVIOUR: `cd ""` succeeds in bash 3.2, so `TMP="$(cd "$(mktemp -d)" && pwd -P)"` is the cwd. The smoke
+            builds its repo in `<cwd>/repo`, prints "9 probes OK", and on exit removes the whole checkout it was run
+            from: `ls` of the clone afterwards gives "No such file or directory". The header promises "writes only
+            under its own mktemp -d". B1.88 round 1 traced the same idiom (`cd /usr; x="$(cd "$(false)" && pwd -P)"`
+            → `rc=0 x=[/usr]`) and fixed it in `run.sh`; this file adds a new copy of it.
+    FIX (for code-writer): check mktemp's status and a non-empty, existing directory before resolving it; check the
+            resolve's own status; exit 2 otherwise, before the trap is set. The other smokes with the same line
+            (`run-smoke.sh:19` with the same trap; eight without one) predate this card: a follow-up card (D-25).
+    CONFIDENCE: confirmed (I ran it)
+
+[2] KIND: coverage
+    WHERE: scripts/ci/check-features-map.sh:17 (error text); scripts/table-merge-smoke.sh T3 asserts only
+           "<F> has 2 rows"
+    DEFECT: no probe pins the keep rule in the features-map error; only the metrics error's rule is pinned (T4).
+    TRIGGER: delete " Keep the copy origin/main has, plus this branch's own change to that row if it made one; delete
+             the rest" from check-features-map.sh on a clone, then run the smoke.
+    WRONG BEHAVIOUR: "9 probes OK". The map error can lose the rule that stops a fixer from keeping the stale ✗ copy
+            (plan "Which copy to keep"), and nothing fails.
+    FIX: T3 (or T6) asserts the same substring T4 does. That is an added assertion, so it lands as
+         `test(scripts): B1.89 review pass 1 -- …`.
+    CONFIDENCE: confirmed (I ran the mutant)
+```
+
+Verdict: back to code-writer
+
+Riskiest unfalsified: whether GitHub's mergeability check and "Update branch" honour `merge=union` (git 2.39.5 only
+here). The plan marks it `[unverified]` for the first E6 batch. Next after that: the smoke uses the caller's global git
+config (only `user.*`, `commit.gpgsign` and `core.hooksPath` are pinned), so a global `merge.*` or
+`core.attributesFile` setting could change T1–T9. I did not falsify that.
