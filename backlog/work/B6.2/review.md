@@ -154,3 +154,49 @@ Verdict: back to code-writer
 
 Riskiest unfalsified: REQ-30.4 "created" has no criterion (spec gap carried from the plan review), so a create path
 that skipped revalidation of the nav would pass every §30 test; and the page-wiring revert was traced, not run in e2e.
+
+## Diff review (round 2)
+
+SCOPE: ui. Reviewed `d7110b8..HEAD` (bd02abb review paperwork, f957cdd fix) against round 1's finding 1 and §30.
+
+`git diff --stat d7110b8..HEAD`: `backlog/work/B6.2/review.md | 69`, `src/components/todo-filter-nav.tsx | 4 +--`;
+nothing else under `src/`, `e2e/` or any test file changed since d7110b8.
+
+### Command results (last line each, run by the reviewer)
+
+| Command                             | Result                                                                         |
+| ----------------------------------- | ------------------------------------------------------------------------------ |
+| `pnpm lint`                         | `All matched files use Prettier code style!`                                   |
+| `pnpm typecheck`                    | `tsc --noEmit` clean                                                           |
+| `pnpm test`                         | `Tests  245 passed (245)` (41 files)                                           |
+| `pnpm test:e2e`                     | `55 passed (1.6m)`                                                             |
+| `pnpm test:mutation`                | `Final mutation score of 92.68 is greater than or equal to break threshold 70` |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                      |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                              |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                             |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test`                          |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 28 30`                                                |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                           |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B6.2-agent stays inside the approved plan of B6.2 (D-27 approval)`   |
+| `scripts/verify-red.sh B6.2`        | `RESULT: red for the right reason`                                             |
+| `git diff --stat main...HEAD`       | `17 files changed, 827 insertions(+), 13 deletions(-)` (+67 = review.md, fix)  |
+
+### Checklist
+
+| Check                                      | Result                                                                                                                       |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| finding 1 closed                           | pass: line 41 is now `<span>{`(${counts[link.filter]})`}</span>`; `grep className` in the file → only nav (31) and link (37) |
+| no test weakened after the red commit      | pass: `git log --first-parent --no-merges dc761e0..HEAD -- '*.test.*' e2e/` empty; no merges                                 |
+| every changed file in `plan.md`            | pass: `todo-filter-nav.tsx` is a plan file; `check-plan-scope` OK                                                            |
+| behaviour unchanged by the fix             | pass: the fix removes only the `className`; element, text and position are those AC-30.2–30.4 assert, all green              |
+| would a test fail if the fix were reverted | no, and none is needed: a class is not a §30 criterion (round 1 said "no test change"); not a finding                        |
+
+### Findings
+
+None. Round 1 finding 1 is closed by f957cdd.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: REQ-30.4 "created" still has no criterion (spec gap from the plan review), so a create path
+that left the counts stale would pass every §30 test; the page-wiring revert (`filterCounts(shown)`) remains traced,
+not run in e2e.
