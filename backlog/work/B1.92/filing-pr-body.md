@@ -15,11 +15,11 @@ picked.
 Files:
 
 - `backlog/plan/E1-todos.md`: the three cards at the end, `**Status: Open**` with grep/line evidence
-- `backlog/README.md`: totals (E1 57/1/32 of 90, total 74/1/33 of 108); Remaining rows 108–110; nodes S108–S110
+- `backlog/README.md`: totals (E1 57/1/34 of 92, total 74/1/35 of 110); Remaining rows 108–110; nodes S108–S110
 - `backlog/work/B1.92/filing-pr-body.md`: this body
 
-Open alongside #256 (B1.90, B1.91, steps 106–107): the second of the two to merge recounts the README totals and keeps
-both sets of rows and nodes. Not filed: `.gitattributes` in CODEOWNERS (a `.github/` change, the lead's call).
+After #256 (B1.90, B1.91, steps 106–107) merged: `origin/main` merged in, the cards follow B1.91, totals recounted.
+Not filed: `.gitattributes` in CODEOWNERS (a `.github/` change, the lead's call).
 
 `check-backlog.sh` OK.
 
