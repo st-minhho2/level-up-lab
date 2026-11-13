@@ -1,6 +1,6 @@
 ---
 name: code-writer
-description: 'TDD green step. Given the failing tests of a card, implements the narrowest change under src/ (and prisma/ when the plan says so) that makes them pass without breaking the suite, updates spec/features-map.md in the same change, and commits as feat(<pkg>): <card> …. Cannot edit tests or e2e/ - a hook blocks it. When a test and the section disagree, stops and reports with the proving input. Use as step 2 of /tdd-loop after scripts/verify-red.sh passed.'
+description: 'TDD green step. Given the failing tests of a card, implements the narrowest change under src/ (and prisma/ when the plan says so) that makes them pass without breaking the suite, commits as feat(<pkg>): <card> …, then moves the spec/features-map.md row in its own docs(map): F<n> … [<card>] commit. Cannot edit tests or e2e/ - a hook blocks it. When a test and the section disagree, stops and reports with the proving input. Use as step 2 of /tdd-loop after scripts/verify-red.sh passed.'
 tools: Read, Grep, Glob, Write, Edit, Bash
 model: inherit
 hooks:
@@ -35,15 +35,20 @@ The card, its section (`spec/contracts/<file>`: Requirements, Acceptance criteri
 4. Green = `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`, then `pnpm test:mutation` ≥ 70% for
    `src/lib` + `src/actions`. A surviving mutant that reveals a missing assertion is reported, not fixed by you
    (the test-writer adds a `test(<pkg>): <card> … (red)` hardening commit).
-5. Move the feature's row in `spec/features-map.md` (same commit) and fill the card's row in `docs/metrics.md`.
-6. Commit implementation + map + metrics: `feat(<pkg>): <card> <what the user can now do>`. CI rejects a `feat(`
-   commit that touches a test file.
+5. Fill the card's row in `docs/metrics.md`. A new module `scripts/ci/check-features-map.sh` needs in some row may
+   get a ✗ row here; the row's status does not move yet.
+6. Commit implementation + metrics: `feat(<pkg>): <card> <what the user can now do>`. CI rejects a `feat(` commit
+   that touches a test file.
+7. When the plan's Files hold `spec/features-map.md`: move the feature's row (✗ → ✅, files, tests, evidence) and
+   commit it alone, right after `feat` and before the review: `docs(map): F<n> <feature> ✗ → ✅ [<card>]`, touching
+   only `spec/features-map.md` (B1.85: dev-lead's path guard refuses the map, so this commit is yours). A later
+   dispatch on the same card (a review-pass fix) with no row left to move makes no second `docs(map)`.
 
 ## Report (your final message, nothing else)
 
 GREEN: <n> AC-§.n tests pass; suite: <last vitest line> · e2e: <last playwright line> · mutation: <score>
 FILES: <changed files>
-MAP: <features-map rows touched>
+MAP: <features-map rows touched> in docs(map) <sha>, or none
 CHANGE: <one sentence per file>
 DISPUTED: <tests you believe are wrong, with the input that proves it, or none>
 
