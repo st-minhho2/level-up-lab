@@ -200,3 +200,60 @@ Verdict: ready for PR
 Riskiest unfalsified: REQ-30.4 "created" still has no criterion (spec gap from the plan review), so a create path
 that left the counts stale would pass every §30 test; the page-wiring revert (`filterCounts(shown)`) remains traced,
 not run in e2e.
+
+## Diff review (round 3)
+
+SCOPE: ui. Reviewed the merge b8dc571 (`3745e37` + `origin/main` 3239f19). Local `main` is stale (278ee80), so the
+card diff is taken against `origin/main` = b8dc571^2.
+
+### Merge resolution
+
+`git show --remerge-diff b8dc571`: the only conflict is `spec/technical-requirements.md`, ours `| §30 … | ✗ |` vs
+theirs `| §29 … | ✅ |`; resolved as §29 ✅ then §30 ✗, both kept, in section order. `git diff origin/main HEAD --
+spec/technical-requirements.md` → one `+` line (§30 ✗), the status the plan's "stays ✗ until the closing PR" names.
+
+### Card diff unchanged since round 2
+
+`git diff 278ee80...3745e37 -- src e2e spec/contracts` and `git diff origin/main HEAD -- src e2e spec/contracts`,
+`index` lines stripped, are identical (`diff` exit 0). `git diff --stat origin/main...HEAD` = `git diff --stat
+origin/main HEAD` = `17 files changed, 873 insertions(+), 13 deletions(-)`: the round 2 files plus round 2's own
+review/metrics paperwork; no B6.1 file appears, so the merge carried no edit into main's files.
+
+### Command results (last line each, run by the reviewer on b8dc571)
+
+| Command                              | Result                                                                               |
+| ------------------------------------ | ------------------------------------------------------------------------------------ |
+| `pnpm lint`                          | `All matched files use Prettier code style!`                                         |
+| `pnpm typecheck`                     | `tsc --noEmit` clean                                                                 |
+| `pnpm test`                          | `Tests  264 passed (264)` (41 files; +19 from B6.1's `todo-form.test.tsx`)           |
+| `pnpm test:e2e`                      | `56 passed (1.4m)` (the `e2e: insert rejected` log line is an injected-failure test) |
+| `pnpm test:mutation`                 | `Final mutation score of 92.68 is greater than or equal to break threshold 70`       |
+| `scripts/ci/check-suppressions.sh`   | `OK: no new suppressions`                                                            |
+| `scripts/ci/check-config-change.sh`  | `OK: no protected config changed`                                                    |
+| `scripts/ci/check-feat-commits.sh`   | `OK: no feat commit touches tests`                                                   |
+| `scripts/ci/check-ac-coverage.sh`    | `OK: every criterion of a shipped section has a test`                                |
+| `scripts/ci/check-spec-sections.sh`  | `OK: sections cited: 1 … 28 29 30`                                                   |
+| `scripts/ci/check-features-map.sh`   | `OK`                                                                                 |
+| `scripts/ci/check-plan-scope.sh`     | `OK: feat/B6.2-agent stays inside the approved plan of B6.2 (D-27 approval)`         |
+| `scripts/verify-red.sh B6.2`         | `RESULT: red for the right reason`                                                   |
+| `git diff --stat origin/main...HEAD` | `17 files changed, 873 insertions(+), 13 deletions(-)`                               |
+
+### Checklist
+
+| Check                                 | Result                                                                                                                                  |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| conflict resolution correct           | pass: both index rows kept, §29 before §30, statuses unchanged from each side                                                           |
+| no test weakened after the red commit | pass: `git log --first-parent --no-merges dc761e0..HEAD -- '*.test.*' e2e/` empty; `--merges --remerge-diff` on the same paths: 0 lines |
+| card diff unchanged since round 2     | pass: `src e2e spec/contracts` diff identical against both bases                                                                        |
+| every changed file in `plan.md`       | pass: `check-plan-scope` OK                                                                                                             |
+| B6.1 × B6.2 interaction               | pass: B6.1 touches only `todo-form.tsx`; B6.2 touches nav, page, `filter-counts`; all 264 unit and 56 e2e green on the merge            |
+| features map                          | pass, note: F28 sits above F27 (union merge order); `check-features-map` OK, no behaviour; the closing PR may reorder                   |
+
+### Findings
+
+None.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: unchanged from round 2: REQ-30.4 "created" has no criterion, so a create path (now including
+B6.1's Escape-cleared form) that left the counts stale would pass every §30 test.
