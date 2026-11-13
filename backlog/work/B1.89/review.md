@@ -192,3 +192,58 @@ Riskiest unfalsified: whether GitHub's mergeability check and "Update branch" ho
 here). The plan marks it `[unverified]` for the first E6 batch. Next after that: the smoke uses the caller's global git
 config (only `user.*`, `commit.gpgsign` and `core.hooksPath` are pinned), so a global `merge.*` or
 `core.attributesFile` setting could change T1–T9. I did not falsify that.
+
+## Diff review (round 2)
+
+SCOPE: tooling. Range `ac3db84..4cee58f`: one commit, `test(scripts): B1.89 review pass 1 -- checked mktemp, keep rule
+in T3`, which touches only `scripts/table-merge-smoke.sh` (+12 −5).
+
+### Command results (last line each)
+
+| Command                                      | Result                                                                                                                                       |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                  | `All matched files use Prettier code style!`                                                                                                 |
+| `pnpm typecheck`                             | rc 0                                                                                                                                         |
+| `pnpm test`                                  | `Tests  241 passed (241)`                                                                                                                    |
+| `pnpm test:e2e`, `pnpm test:mutation`        | not re-run: round 2 changes one smoke script, no `src/`, `prisma/`, `e2e/`. Round 1 gave mutation 92.62; e2e is CI's evidence (round 1 note) |
+| `check-suppressions.sh`                      | `[check-suppressions] OK: no new suppressions`                                                                                               |
+| `check-feat-commits.sh`                      | `[check-feat-commits] OK: no feat commit touches tests`                                                                                      |
+| `check-features-map.sh` / `check-backlog.sh` | `[check-features-map] OK` / `[check-backlog] OK: README matches the cards`                                                                   |
+| `check-plan-scope.sh`                        | `[check-plan-scope] OK: chore/B1.89-union-merge stays inside the approved plan of B1.89`                                                     |
+| `table-merge-smoke.sh` (clone of `4cee58f`)  | `9 probes OK`                                                                                                                                |
+
+### Round 1 findings, rechecked
+
+- **[1] resolved.** Probed on a clone of `4cee58f` with three PATH shims for `mktemp`. Each run printed
+  `table-merge-smoke: mktemp -d failed` and exited 2; the checkout (22 entries) and the named directory (22 entries)
+  were both intact, and no `table-merge-smoke.*` directory was left behind.
+  - `exit 1`
+  - `exit 0` with empty output
+  - prints an existing directory: refused by the `table-merge-smoke.?*` basename check
+- **[2] resolved.** The round 1 mutant (keep rule removed from the map's error) now gives
+  `FAIL T3 a features-map row edited on both sides is named with which copy to keep` and `1 of 9 probes FAILED`.
+- The round 1 "riskiest" second item is addressed: the merges and T9's `check-attr` now run with
+  `GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1`.
+
+### Checklist
+
+- No test weakened: pass. `git log --first-parent --no-merges 0a89057..HEAD -- '*.test.*' e2e/
+scripts/table-merge-smoke.sh` lists only `4cee58f`, a `test(scripts)` review-pass commit that strengthens T3 and
+  removes no assertion.
+- Every changed file is in the plan: pass.
+- No secret, no suppression: pass.
+
+### Findings
+
+None blocking.
+
+Not a finding: `GIT_CONFIG_GLOBAL=/dev/null` does not cover git's default per-user attributes file
+(`$XDG_CONFIG_HOME/git/attributes`, else `~/.config/git/attributes`). git reads that file without any config entry
+naming it. A host that sets `merge=` there for `*.md` could still change T1–T7 `[unverified]`. One line in the smoke
+(`-c core.attributesFile=/dev/null` in `G`) would close it. I leave it to dev-lead whether that is worth a commit.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: whether GitHub's mergeability check and "Update branch" honour `merge=union` (git 2.39.5 only
+here). It is `[unverified]` in the plan and measured in the first E6 batch; the up-to-date ruleset keeps an unchecked
+union result off `main`.
