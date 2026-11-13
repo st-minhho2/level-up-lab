@@ -48,3 +48,32 @@ mutation hardening re-dispatches code-writer in green mode and it commits a seco
 first `feat`", and that a dispatch whose row is already ✅ reports `MAP: none`.
 
 Verdict: changes requested
+
+## Plan review (round 2)
+
+Plan at 240d6f3 (round 1 committed b028ee4). Changed since round 1: only `plan.md` and `review.md`.
+
+| Check                                                                             | Result                                                                                                                                                                                                                                                                   |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every file in the plan belongs to the section's features (map)                    | pass: no section; the three `spec/` prose files from reason 1 are now in Files, header lines only ("no row", "no section and no map row changes" in Costs)                                                                                                               |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass: not applicable, no `src/` change                                                                                                                                                                                                                                   |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: no `advice.md` (quick, no section), stated                                                                                                                                                                                                                         |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: T1–T6 counts unchanged except T4, now 0 over four files                                                                                                                                                                                                            |
+| verification lists exact commands with expected numbers                           | pass: T4 base checked at 240d6f3, 4 lines as the plan says: `code-writer.md:38`, `spec/CLAUDE.md:18`, `spec/README.md:12`, `spec/features-map.md:4`. No other "same commit" in those four files, so 0 after the change is reachable without touching unrelated text      |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass, deviation stated (no red commit, grep is the test); new step 2 `docs(spec): B1.85 the map row moves in its own docs(map) commit` is 51 characters after the scope, within lefthook's 72                                                                            |
+| `Lead approves spec` box, ticked only by a human                                  | pass: no section, so no box; `Plan approved by:` empty                                                                                                                                                                                                                   |
+| no settled D-n contradicted                                                       | pass: the `spec/` edits are process prose, not a contract section, so §8 / a D-n is not required (spec-fidelity's rule covers sections); the plan says no section or row changes. Tier `scripts/agent/tier.sh` → `high`, the lead's `approve` gates it; D-19 label named |
+| `scripts/next-task.sh --check B1.85` no overlap                                   | pass: `[next-task] B1.85: no overlap with any Doing or Review card` (re-run on 240d6f3, with `spec/features-map.md` now in Files)                                                                                                                                        |
+
+Also run: `check-plan-scope.sh` → `OK: … changes only paperwork`; `check-backlog.sh` → `OK: README matches the cards`.
+
+Reason 1 (round 1): resolved by option (a). All three `spec/` lines are in Files, the writer is named (interactive
+dev-lead), and T4 now covers them. Round 1 note: resolved. The green gate is anchored on "the card's first `feat`",
+and a later dispatch with no row left adds no `docs(map)`.
+
+Costs the lead approves with (all in the plan): no red commit; nothing in CI keeps the prompts from drifting back
+until a hook-smoke follow-up; one extra commit per card PR; an interactive session (not a role guard) writes the
+`spec/` prose. The plan is 76 lines, longer than the one-screen guide; round 1 passed it at 68 and the extra lines
+are the review's own fix, so it is not a new reason.
+
+Verdict: approved
