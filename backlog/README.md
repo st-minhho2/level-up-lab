@@ -7,12 +7,12 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open   | Total   |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ------ | ------- |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 57     | 1       | 31     | 89      |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 57     | 1       | 34     | 92      |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0      | 5       |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3       |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4       |
 | E5 Todos keys    | [plan/E5-todos-keys.md](plan/E5-todos-keys.md)       | 6      | 0       | 0      | 6       |
-| **Total**        |                                                      | **74** | **1**   | **32** | **107** |
+| **Total**        |                                                      | **74** | **1**   | **35** | **110** |
 
 ## Execution order
 
@@ -144,6 +144,11 @@ flowchart TD
   S101 --> S106
   S107["107 · the closing lane checks the map row, never flips it<br/>B1.91"]
   S101 --> S107
+  S108["108 · Loop 9 runs the table guards after a clean merge<br/>B1.92"]
+  S105 --> S108
+  S109["109 · smokes check mktemp before their exit trap<br/>B1.93"]
+  S110["110 · CI runs table-merge-smoke, host attributes out<br/>B1.94"]
+  S105 --> S110
 ```
 
 ## Remaining
@@ -186,6 +191,9 @@ at most 3 cards Doing (B1.18).
 | 103  | B1.87 | Docs still describe unattended.sh and pr-step.sh as they were before B1.83                                | —      | Open    | —                               | Lead  | S [estimate] |
 | 106  | B1.90 | Nothing in CI keeps the `docs(map)` step with code-writer                                                 | —      | Open    | —                               | Lead  | S [estimate] |
 | 107  | B1.91 | The closing lane still flips the feature's map row, which the card's own `docs(map)` commit already moved | —      | Open    | —                               | Lead  | S [estimate] |
+| 108  | B1.92 | A union merge's duplicate row reaches CI before any guard reads it                                        | —      | Open    | ~~B1.89~~                       | Lead  | S [estimate] |
+| 109  | B1.93 | Eight smokes remove the caller's directory when `mktemp -d` fails                                         | —      | Open    | —                               | Lead  | S [estimate] |
+| 110  | B1.94 | CI never runs table-merge-smoke, whose verdict follows the host's own git attributes                      | —      | Open    | ~~B1.89~~                       | Lead  | S [estimate] |
 
 ## Waiting on human
 
