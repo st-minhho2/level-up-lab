@@ -4,8 +4,17 @@ B1.85 — Card plans give the `docs(map)` step to dev-lead, whose hook refuses `
 section)
 
 - spec: none — tooling (the card loop in `dev-lead.md`, `code-writer.md`, `/tdd-loop`); no `src/` change, no section
-- test: `git grep` T1–T6 (plan "Verification"). pending
-- acceptance: pending
+- test: `git grep` T1–T6 (plan "Verification"), no red commit (plan "Costs"; `verify-red.sh B1.85` finds none). Base
+  2f1ff88 red: T1 2 lines without `code-writer`, T2 0, T3 0, T4 4 lines. After `82b7ff3`: T1 4 lines, all name
+  `code-writer`; T2 2, all name it; T3 4; T4 0; T5 0 (work-next unchanged); T6 0. Reverting `tdd-loop/SKILL.md` or
+  `spec/README.md` on a clone fails T2/T4 (reviewer). `hook-smoke.sh` 726 OK before and after;
+  `check-agent-frontmatter` (13), `check-plan-scope`, `check-backlog`, `check-features-map`, `check-spec-sections` OK;
+  lint, typecheck 0; `pnpm test` 241; e2e 52; mutation 92.62 (no `src/` change; reviewer).
+- acceptance: 3 of 4 met, 1 pending — the loop (`dev-lead.md` Loop 6 and 8), the plan template (step 4) and
+  `/tdd-loop` name `code-writer` as the author of `docs(map)`, its own commit right after `feat`, as `backlog/CLAUDE.md`
+  orders it (`code-writer.md` step 7; `spec/` prose agrees); dev-lead's path list unchanged (T6); label
+  `config-change-approved`. **Pending [unverified until E6]:** the next headless run's log shows no path-guard refusal
+  on `spec/features-map.md`; the closing PR will be `partial` with it.
 - risk tier: high (`.claude/`); label `config-change-approved` (D-19)
 
 ## Plan
@@ -87,17 +96,37 @@ writes the three `spec/` prose lines, no section and no map row changes.
 
 Plan review: approved, round 2 · Plan approved by: lead, 2026-11-13 · Rounds: 1
 
+Deviation from the plan's interface line (review pass 1, finding 2): the `docs(map)` subject is
+`docs(map): F<n> <feature> … [<card>]`, not `✗ → ✅`, since `main`'s map has no ✗ row and a card may add a row
+rather than flip one. Same as dev-lead's template.
+
 ## Map delta
 
-pending
+None: tooling card, no `spec/features-map.md` row (`73f2100` changes the header prose only).
 
 ## Review
 
-pending
+`/review-loop`: 2 passes of 3 (`backlog/work/B1.85/review.md`, "Diff review" rounds 1–2). Verdict: ready for PR.
+
+| Pass | #   | Finding                                                                                                  | Source   | Disposition  | Justification                                                                           |
+| ---- | --- | -------------------------------------------------------------------------------------------------------- | -------- | ------------ | --------------------------------------------------------------------------------------- |
+| 1    | 1   | `tdd-loop/SKILL.md:27` gate wants `docs(map)` on every card (B1.9, B1.8, B1.11 have no map row) → bounce | reviewer | fix now      | `82b7ff3`: conditioned on the plan's Files holding the map, as step 3 and `dev-lead.md` |
+| 1    | 2   | `code-writer.md` step 7 "move ✗ → ✅", but `main` has 0 ✗ rows                                           | reviewer | fix now      | `82b7ff3`: "add or move the feature's row", subject `… [<card>]`                        |
+| 1    | Q2  | a bare `^feat(` also matches `main`'s merged cards after Loop 9                                          | reviewer | fix now      | `82b7ff3`: dev-lead finds the card's `feat(<pkg>): <card> ` by id, `--first-parent`     |
+| 1    | Q1  | closing lane step 3 (`backlog/CLAUDE.md:61`) still names a map flip no card has done since B5.1          | reviewer | out of scope | follow-up card (closing lane checklist), not this card's acceptance                     |
+| 2    | —   | none (notes: pr-body interface line, nothing keeps step 4's condition until a hook-smoke probe)          | reviewer | —            | deviation note above; the probe is the planned follow-up                                |
+
+Plan review: 2 rounds (round 1 changes requested: three `spec/` lines still said "same commit"; round 2 approved).
+
+Riskiest unfalsified: whether a headless code-writer, handed B5.6-style plan text, moves the map in its own
+`docs(map)` commit rather than folding it into `feat`; only the first E6 run shows it.
+
+`check-config-change.sh` errors locally on the three `.claude/` files (no labels offline); this PR carries
+`config-change-approved`. `docs/metrics.md` per-card row: not added (tooling, as B1.88).
 
 ## Evidence
 
-- AC met: pending
+- AC met: 3/4
 - tier: high
 - plan deviations: none
 - trace: n/a
