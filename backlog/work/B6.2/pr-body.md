@@ -60,21 +60,23 @@ Plan review: approved, round 2 · Plan approved by: reviewer (D-27, tier medium,
 ## Map delta
 
 F28 · §30 · new row, ✅ — `filterCounts` in `src/lib/filter-counts.ts`, counts in `src/components/todo-filter-nav.tsx`,
-wired in `src/app/page.tsx` (`docs(map)` d7110b8); evidence: `pnpm test` 264 passed, `pnpm test:e2e` 56 passed on the
-merge with main. The §30 index row stays ✗ until the closing PR; the union merge put F28 above F27 (closing PR reorders).
+wired in `src/app/page.tsx` (`docs(map)` d7110b8); evidence: `pnpm test` 269 passed, `pnpm test:e2e` 57 passed on the
+merge with main (9337123). The §30 index row stays ✗ until the closing PR; the union merge put F28 above F27 (closing PR reorders).
 
 ## Review
 
-`/review-loop`: passes 3/3 (`backlog/work/B6.2/review.md` "Diff review" rounds 1–3); verdict ready for PR.
+`/review-loop`: passes 3/3 (`backlog/work/B6.2/review.md` "Diff review" rounds 1–3); verdict ready for PR. Round 4
+re-checked merge 9337123 (B6.3 from main): 0 findings, ready for PR.
 
 | Pass | #   | Finding (file:line)                                                                               | Source   | Kind          | Disposition                                                                    | Justification                                    |
 | ---- | --- | ------------------------------------------------------------------------------------------------- | -------- | ------------- | ------------------------------------------------------------------------------ | ------------------------------------------------ |
 | 1    | 1   | `src/components/todo-filter-nav.tsx:42` count span adds `text-zinc-500`, outside §30 Out of scope | reviewer | spec-mismatch | fix now (f957cdd)                                                              | class removed; round 2 confirmed closed          |
 | 1    | —   | `docs/metrics.md` row in the feat commit; F28 ✅ in `docs(map)`                                   | dev-lead | question      | no change needed                                                               | `code-writer.md` steps 5–7; B5.6, B6.1 precedent |
 | 3    | —   | merge b8dc571: conflict in `spec/technical-requirements.md` (§29 / §30 rows)                      | dev-lead | merge         | resolved, both rows kept; card diff unchanged since round 2 (reviewer checked) | `--remerge-diff` on tests empty                  |
+| 4    | —   | merge 9337123: conflict in `spec/technical-requirements.md` (§30 / §31 rows)                      | dev-lead | merge         | resolved, both rows kept; card diff unchanged since round 2 (reviewer checked) | `--remerge-diff` on tests empty                  |
 
-Reviewer's last run (b8dc571): `Tests  264 passed (264)` · `56 passed (1.4m)` · `Final mutation score of 92.68 is
-greater than or equal to break threshold 70` (`filter-counts.ts` 100) · every `scripts/ci/check-*.sh` OK ·
+Reviewer's last run (9337123): `Tests  269 passed (269)` · `57 passed (1.3m)` · `Final mutation score of 92.63 is
+greater than or equal to break threshold 70` · every `scripts/ci/check-*.sh` OK ·
 `scripts/verify-red.sh B6.2` `RESULT: red for the right reason`.
 
 Riskiest unfalsified: REQ-30.4 "created" has no criterion, so a create path that left the counts stale would pass
