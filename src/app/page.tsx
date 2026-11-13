@@ -1,5 +1,6 @@
 // §7 home page; §12 the list filtered by the `filter` query parameter; §13 the remaining count; §14 mark all complete;
-// §16 the list searched by title through the `q` query parameter; §23 the overdue count; §26 the tab title.
+// §16 the list searched by title through the `q` query parameter; §23 the overdue count; §26 the tab title;
+// §30 the filter counts.
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { ClearCompletedButton } from '@/components/clear-completed-button';
@@ -10,6 +11,7 @@ import { TodoFilterNav } from '@/components/todo-filter-nav';
 import { TodoForm } from '@/components/todo-form';
 import { TodoItem } from '@/components/todo-item';
 import { TodoSearchForm } from '@/components/todo-search-form';
+import { filterCounts } from '@/lib/filter-counts';
 import { pageTitle } from '@/lib/page-title';
 import { countRemaining } from '@/lib/todo-count';
 import { filterTodos, parseTodoFilter } from '@/lib/todo-filter';
@@ -46,7 +48,8 @@ export default async function HomePage({
       <ClearCompletedButton disabled={!todos.some((todo) => todo.completed)} />
       {/* §14 REQ-14.4: enabled from the stored todos, not the filtered ones; outside the list in both states. */}
       <CompleteAllButton disabled={!todos.some((todo) => !todo.completed)} />
-      <TodoFilterNav selected={filter} />
+      {/* §30 REQ-30.3: counted from the stored todos, never the filtered or searched ones. */}
+      <TodoFilterNav selected={filter} counts={filterCounts(todos)} />
       {/* §13 REQ-13.5: counted from the stored todos, not the filtered ones; outside the list in both states. */}
       <RemainingCount count={countRemaining(todos)} />
       {/* §23 REQ-23.3: counted from the stored todos, not the filtered ones; outside the list in both states. */}
