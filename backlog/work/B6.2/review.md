@@ -85,3 +85,72 @@ Round 1's fourth cost is gone: the card's `Test:` line now reads "red because: t
   run the plan lists; the red commit body should quote its result.
 
 Verdict: approved (ready for the lead's gate; tier medium)
+
+## Diff review (round 1)
+
+SCOPE: all (lib `src/lib/filter-counts.ts`; ui `src/components/todo-filter-nav.tsx`, `src/app/page.tsx`, `e2e/`)
+
+Reviewed `c10a1b9..d7110b8` (skeleton, pin, red, feat, map) against §30 (`spec/contracts/28-filter-counts.md`),
+`plan.md` (D-27, tier medium), `.claude/rules/*.md`, `.claude/agents/code-writer.md`.
+
+### Command results (last line each, run by the reviewer)
+
+| Command                             | Result                                                                                                    |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!`                                                              |
+| `pnpm typecheck`                    | `tsc --noEmit` clean                                                                                      |
+| `pnpm test`                         | `Tests  245 passed (245)` (41 files; plan: 245)                                                           |
+| `pnpm test:e2e`                     | `55 passed (2.2m)` (plan: 55)                                                                             |
+| `pnpm test:mutation`                | `Final mutation score of 92.68 is greater than or equal to break threshold 70`; `filter-counts.ts` 100.00 |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                                 |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                         |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                        |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test` (§30 ✗, 7 criteria)                                 |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 28 30`                                                                           |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                                      |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B6.2-agent stays inside the approved plan of B6.2 (D-27 approval)`                              |
+| `scripts/verify-red.sh B6.2`        | `RESULT: red for the right reason` (base 3700b77 pin; 1 + 2 new failed, 0 new passed)                     |
+| `git diff --stat main...HEAD`       | `17 files changed, 760 insertions(+), 13 deletions(-)`                                                    |
+
+### Checklist
+
+| Check                                               | Result                                                                                                                                                                                                                              |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-§.n has a test whose assertion matches     | pass: AC-30.1 (3 inputs + input unchanged), AC-30.2 (names, hrefs, `aria-current`, `nextElementSibling` SPAN text, 0 listitem/button, 3 links), AC-30.3, AC-30.4 (0 spans, text "AllActiveCompleted"), AC-30.5–30.7 in e2e          |
+| no test weakened after the red commit               | pass: `git log --first-parent --no-merges dc761e0..HEAD -- '*.test.*' e2e/` empty; the `--merges --remerge-diff` form empty (no merges)                                                                                             |
+| every changed file in `plan.md`                     | pass: 7 plan files + `docs/metrics.md` (plan's exempt paperwork; `code-writer.md` step 5-6 puts the row in the feat commit, as B5.6 7e16b8f and B6.1 6a60e13 did)                                                                   |
+| interfaces match §30 Function contracts             | pass: `FilterCounts`, `filterCounts(todos: readonly { readonly completed: boolean }[]): FilterCounts`, `TodoFilterNav({ selected, counts? })` verbatim; page passes `filterCounts(todos)` from the unfiltered `todos` (page.tsx:52) |
+| Zod at every action boundary / Prisma only in lib   | n/a: no action, no query; `filter-counts.ts` imports nothing                                                                                                                                                                        |
+| no raw SQL; migration                               | n/a: none                                                                                                                                                                                                                           |
+| no secret, no suppression                           | pass (`check-suppressions` OK; diff read)                                                                                                                                                                                           |
+| features map row moved                              | pass: F28 ✅ in `docs(map)` d7110b8 alone, per `code-writer.md` step 7 ("✗ → ✅"); the §30 index row in `technical-requirements.md` stays ✗ until closing, as the plan says                                                         |
+| would a test fail if one changed line were reverted | pass for behavior (probes below); fail for the span's class (finding 1)                                                                                                                                                             |
+
+Probes (on `git clone` copy `$TMPDIR/probe`, vitest only): span rendered without `counts` → AC-30.4 fails; count put
+inside the link text → AC-30.2 fails; every span reading `counts.all` → AC-30.2 and AC-30.3 fail. Page wiring
+`filterCounts(shown)` instead of `filterCounts(todos)`: traced, not run (needs the e2e server): on `/?filter=active`
+`shown` is `[D, B]`, spans would read "(2)", "(2)", "(0)", AC-30.5 expects "(4)", "(2)", "(2)".
+
+### Findings
+
+```
+[1] KIND: spec-mismatch
+    WHERE: src/components/todo-filter-nav.tsx:42
+    DEFECT: the count span adds a colour (`text-zinc-500`) that none of the existing nav classes carry, which §30 Out of scope excludes ("colour or badge styling beyond the existing nav classes").
+    TRIGGER: render `<TodoFilterNav selected="all" counts={{ all: 4, active: 2, completed: 2 }} />` in light mode.
+    WRONG BEHAVIOUR: each "(n)" is painted zinc-500, a fourth colour next to the links' zinc-600 / zinc-900 (the nav's existing classes are `flex gap-3 text-sm` on the nav and `text-zinc-600 … dark:text-zinc-400 …` on the links); §30 specifies a plain `<span>` reading `(n)` and puts any new colour out of scope. No test pins the class, so removing or changing it is invisible to the suite.
+    CONFIDENCE: confirmed (read the line; `grep -n text-zinc-500 src/components/todo-filter-nav.tsx` → only line 42 in that file)
+```
+
+Fix for code-writer (one line, no test change): drop the `className`, or reuse only existing nav classes (e.g. the
+links' `text-zinc-600 dark:text-zinc-400`). If the lead wants the muted colour, that is a §30 edit (§8), not code.
+
+Not findings (raised by dev-lead, checked): the `docs/metrics.md` row inside the feat commit is code-writer's step 5-6
+and precedent (B5.6, B6.1); its green-sha cell reads `feat B6.2` where B5.6 used `this PR` (paperwork, fixed at
+closing). The F28 ✅ in `docs(map)` follows `code-writer.md` step 7; the plan's "stays ✗" names the §30 index row,
+which is still ✗.
+
+Verdict: back to code-writer
+
+Riskiest unfalsified: REQ-30.4 "created" has no criterion (spec gap carried from the plan review), so a create path
+that skipped revalidation of the nav would pass every §30 test; and the page-wiring revert was traced, not run in e2e.
