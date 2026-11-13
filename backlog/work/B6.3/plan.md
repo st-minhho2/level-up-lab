@@ -40,10 +40,14 @@ export function TodoDueDate({
 ## Verification
 
 Baseline: `pnpm test` 241 passed (39 files), e2e 52. Red (`test(todos): B6.3 … (red)`): `scripts/verify-red.sh B6.3`
-exit 0; AC-31.1 fails on the skeleton's `NotImplementedError`, AC-31.2–31.5 on assertions (no `Due today` text),
-never an import; `pnpm test:e2e e2e/31-due-today.spec.ts e2e/17-overdue.spec.ts` → AC-31.6 and AC-17.7 fail on row
-text, recorded in the body. Green: `pnpm lint && pnpm typecheck` clean · `pnpm test` 241 → 241 + N passed (N = the
-red commit's new tests, ≥ 5: one per AC-31.1–31.5), all AC-15.n, AC-17.n, AC-28.n green · `pnpm test:e2e` 52 → 53
+exit 0. Exactly 5 new `it`s, one per AC, each holding a case that is red on today's code, so none passes at the red
+commit (`verify-red.sh:16`): `todo-due-today.test.ts` 1 (AC-31.1: the six cases and the label in one `it`, red on
+the skeleton's `NotImplementedError`, never on an import, whatever the card's older Test-line wording);
+`todo-due-date-today.test.tsx` 4 (AC-31.2 cases a–d in one `it`, red on (a); AC-31.3 one `it`, red after the
+unchecked render; AC-31.4 one `it`, red after the effects; AC-31.5 one `it`, red after the re-render with
+`2026-11-01`); no standalone label or absence-only `it`. `pnpm test:e2e e2e/31-due-today.spec.ts e2e/17-overdue.spec.ts`
+→ AC-31.6 and AC-17.7 fail on row text, recorded in the body. Green: `pnpm lint && pnpm typecheck` clean ·
+`pnpm test` 241 → 246 passed (39 → 41 files), all AC-15.n, AC-17.n, AC-28.n green · `pnpm test:e2e` 52 → 53
 passed, `e2e/15-due-date.spec.ts`, `e2e/17-overdue.spec.ts`, `e2e/23-overdue-count.spec.ts` green ·
 `pnpm test:mutation` ≥ 70 with `src/lib/todo-due-today.ts` in scope (AC-31.1 kills `!completed`, `!== undefined`,
 `===` mutants) · `pnpm build` ok · `scripts/ci/check-features-map.sh` and `scripts/ci/check-plan-scope.sh` OK.
@@ -58,4 +62,7 @@ passed, `e2e/15-due-date.spec.ts`, `e2e/17-overdue.spec.ts`, `e2e/23-overdue-cou
 | 4    | code-writer                       | F29 row ✅                                    | `docs(map): F29 … [B6.3]`      |
 | 5    | reviewer (diff)                   | `review.md` diff section                      | `docs(backlog): B6.3 review …` |
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Costs the lead takes: an F15 e2e (`e2e/17-overdue.spec.ts`) changes in the red commit (extended, never loosened);
+`src/components/CLAUDE.md` still names §15 and §17 as the only idle additions (D-33 keeps guides out of card plans).
+
+Plan review: pending (round 1: 1 reason, exact test count and split, applied) · Plan approved by: · Rounds: 1
