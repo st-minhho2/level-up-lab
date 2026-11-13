@@ -83,4 +83,4 @@ against an append → clean merge, guard exits 1 naming the row · T8 `.gitattri
 
 Not in scope: `spec/technical-requirements.md`, `backlog/README.md`, `.claude/` (Loop 9 guard run), a CI job for the smoke.
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: · Rounds: 1
