@@ -119,3 +119,45 @@ Verdict: ready for PR
 Riskiest unfalsified: AC-31.6's new oracle counts only main-frame `isNavigationRequest()` requests; a toggle that
 re-renders the whole RSC tree through a soft navigation (no document load) would pass it, which is what §31's
 "no page reload" allows, but no test pins that the row keeps its client state across the toggle.
+
+## Diff review (round 2)
+
+Scope: merge 3e7d355 (origin/main 3239f19 into 73316bc) only. Run by the reviewer at 3e7d355, 2026-11-13.
+
+### Command results
+
+| Command                                                                                     | Last line                                                                                    |
+| ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                                                                 | `All matched files use Prettier code style!`                                                 |
+| `pnpm typecheck`                                                                            | `tsc --noEmit`, exit 0                                                                       |
+| `pnpm test`                                                                                 | `Tests  265 passed (265)`                                                                    |
+| `pnpm test:e2e`                                                                             | `54 passed (2.6m)` (the logged `e2e: insert rejected` is a fault-injection test, not a fail) |
+| `pnpm test:mutation`                                                                        | `Final mutation score of 92.57 is greater than or equal to break threshold 70`               |
+| `scripts/ci/check-suppressions.sh`                                                          | `OK: no new suppressions`                                                                    |
+| `scripts/ci/check-config-change.sh`                                                         | `OK: no protected config changed`                                                            |
+| `scripts/ci/check-feat-commits.sh`                                                          | `OK: no feat commit touches tests`                                                           |
+| `scripts/ci/check-ac-coverage.sh`                                                           | `OK: every criterion of a shipped section has a test`                                        |
+| `scripts/ci/check-spec-sections.sh`                                                         | `OK: sections cited: 1 … 29 31`                                                              |
+| `scripts/ci/check-features-map.sh`                                                          | `OK`                                                                                         |
+| `scripts/verify-red.sh B6.3`                                                                | `RESULT: red for the right reason`                                                           |
+| `git diff --stat origin/main...HEAD`                                                        | `17 files changed, 947 insertions(+), 9 deletions(-)` (local `main` 278ee80 is stale)        |
+| `git log --first-parent --merges --remerge-diff --format= 73316bc..HEAD -- '*.test.*' e2e/` | empty (0 lines)                                                                              |
+
+### Checklist
+
+| Check                                                   | pass / fail: reason                                                                                                                                                                                                                                                                                   |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| conflict resolution in `spec/technical-requirements.md` | pass: `--remerge-diff` shows the only conflict; both rows kept, §29 (✅, from main) then §31 (✗, this card), in section order; no other line touched. ✗ for §31 is right: the index flips in the closing lane (`backlog/CLAUDE.md` line 61), as §29 did in d9b93f2                                    |
+| card's own diff unchanged by the merge                  | pass: `git diff origin/main HEAD -- src e2e spec/contracts` is byte-identical (`cmp`) to `git diff 278ee80 73316bc` for the same paths, so pass 1's line-level review and probes still hold                                                                                                           |
+| B6.1 todo-form changes vs this card's files             | pass: B6.1 touches `todo-form.tsx` (onKeyDown, `isSearchEscape`), its test, `e2e/29-escape-new-todo.spec.ts`; none imports `todo-due-date`/`todo-due-today`, and `e2e/31-due-today.spec.ts` drives only row-level controls (Edit due date, checkbox); disjoint files, both e2e files green in one run |
+| no test weakened after the red commit                   | pass: no non-merge test commit after 2ee958c; merge remerge-diff on tests empty                                                                                                                                                                                                                       |
+| features map                                            | pass: F29 §31 and F27 §29 rows both present, check-features-map OK                                                                                                                                                                                                                                    |
+
+### Findings
+
+No blocking finding.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: unchanged from round 1 (AC-31.6's main-frame navigation oracle does not pin row client state
+across a toggle); the merge adds no new risk to this card's files.
