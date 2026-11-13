@@ -1,7 +1,8 @@
 # Features map
 
 Verified against `main` at the commit named in the last row. `F<n>` ids are permanent. Every `src/` change that adds,
-moves or removes a feature updates its row in the same commit (`docs(map): F<n> … [B<e>.<n>]`);
+moves or removes a feature updates its row in code-writer's own commit right after `feat`
+(`docs(map): F<n> … [B<e>.<n>]`);
 `scripts/ci/check-features-map.sh` resolves every path and section cited here.
 
 | F   | §   | Feature                           | Files                                                                                                                                                                                   | Tests                                                                                                                                                                                                                        | Status |
