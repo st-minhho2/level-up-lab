@@ -43,23 +43,25 @@ export function TodoFilterNav({
 
 ## Verification
 
-Baseline: `pnpm test` 241 passed (39 files), e2e 52 tests (22 files). Red (`test(todos): B6.2 … (red)`):
-`scripts/verify-red.sh B6.2` exit 0; AC-30.1 fails on the skeleton's `NotImplementedError`, AC-30.2/30.3 on the span
-assertions (no span rendered), never an import; AC-30.4 green on the skeleton (it pins REQ-30.6) and is named as such
-in the red commit body; `pnpm test:e2e e2e/30-filter-counts.spec.ts` → AC-30.5–30.7 fail on the span locators. Green:
-`pnpm lint && pnpm typecheck` clean · `pnpm test` 241 → 245 passed (1 unit + 3 component; a different count is stated
-in the red commit), AC-12.n green · `pnpm test:e2e` 52 → 55 passed, `e2e/12-filter`, `16-search`, `21-clear-search`,
+Baseline: `pnpm test` 241 passed (39 files), e2e 52 tests (22 files, counted). Pin (`test(todos): B6.2 pin AC-30.4 …`,
+no `(red)`): AC-30.4 alone in `todo-filter-nav-counts.test.tsx`, green on the skeleton (REQ-30.6 holds today),
+241 → 242 passed. Red (`test(todos): B6.2 … (red)`): `scripts/verify-red.sh B6.2` exit 0 (zero new tests green);
+AC-30.1 fails on the skeleton's `NotImplementedError`, AC-30.2/30.3 on the span assertions (no span rendered), never an
+import; `pnpm test:e2e e2e/30-filter-counts.spec.ts` → AC-30.5–30.7 fail on the span locators. Green:
+`pnpm lint && pnpm typecheck` clean · `pnpm test` 242 → 245 passed (red adds 1 unit + 2 component; a different count is
+stated in the red commit), AC-12.n green · `pnpm test:e2e` 52 → 55 passed, `e2e/12-filter`, `16-search`, `21-clear-search`,
 `25-search-shortcut` green untouched · `pnpm test:mutation` ≥ 70 (`filterCounts` predicate, `all`, empty list killed by
 AC-30.1) · `pnpm build` ok · `scripts/ci/check-plan-scope.sh` OK.
 
 ## Work breakdown
 
-| Step | Role / skill                | Produces                                             | Commit                         |
-| ---- | --------------------------- | ---------------------------------------------------- | ------------------------------ |
-| 1    | skeleton: new-feature-slice | `filter-counts.ts` stub, nav's ignored `counts` prop | `chore(todos): B6.2 skeleton`  |
-| 2    | test-writer                 | the three test files, red                            | `test(todos): B6.2 … (red)`    |
-| 3    | code-writer                 | counting, spans, page wiring                         | `feat(todos): B6.2 …`          |
-| 4    | code-writer                 | F28 row                                              | `docs(map): F28 … [B6.2]`      |
-| 5    | reviewer (diff)             | `review.md` diff section                             | `docs(backlog): B6.2 review …` |
+| Step | Role / skill                | Produces                                             | Commit                            |
+| ---- | --------------------------- | ---------------------------------------------------- | --------------------------------- |
+| 1    | skeleton: new-feature-slice | `filter-counts.ts` stub, nav's ignored `counts` prop | `chore(todos): B6.2 skeleton`     |
+| 2    | test-writer                 | AC-30.4 in `todo-filter-nav-counts.test.tsx`, green  | `test(todos): B6.2 pin AC-30.4 …` |
+| 3    | test-writer                 | AC-30.1–30.3, AC-30.5–30.7, red                      | `test(todos): B6.2 … (red)`       |
+| 4    | code-writer                 | counting, spans, page wiring                         | `feat(todos): B6.2 …`             |
+| 5    | code-writer                 | F28 row                                              | `docs(map): F28 … [B6.2]`         |
+| 6    | reviewer (diff)             | `review.md` diff section                             | `docs(backlog): B6.2 review …`    |
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: pending (round 1: 1 reason, AC-30.4 pinned before the red commit) · Plan approved by: · Rounds: 1
