@@ -257,3 +257,52 @@ Verdict: ready for PR
 
 Riskiest unfalsified: unchanged from round 2: REQ-30.4 "created" has no criterion, so a create path (now including
 B6.1's Escape-cleared form) that left the counts stale would pass every §30 test.
+
+## Diff review (round 4): merge 9337123 (origin/main 7606f07, B6.3 §31)
+
+Scope: the merge resolution, B6.3 × B6.2 interaction, and the card's tests after the merge.
+`git show --remerge-diff 9337123`: the only conflict was `spec/technical-requirements.md`. The resolution drops the three
+markers and keeps both rows, §30 (`28-filter-counts.md`, ✗) then §31 (`29-due-today.md`, ✗), and each row matches
+its side. `git diff 65c165e 9337123` lists only B6.3's 17 files. `git diff 7606f07 9337123` on B6.3's code and e2e files
+(`todo-due-date.tsx`, `todo-due-today.ts`, `e2e/17`, `e2e/31`) is 0 lines, so the merge carried B6.3 in unchanged.
+`git diff 65c165e 9337123 -- src/app src/actions src/lib/todos.ts` is 0 lines, so B6.2's code is unchanged.
+
+### Command results (last line each, run by the reviewer on 9337123)
+
+| Command                              | Result                                                                         |
+| ------------------------------------ | ------------------------------------------------------------------------------ |
+| `pnpm lint`                          | `All matched files use Prettier code style!` (rc 0)                            |
+| `pnpm typecheck`                     | rc 0                                                                           |
+| `pnpm test`                          | `Tests  269 passed (269)` (43 files; +5 tests and +2 files from B6.3)          |
+| `pnpm test:e2e`                      | `57 passed (1.3m)`                                                             |
+| `pnpm test:mutation`                 | `Final mutation score of 92.63 is greater than or equal to break threshold 70` |
+| `scripts/ci/check-suppressions.sh`   | `OK: no new suppressions`                                                      |
+| `scripts/ci/check-config-change.sh`  | `OK: no protected config changed`                                              |
+| `scripts/ci/check-feat-commits.sh`   | `OK: no feat commit touches tests`                                             |
+| `scripts/ci/check-ac-coverage.sh`    | `OK: every criterion of a shipped section has a test`                          |
+| `scripts/ci/check-spec-sections.sh`  | `OK: sections cited: 1 … 29 30 31`                                             |
+| `scripts/ci/check-features-map.sh`   | `OK`                                                                           |
+| `scripts/ci/check-plan-scope.sh`     | `OK: feat/B6.2-agent stays inside the approved plan of B6.2 (D-27 approval)`   |
+| `scripts/verify-red.sh B6.2`         | `RESULT: red for the right reason`                                             |
+| `git diff --stat origin/main...HEAD` | `17 files changed, 945 insertions(+), 13 deletions(-)`                         |
+
+### Checklist
+
+| Check                                 | Result                                                                                                                                                                                                                                                                                                                                    |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| conflict resolution correct           | pass: both index rows kept in section order, each status as on its own side, no marker left                                                                                                                                                                                                                                               |
+| no test weakened after the red commit | pass: `git log --first-parent --no-merges dc761e0..HEAD -- '*.test.*' e2e/` empty; `git show --remerge-diff 9337123 -- '*.test.*' e2e/` 0 lines                                                                                                                                                                                           |
+| card diff unchanged since round 3     | pass: same 17 files as round 3; the src/app, src/actions and nav/count files are identical to 65c165e                                                                                                                                                                                                                                     |
+| every changed file in `plan.md`       | pass: `check-plan-scope` OK                                                                                                                                                                                                                                                                                                               |
+| B6.3 × B6.2 interaction               | pass: no shared file (B6.3 changes `todo-due-date.tsx` and `todo-due-today.ts`; B6.2 changes the nav, `page.tsx` and `filter-counts.ts`). §31 changes only how a row shows, not which rows a filter lists, so the counts are unaffected. e2e/30 and e2e/31 each run `deleteMany` in `beforeEach` with `workers: 1`, so they share no rows |
+| features map / metrics / card file    | pass: F28 and F29 rows both present in order, metrics rows for B6.2 and B6.3 both present, `E6-todos-cues.md` auto-merged with no edit to B6.2's entry                                                                                                                                                                                    |
+| mutation on the changed lib files     | pass: `filter-counts.ts` 100 (unchanged); `todo-due-today.ts` 90.91 is B6.3's own score                                                                                                                                                                                                                                                   |
+
+### Findings
+
+None.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: unchanged from round 2. REQ-30.4 "created" has no criterion, so a create path that left the
+counts stale would pass every §30 test.
