@@ -54,4 +54,4 @@ AC-18.3 and AC-18.6 tests stay green · `pnpm test:e2e` 52 → 53 passed, and `e
 | 4    | code-writer     | F27 row ✅                                                  | `docs(map): F27 Escape clears … [B6.1]` |
 | 5    | reviewer (diff) | `review.md` diff section                                    | `docs(backlog): B6.1 review …`          |
 
-Plan review: approved, round 2 (round 1: 3 reasons, pin commit, counts, `userEvent` Enter, applied 91013c5) · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 (round 1: 3 reasons, pin commit, counts, `userEvent` Enter, applied 91013c5) · Plan approved by: reviewer (D-27, tier medium, issue #261) · Rounds: 1
