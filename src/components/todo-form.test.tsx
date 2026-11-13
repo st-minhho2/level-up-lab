@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { titleCounterText } from '@/lib/title-count';
@@ -49,6 +49,24 @@ function pendingSave(): { promise: Promise<unknown>; settle: (result: unknown) =
     settle = resolve;
   });
   return { promise, settle };
+}
+
+interface KeyPress {
+  readonly key: string;
+  readonly ctrlKey?: boolean;
+  readonly metaKey?: boolean;
+  readonly altKey?: boolean;
+  readonly shiftKey?: boolean;
+}
+
+// §29: a native, cancelable keydown, so `key` reaches the handler as given (a legacy `Esc` stays `Esc`, which
+// `user.keyboard` would not guarantee) and no character is inserted. Returns the event's `defaultPrevented`.
+function pressKey(target: Element, press: KeyPress): boolean {
+  const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...press });
+
+  fireEvent(target, event);
+
+  return event.defaultPrevented;
 }
 
 beforeEach(() => {
@@ -340,5 +358,112 @@ describe('<TodoForm>', () => {
       expect(counterOf(secondForm).textContent).toBe('0 / 200');
     });
     expect(actions.createTodoAction).toHaveBeenCalledTimes(2);
+  });
+});
+
+// §29 Escape clears the new-todo title (B6.1).
+describe('<TodoForm> Escape clears the title (§29)', () => {
+  it.each<{ name: string; press: KeyPress }>([
+    { name: 'a', press: { key: 'a' } },
+    { name: 'ArrowLeft', press: { key: 'ArrowLeft' } },
+    { name: 'Esc', press: { key: 'Esc' } },
+    { name: 'escape', press: { key: 'escape' } },
+    { name: 'Ctrl+Escape', press: { key: 'Escape', ctrlKey: true } },
+    { name: 'Meta+Escape', press: { key: 'Escape', metaKey: true } },
+    { name: 'Alt+Escape', press: { key: 'Escape', altKey: true } },
+    { name: 'Shift+Escape', press: { key: 'Escape', shiftKey: true } },
+  ])(
+    'AC-29.3: $name in the box is not prevented, keeps Buy milk and "8 / 200", and calls createTodoAction 0 times',
+    async ({ press }) => {
+      const user = userEvent.setup();
+      render(<TodoForm />);
+      const textbox = screen.getByRole('textbox', { name: 'New todo' });
+      const form = formOf(textbox);
+      await user.type(textbox, 'Buy milk');
+
+      const prevented = pressKey(textbox, press);
+
+      expect(prevented).toBe(false);
+      expect(textbox).toHaveValue('Buy milk');
+      expect(counterOf(form).textContent).toBe('8 / 200');
+      expect(actions.createTodoAction).toHaveBeenCalledTimes(0);
+    },
+  );
+
+  it('AC-29.3: Enter in the box calls createTodoAction exactly once with the form data title Buy milk', async () => {
+    actions.createTodoAction.mockResolvedValue({ ok: true, data: todo({ title: 'Buy milk' }) });
+    const user = userEvent.setup();
+    render(<TodoForm />);
+    const textbox = screen.getByRole('textbox', { name: 'New todo' });
+    await user.type(textbox, 'Buy milk');
+
+    await user.keyboard('{Enter}');
+
+    await waitFor(() => {
+      expect(actions.createTodoAction).toHaveBeenCalledTimes(1);
+    });
+    const formData = actions.createTodoAction.mock.calls[0]?.[1] as FormData;
+    expect(formData.get('title')).toBe('Buy milk');
+  });
+
+  it.each<{ name: string; target: () => Element }>([
+    { name: 'document.body', target: () => document.body },
+    { name: 'the button "Add"', target: () => screen.getByRole('button', { name: 'Add' }) },
+    { name: 'the button "Other"', target: () => screen.getByRole('button', { name: 'Other' }) },
+    { name: '"Search todos"', target: () => screen.getByRole('textbox', { name: 'Search todos' }) },
+  ])(
+    'AC-29.4: Escape on $name is not prevented, keeps Buy milk in "New todo" and "8 / 200", and calls createTodoAction 0 times',
+    async ({ target }) => {
+      const user = userEvent.setup();
+      render(
+        <>
+          <TodoForm />
+          <input type="text" aria-label="Search todos" />
+          <button type="button">Other</button>
+        </>,
+      );
+      const textbox = screen.getByRole('textbox', { name: 'New todo' });
+      const form = formOf(textbox);
+      await user.type(textbox, 'Buy milk');
+
+      const prevented = pressKey(target(), { key: 'Escape' });
+
+      expect(prevented).toBe(false);
+      expect(textbox).toHaveValue('Buy milk');
+      expect(counterOf(form).textContent).toBe('8 / 200');
+      expect(actions.createTodoAction).toHaveBeenCalledTimes(0);
+    },
+  );
+
+  it('AC-29.5: Escape while the save is pending is not prevented and keeps Buy milk, "8 / 200" and "Add" disabled; after the save succeeds the box is empty, the counter "0 / 200" and createTodoAction was called once', async () => {
+    const saving = pendingSave();
+    actions.createTodoAction.mockReturnValueOnce(saving.promise);
+    const user = userEvent.setup();
+    render(<TodoForm />);
+    const textbox = screen.getByRole('textbox', { name: 'New todo' });
+    const button = screen.getByRole('button', { name: 'Add' });
+    const form = formOf(textbox);
+    await user.type(textbox, 'Buy milk');
+    await user.click(button);
+    await waitFor(() => {
+      expect(button).toBeDisabled();
+    });
+
+    const prevented = pressKey(textbox, { key: 'Escape' });
+
+    expect(prevented).toBe(false);
+    expect(textbox).toHaveValue('Buy milk');
+    expect(counterOf(form).textContent).toBe('8 / 200');
+    expect(button).toBeDisabled();
+
+    saving.settle({ ok: true, data: todo({ title: 'Buy milk' }) });
+
+    await waitFor(() => {
+      expect(textbox).toHaveValue('');
+    });
+    await waitFor(() => {
+      expect(counterOf(form).textContent).toBe('0 / 200');
+    });
+    expect(actions.createTodoAction).toHaveBeenCalledTimes(1);
   });
 });
