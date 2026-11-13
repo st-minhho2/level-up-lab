@@ -6,7 +6,7 @@ Files cards **B1.90** and **B1.91** through the "Filing a card" lane (`backlog/C
 Files:
 
 - `backlog/plan/E1-todos.md`: cards B1.90 and B1.91 (quick, no dependency).
-- `backlog/README.md`: totals (E1 56/1/32/89, total 73/1/33/107), nodes S106 and S107 (both after S101), Remaining rows 106 and 107.
+- `backlog/README.md`: totals (E1 57/1/31/89, total 74/1/32/107, after B1.89 done #255), nodes S106 and S107 (both after S101), Remaining rows 106 and 107.
 - `backlog/work/B1.90/filing-pr-body.md`: this body.
 
 `scripts/ci/check-backlog.sh` → OK.
