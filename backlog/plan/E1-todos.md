@@ -1143,3 +1143,47 @@ a review pass per card spent on table rows
   `union` is stated as measured or `[unverified]`; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.89/`
+
+### B1.90 · Nothing in CI keeps the `docs(map)` step with code-writer
+
+_tooling · no §_
+**Status: Open** — B1.85 (#252) gave the `docs(map)` commit to `code-writer` in `.claude/agents/code-writer.md` step 7,
+`.claude/agents/dev-lead.md` (template step 4, Loop 6 green gate, Loop 8) and `.claude/skills/tdd-loop/SKILL.md`
+(steps 3–4), and dropped "same commit" from `spec/CLAUDE.md`, `spec/README.md` and `spec/features-map.md`. Its test was
+a `git grep` run by hand (T1–T6 in `backlog/work/B1.85/plan.md`), not a probe: `scripts/CLAUDE.md`, which names
+`hook-smoke.sh`'s probe ranges, was held by B1.89 then. `scripts/hook-smoke.sh` has no probe naming `docs(map)`
+(`grep -c 'docs(map)' scripts/hook-smoke.sh` → 0), so a prompt edit that hands the step back to `dev-lead`, or a gate
+that asks for `docs(map)` on a card without a map row (B1.85 review pass 1, finding 1), passes CI
+
+- **Spec:** none — tooling (role prompts, `/tdd-loop`); no `src/` change, no section
+- **Test:** `scripts/hook-smoke.sh` section "role prompts: the `docs(map)` commit is code-writer's (B1.85)" with
+  `grep -qF` probes on the prompts as merged in #252 — red because: the section does not exist (red on a copy where
+  one B1.85 line is reverted, e.g. `tdd-loop/SKILL.md` without "when the plan's Files hold")
+- **Acceptance:** probes fail when `dev-lead.md`'s template step 4 or green gate no longer names `code-writer` for
+  `docs(map)`, when `code-writer.md` loses its own-commit step 7, when either gate loses the "plan's Files hold
+  `spec/features-map.md`" condition, or when "same commit" comes back in `code-writer.md` or the three `spec/` files;
+  `scripts/CLAUDE.md`'s `hook-smoke.sh` row names the new range; every existing probe keeps its verdict
+  (726 OK today); the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.90/`
+
+### B1.91 · The closing lane still flips the feature's map row, which the card's own `docs(map)` commit already moved
+
+_tooling · no §_
+**Status: Open** — `backlog/CLAUDE.md:61` (Closing a card, step 3) says "Flip the feature's status in
+`spec/features-map.md` and the section's status in `spec/technical-requirements.md`". The map row moves on the card's
+branch, in code-writer's `docs(map)` commit before the review (`backlog/CLAUDE.md:33`, B1.85), and no closing commit
+from B5.1 on has touched the map (`git show --stat` of B5.1–B5.6, B1.82–B1.84, B1.86 and B1.88 done: 0 lines naming
+`spec/features-map.md`). A closing session that follows step 3 literally edits a row that is already ✅, or, as the
+dev-lead role, is refused by its path guard (the same refusal B1.85 removed from the build loop). Found in B1.85's
+diff review (pass 1, question 1)
+
+- **Spec:** none — tooling (the closing lane in `backlog/CLAUDE.md`); no `src/` change, no section
+- **Test:** `grep -n 'features-map' backlog/CLAUDE.md` shows the closing lane checking (not flipping) the row that the
+  card's `docs(map)` commit moved — red because: line 61 tells the closing commit to flip it
+- **Acceptance:** "Closing a card" step 3 keeps the `spec/technical-requirements.md` section flip and, for the map,
+  asks only that the row the card's `docs(map)` commit moved reads ✅ (or `◐` for a Partial card), with no edit to
+  `spec/features-map.md` in the closing commit; `.claude/docs/git-workflow.md` step 6 and `dev-lead.md` Loop 9 agree;
+  `scripts/pr-step.sh`'s closing-lane rules unchanged unless they name the map (checked, stated)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.91/`
