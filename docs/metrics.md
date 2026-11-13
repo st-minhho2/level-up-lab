@@ -128,7 +128,7 @@ as in batch 3. CFR is the 14-day mechanical bound; re-measure on 2026-11-16 for 
 | B1.69 | — (tooling) | 0               | n/a       | 93.40 (unchanged, no src/ change) | 0              | 738a592: R17 FAIL, host S11 FAIL                     | 6684099          |
 | B1.74 | — (tooling) | 0               | n/a       | 93.40 (unchanged, no src/ change) | 0              | 10aa7db: FR1–FR8 FAIL; 324fcc7: FR9 FAIL             | e6230d0, 0b6a49d |
 | B1.76 | — (tooling) | 0               | n/a       | 93.40 (unchanged, no src/ change) | 0              | 894db58: host S12 FAIL (11 of 12)                    | 79b22c5          |
-| B6.3  | §31         | 6               | 6 (100 %) | 92.57 (todo-due-today 90.91)      | 0              | c593dd6, 2ee958c                                     | feat B6.3        |
+| B6.3  | §31         | 6               | 6 (100 %) | 92.57 (todo-due-today 90.91)      | 0              | c593dd6, 2ee958c                                     | 7606f07          |
 | B1.78 | — (tooling) | 0               | n/a       | 93.40 (unchanged, no src/ change) | 0              | d09fe9c: 22 FAIL (HG1–HG13, role rows)               | 92425b2          |
 | B5.2  | §24         | 6               | 6 (100 %) | 93.40 (lib, actions unchanged)    | 0              | e21c12a (pin b918076)                                | 6562b3f          |
 | B5.1  | §23         | 7               | 7 (100 %) | 93.52 (overdue-count.ts 100)      | 0              | e4f9548                                              | a03a9ea          |

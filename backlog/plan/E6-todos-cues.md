@@ -40,8 +40,7 @@ must open a filter to learn whether it lists anything
 ### B6.3 · An open todo due today says so
 
 _F29 · section 31_
-**Status: Open** — §17 marks only overdue todos and lists "a due-soon highlight" under Out of scope
-(`spec/contracts/15-overdue.md:66`): a todo due today looks like one due next month
+**Status: Done** — 7606f07 (#265), 6 AC-31.n criteria green (unit 241 → 246: AC-31.1 lib, AC-31.2–31.5 component, red proven by verify-red.sh; e2e 52 → 53, AC-31.6; e2e/17-overdue.spec.ts extended for the new text, no check loosened), mutation 92.57 (todo-due-today.ts 90.91); unattended and no-rework 1/1 (D-29), one runner run
 
 - **Acceptance:** an open todo whose due day is today (§17's day rule, the browser's day) shows a `Due today` marker
   after its date; a completed or overdue todo does not; lifts the due-today case from §17's Out of scope in its own

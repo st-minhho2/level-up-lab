@@ -35,7 +35,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §28 | [contracts/26-escape-due-date.md](contracts/26-escape-due-date.md)     | Todos: Escape closes the due-date editor without saving                | ✅     |
 | §29 | [contracts/27-escape-new-todo.md](contracts/27-escape-new-todo.md)     | Todos: Escape clears the new-todo title                                | ✅     |
 | §30 | [contracts/28-filter-counts.md](contracts/28-filter-counts.md)         | Todos: show how many todos each filter lists                           | ✗      |
-| §31 | [contracts/29-due-today.md](contracts/29-due-today.md)                 | Todos: say "Due today" on an open todo due today                       | ✗      |
+| §31 | [contracts/29-due-today.md](contracts/29-due-today.md)                 | Todos: say "Due today" on an open todo due today                       | ✅     |
 
 Reading order: §1 → §2 → the section your backlog card names → [features-map.md](features-map.md).
 
