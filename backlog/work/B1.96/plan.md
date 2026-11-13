@@ -21,7 +21,7 @@ Costs, for the lead to accept:
   no guard after a clean merge, which is B1.92's gap. This plan amends B1.92's card so that its post-merge list holds
   this guard too (review r1).
 - **Rows land in merge order, not § order** (review r1, measured): a clean merge left the index reading
-  `§31, §34, §32, §33`. D-33's batch 2, merged in any order other than ascending, leaves the index out of order on
+  sections 31, 34, 32, 33. D-33's batch 2, merged in any order other than ascending, leaves the index out of order on
   main, as B1.89 already did to the map (`spec/features-map.md:35-38` reads `F26, F28, F29, F27`). Nothing reads row
   order: each row carries its own § key and link, and the reading order line names §1 and §2. No guard is added for
   it, because an order check would turn every out-of-order merge into a CI red on the next PR, which is the round
@@ -55,14 +55,14 @@ New smoke probes, reusing `merge_sides`, `put_after`, `set_last_cell`, `kept_onc
 A side that adds a § also adds its contract, as a card does. `check-spec-sections.sh:8` fails on an index § that has
 no `# §n` heading (review r1, probed). So a new helper `add_section <n>` does three things:
 
-- writes `spec/contracts/9<n>-smoke.md` with `# §<n> Smoke`;
+- writes `spec/contracts/smoke-<n>.md` with `# §<n> Smoke`;
 - stages it with `"${G[@]}" add`, because `merge_sides` commits with `commit -qam`, which skips an untracked file;
-- appends `| §<n> | [contracts/9<n>-smoke.md](…) | Smoke | ✗ |` after the last index row.
+- appends `| §<n> | [contracts/smoke-<n>.md](…) | Smoke | ✗ |` after the last index row.
 
 Each side writes its own contract path, so the contract files merge without union.
 
-- **T10**: `add_section 901` on one side and `add_section 902` on the other → a clean merge, §901 and §902 each kept
-  once, the guard OK.
+- **T10**: `add_section 901` on one side and `add_section 902` on the other → a clean merge, the rows of sections 901
+  and 902 each kept once, the guard OK.
 - **T11** (Loop 9's direction): first a commit on main sets the last index row's status cell to ✗, as at filing. The
   key is read from the tree (`LAST_S`), not fixed. Side a (the card) runs `add_section 903`; side b (the sibling's
   closing) sets that row's cell from ✗ to ✅, a real flip (review r1: today every row is ✅). The guard must fail, and
@@ -77,7 +77,11 @@ Run with `/bin/bash` (3.2) at each step and in review. The smoke joins no CI job
   git's default merge and the guard has no duplicate check". Expected: T9 and T10 fail, since T10 conflicts. T11 and
   T12 also conflict, so they fail too: "4 of 12 probes FAILED". T1–T8 stay ok.
 - **Green**: `chore(scripts): B1.96 section index merges by union, duplicate § named` → "12 probes OK".
-  - `check-spec-sections.sh` OK on the tree (no § has two rows today).
+  - `check-spec-sections.sh` OK on the tree: no § has two rows today. No `backlog/work/B1.96/*` file writes the section
+    sign before a number that has no contract heading; such numbers are written "section N" (review r2). This is
+    checked before each commit and after `pr-body.md` is written. The smoke copies the tracked tree, so a stray
+    citation would also fail T10.
+  - Every `scripts/ci/check-*.sh` OK before each push, not a subset.
   - `hook-smoke.sh` and `tier-smoke.sh` OK.
   - `check-plan-scope.sh`, `pnpm lint && pnpm typecheck` clean.
   - CI green.
