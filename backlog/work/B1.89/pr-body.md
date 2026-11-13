@@ -3,8 +3,16 @@
 B1.89 — Parallel runner PRs conflict on the rows they append to the shared tables (tooling, no spec section)
 
 - spec: none — tooling (the headless runner's merge step, dev-lead Loop 9); no `src/` change, no section
-- test: `scripts/table-merge-smoke.sh` T1–T9 (new). Red: pending. Green: pending.
-- acceptance: pending
+- test: `scripts/table-merge-smoke.sh` T1–T9 (new). Red `0a89057` (no `(red)` marker: smoke only, as B1.82/B1.88):
+  "9 of 9 probes FAILED" (T1–T7 conflict at `git merge`, T8 T9 absent). Green `ac3db84`: "9 probes OK". Review pass 1
+  `4cee58f`: checked `mktemp`, T3 asserts the keep rule; "9 probes OK" (bash 3.2.57; run locally, the smoke is in no
+  CI job). `hook-smoke.sh` 726 OK, `tier-smoke.sh` 9 OK, `pnpm test` 241, mutation 92.62 (no `src/` change; reviewer).
+- acceptance: 6 of 6 — `.gitattributes` gives `merge=union` to `spec/features-map.md` and `docs/metrics.md`,
+  `spec/technical-requirements.md` out of scope (closing edits its rows, T9); two branches each appending a row merge
+  cleanly with both rows kept (T1, T2); a row edited differently on both sides is named by `check-features-map.sh` /
+  `check-backlog.sh` (T3–T7: duplicate row, with which copy to keep); `.gitattributes` in `CONFIG_PROTECTED` (T8);
+  GitHub's mergeability check `[unverified]` (a bare repo with git 2.39.5 ignores union: measured); label
+  `config-change-approved`
 - risk tier: high (`.gitattributes`, `scripts/ci/`); label `config-change-approved` (D-19)
 
 ## Plan
@@ -83,17 +91,35 @@ Plan review: approved, round 2 · Plan approved by: lead, 2026-11-13 · Rounds: 
 
 ## Map delta
 
-pending
+None: tooling card, no `spec/features-map.md` row.
 
 ## Review
 
-pending
+`/review-loop`: 2 passes of 3 (`backlog/work/B1.89/review.md`). Verdict: ready for PR.
+
+| Pass | Finding                                                                                                                                     | Disposition                                                                                                                                          |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | [1] `table-merge-smoke.sh:18`: an unchecked failed `mktemp` makes `TMP` the caller's directory (bash 3.2 `cd ""`), the EXIT trap removes it | fix now, `4cee58f`: each step checked and the basename required before the trap; shims (exit 1, empty, a victim directory) → exit 2, nothing removed |
+| 1    | [2] no probe pins the keep rule in `check-features-map.sh`'s error (mutant survived)                                                        | fix now, `4cee58f`: T3 asserts it; the mutant now fails T3                                                                                           |
+| 2    | none                                                                                                                                        | —                                                                                                                                                    |
+
+Mutants of the green guards (pass 1): 4 of 5 single-line mutants fail the smoke; the 5th was finding [2], killed since.
+Plan review: 2 rounds (round 1 changes requested: which copy to keep after a union duplicate, in Loop 9's direction;
+the Prettier re-pad counts for both files; round 2 approved).
+
+Riskiest unfalsified: whether GitHub's mergeability check and "Update branch" honour `merge=union` (`[unverified]`;
+the first E6 batch measures it). Not done: `-c core.attributesFile=/dev/null` in the smoke's git calls (a per-user
+`~/.config/git/attributes` is still read; reviewer's optional note). The same unchecked-`mktemp` idiom in
+`run-smoke.sh:19` and other smokes predates this card: follow-up.
+
+`verify-red.sh B1.89` prints "no (red) commit": expected for a smoke-only red (B1.82, B1.88); CI's `--auto` form says
+"nothing to verify". `docs/metrics.md` per-card row: not added (as B1.82, B1.88).
 
 ## Evidence
 
-- AC met: pending
+- AC met: 6/6
 - tier: high
-- plan deviations: pending
+- plan deviations: none
 - trace: n/a
 
 ## Checklist
