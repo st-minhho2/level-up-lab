@@ -32,6 +32,8 @@ must open a filter to learn whether it lists anything
   commit; mounts in `src/components/todo-filter-nav.tsx`, with the counts passed from `src/app/page.tsx` (the batch's
   one `page.tsx` card); contract `spec/contracts/28-filter-counts.md` (section 30); batch 1
 - **Tier:** full · **Depends on:** ~~D-33~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Spec:** §30 — unchanged (section written from `work/B6.2/analysis.md`; contract `spec/contracts/28-filter-counts.md`; "counts on the links" lifted from §12's Out of scope, D-33)
+- **Test:** `src/lib/filter-counts.test.ts::AC-30.1: counts 4 all, 2 active, 2 completed for D, C, B, A, zeros for [] and leaves the input unchanged` — red because: `filterCounts` is not exported yet (`src/lib/filter-counts.ts` does not exist)
 - **Work:** `work/B6.2/`
 
 ### B6.3 · An open todo due today says so
