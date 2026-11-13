@@ -19,17 +19,16 @@ Files:
   evidence and the existing grep T1–T6, hook-smoke, test and review numbers.
 - `backlog/README.md`:
   - Remaining row 101 removed; `~~B1.85~~` in node 101. No other row was blocked by B1.85.
-  - Totals updated: E1 58/0/34, total 75/0/41 of 116.
-  - The blank line that split rows 111–116 from the Remaining table (left by the filing PR #259) is removed and
-    Prettier aligned the rows; the pre-commit Prettier gate refused the file otherwise. #267 makes the same fix.
+  - Totals updated: E1 58/0/34, total 76/0/40 of 116 (after #267, B6.1 done).
+  - The Remaining table's Status column narrows now that no row is `Partial`, so Prettier realigned every row.
 - `docs/mistake-log.md`: the 2026-11-06 row's "Prevented by" cell drops "[unverified until E6]" for the run that
   verified it (#264, `docs(map)` 7775102). The text stays within the column width, so the table is not realigned.
 - `backlog/work/B1.85/closing-pr-body.md`: this body (Closing step 6), replacing the partial closing's body.
 
 There is no `spec/` change: B1.85 is tooling with no section and no map row.
 
-Parallel PR: #267 (B6.1 done) also changes the README totals. Whichever merges second needs `origin/main` merged in and
-its totals recounted.
+#267 (B6.1 done) merged first and changed the same totals line; `origin/main` is merged in (the README taken from main,
+then this card's row, node and totals applied again).
 
 `check-backlog.sh` OK.
 
