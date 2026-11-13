@@ -25,8 +25,7 @@ _F27 · section 29_
 ### B6.2 · The filter links show how many todos each one lists
 
 _F28 · section 30_
-**Status: Open** — §12 lists "counts on the links" under Out of scope (`spec/contracts/10-filter.md:66`): a person
-must open a filter to learn whether it lists anything
+**Status: Done** — f2a571e (#266), 7 AC-30.n criteria green (unit 241 → 245: AC-30.4 pinned green first, AC-30.1 lib, AC-30.2–30.3 component red proven by verify-red.sh; e2e 52 → 55, AC-30.5–30.7), mutation 92.68 (filter-counts.ts 100); unattended and no-rework 1/1 (D-29), two runner runs (the second merged origin/main after #265)
 
 - **Acceptance:** each filter link reads its name and the number of todos it would list (All, Active, Completed) for
   the current todos, before any search; lifts "counts on the links" from §12's Out of scope in its own `docs(spec)`
