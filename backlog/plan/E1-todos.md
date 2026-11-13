@@ -1137,3 +1137,68 @@ _tooling · no §_
   `union` is stated as measured or `[unverified]`; the PR carries `config-change-approved` (D-19)
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.89/`
+
+### B1.92 · A union merge's duplicate row reaches CI before any guard reads it
+
+_tooling · no §_
+**Status: Open** — B1.89 (#253) gave `spec/features-map.md` and `docs/metrics.md` `merge=union`, so a row edited on
+both sides of dev-lead's Loop 9 `git merge origin/main` now merges cleanly and comes back twice
+(`scripts/table-merge-smoke.sh` T3–T7). `.claude/agents/dev-lead.md:101-102` says "Clean merge →
+`.claude/hooks/mark-reviewed.sh` again", and `mark-reviewed.sh:8-10` runs `pnpm lint`, `pnpm typecheck` and
+`pnpm test` only; `scripts/ci/check-features-map.sh` and `check-backlog.sh`, which name the duplicate and the copy to
+keep, run first in CI after `pr-step.sh push`. Each runner PR that hits it pays a CI round trip (B1.89 plan, first
+cost)
+
+- **Spec:** none — tooling (dev-lead's Loop 9); no `src/` change, no section
+- **Test:** a `scripts/hook-smoke.sh` probe that the step run after a clean Loop 9 merge (`dev-lead.md` Loop 9 or
+  `mark-reviewed.sh`) runs `scripts/ci/check-features-map.sh` and `scripts/ci/check-backlog.sh` before the push — red
+  because: neither names them today
+- **Acceptance:** after a clean `git merge origin/main`, both guards run before `pr-step.sh push`; a failure sends the
+  duplicate row to its owner as the guard's message says (a map row → `code-writer`, a metrics row → `dev-lead`), then
+  the diff review, as a conflict does; the probe pins it; existing hook-smoke probes keep their verdicts; the PR
+  carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** ~~B1.89~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.92/`
+
+### B1.93 · Eight smokes remove the caller's directory when `mktemp -d` fails
+
+_tooling · no §_
+**Status: Open** — eight smokes start with `TMP="$(cd "$(mktemp -d)" && pwd -P)"` and remove `"$TMP"` with `rm -rf`
+at exit: `scripts/agent/run-smoke.sh:19`, `scripts/agent/feature-map-smoke.sh:30`, `scripts/compose-smoke.sh:32`,
+`scripts/githooks-smoke.sh:25`, `scripts/metrics-smoke.sh:51`, `scripts/next-task-smoke.sh:24`,
+`scripts/prune-smoke.sh:47`, `scripts/worktree-smoke.sh:17` (`git grep -n 'cd "$(mktemp -d)"' -- scripts`; its ninth
+hit, `scripts/hook-smoke.sh:805`, removes only named files and empty directories at line 989). In bash 3.2
+`cd ""` succeeds where it stands, so a failed or empty `mktemp -d` makes `TMP` the caller's directory and the exit
+trap removes it: B1.89's diff review (pass 1) ran that form on a clone with a `mktemp` that exits 1, got "9 probes
+OK", and the clone was gone. `scripts/agent/run.sh` (B1.88) and `scripts/table-merge-smoke.sh:21-23` (B1.89) already
+check each step
+
+- **Spec:** none — tooling (the smokes' own setup); no `src/` change, no section
+- **Test:** a probe that runs each of the eight on a copy of the checkout with a `mktemp` shim first on `PATH` that
+  exits 1, exits 0 printing nothing, or prints an existing directory holding a file — red because: the copy (or that
+  directory) is removed
+- **Acceptance:** each of the eight creates its directory with every step checked before its exit trap exists (one
+  shared form if the plan finds one), exits 2 with a message naming `mktemp`, and removes nothing it did not create;
+  every smoke keeps its verdict on a working `mktemp`; the PR carries `config-change-approved` for `scripts/agent/`
+  (D-19)
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.93/`
+
+### B1.94 · CI never runs table-merge-smoke, whose verdict follows the host's own git attributes
+
+_tooling · no §_
+**Status: Open** — `scripts/table-merge-smoke.sh` (B1.89) is the only proof that `.gitattributes`,
+`check-features-map.sh` and `check-backlog.sh` keep parallel table rows mergeable, but `.github/workflows/ci.yml:55-58`
+runs `scripts/hook-smoke.sh` and no other smoke, so a change that breaks T1–T9 merges with CI green. The smoke runs git
+with `GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1` but still reads the per-user attributes file: with
+`XDG_CONFIG_HOME` holding `git/attributes` = `*.md merge=binary`, the smoke prints "FAIL T9 …
+spec/technical-requirements.md: merge: binary", "1 of 9 probes FAILED" (measured on main at f1bc7fb)
+
+- **Spec:** none — tooling (CI and the smoke's git setup); no `src/` change, no section
+- **Test:** a CI step that runs `scripts/table-merge-smoke.sh`, and the smoke run with an `XDG_CONFIG_HOME` whose
+  `git/attributes` sets `*.md merge=binary` — red because: CI has no such step, and that run fails T9
+- **Acceptance:** a CI job runs the smoke on every PR (bash 5 there; still bash 3.2-safe); the smoke's git calls set
+  `core.attributesFile` to an empty file, so a per-user attributes file cannot change T1–T9; the scripts guide names
+  the CI step; the PR carries `config-change-approved` (D-19)
+- **Tier:** quick · **Depends on:** ~~B1.89~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.94/`
