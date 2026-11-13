@@ -202,15 +202,14 @@ at most 3 cards Doing (B1.18).
 | 109  | B1.93 | Eight smokes remove the caller's directory when `mktemp -d` fails                                         | —      | Open    | —                               | Lead  | S [estimate] |
 | 110  | B1.94 | CI never runs table-merge-smoke, whose verdict follows the host's own git attributes                      | —      | Open    | ~~B1.89~~                       | Lead  | S [estimate] |
 
-| 111 | B6.1 | Escape clears the new-todo title | — | Open | D-33 | Lead | S [estimate] |
-| 112 | B6.2 | The filter links show how many todos each one lists | — | Open | D-33 | Lead | S [estimate] |
-| 113 | B6.3 | An open todo due today says so | — | Open | D-33 | Lead | S [estimate] |
-| 114 | B6.4 | The clear-completed button says how many it will clear | — | Open | D-33 | Lead | S [estimate] |
-| 115 | B6.5 | The overdue count is announced to assistive technology | — | Open | D-33 | Lead | S [estimate] |
-| 116 | B6.6 | The remaining count is announced to assistive technology | — | Open | D-33 | Lead | S [estimate] |
+| 111 | B6.1 | Escape clears the new-todo title | — | Open | ~~D-33~~ | Lead | S [estimate] |
+| 112 | B6.2 | The filter links show how many todos each one lists | — | Open | ~~D-33~~ | Lead | S [estimate] |
+| 113 | B6.3 | An open todo due today says so | — | Open | ~~D-33~~ | Lead | S [estimate] |
+| 114 | B6.4 | The clear-completed button says how many it will clear | — | Open | ~~D-33~~ | Lead | S [estimate] |
+| 115 | B6.5 | The overdue count is announced to assistive technology | — | Open | ~~D-33~~ | Lead | S [estimate] |
+| 116 | B6.6 | The remaining count is announced to assistive technology | — | Open | ~~D-33~~ | Lead | S [estimate] |
 
 ## Waiting on human
 
-| ID   | What                                                                                                                             | Blocks    |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| D-33 | E6 batch rule: sections 29–34, contract files, mount components, one `page.tsx` card per batch (`work/B6.1/decision-request.md`) | B6.1–B6.6 |
+| ID  | What | Blocks |
+| --- | ---- | ------ |
