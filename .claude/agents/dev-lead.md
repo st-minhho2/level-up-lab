@@ -90,7 +90,8 @@ Commit `docs(backlog): <card> plan`.
    `git log --first-parent --merges --remerge-diff --format= <red>..HEAD -- '*.test.*' e2e/` empty or a conflict resolution the
    reviewer read: a merged sibling's tests are not the card's, a resolution that touches the card's tests is). A `DISPUTED` line → `/advise`.
    When the plan's Files hold `spec/features-map.md`, the gate also wants code-writer's `docs(map): F<n> … [<card>]`
-   commit: one after the card's first `feat` (`git log --format='%h %s' <feat>..HEAD`), and `git show --stat` of it
+   commit: one after the card's first `feat(<pkg>): <card> ` commit (found by card id, `git log --first-parent
+--format='%h %s' <feat>..HEAD`, since a bare `^feat(` also matches main's merged cards), and `git show --stat` of it
    names only `spec/features-map.md`. Missing → back to code-writer; you never write the map (your path guard refuses
    it, B1.85). A later code-writer dispatch with no row left to move adds no second `docs(map)`.
 7. **Review the diff.** `/review-loop` (reviewer diff mode, dispositions, ≤ 3 passes, `mark-reviewed.sh`); each

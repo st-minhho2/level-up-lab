@@ -24,8 +24,8 @@ Preconditions: `plan.md` approved, skeleton committed (`chore(<pkg>): <card> ske
 4. **Green gate, run by you**: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`;
    `git log --first-parent --no-merges --stat <red>..HEAD -- '*.test.*' e2e/` empty and
    `git log --first-parent --merges --remerge-diff --format= <red>..HEAD -- '*.test.*' e2e/` empty or read by the reviewer; `pnpm test:mutation` ≥ 70 on `src/lib` + `src/actions`;
-   code-writer's `docs(map)` commit after the card's first `feat`, naming only `spec/features-map.md` (missing → back
-   to code-writer). A `DISPUTED` line → `/advise`, then decide: a wrong test goes back to
+   when the plan's Files hold `spec/features-map.md`, code-writer's `docs(map)` commit after the card's first `feat`,
+   naming only `spec/features-map.md` (missing → back to code-writer; a plan without the map wants none). A `DISPUTED` line → `/advise`, then decide: a wrong test goes back to
    test-writer as a new `test(...)` commit, never into the feat commit.
 5. `/review-loop`.
 

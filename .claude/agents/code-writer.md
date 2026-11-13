@@ -39,8 +39,8 @@ The card, its section (`spec/contracts/<file>`: Requirements, Acceptance criteri
    get a ✗ row here; the row's status does not move yet.
 6. Commit implementation + metrics: `feat(<pkg>): <card> <what the user can now do>`. CI rejects a `feat(` commit
    that touches a test file.
-7. When the plan's Files hold `spec/features-map.md`: move the feature's row (✗ → ✅, files, tests, evidence) and
-   commit it alone, right after `feat` and before the review: `docs(map): F<n> <feature> ✗ → ✅ [<card>]`, touching
+7. When the plan's Files hold `spec/features-map.md`: add or move the feature's row (✗ → ✅, files, tests, evidence)
+   and commit it alone, right after `feat` and before the review: `docs(map): F<n> <feature> … [<card>]`, touching
    only `spec/features-map.md` (B1.85: dev-lead's path guard refuses the map, so this commit is yours). A later
    dispatch on the same card (a review-pass fix) with no row left to move makes no second `docs(map)`.
 
