@@ -14,6 +14,10 @@ Costs, for the lead to accept:
   still caught by T6, T7, T12 (in CI only after the push, B1.92's gap).
 - **The smoke now needs `node_modules`** (it runs `node_modules/.bin/prettier` as the hook does). B1.94's CI step
   must run after `pnpm install`; every CI job already does.
+- **A project path through a symlink skips the ignore** (review r1, measured): Prettier matches `.prettierignore`
+  against Node's physical cwd, so `format-after-edit.sh` with `CLAUDE_PROJECT_DIR=/var/…` (macOS link to
+  `/private/var`) still re-pads (`35 34`). Worktrees here live under `/Users`, so no session today; T6, T7, T12 stay
+  the net.
 
 No advice (tier quick, no section). Risk tier **high** (`.prettierignore` is CONFIG_PROTECTED), so the lead's
 `approve` is needed and the PR carries `config-change-approved` (D-19). `dev-lead` writes `scripts/` (as B1.89, B1.96).
@@ -44,20 +48,22 @@ Each: clean merge, both rows once, the file's guard OK, side a's diff one added 
 All with `/bin/bash` (3.2).
 
 - **Red** `test(scripts): B1.97 table-merge-smoke probes a row wider than its column` — "Red because Prettier
-  re-pads the table, so union keeps every row twice": expected "3 of 15 probes FAILED" (T13–T15), T1–T12 ok.
+  re-pads the table, so union keeps every row twice": expected "3 of 15 probes FAILED" (T13–T15), T1–T12 ok. No
+  `(red)` marker: `verify-red.sh` judges vitest commits, so it reports none here (as B1.89, B1.96).
 - **Green** `chore(scripts): B1.97 the shared tables leave Prettier` → "15 probes OK".
 - `pnpm lint && pnpm typecheck` clean; every `scripts/ci/check-*.sh` OK; `hook-smoke.sh`, `tier-smoke.sh` OK;
   `check-plan-scope.sh` OK; CI green.
 
 ## Work breakdown
 
-| Step | Role     | Produces            | Commit                                                                      |
-| ---- | -------- | ------------------- | --------------------------------------------------------------------------- |
-| 1    | dev-lead | red probes T13–T15  | `test(scripts): B1.97 table-merge-smoke probes a row wider than its column` |
-| 2    | dev-lead | ignore entries, doc | `chore(scripts): B1.97 the shared tables leave Prettier`                    |
-| 3    | reviewer | diff review         | `docs(backlog): B1.97 review pass N`                                        |
+| Step | Role     | Produces                                 | Commit                                                                      |
+| ---- | -------- | ---------------------------------------- | --------------------------------------------------------------------------- |
+| 1    | dev-lead | red probes T13–T15                       | `test(scripts): B1.97 table-merge-smoke probes a row wider than its column` |
+| 2    | dev-lead | ignore entries, doc                      | `chore(scripts): B1.97 the shared tables leave Prettier`                    |
+| 3    | reviewer | diff review                              | `docs(backlog): B1.97 review pass N`                                        |
+| 4    | dev-lead | draft PR, label `config-change-approved` | —                                                                           |
 
 Not in scope: B1.95's files (`scripts/agent/run*.sh`, `.devcontainer/runner/`), `.claude/`, a CI job for the smoke
 (B1.94), Loop 9's post-merge guards (B1.92), re-aligning or un-aligning existing rows.
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: approved, round 1 (0b447c7; its 3 notes folded in) · Plan approved by: · Rounds: 1
