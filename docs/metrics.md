@@ -132,7 +132,8 @@ as in batch 3. CFR is the 14-day mechanical bound; re-measure on 2026-11-16 for 
 | B1.78 | — (tooling) | 0               | n/a       | 93.40 (unchanged, no src/ change) | 0              | d09fe9c: 22 FAIL (HG1–HG13, role rows)               | 92425b2          |
 | B5.2  | §24         | 6               | 6 (100 %) | 93.40 (lib, actions unchanged)    | 0              | e21c12a (pin b918076)                                | 6562b3f          |
 | B5.1  | §23         | 7               | 7 (100 %) | 93.52 (overdue-count.ts 100)      | 0              | e4f9548                                              | a03a9ea          |
-| B5.3  | §25         | 6               | 6 (100 %) | 92.18 (search-shortcut.ts 82.98)  | 0              | 499c07e                                              | 9bb37ab          |     | B5.4 | §26 | 7   | 7 (100 %) | 92.31 (page-title.ts 100) | 0   | 019ecc7 | bd99f86 |
+| B5.3  | §25         | 6               | 6 (100 %) | 92.18 (search-shortcut.ts 82.98)  | 0              | 499c07e                                              | 9bb37ab          |
+| B5.4  | §26         | 7               | 7 (100 %) | 92.31 (page-title.ts 100)         | 0              | 019ecc7                                              | bd99f86          |
 | B5.5  | §27         | 6               | 6 (100 %) | 92.62 (escape-search.ts 100)      | 0              | 2f4b204 (pin dad111a)                                | 7f72998          |
 | B5.6  | §28         | 7               | 7 (100 %) | 92.62 (lib, actions unchanged)    | 0              | c4f38ea (pin b5e0219)                                | 8d61eda          |
 | B6.2  | §30         | 7               | 7 (100 %) | 92.68 (filter-counts.ts 100)      | 0              | dc761e0 (pin 3700b77)                                | f2a571e          |
