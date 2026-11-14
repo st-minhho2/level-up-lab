@@ -35,6 +35,8 @@ button: there is no confirmation step". Its Out of scope (line 71) lists "A conf
   - The e2e accepts the dialog.
   - Mounts in `src/components/delete-todo-button.tsx`; contract `spec/contracts/33-delete-confirm.md` (section 35).
   - Batch 1.
+- **Spec:** §35 — unchanged (contract `spec/contracts/33-delete-confirm.md`, written before the label under D-37; edits §19's REQ-19.1, REQ-19.5, AC-19.5–19.7 and contract, lifts "A confirmation dialog or prompt", re-points §20's proofs)
+- **Test:** `src/components/delete-todo-button.test.tsx::AC-35.1: asks window.confirm once with "Delete this todo? This cannot be undone." before calling deleteTodoAction once with ("todo-9")` — red because: `DeleteTodoButton` never calls `window.confirm`, so the confirm spy has 0 calls
 - **Tier:** full · **Depends on:** ~~D-37~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B7.1/`
 
@@ -54,6 +56,8 @@ many were changed". §32 (B6.4) did the same thing for "Clear completed".
   - Mounts in `src/components/complete-all-button.tsx`, with the count passed from `src/app/page.tsx` (the batch's one
     `page.tsx` card); contract `spec/contracts/34-complete-all-count.md` (section 36).
   - Batch 1.
+- **Spec:** §36 — unchanged (contract `spec/contracts/34-complete-all-count.md`, written before the label under D-37; edits REQ-14.4, REQ-14.5 and §14's contracts; states §14's "message showing how many were changed" does not apply)
+- **Test:** `src/lib/complete-all-label.test.ts::AC-36.1: writes "Mark all complete" for 0, "Mark all complete (1)" for 1 and "Mark all complete (12)" for 12` — red because: `completeAllLabel` does not exist yet (the skeleton's stub throws `NotImplementedError`)
 - **Tier:** full · **Depends on:** ~~D-37~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B7.2/`
 
@@ -72,6 +76,8 @@ change. `29-due-today.md:68` and `15-overdue.md:69` (§31's and §17's Out of sc
     apply: they limit their own sections and the marker. All in the card's `docs(spec)` commit (D-37).
   - Mounts in `src/components/todo-due-date.tsx`; contract `spec/contracts/35-due-date-today.md` (section 37).
   - Batch 1.
+- **Spec:** §37 — unchanged (contract `spec/contracts/35-due-date-today.md`, written before the label under D-37; edits REQ-15.6 and §15's contract; states REQ-28.7, the "a new control" lines of §17 and §31, REQ-17.8 and REQ-31.7 do not apply)
+- **Test:** `src/components/todo-due-date-today-button.test.tsx::AC-37.2: with the system time at 2026-11-01 12:00, clicking "Today" sets the field to 2026-11-01 for dueDate 2026-10-20 and for no dueDate, shows 0 alerts and makes 0 setTodoDueDateAction calls; "Update due date" then calls it once with (todo-9, 2026-11-01)` — red because: `TodoDueDate` has no button named "Today"
 - **Tier:** full · **Depends on:** ~~D-37~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B7.3/`
 
