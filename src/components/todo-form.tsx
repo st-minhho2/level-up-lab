@@ -1,7 +1,7 @@
 'use client';
 
 // §7 TodoForm; §10: after a `form` failure the box keeps the typed title; §18: the title counter under the box;
-// §29: Escape in the box empties it.
+// §29: Escape in the box empties it; §39: a near-limit warning after the counter, from the same draft.
 import {
   useActionState,
   useLayoutEffect,
@@ -12,7 +12,7 @@ import {
 } from 'react';
 import { createTodoAction } from '@/actions/todos';
 import { isSearchEscape } from '@/lib/escape-search';
-import { titleCounterText } from '@/lib/title-count';
+import { isTitleNearLimit, titleCounterText } from '@/lib/title-count';
 
 export function TodoForm(): ReactNode {
   const [state, formAction, pending] = useActionState(createTodoAction, null);
@@ -89,6 +89,11 @@ export function TodoForm(): ReactNode {
       <p id="new-todo-count" className="text-sm text-zinc-500">
         {titleCounterText(draft)}
       </p>
+      {isTitleNearLimit(draft) && (
+        <p id="new-todo-warning" className="text-sm text-amber-700 dark:text-amber-400">
+          Almost at the character limit
+        </p>
+      )}
       {error !== undefined && (
         <p id="new-todo-error" role="alert" className="text-sm text-red-600">
           {error}
