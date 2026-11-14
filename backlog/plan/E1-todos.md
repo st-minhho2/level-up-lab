@@ -1427,14 +1427,7 @@ layer. With three runs at once the runner container's load average reached 29–
 ### B1.101 · GitHub reports parallel runner PRs as conflicting on the union tables, and each needs a re-run
 
 _tooling · no §_
-**Status: Open** — B1.89 left "GitHub's own mergeability check honours `union`" `[unverified]`. Measured in E7 batch 1
-(2026-11-14): after #301 (B7.3) merged at 10:52Z, #300 (B7.2) and #302 (B7.1), both already ready, read
-`mergeStateStatus: DIRTY`, `mergeable: CONFLICTING`. A local `git merge origin/main` of each branch was clean, because
-`.gitattributes` gives `spec/features-map.md` and `docs/metrics.md` `merge=union`. GitHub's merge ignores it. Both runs
-had ended at ready, so the lead re-ran `run.sh 292` (10:55–11:01Z) and `run.sh 293` (11:02–11:11Z) to merge `main`
-in Loop 9 and push. That cost about 15 minutes of runner time, plus each re-run's wait for the previous merge.
-Every parallel batch meets this after its first merge. "Update branch" or GitHub's conflict editor would add a
-human-authored commit, which D-29's no-rework counts against the PR
+**Status: Partial** — merged 872fe7b (#315), run-smoke R21-R22 (red e21f041: 2 of 22 FAILED; green 803ef8c + review pass 1 1dae919: 22 probes OK, bash 3.2), hook-smoke 749, vitest 298, e2e 70, mutation 92.84 (no src/); `run.sh --sync <issue>` merges origin/main into a ready runner PR's branch in its worktree with the repo's attributes, guards, pushes `Agent-Run: sync`; B1.89 and B1.96 status lines carry the measured GitHub behaviour; plan review 2 rounds (round 3 approved by the lead), diff review 2 passes; pending: the `--sync` mention in scripts/CLAUDE.md's agent/run.sh row, and the time from a sibling's merge to the next runner PR being mergeable, measured in E7 batch 2
 
 - **Spec:** none — tooling (the runner, `scripts/agent/run.sh` or `dev-lead.md` Loop 9, `scripts/CLAUDE.md`); no
   `src/` change, no section
