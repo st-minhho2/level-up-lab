@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Probes T1–T9 of how card branches merge the shared tables (B1.89): two branches from one base, each one commit on a
+# Probes T1–T12 of how card branches merge the shared tables (B1.89): two branches from one base, each one commit on a
 # copy of this checkout's tree, merged as dev-lead's Loop 9 merges (`git merge`), then the CI guards on the result.
 #   scripts/table-merge-smoke.sh
 #   T1 rows appended to spec/features-map.md on both sides merge cleanly, each kept once; check-features-map.sh OK
@@ -12,7 +12,12 @@
 #   T6 a re-padded features-map table (Prettier widening a column) against an appended row: check-features-map.sh fails
 #   T7 a re-padded metrics "Per card" table against an appended row: check-backlog.sh fails
 #   T8 .gitattributes is a CONFIG_PROTECTED path (scripts/ci/lib.sh, D-19)
-#   T9 merge=union on spec/features-map.md and docs/metrics.md; spec/technical-requirements.md keeps git's default
+#   T9 merge=union on spec/features-map.md, docs/metrics.md and spec/technical-requirements.md (B1.96)
+#   T10 section rows appended to the index on both sides (each with its own contract) merge cleanly, each kept once;
+#       check-spec-sections.sh OK
+#   T11 a card's appended section row merged with main's closing flip (✗ → ✅) of the row above it:
+#       check-spec-sections.sh names that section and says to keep origin/main's copy
+#   T12 a re-padded index table against an appended section row: check-spec-sections.sh fails
 # Reads this checkout's tracked files as they are on disk, plus .gitattributes; writes only under its own mktemp -d.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
@@ -33,7 +38,7 @@ G=(env GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 git -C "$R" -c user.nam
 { "${G[@]}" init -q -b main && "${G[@]}" add -A && "${G[@]}" commit -qm base; } \
   || { echo "table-merge-smoke: could not build the base repository" >&2; exit 2; }
 
-FM=spec/features-map.md; MT=docs/metrics.md
+FM=spec/features-map.md; MT=docs/metrics.md; IX=spec/technical-requirements.md
 # put_after <file> <regex> <row>: the row goes after the last line matching the regex (the end of that table); the
 # regex and the row travel through the environment, as awk -v would turn `\|` into `|` (a regex matching every line)
 put_after() { RE="$2" ROW="$3" awk 'NR==FNR { if ($0 ~ ENVIRON["RE"]) n=FNR; next } { print } FNR==n { print ENVIRON["ROW"] }' "$R/$1" "$R/$1" > "$TMP/x" && mv "$TMP/x" "$R/$1"; }
@@ -41,7 +46,14 @@ put_after() { RE="$2" ROW="$3" awk 'NR==FNR { if ($0 ~ ENVIRON["RE"]) n=FNR; nex
 set_last_cell() { K="| $2 " T="$3" awk 'index($0, ENVIRON["K"])==1 { sub(/\|[^|]*\|$/, "| " ENVIRON["T"] " |") } { print }' "$R/$1" > "$TMP/x" && mv "$TMP/x" "$R/$1"; }
 LAST_F="$(grep -oE '^\| F[0-9]+ ' "$R/$FM" | tail -1 | tr -d '| ')"
 LAST_C="$(awk '/^## Per card/{f=1;next} /^## /{f=0} f && /^\| B[0-9]/' "$R/$MT" | tail -1 | cut -d'|' -f2 | tr -d ' ')"
+LAST_S="$(grep -oE '^\| §[0-9]+ ' "$R/$IX" | tail -1 | tr -d '| ')"
 f_row() { echo "| $1 | §1 | Smoke row $1 | \`src/lib/env.ts\` | \`src/lib/env.test.ts\` | ✅ |"; }
+# add_section <n>: a card adds its contract with the index row (check-spec-sections.sh wants a heading for every
+# section cited); the contract is a new file, staged here because merge_sides commits with `commit -am`
+add_section() {
+  printf '# §%s Smoke\n' "$1" > "$R/spec/contracts/smoke-$1.md" && "${G[@]}" add "spec/contracts/smoke-$1.md" \
+    && put_after $IX '^\| §[0-9]' "| §$1 | [contracts/smoke-$1.md](contracts/smoke-$1.md) | Smoke | ✗ |"
+}
 c_row() { echo "| $1 | — (tooling) | 0 | n/a | smoke | 0 | smoke | this PR |"; }
 TOP='Parallel delivery   | Speed   | Throughput:'
 
@@ -100,9 +112,27 @@ probe "T7 a re-padded Per card table against an appended row is caught" named "B
 MERGED=-; OUT=""; RC=-
 probe "T8 .gitattributes is CONFIG_PROTECTED" bash -c '. "$1/scripts/ci/lib.sh"; [[ .gitattributes =~ $CONFIG_PROTECTED ]]' _ "$ROOT"
 
-OUT="$("${G[@]}" check-attr merge -- $FM $MT spec/technical-requirements.md)"
-probe "T9 merge=union on features-map and metrics only" \
-  test "$(printf '%s\n' "$OUT" | sed 's/.*: //' | tr '\n' ' ')" = "union union unspecified "
+OUT="$("${G[@]}" check-attr merge -- $FM $MT $IX)"
+probe "T9 merge=union on features-map, metrics and the section index" \
+  test "$(printf '%s\n' "$OUT" | sed 's/.*: //' | tr '\n' ' ')" = "union union union "
+
+t10a() { add_section 901; }; t10b() { add_section 902; }
+merge_sides t10a t10b; guard check-spec-sections.sh
+probe "T10 index rows appended on both sides merge, each kept once" kept_once $IX '§901' '§902'
+
+# Loop 9's direction: main first holds the last row open (✗, as at filing); the card (a) appends its section, then
+# merges main (b), where a sibling's closing flipped that row to ✅. Every row is ✅ today, so the ✗ is set here.
+{ "${G[@]}" checkout -q -f main && set_last_cell $IX "$LAST_S" '✗' && "${G[@]}" commit -qam open >/dev/null; } \
+  || { echo "table-merge-smoke: could not open $LAST_S on main" >&2; exit 2; }
+t11a() { add_section 903; }; t11b() { set_last_cell $IX "$LAST_S" '✅'; }
+merge_sides t11a t11b; guard check-spec-sections.sh
+probe "T11 a card's index append merged with a sibling's closing flip names the section and which copy to keep" \
+  named "$LAST_S has 2 rows in spec/technical-requirements.md: a union merge kept both sides of an edit. Keep the copy origin/main has"
+
+t12a() { awk '/^\| (§[0-9]*|---) /{ sub(/ \|$/, "  |") } { print }' "$R/$IX" > "$TMP/x" && mv "$TMP/x" "$R/$IX"; }
+t12b() { add_section 904; }
+merge_sides t12a t12b; guard check-spec-sections.sh
+probe "T12 a re-padded index against an appended row is caught" named "§1 has 2 rows"
 
 if [[ $fails -eq 0 ]]; then echo "$oks probes OK"; exit 0; fi
 echo "$fails of $((oks + fails)) probes FAILED"; exit 1

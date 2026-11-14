@@ -1195,12 +1195,20 @@ cost)
 
 - **Spec:** none — tooling (dev-lead's Loop 9); no `src/` change, no section
 - **Test:** a `scripts/hook-smoke.sh` probe that the step run after a clean Loop 9 merge (`dev-lead.md` Loop 9 or
-  `mark-reviewed.sh`) runs `scripts/ci/check-features-map.sh` and `scripts/ci/check-backlog.sh` before the push — red
-  because: neither names them today
-- **Acceptance:** after a clean `git merge origin/main`, both guards run before `pr-step.sh push`; a failure sends the
-  duplicate row to its owner as the guard's message says (a map row → `code-writer`, a metrics row → `dev-lead`), then
-  the diff review, as a conflict does; the probe pins it; existing hook-smoke probes keep their verdicts; the PR
-  carries `config-change-approved` (D-19)
+  `mark-reviewed.sh`) runs `scripts/ci/check-features-map.sh`, `scripts/ci/check-backlog.sh` and
+  `scripts/ci/check-spec-sections.sh` (the section index's union merge, B1.96) before the push — red because: none is
+  named there today
+- **Acceptance:**
+  - After a clean `git merge origin/main`, the three guards run before `pr-step.sh push`.
+  - A failure sends the duplicate row to its owner, as the guard's message says, then to the diff review, as a
+    conflict does:
+    - a map row goes to `code-writer`;
+    - a metrics row goes to `dev-lead`;
+    - an index row's owner is named in this card's plan. No role's path guard covers
+      `spec/technical-requirements.md` today, and in E6 batch 1 `dev-lead` resolved the index conflicts through git
+      (B1.96 plan review r3).
+  - The probe pins it, and the existing hook-smoke probes keep their verdicts.
+  - The PR carries `config-change-approved` (D-19).
 - **Tier:** quick · **Depends on:** ~~B1.89~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.92/`
 
