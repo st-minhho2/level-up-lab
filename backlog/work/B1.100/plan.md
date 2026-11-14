@@ -16,10 +16,11 @@ mutate = each changed *.ts; <x>.test.ts stands for <x>.ts; src/lib/prisma.ts and
 key    = tree:src + tree: stryker.config.mjs vitest.stryker.config.mts tsconfig.json package.json pnpm-lock.yaml
          + mutate list
 reports/mutation-gate.txt has the key → repeat its line and exit code, "(reused)"; --force runs again
-else   → pnpm exec stryker run [--mutate <list>] | tee; no score line on the subset (no test reaches it, r1 #1:
-         "No tests were executed", exit 1) → the whole layer once, same call; record key, exit, line
-line   = "mutation: <score> % on <list | src/lib + src/actions[, no test reaches <list>]> (ran|reused), src <tree7>"
-exit   = Stryker's; no score line at all → "?" and exit 1, whatever Stryker exited
+else   → pnpm exec stryker run [--mutate <list>] | tee; record key, exit, line. No score line on the subset:
+         - "with 0 mutant(s)" (type-only, r1 #1) → the whole layer once, same call: "…, no mutant in <list>"
+         - mutants, "No tests were executed" (r2 #1) → no fallback: "? % on <list>, no test reaches it", exit 1
+line   = "mutation: <score> % on <list | src/lib + src/actions> (ran|reused), src <tree7>"
+exit   = Stryker's; no score line (or NaN) → "?" and exit 1, whatever Stryker exited
 ```
 
 - **The bar** is Stryker's own `break: 70` (unchanged config), read **on the changed-file subset**: the card is
@@ -34,16 +35,19 @@ exit   = Stryker's; no score line at all → "?" and exit 1, whatever Stryker ex
   so a skipping card says "mutation: CI only, no src/lib or src/actions change".
 - `dev-lead.md:55` ("mutation ≥ 70" in the plan template) stays: still true on the subset, and the file is B1.101's.
 
-Prototype (scratchpad, bash 3.2): smoke 14 ok / 0 FAIL; against a skeleton that keeps today's rule (whole layer,
-every call) 1 ok / 13 FAIL (MG11 holds on both: a config change runs again either way). Mutants M1–M13 of the
+Prototype (scratchpad, bash 3.2): smoke 15 ok / 0 FAIL; against a skeleton that keeps today's rule (whole layer,
+every call) 1 ok / 14 FAIL (MG11 holds on both: a config change runs again either way). Mutants M1–M15 of the
 script (no reuse, key without configs, no test→source, diff vs HEAD, base not merge-base, reuse exit 0, prisma kept,
-`--force` ignored, deleted kept, any path a hit, no fallback, no-score passes, tsconfig out of the key): 13/13
-killed. Real Stryker on this worktree (macOS, 1 run, load ≈ 2.6), the proto
+`--force` ignored, deleted kept, any path a hit, no fallback, no-score passes, tsconfig out of the key, fallback on
+any no-score, untested not named): 15/15 killed. r2 #1 live, on a `--shared` clone in the scratchpad: an untracked
+`src/lib/zz-untested.ts` (one function, no test) → 7 mutants, "No tests were executed", "mutation: ? % on
+src/lib/zz-untested.ts, no test reaches it (ran)", exit 1, 14 s, no fallback. Real Stryker on this worktree
+(macOS, 1 run, load ≈ 2.6), the proto
 with `--base be888ff^`: 7 mutants of `src/lib/complete-all-label.ts` in 16 s (100.00 %), the same call again
 "(reused)" in 1 s; `pnpm test:mutation` on the whole layer: 668 mutants of 28 files in 222 s (92.84 %). r1 #1
 live: an untracked type-only `src/lib/zz-types.ts` (`export type ZzProbe = string;`, deleted right after, never
-staged) → 0 mutants, "No tests were executed", then the whole layer in the same call: "mutation: 92.84 % on
-src/lib + src/actions, no test reaches src/lib/zz-types.ts (ran)", exit 0, 208 s.
+staged; r2's proto, whose line then said "no test reaches") → 0 mutants, "No tests were executed", then the whole
+layer in the same call: 92.84 %, exit 0, 208 s (r3 names it "no mutant in src/lib/zz-types.ts").
 
 **Expected saving, E7 batch 2** (today a run does ≥ 3 whole-layer runs: code-writer, green gate, reviewer):
 
@@ -58,7 +62,7 @@ unmeasured factor, so the saving per run is ≥ 11 min and plausibly 30–45 min
 B7.4/B7.6 the container load should also drop. Batch 2 measures it (Acceptance 4).
 
 **`scripts/CLAUDE.md` is out** (B1.98's branch `chore/B1.98-unattended-honest` edits it, plan at the lead's gate;
-B1.101 may): no row for the two scripts here. Usage and the probe range MG1–MG14 are documented in the two scripts' headers; the guide rows go to the next card that holds
+B1.101 may): no row for the two scripts here. Usage and the probe range MG1–MG15 are documented in the two scripts' headers; the guide rows go to the next card that holds
 `scripts/CLAUDE.md` (Waiting on you). `dev-lead.md`, `agent/run.sh`, `agent/run-smoke.sh` are B1.101's: not touched.
 
 Tier: `scripts/agent/tier.sh` → **high** (`.claude/`); interactive, so the lead's `approve` gate holds. `config-change-approved`
@@ -70,7 +74,7 @@ added at draft (card acceptance; `.claude/` is protected). Dev-lead writes `scri
 | File                                  | Change                                                                      | Why                |
 | ------------------------------------- | --------------------------------------------------------------------------- | ------------------ |
 | `scripts/mutation-gate.sh`            | new: the rule above; header = usage, rule, output                           | Acceptance 1, 2, 3 |
-| `scripts/mutation-gate-smoke.sh`      | new: MG1–MG14 on a throwaway repo with a `pnpm` shim                        | Test line          |
+| `scripts/mutation-gate-smoke.sh`      | new: MG1–MG15 on a throwaway repo with a `pnpm` shim                        | Test line          |
 | `.claude/agents/code-writer.md`       | step 4: the script, not `pnpm test:mutation` (D-13 report excepted); Report | Acceptance 1       |
 | `.claude/skills/tdd-loop/SKILL.md`    | step 4 green gate: the script (reuses code-writer's run); Report: its line  | Acceptance 1, 3    |
 | `.claude/agents/reviewer.md`          | diff-review gate run: the script (reuses unless `src/` changed); paste line | Acceptance 1       |
@@ -89,11 +93,12 @@ No env var, no config change; `stryker.config.mjs`, `package.json`, `.github/wor
 `mutation-gate-smoke.sh` is in no CI job (CI's `mutation` job runs Stryker itself): run with `/bin/bash` (3.2).
 
 - Red `test(scripts): B1.100 mutation-gate-smoke probes the local mutation rule (red)` on a skeleton commit
-  `chore(scripts): B1.100 skeleton` (today's rule): "1 ok, 13 FAIL".
-- Green `chore(scripts): B1.100 local mutation runs once, only on a src/lib or src/actions change`: "14 ok, 0 FAIL".
+  `chore(scripts): B1.100 skeleton` (today's rule): "1 ok, 14 FAIL".
+- Green `chore(scripts): B1.100 local mutation runs once, only on a src/lib or src/actions change`: "15 ok, 0 FAIL".
 - Live, this worktree: the script → CI-only line, exit 0, < 5 s; `--base be888ff^` → runs on
-  `src/lib/complete-all-label.ts` once, then "(reused)" in < 5 s; a type-only `src/lib/*.ts` probe (on a `$TMPDIR`
-  copy of the worktree) → falls back to the whole layer, exit 0.
+  `src/lib/complete-all-label.ts` once, then "(reused)" in < 5 s. On a `--shared` clone in the scratchpad (never
+  the worktree): a type-only `src/lib/*.ts` → "no mutant in …", whole layer, exit 0; an untested function → "no test
+  reaches it", exit 1.
 - `hook-smoke.sh` "749 probes OK" (RP1–RP10 still read the edited prompts) and `pnpm test` "298 passed (298)" at
   4c7d9e4, the same after; `pnpm lint && pnpm typecheck` 0; `check-plan-scope.sh`, `check-agent-frontmatter.sh` OK;
   `next-task.sh --check B1.100` no overlap; CI green (its `mutation` job unchanged).
