@@ -26,3 +26,95 @@ Costs the lead should know: none. No behavior is dropped. A user without JavaScr
 Verdict: approved
 
 Approved means the plan is ready for the gate. Because the tier is medium and the issue is `agent-ready`, the reviewer's approval stands in for the lead's under D-27.
+
+## Diff review (round 1)
+
+Scope: all (`src/lib`, `src/components`, `src/app`, `e2e`). HEAD 3d35c16, range `main...HEAD`.
+
+### Command results (run by the reviewer; the last line of each)
+
+| Command                              | Last line                                                                                                                                        |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm lint`                          | `All matched files use Prettier code style!`                                                                                                     |
+| `pnpm typecheck`                     | `> tsc --noEmit` (no error)                                                                                                                      |
+| `pnpm test`                          | `Tests  284 passed (284)` (47 files)                                                                                                             |
+| `pnpm test:e2e`                      | `67 passed (3.3m)`                                                                                                                               |
+| `pnpm test:mutation --concurrency 1` | `Final mutation score of 93.08 is greater than or equal to break threshold 70` (`complete-all-label.ts` 100.00, 6 killed, 0 survived)            |
+| `scripts/ci/check-suppressions.sh`   | `OK: no new suppressions`                                                                                                                        |
+| `scripts/ci/check-config-change.sh`  | `OK: no protected config changed`                                                                                                                |
+| `scripts/ci/check-feat-commits.sh`   | `OK: no feat commit touches tests`                                                                                                               |
+| `scripts/ci/check-ac-coverage.sh`    | `§37: ✗, no tests expected yet (6 criteria)`; §36 line: `§36: ✗, no tests expected yet (7 criteria)` (index row stays ✗ until closing, per plan) |
+| `scripts/ci/check-spec-sections.sh`  | `OK: sections cited: 1 … 36 37`                                                                                                                  |
+| `scripts/ci/check-features-map.sh`   | `OK`                                                                                                                                             |
+| `scripts/ci/check-plan-scope.sh`     | `OK: feat/B7.2-agent stays inside the approved plan of B7.2 (D-27 approval)`                                                                     |
+| `scripts/ci/check-backlog.sh`        | `OK: README matches the cards`                                                                                                                   |
+| `scripts/verify-red.sh B7.2`         | `RESULT: red for the right reason` (label 1 new failed; component 3 ran, 2 new failed, AC-36.3 counted old)                                      |
+| `git diff --stat main...HEAD`        | `12 files changed, 495 insertions(+), 5 deletions(-)`                                                                                            |
+
+How the mutation score was obtained. The plain `pnpm test:mutation` failed three times on this host, every time for
+an environmental reason, never a code one. The first run overlapped my own e2e run, which rewrote `.next/types`
+(TS6053 in the checker's dry run). The second had checker workers SIGKILLed for memory: a sibling worktree,
+`feat-b7-3-agent`, was running Stryker at the same time (`pgrep`, 7.9 GB host, 0.5 GB free). The third failed in the
+dry run on `AC-7.2` with "Hook timed out in 10000ms". The same config at `--concurrency 1` finished with 93.08
+(383 killed, 7 timeouts, 26 survived, 3 no coverage). Code-writer's 92.84 is one detected mutant lower. I put the
+gap down to timeouts that flap under load. Either way the 70 floor holds, and the new module is 100 both times.
+
+The first `verify-red.sh` run also failed, reporting "GREEN before implementation: AC-36.3" (3 new). It ran while
+Stryker was loading the host, and the base vitest run in its scratch worktree produced no report, so every test
+counted as new (verify-red.sh:118). On a clone at bfcf41d the base run lists AC-36.3, and a rerun of `verify-red.sh`
+passed. The red is proven.
+
+### Checklist
+
+| Check                                                                 | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-36.n has a test whose assertion matches its Then             | pass. 36.1: `toEqual` on the 3 exact labels. 36.2: 1 button, exact name, enabled, 0 status, 0 alert. 36.3: both renders, disabled then enabled. 36.4: 1 call, `[]` args, same node named "(2)" after resolve, 0 status/alert, no "changed/updated". 36.5: 4 addresses, `exact: true`. 36.6: every step plus navigations = 0. 36.7: plain, disabled, "No todos yet".                                                                                                                                                                             |
+| no test weakened after the red commit                                 | pass: `git log --first-parent --no-merges cbbe08c..HEAD -- '*.test.*' e2e/` is empty, and the `--merges --remerge-diff` query is empty. The pin commit bfcf41d only adds tests. §14's `complete-all-button.test.tsx` and `e2e/14-complete-all.spec.ts` are unchanged.                                                                                                                                                                                                                                                                           |
+| every changed file is in `plan.md`                                    | pass: the 7 Files rows, plus `docs/metrics.md` (paperwork, which the plan declares exempt). `check-plan-scope.sh` OK.                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| interfaces match §36 Function contracts                               | pass: `completeAllLabel(open: number): string` and `CompleteAllButton({ disabled, count }: { readonly disabled: boolean; readonly count?: number }): ReactNode` match verbatim. `page.tsx` passes `count={filterCounts(todos).active}` from the unfiltered `todos` (page.tsx:55).                                                                                                                                                                                                                                                               |
+| Zod at every action boundary / Prisma only in `src/lib` / no raw SQL  | n/a: no action, schema or query was added. `complete-all-label.ts` is pure (no Prisma, no `server-only`), so the client import is safe.                                                                                                                                                                                                                                                                                                                                                                                                         |
+| migration reversible and indexed                                      | n/a: no `prisma/` change.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| no secret, no suppression                                             | pass: `check-suppressions.sh` OK, and there is no env or key in the diff.                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| features map row moved                                                | pass: the F34 row was added in its own `docs(map)` commit and appended unaligned (B1.97). `check-features-map.sh` OK.                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| would a test fail if one changed line were reverted (probe on a copy) | pass. On a clone in `$TMPDIR` at c6a9e99, I replaced `{completeAllLabel(count ?? 0)}` with the static text. AC-36.2 and AC-36.4 failed, and the 3 §14 tests plus AC-36.3 stayed green ("2 failed, 4 passed"). Each `completeAllLabel` boundary mutant (`>= 1`→`> 1`, `>= 0`) is killed by AC-36.1, so Stryker reports 100 with 0 survivors. Reverting `count=` in `page.tsx`, or passing it from `shown`, fails AC-36.5 on `/?filter=completed` and `/?q=zzz` (traced, not run: the active count there would be 0, which gives the plain name). |
+
+### The dev-lead's three questions
+
+1. **The metrics row is in the feat commit.** This is not a deviation. `.claude/agents/code-writer.md` steps 5–6 tell
+   code-writer to fill the row and commit "implementation + metrics" as the `feat(...)` commit.
+   `check-feat-commits.sh` rejects only test files, and `check-plan-scope.sh` treats `docs/metrics.md` as paperwork.
+   The row's content is wrong, though: see finding [1].
+2. **The mutation score's provenance.** I re-measured it myself: 93.08 overall and 100 for `complete-all-label.ts`
+   at `--concurrency 1`. Plain `pnpm test:mutation` does not finish on this host while another worktree runs
+   Stryker (see above). That is environmental, not a property of this diff.
+3. **Whether AC-36.6's after-click step depends on the revalidated count.** It does. Before revalidation the button
+   is still named "Mark all complete (2)", and the locator uses `exact: true`, so
+   `completeAllButton(page, 'Mark all complete')` matches nothing until the page re-renders with
+   `count={filterCounts(todos).active}` = 0. A pending-only disabled state cannot satisfy it. A component that kept
+   the count in local state would also fail it, because the name would stay "(2)". `toBeDisabled()` then checks the
+   same re-rendered node. React commits the revalidated tree and the end of the transition together, so by then
+   `disabled` comes from the §14 prop (`!todos.some(…)` = true), not from `pending`.
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: docs/metrics.md:146
+    DEFECT: The B7.2 row's Green cell is cbbe08c, the red test commit. Every other card row records the merged feat commit (B6.4 → ca2a58d "feat(todos): B6.4 … (#278)"), and the 92.84 in the row is not what the gate reproduces.
+    TRIGGER: read the row after this branch merges: `| B7.2 | §36 | … | cbbe08c (pin bfcf41d) | cbbe08c |`
+    WRONG BEHAVIOUR: the Red and Green columns name the same commit, so the per-card table says this card went green at its red commit. Anyone reading lead time or red→green from the table gets a wrong anchor.
+    CONFIDENCE: confirmed (git log -1 on cbbe08c, ca2a58d, f2a571e, 36846c1, 7f72998)
+```
+
+This finding does not block the PR. It is paperwork outside `src/`, and dev-lead may write `docs/metrics.md`. Fix it
+in this branch's paperwork, or in the closing commit once the squash sha exists: put the feat or merge sha in the
+Green cell, and either 93.08 (reviewer, `--concurrency 1`) or a range in the Mutation cell.
+
+No blocking finding in `src/`, `e2e/` or the map.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: I traced, but did not run, the e2e revert probe for `page.tsx` (`count=` dropped, or computed
+from `shown`). AC-36.5's `/?filter=completed` and `/?q=zzz` legs are the only guard against a count that follows
+the filter or search, and I inferred their failure from the seeded data (B open, D open, C done → 0 visible open)
+rather than observing it.
