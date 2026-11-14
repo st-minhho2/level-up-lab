@@ -7,13 +7,13 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open   | Total   |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ------ | ------- |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 59     | 0       | 36     | 95      |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 59     | 0       | 38     | 97      |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0      | 5       |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3       |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4       |
 | E5 Todos keys    | [plan/E5-todos-keys.md](plan/E5-todos-keys.md)       | 6      | 0       | 0      | 6       |
 | E6 Todos cues    | [plan/E6-todos-cues.md](plan/E6-todos-cues.md)       | 6      | 0       | 0      | 6       |
-| **Total**        |                                                      | **82** | **0**   | **37** | **119** |
+| **Total**        |                                                      | **82** | **0**   | **39** | **121** |
 
 ## Execution order
 
@@ -161,6 +161,9 @@ flowchart TD
   S105 --> S118
   S119["119 · shared tables keep their padding when a row is wider<br/>B1.97"]
   S118 --> S119
+  S120["120 · unattended.sh counts a stop, relaunch or human commit as attended<br/>B1.98"]
+  S121["121 · spec-analyst repairs the section index after a union merge<br/>B1.99"]
+  S118 --> S121
 ```
 
 ## Remaining
@@ -207,6 +210,8 @@ at most 3 cards Doing (B1.18).
 | 110  | B1.94 | CI never runs table-merge-smoke, whose verdict follows the host's own git attributes                      | —      | Open   | ~~B1.89~~                       | Lead  | S [estimate] |
 | 117  | B1.95 | run.sh runs its own scripts from a clone behind origin/main and never says so                             | —      | Open   | —                               | Lead  | S [estimate] |
 | 119  | B1.97 | A row wider than its column makes Prettier re-pad the whole shared table                                  | —      | Open   | ~~B1.96~~                       | Lead  | S [estimate] |
+| 120  | B1.98 | unattended.sh counts a run the lead stopped, ruled on and relaunched as unattended                        | —      | Open   | —                               | Lead  | S [estimate] |
+| 121  | B1.99 | No role may write the section index, so a union-merge repair needs the lead                               | —      | Open   | —                               | Lead  | S [estimate] |
 
 ## Waiting on human
 
