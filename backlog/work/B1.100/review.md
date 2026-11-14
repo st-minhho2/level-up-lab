@@ -93,3 +93,80 @@ Riskiest unfalsified: that in a real run, code-writer's pre-commit run and the g
 so the gate's line says "(reused)". The PostToolUse format hook, an `eslint --fix`, or an untracked scratch file
 under `src/` would each change the key. I could not run an agent here. The batch-2 saving rests on this, and the
 plan's 30–45 min per run at load is `[unverified]`.
+
+## Plan review (round 2)
+
+Plan at c008cf1 (`docs(backlog): B1.100 plan round 2`), diffed against 50e0591. I re-read the card, D-13, spec §2
+(`01-scope-and-gates.md:23`), `stryker.config.mjs`, `vitest.stryker.config.mts`, `lefthook.yml` and the five prompt
+lines the plan edits (`code-writer.md:35-37`, `tdd-loop/SKILL.md:26`, `reviewer.md:65,97`, `review-loop/SKILL.md:45`,
+`work-next/SKILL.md:37`). I re-read the round-2 prototype (`mutation-gate.sh`, `mutation-gate-smoke.sh`, `skeleton/`).
+
+Probes (copies under `$TMPDIR/b1100r2`; the worktree was only read):
+
+- Prototype smoke under `/bin/bash` 3.2.57: green `[mutation-gate-smoke] 14 ok, 0 FAIL`; skeleton
+  `[mutation-gate-smoke] 1 ok, 13 FAIL` (only MG11 ok). Both match the plan's Verification. MG13 covers round 1's
+  reason 2 (a `CLAUDE.md`-only change prints the CI-only line, no Stryker call).
+- Real Stryker 10.1.1 on a `git clone` of this worktree (`node_modules` linked, load 3.06): one untracked
+  `src/lib/zz-untested.ts` with a function and no test (`export function zzBump(a: number): number { return a > 1 ?
+a + 1 : 0; }`), prototype `--base HEAD`. Subset: `Instrumented 1 source file(s) with 6 mutant(s)`, then
+  `No tests were executed`. Fallback: 674 mutants of 29 files. The file's own row is `zz-untested.ts | 0.00 | … 5
+NoCoverage, 1 error`. Last line `mutation: 91.75 % on src/lib + src/actions, no test reaches src/lib/zz-untested.ts
+(ran), src 2abd2a8`, exit 0, 3 min 01 s. The stamp records exit 0, so every later call reuses the pass (reason 1).
+- `scripts/next-task.sh --check B1.100` → `[next-task] B1.100: no overlap with any Doing or Review card` (exit 0).
+  `scripts/agent/tier.sh backlog/work/B1.100/plan.md` → `high`. `scripts/ci/plan-files.sh --file` → the 8 Files rows.
+
+| Check                                                                             | Result                                                                                                                                                                                          |
+| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: no section (tooling). The 8 Files rows are unchanged from round 1. Every one is in the card's Spec line or carries the mutation step or the evidence line                                 |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass (n/a): no `src/`, `prisma/` or `e2e/` change. The script's interface (`[--base <ref>] [--force]`, exit 0/1/2, one stamp file) is pasted                                                    |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass, same note as round 1: there is no `advice.md` (tier quick), and the plan still does not say "No advice (tier quick)"                                                                      |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: 5 acceptance bullets, each checkable. Acceptance 2 asks the plan to say where the bar is read. It says "on the changed-file subset", but one input reads it on the whole layer (reason 1) |
+| verification lists exact commands with expected numbers                           | pass: 14 ok / 1 ok + 13 FAIL / 749 / 298 are exact, and I reproduced the first two. The live type-only probe is named. No probe has a subset that has mutants but no test (reason 1)            |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: skeleton `chore(scripts)`, red `test(scripts) … (red)`, green `chore(scripts)`, review `docs(backlog)`; a tooling card has no map. Same as the B1.95/B1.98/B1.99 precedent                |
+| the section has a `Lead approves spec` box, ticked only by a human                | n/a: no section. `Plan approved by:` is empty and stays empty here. Tier `high` (`.claude/`), so the lead's `approve` is required. The D-19 label is planned                                    |
+| no settled D-n contradicted                                                       | pass: D-13's before/after report is now named as the exception (round 1 reason 3). Spec §2's gate (`pnpm test:mutation` ≥ 70 % before merge) is still met by CI's unchanged `mutation` job      |
+| `scripts/next-task.sh --check B1.100` says no overlap                             | pass: `[next-task] B1.100: no overlap with any Doing or Review card`                                                                                                                            |
+
+Round 1 reasons: 1 (no score on the subset) is addressed by the fallback, and the type-only case is measured; 2 (a
+`CLAUDE.md`-only change) is addressed by the `*.ts` pathspec and MG13; 3 (D-13) is addressed by the named exception.
+Round 1's costs are now stated in the plan: the subset bar with its numbers, independence, the key extended to
+`tsconfig.json`, `package.json`, `pnpm-lock.yaml`, B1.98's branch, and `dev-lead.md:55`.
+
+Verdict: changes requested
+
+1. **The fallback lets a changed file that has mutants and no node test pass at the whole layer's score. This
+   contradicts the bar the plan states.** The plan says the bar is read "on the changed-file subset: the card is held
+   to 70 % on its own code". The fallback fires on any subset that ends without a score line. That includes a file
+   whose mutants no node test reaches, not only a file with 0 mutants. Measured above: `src/lib/zz-untested.ts` has 6
+   mutants and scores 0.00 % on its own row. The gate still prints `mutation: 91.75 % on src/lib + src/actions, no test
+reaches src/lib/zz-untested.ts (ran)`, exit 0, and records it for reuse. Triggers are a new lib helper with no
+   `src/**/*.test.ts` importing it, or a lib module only `.tsx` component tests reach (`vitest.stryker.config.mts`
+   includes only `*.test.ts`). For this input the bar is CI's whole-layer read, not the subset's. The fallback is also
+   the costliest branch (674 mutants, 3 min here at load 3, versus about 2 h a run under batch 1's load per the card),
+   spent on a file that should fail at once. The same rule labels any other no-score subset "no test reaches <list>",
+   for example a crash or a failed initial test run. Fix, either:
+   (a) fall back only when the subset instrumented 0 mutants (Stryker logs `Instrumented N source file(s) with M
+mutant(s)` before the dry run). A subset with M > 0 and "No tests were executed" is then 0 % on its own code:
+   exit 1 and a line such as `mutation: 0.00 % on <list>, no test reaches it (ran)`. Any other no-score run is `?`,
+   exit 1, with no fallback. Add an MG probe whose shim prints `with 3 mutant(s)` and no score, expecting exit 1 and
+   one Stryker call. Or
+   (b) keep the fallback and state the cost in "The bar": a changed file with mutants that no node test reaches is
+   held to the whole layer (today's rule), not to 70 % on its own code. The evidence line then names it.
+
+Not blocking, for the lead:
+
+- **The plan is 114 lines.** `planning.md` asks for one screen (about 40 lines). Recent tooling plans run 85–100
+  (B1.95 97, B1.96 100, B1.99 85), so this follows local practice, but it is the longest of them.
+- **The reviewer's reuse trusts a git-ignored file that any role in the worktree can write.**
+  `reports/mutation-gate.txt` holds the key, the exit code and the line, and the gate repeats them. A stamp written
+  by hand with the current key passes the green gate and the reviewer without a Stryker run. CI's `mutation` job still
+  catches the score before merge. The plan's `--force` on doubt is the only local check. `[plausible]`: I did not test
+  whether a path hook refuses a Write to `reports/`.
+- **`NaN` counts as a score.** The prototype's regex accepts `Final mutation score of NaN`. A subset whose mutants are
+  all compile errors (no valid mutant) would print `mutation: NaN % on <list> (ran)` with Stryker's exit code.
+  `[unverified]`: not run. If it is kept, the PR evidence line would read "NaN %".
+
+Riskiest unfalsified: as in round 1, that code-writer's run and the green gate see the same `src/` tree in a real
+agent run, so the gate says "(reused)". Lefthook's pre-commit only checks (`prettier --check`, no `stage_fixed`), so it
+does not change the tree. The PostToolUse `eslint --fix` after a late edit, or an untracked scratch file under `src/`,
+would change it. I could not run an agent, and the batch-2 saving rests on this.
