@@ -773,6 +773,9 @@ states reviewer 'still write with Bash'    # RP5: probes on the $TMPDIR copy
 states dev-lead 'are commands, not edits'  # RP6: Prettier in "Committing a review"
 states dev-lead 'section index rows once'  # B1.99: Loop 9 names the union-merge repair of the section index
 states spec-analyst 'Merge repair'         # B1.99: the mode spec-analyst runs it in
+# B1.99 review pass 1: the card's own row comes from its own commits, not from HEAD^1 (a commit after the merge
+# would make HEAD^1 the merge itself, and the stale duplicates would read as the card's)
+states spec-analyst 'git log --first-parent --no-merges -p origin/main..HEAD -- spec/technical-requirements.md'
 
 echo "== check-ac-coverage.sh (B1.86): a test title counts wherever its it/test/.each call breaks lines"
 ACG="$PWD/scripts/ci/check-ac-coverage.sh"
