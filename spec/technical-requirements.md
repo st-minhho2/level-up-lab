@@ -42,6 +42,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §35 | [contracts/33-delete-confirm.md](contracts/33-delete-confirm.md)               | Todos: deleting a todo asks for confirmation first                     | ✗      |
 | §36 | [contracts/34-complete-all-count.md](contracts/34-complete-all-count.md)       | Todos: the mark-all-complete button says how many it will mark         | ✗      |
 | §37 | [contracts/35-due-date-today.md](contracts/35-due-date-today.md)               | Todos: a "Today" button fills the due-date field                       | ✗      |
+| §38 | [contracts/36-search-count.md](contracts/36-search-count.md) | Todos: the search form says how many todos match | ✗ |
 
 Reading order: §1 → §2 → the section your backlog card names → [features-map.md](features-map.md).
 
