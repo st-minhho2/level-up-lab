@@ -1321,10 +1321,9 @@ Batch 2 (B6.4–B6.6, sections 32–34) will append three rows after §31 in par
 ### B1.97 · A row wider than its column makes Prettier re-pad the whole shared table
 
 _tooling · no §_
-**Status: Open** — `spec/features-map.md`, `docs/metrics.md` and `spec/technical-requirements.md` merge with
-`merge=union` (`.gitattributes`, B1.89, B1.96), and `.prettierignore` names none of them. So `format-after-edit.sh` and
-Lefthook's `prettier --check` align each Markdown table to its widest cell. A card whose new cell is wider than its
-column rewrites every row. On 2026-11-14, E6 batch 2's B6.4 (#278) did this to two tables at once:
+**Status: Done** — b35c5d6 (#288), table-merge-smoke T1-T15 (red 729ae12: 3 of 15 FAILED; green f93572b: 15 probes OK, bash 3.2), hook-smoke 726, tier-smoke 9, vitest 280, e2e 64, mutation 92.74 (no src/ change), plan review 1 round, diff review 1 pass, 0 findings; the three union-merged tables are in .prettierignore, rows appended unaligned (scripts/CLAUDE.md names the rule)
+
+On 2026-11-14, E6 batch 2's B6.4 (#278) re-padded two tables at once:
 
 - `docs(spec)` 0495c50 changed 67 lines of `spec/technical-requirements.md` (the contract name
   `30-clear-completed-count.md` is wider than the File column);
@@ -1350,3 +1349,63 @@ branch. B1.89's plan counted 3 of 17 map appends and 2 metrics appends that re-p
   - The PR carries `config-change-approved` (D-19), since `.prettierignore` is CONFIG_PROTECTED.
 - **Tier:** quick · **Depends on:** ~~B1.96~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.97/`
+
+### B1.98 · unattended.sh counts a run the lead stopped, ruled on and relaunched as unattended
+
+_tooling · no §_
+**Status: Open** — `scripts/metrics/unattended.sh 275 276 277` prints `unattended 3/3 = 100.0 %` with `messages` 0 for
+every issue of E6 batch 2. Two of the three needed the lead before their PR was ready:
+
+- #276 (B6.5): the runner's comment at 2026-11-14T03:36:09Z says `**ended** for B6.5` with no PR: the run stopped at
+  step 1 for a ruling (REQ-23.7 "no role"). The lead recorded D-34 (#279) in a session and relaunched `run.sh 276`;
+  the second run's comment at 05:02:09Z says `**ready**`.
+- #277 (B6.6): the same `ended` stop (D-35), then a lead-session commit on the PR branch before ready: 1bb65dd
+  `docs(spec): B6.6 merge repair -- section index rows once (B1.97)`, with no `Agent-Run:` trailer, at 05:01:19Z,
+  ready at 05:21:38Z (D-36).
+
+The script counts only lead comments on the issue and PR (`unattended.sh:13–15`), so a ruling given in a session, a
+relaunch, and a human commit before ready all read as unattended. E5 counted B5.3, stopped for D-31, as not
+unattended; read the same way, E6 batch 2 is 1/3, which misses D-29's > 50 %
+
+- **Spec:** none — tooling (`scripts/metrics/unattended.sh`, its smoke, `docs/metrics.md`'s definition line); no `src/`
+  change, no section
+- **Test:** a probe in the metrics smoke (fixture timeline: a runner `ended` comment, then a later runner `ready`
+  comment; and a fixture PR with a commit lacking `Agent-Run:` before its ready) — red because: both come out `yes`
+- **Acceptance:**
+  - Inside the window (label → ready), a runner comment whose outcome is neither `ready` nor the expected high-tier
+    gate stop (D-27) makes the issue `no`, and the output names it (a new column or a reason).
+  - So does a commit on the PR's branch without the `Agent-Run:` trailer dated inside the window (the same trailer
+    rule `no-rework.sh` uses after ready).
+  - Re-run on issues 275–277, the script prints 1/3. Re-run on E5 and E6 batch 1, each verdict is stated (changed or
+    unchanged, with the reason).
+  - `docs/metrics.md`'s unattended definition names the two cases. bash 3.2, gh only, read-only as today.
+  - The PR carries `config-change-approved` (D-19).
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.98/`
+
+### B1.99 · No role may write the section index, so a union-merge repair needs the lead
+
+_tooling · no §_
+**Status: Open** — `spec-analyst`'s path guard allows `spec/contracts/*` and `backlog/*` only
+(`.claude/agents/spec-analyst.md:11`), although its own procedure (line 28) says to register a new section in
+`spec/technical-requirements.md` with status ✗. `code-writer` holds `spec/features-map.md` only; `dev-lead` holds
+`backlog/*`. On 2026-11-14 B6.6's Loop 9 merge left the index with every row twice (B1.97). `spec-analyst` was
+dispatched to repair it and refused by the guard, and the run stopped. The lead's session committed the repair
+(1bb65dd, D-36 option A), which cost the run its unattended verdict. D-36 named option B, "widen `spec-analyst`'s
+guard", as the fix for the next batch
+
+- **Spec:** none — tooling (`.claude/agents/spec-analyst.md`, `dev-lead.md` Loop 9, the hook-smoke probe); no `src/`
+  change, no section
+- **Test:** a `scripts/hook-smoke.sh` probe that runs `spec-analyst`'s path guard on `spec/technical-requirements.md`
+  — red because: the guard refuses it today
+- **Acceptance:**
+  - `spec-analyst`'s path guard allows `spec/technical-requirements.md`. Every other path keeps its verdict; the
+    hook-smoke count before and after is stated.
+  - `dev-lead.md` Loop 9 names the repair: when a merge leaves the index with a duplicate section row
+    (`scripts/ci/check-spec-sections.sh` fails), dispatch `spec-analyst` to restore origin/main's copy plus the
+    card's own row, committed as `docs(spec): <card> merge repair -- section index rows once`.
+  - D-36's standing rule (the lead's session repairs) is stated as superseded for runs after this card, or kept with
+    the reason; `00-decisions.md` is not rewritten (a new D-n if the lead wants one).
+  - The PR carries `config-change-approved` (D-19).
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.99/`

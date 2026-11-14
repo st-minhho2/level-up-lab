@@ -14,3 +14,9 @@ pnpm-lock.yaml
 prisma/migrations
 next-env.d.ts
 .pnpm-store
+# B1.97: the tables that merge with merge=union (.gitattributes). Prettier aligned each to its widest cell, so a row
+# wider than its column rewrote every row, and union then kept every row twice. Append a row unaligned; never re-pad
+# the others (scripts/table-merge-smoke.sh T13-T15).
+spec/features-map.md
+docs/metrics.md
+spec/technical-requirements.md
