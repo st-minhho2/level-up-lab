@@ -1,11 +1,17 @@
 'use client';
 
-// §14 CompleteAllButton; §10 the message of a failed mark-all, directly after the button.
+// §14 CompleteAllButton; §10 the message of a failed mark-all, directly after the button; §36 the optional count.
 import { useState, useTransition, type ReactNode } from 'react';
 import { completeAllTodosAction } from '@/actions/complete-all';
+import { completeAllLabel } from '@/lib/complete-all-label';
 
-// §36 `count` is accepted but not yet written into the label (B7.2 skeleton).
-export function CompleteAllButton({ disabled }: { readonly disabled: boolean; readonly count?: number }): ReactNode {
+export function CompleteAllButton({
+  disabled,
+  count,
+}: {
+  readonly disabled: boolean;
+  readonly count?: number;
+}): ReactNode {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | undefined>(undefined);
 
@@ -27,7 +33,8 @@ export function CompleteAllButton({ disabled }: { readonly disabled: boolean; re
         disabled={disabled || pending}
         className="rounded border border-zinc-300 px-3 py-1 text-sm text-zinc-700 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300"
       >
-        Mark all complete
+        {/* §36 REQ-36.6: without a count the label is §14's plain text. */}
+        {completeAllLabel(count ?? 0)}
       </button>
       {error !== undefined && (
         <p role="alert" className="text-sm text-red-600">
