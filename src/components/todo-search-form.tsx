@@ -11,7 +11,14 @@ import type { TodoFilter } from '@/lib/todo-filter';
 import { SEARCH_QUERY_MAX_LENGTH } from '@/lib/todo-search';
 
 // REQ-16.1, REQ-16.2, REQ-16.6: submitting sends `q` to `/` and keeps a selected filter; All is the bare address.
-export function TodoSearchForm({ filter, query }: { readonly filter: TodoFilter; readonly query: string }): ReactNode {
+export function TodoSearchForm({
+  filter,
+  query,
+}: {
+  readonly filter: TodoFilter;
+  readonly query: string;
+  readonly count?: number;
+}): ReactNode {
   const searchBoxRef = useRef<HTMLInputElement>(null);
   const clearLinkRef = useRef<HTMLAnchorElement>(null);
 
