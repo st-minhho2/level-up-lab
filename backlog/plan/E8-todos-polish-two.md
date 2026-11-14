@@ -36,6 +36,8 @@ field before typing (`src/components/todo-item.test.tsx`) or uses Playwright's `
   - The card's `docs(spec)` commit states once that the sibling sections' "`todo-item.tsx` unchanged" notes do not
     apply (D-39).
   - Mounts in `src/components/todo-item.tsx`; contract `spec/contracts/39-edit-title-select.md` (section 41).
+- **Spec:** §41 — unchanged (contract `spec/contracts/39-edit-title-select.md`, written before the label under D-39; lifts and edits nothing; states the sibling sections' "`todo-item.tsx` unchanged" notes do not apply)
+- **Test:** `src/components/todo-item-select.test.tsx::AC-41.1: after the render the active element is document.body with 0 textbox roles; after the click on "Edit title" the text box is the active element with selectionStart 0 and selectionEnd 7 and updateTodoTitleAction is called 0 times` — red because: the field opens unfocused with the caret at the end
 - **Tier:** full · **Depends on:** ~~D-39~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B8.1/`
 
@@ -56,6 +58,8 @@ included)". §30 (`28-filter-counts.md`) puts a count next to each one, lists "h
   - The red commit rewrites `todo-filter-nav-counts.test.tsx` (AC-30.3), `e2e/12-filter.spec.ts` (AC-12.7) and
     `e2e/30-filter-counts.spec.ts` (AC-30.6, AC-30.7) to the edited text.
   - Mounts in `src/components/todo-filter-nav.tsx` only.
+- **Spec:** §42 — unchanged (contract `spec/contracts/40-filter-hide-empty.md`, written before the label under D-39; edits REQ-12.1, AC-12.7, REQ-30.1, REQ-30.5, AC-30.3, AC-30.6, AC-30.7; lifts §30's "hiding a zero count"; states §16's and §21's notes do not apply)
+- **Test:** `src/components/todo-filter-nav-hide-empty.test.tsx::AC-42.1: with selected all and counts {all 4, active 0, completed 4} the navigation holds 2 links All and Completed each followed by a span reading (4), 0 links named Active, and reads "All(4)Completed(4)"` — red because: `TodoFilterNav` still renders the Active link and a "(0)" span
 - **Tier:** full · **Depends on:** ~~D-39~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B8.2/`
 
@@ -77,5 +81,7 @@ button at 0" in its Out of scope (line 64).
   - The red commit rewrites `complete-all-button.test.tsx` (AC-14.4 a), `complete-all-button-count.test.tsx`
     (AC-36.3), `e2e/14-complete-all.spec.ts` (AC-14.6) and `e2e/36-complete-all-count.spec.ts` (AC-36.6, AC-36.7).
   - Mounts in `src/components/complete-all-button.tsx` only.
+- **Spec:** §43 — unchanged (contract `spec/contracts/41-complete-all-hidden.md`, written before the label under D-39; edits REQ-14.5, AC-14.4 (a), AC-14.6, §14's page contract, REQ-36.2, AC-36.3, AC-36.6, AC-36.7; lifts §36's "hiding the button at 0"; re-points §36's and §22's proof rows; focus is not managed)
+- **Test:** `src/components/complete-all-button-hidden.test.tsx::AC-43.1: renders nothing, with an empty container, 0 buttons and 0 alerts, for disabled true with no count and with count 0, and never calls completeAllTodosAction` — red because: `CompleteAllButton` renders a disabled button when `disabled` is true
 - **Tier:** full · **Depends on:** ~~D-39~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B8.3/`
