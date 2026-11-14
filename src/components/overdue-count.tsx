@@ -1,5 +1,6 @@
 'use client';
-// §23 OverdueCount: the overdue number, read against the browser's local day after hydration (REQ-23.5).
+// §23, §33 OverdueCount: the overdue number, read against the browser's local day after hydration (REQ-23.5),
+// in a polite live region that is always rendered (REQ-33.1, REQ-33.2).
 import { useEffect, useState, type ReactNode } from 'react';
 import { countOverdue, overdueLabel } from '@/lib/overdue-count';
 import { todayOf } from '@/lib/todo-overdue';
@@ -9,7 +10,7 @@ export function OverdueCount({
 }: {
   readonly todos: readonly { readonly completed: boolean; readonly dueDate?: string }[];
 }): ReactNode {
-  // Undefined on the server and in the first client render, so both render nothing (REQ-23.5).
+  // Undefined on the server and in the first client render, so both render the empty span (REQ-23.5, REQ-33.5).
   const [today, setToday] = useState<string | undefined>(undefined);
 
   // The day is read once per mount and kept across midnight; a reload reads the new day, no timer does (REQ-23.6).
@@ -18,5 +19,6 @@ export function OverdueCount({
   }, []);
 
   const label = today === undefined ? undefined : overdueLabel(countOverdue(todos, today));
-  return label === undefined ? undefined : <span>{label}</span>;
+  // Always the same span so the live region exists before its first change and keeps its node (REQ-33.2, REQ-33.4).
+  return <span role="status">{label}</span>;
 }
