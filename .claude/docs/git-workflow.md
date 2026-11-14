@@ -58,6 +58,13 @@ and the desktop app notifies. What a batch costs, by the rules above:
   waiting, is woken by the orchestrating session or the lead; it runs `scripts/pr-step.sh ready <n> --undo` (Doing again, above the WIP
   cap until it is ready), merges `origin/main`, waits for green CI and readies the PR again. The lead merges in any
   order.
+- A runner PR (`scripts/agent/run.sh`) has no waiting session: its run ended at ready. After each merge the lead runs
+  `scripts/agent/run.sh --sync <issue>` once per other ready runner PR (B1.101). GitHub's own merge ignores
+  `.gitattributes` `merge=union` (measured in E7 batch 1: #300 and #302 read `CONFLICTING`, while this clone merged
+  them clean), so "Update branch" fails there, and it or GitHub's conflict editor would add a human-authored commit,
+  which no-rework (D-29) counts. `--sync` merges `origin/main` in the run's worktree with the repo's attributes, runs
+  the three table guards, pushes a merge carrying `Agent-Run: sync` and leaves the PR ready while CI runs; a conflict or
+  a failing guard leaves the branch as it was and names `run.sh <issue>`, whose Loop 9 resolves it.
 - `scripts/metrics/wait-time.sh` and `throughput.sh` measure what a batch rhythm does to the session wait and to cards
   per 8 h (`docs/metrics.md`, D-18).
 

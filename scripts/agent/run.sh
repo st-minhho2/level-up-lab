@@ -7,6 +7,9 @@
 # the gate.
 #   scripts/agent/run.sh <issue>          run that issue now (a stopped mark from an earlier run is replaced)
 #   scripts/agent/run.sh --poll           every open agent-ready issue, oldest first, skipping stopped and locked ones
+#   scripts/agent/run.sh --sync <issue>   bring the issue's ready PR level with origin/main after a sibling's merge:
+#                                         merge with this clone's attributes, table guards, push, comment; no claude
+#                                         (B1.101: GitHub's merge ignores `merge=union`); refusals name the full run
 #   scripts/agent/run.sh --check-binary   prove dev-lead's frontmatter hooks fire under this claude; record its version
 #   scripts/agent/run.sh --mode           print the permission mode a run here would get (bypassPermissions | dontAsk)
 #   exit 0 ran to an end, or skipped with the reason · 1 refused (stderr "[run] <why>")
@@ -48,7 +51,7 @@ say() { echo "[run] $*" >&2; }
 die() { say "$*"; exit 1; }
 gh_() { env -u GH_REPO -u GH_HOST gh "$@" </dev/null; }
 child() { env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_SESSION_ID "$CLAUDE" "$@"; }
-USAGE="usage: scripts/agent/run.sh <issue> | --poll | --check-binary | --mode"
+USAGE="usage: scripts/agent/run.sh <issue> | --poll | --sync <issue> | --check-binary | --mode"
 
 sandboxed() { # the runner container (B1.58): Linux, not root, the image's marker, and a network that refuses
   # example.com but reaches GitHub. On the host one of them fails, and no variable or flag can stand in for any of them.
@@ -75,9 +78,12 @@ default_claude() { # the newest macOS app build on the host, else claude on PATH
     command -v claude
   fi
 }
-CLAUDE="${RUNNER_CLAUDE:-$(default_claude)}"
-[[ -n "$CLAUDE" && -x "$CLAUDE" ]] || die "no claude binary: set RUNNER_CLAUDE"
-VERSION="$(child --version 2>/dev/null | head -1)"
+CLAUDE=""; VERSION=""
+if [[ "${1:-}" != --sync ]]; then # --sync starts no claude, so it needs neither the binary nor the login (B1.101)
+  CLAUDE="${RUNNER_CLAUDE:-$(default_claude)}"
+  [[ -n "$CLAUDE" && -x "$CLAUDE" ]] || die "no claude binary: set RUNNER_CLAUDE"
+  VERSION="$(child --version 2>/dev/null | head -1)"
+fi
 
 identity_problem() { # why git could not commit as a named identity, empty when user.name and user.email are both set
   local n e
@@ -261,6 +267,11 @@ on_signal() { # on_signal <exit code>: stop the claude run (or --poll's issue su
   drop_tmp # claude_run's TMPDIR (B1.88)
   # --check-binary's probe worktree, which worktree-prune.sh never lists (review pass 4, finding 2)
   [[ -z "$PROBE" ]] || { git worktree remove --force "$PROBE/wt" >/dev/null 2>&1; rm -rf "$PROBE"; }
+  # --sync stopped after its merge: a merge the push did not land (git push moves origin/<branch> here only when it
+  # did; bash runs this trap after the push returns) goes, so the branch is back at the PR's head and the next --sync
+  # runs instead of refusing an unpushed tip; a landed one stays (B1.101 plan review r1 #3, r2 #1)
+  [[ -z "${SYNC_PRE:-}" ]] || [[ "$(wgit rev-parse -q --verify "refs/remotes/origin/$SYNC_BRANCH")" == "$(wgit rev-parse HEAD)" ]] \
+    || { wgit merge --abort >/dev/null 2>&1; wgit reset -q --keep "$SYNC_PRE"; }
   exit "$1"
 }
 
@@ -309,6 +320,67 @@ line and stop; a question only the lead can answer goes to backlog/README.md \"W
   rm -rf "$dir/lock"; trap - EXIT
 }
 
+wgit() { (cd "$SYNC_WT" && env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git "$@"); } # git in the card's worktree
+sync_issue() { # sync_issue <issue> (B1.101): bring a ready runner PR level with origin/main, without a claude run.
+  # GitHub's merge ignores .gitattributes `merge=union`: after a sibling's merge it reported #300 and #302 CONFLICTING
+  # where this clone's merge is clean (E7 batch 1), and the ruleset wants every PR up to date anyway. "Update branch" or
+  # GitHub's conflict editor would be the lead's commit, which no-rework (D-29) counts; this merge carries
+  # `Agent-Run: sync`. A conflict, a failing table guard or a failed push leaves the branch as it was and names the full
+  # run, whose Loop 9 resolves and repairs. The PR stays ready: the ruleset holds the merge until CI is green.
+  local n="$1" card branch wt pr why pre new main gd out dir="$RUNS/$1"
+  why="$(identity_problem)"; [[ -z "$why" ]] || die "refused #$n: $why"
+  why="$(behind_problem)"; [[ -z "$why" ]] || die "refused #$n: $why"
+  card="$(card_of "$n")"
+  [[ "$card" =~ ^B[0-9]+\.[0-9]+$ ]] || die "refused #$n: no card id in the issue form (got '$card')"
+  branch="$(branch_of "$card")"
+  wt="$(git worktree list --porcelain | awk -v b="branch refs/heads/$branch" '/^worktree /{w=substr($0, 10)} $0 == b {print w}')"
+  [[ -n "$wt" && -d "$wt" ]] || die "refused #$n: no worktree holds $branch in this clone; --sync acts on a run's own worktree"
+  pr="$(gh_ pr list --head "$branch" --state open --json number,isDraft --jq '.[] | "\(.number) \(.isDraft)"')" \
+    || die "refused #$n: gh pr list failed"
+  [[ $(grep -c . <<< "$pr") -eq 1 && "${pr#* }" == false ]] \
+    || die "refused #$n: $branch has no open ready PR (got: $(tr '\n' ' ' <<< "${pr:-none}" | sed 's/ $//')); a draft goes on with scripts/agent/run.sh $n"
+  pr="${pr%% *}"
+  lock "$dir" || die "refused #$n: locked by a running pid (a run or a sync of this issue)"
+  trap "rm -rf $(printf %q "$dir/lock")" EXIT
+  SYNC_WT="$wt"
+  [[ "$(wgit symbolic-ref -q --short HEAD)" == "$branch" ]] || die "refused #$n: $wt is not on $branch"
+  [[ -z "$(wgit status --porcelain --untracked-files=no)" ]] \
+    || die "refused #$n: uncommitted changes in $wt; commit them or run scripts/agent/run.sh $n"
+  GIT_TERMINAL_PROMPT=0 wgit fetch -q origin "+refs/heads/$branch:refs/remotes/origin/$branch" </dev/null 2>/dev/null \
+    || die "refused #$n: git fetch of $branch from origin failed"
+  pre="$(wgit rev-parse HEAD)"; main="$(wgit rev-parse origin/main)"
+  [[ "$pre" == "$(wgit rev-parse "origin/$branch")" ]] \
+    || die "refused #$n: HEAD ${pre:0:7} is not origin/$branch $(wgit rev-parse --short "origin/$branch"); --sync brings the PR's own head level: run scripts/agent/run.sh $n"
+  if wgit merge-base --is-ancestor "$main" "$pre"; then
+    say "#$n $card: $branch already contains origin/main ${main:0:7}; nothing to do"
+    rm -rf "$dir/lock"; trap - EXIT; return 0
+  fi
+  # this clone's .gitattributes apply (union on the three tables); RUNNER_CHILD makes lefthook's prepare-commit-msg
+  # write the same trailer the message already holds (B1.57), so it is there with or without the hooks
+  SYNC_BRANCH="$branch"; SYNC_PRE="$pre"
+  if ! out="$(cd "$wt" && env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE RUNNER_CHILD=sync git merge -q --no-ff \
+    --no-edit -m "Merge remote-tracking branch 'origin/main' into $branch" -m "Agent-Run: sync" origin/main 2>&1 </dev/null)"; then
+    why="$(wgit diff --name-only --diff-filter=U | tr '\n' ' ' | sed 's/ $//')"
+    wgit merge --abort >/dev/null 2>&1 || wgit reset -q --merge "$pre"
+    die "refused #$n: origin/main ${main:0:7} does not merge into $branch cleanly (conflict: ${why:-$(grep -m1 . <<< "$out")}); the branch is back at ${pre:0:7}: run scripts/agent/run.sh $n (Loop 9 resolves it)"
+  fi
+  for gd in check-spec-sections check-features-map check-backlog; do # the guards that name a union row kept twice
+    out="$(cd "$wt" && env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE "scripts/ci/$gd.sh" 2>&1 </dev/null)" && continue
+    wgit reset -q --keep "$pre"
+    die "refused #$n: after the merge scripts/ci/$gd.sh failed: $(grep -m1 . <<< "$out"); the branch is back at ${pre:0:7}: run scripts/agent/run.sh $n (Loop 9 repairs a section index row kept twice)"
+  done
+  new="$(wgit rev-parse HEAD)"
+  out="$(cd "$wt" && "$ROOT/scripts/pr-step.sh" push 2>&1 </dev/null)" \
+    || { wgit reset -q --keep "$pre"; die "refused #$n: scripts/pr-step.sh push failed: $(tail -1 <<< "$out"); the branch is back at ${pre:0:7}"; }
+  SYNC_PRE=""
+  printf '%s\n' "Runner (\`scripts/agent/run.sh\`, B1.44): **synced** for $card." "" "- outcome: synced" \
+    "- branch: \`$branch\`" "- merged: origin/main ${main:0:7} into ${pre:0:7}, now ${new:0:7}" \
+    "- PR: #$pr, mergeable once CI on ${new:0:7} is green" "- after the next merge: \`scripts/agent/run.sh --sync $n\`" \
+    | env -u GH_REPO -u GH_HOST gh issue comment "$n" --body-file - >/dev/null || say "#$n: gh issue comment failed"
+  say "#$n $card: synced $branch ${pre:0:7}..${new:0:7} (origin/main ${main:0:7}); PR #$pr is mergeable once CI on ${new:0:7} is green"
+  rm -rf "$dir/lock"; trap - EXIT
+}
+
 check_binary() { # dev-lead's path-guard must block a write to spec/ under -p --agent dev-lead (B1.42 finding 8)
   local tmp base ok=0 perm
   perm="$(mode)" # the mode the runs here get, so the hook is proven under it
@@ -344,7 +416,13 @@ PROBE=""
 RUN_TMP=""
 trap 'on_signal 143' TERM
 trap 'on_signal 130' INT
+SYNC_WT=""
+SYNC_PRE=""
+SYNC_BRANCH=""
 case "${1:-}" in
+  --sync)
+    [[ $# -eq 2 && "$2" =~ ^[1-9][0-9]*$ ]] || die "$USAGE"
+    sync_issue "$2" ;;
   --check-binary)
     [[ $# -eq 1 ]] || die "$USAGE"
     preflight binary; check_binary ;;
