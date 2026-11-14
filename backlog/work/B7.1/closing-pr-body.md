@@ -38,6 +38,8 @@ feature PR: e2e AC-35.4/35.5 were never run against a removed guard (traced only
 - README: main's copy was kept (#304 re-padded the Remaining table) and this card's lines were applied to it again.
 - `docs/metrics.md`: the union merge kept the B7.1 and B7.3 rows twice; the stale copies (`pending merge`, df8e436)
   are removed.
+- The batch-2 spec PR #303 merged after this PR opened; merging `origin/main` again was clean (§38–§40 index rows
+  added, no backlog README change).
 
 `check-backlog.sh`, `check-spec-sections.sh`, `check-features-map.sh`, `check-ac-coverage.sh` (`§35 criteria=5
 covered=5`) OK.
