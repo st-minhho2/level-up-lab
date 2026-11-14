@@ -106,3 +106,52 @@ Verdict: back to test-writer
 
 Riskiest unfalsified: e2e AC-35.4/35.5 against a reverted guard were not re-run by me (traced only, server needed);
 and the guard-inside-transition variant survives every test (equivalent in the browser as traced above).
+
+## Diff review (round 2)
+
+Scope: ui. HEAD `a1a72f1`, red `666e313`, feat `13f1eef`, map `4ff14e9`. Since round 1 (`4ff14e9`): only
+`a1a72f1` (one title line in `src/components/delete-todo-button.test.tsx`) and this file; `git diff 4ff14e9 HEAD --
+src/components/delete-todo-button.tsx e2e` is empty.
+
+### Command results (last line of each, run by me)
+
+| Command                             | Last line                                                                                                  |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!` (exit 0)                                                      |
+| `pnpm typecheck`                    | `tsc --noEmit` (exit 0)                                                                                    |
+| `pnpm test`                         | `Tests  283 passed (283)` (45 files)                                                                       |
+| `pnpm test:e2e`                     | `66 passed (2.6m)`                                                                                         |
+| `pnpm test:mutation`                | `Final mutation score of 92.74 is greater than or equal to break threshold 70` (round 1: 92.87, same code) |
+| `scripts/ci/check-suppressions.sh`  | `[check-suppressions] OK: no new suppressions`                                                             |
+| `scripts/ci/check-config-change.sh` | `[check-config-change] OK: no protected config changed`                                                    |
+| `scripts/ci/check-feat-commits.sh`  | `[check-feat-commits] OK: no feat commit touches tests`                                                    |
+| `scripts/ci/check-ac-coverage.sh`   | `[check-ac-coverage] OK: every criterion of a shipped section has a test`                                  |
+| `scripts/ci/check-spec-sections.sh` | `[check-spec-sections] OK: sections cited: 1 … 37`                                                         |
+| `scripts/ci/check-features-map.sh`  | `[check-features-map] OK`                                                                                  |
+| `scripts/ci/check-plan-scope.sh`    | `[check-plan-scope] OK: feat/B7.1-agent stays inside the approved plan of B7.1 (D-27 approval)`            |
+| `scripts/verify-red.sh B7.1`        | `RESULT: red for the right reason` (delete-todo-button 3 new failed, todo-item 1 new failed; e2e skipped)  |
+| `git diff --stat main...HEAD`       | `10 files changed, 589 insertions(+), 7 deletions(-)`                                                      |
+
+### Checklist
+
+| Check                                                     | Result                                                                                                                                                                                                                                                                                                            |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| finding [1] of round 1                                    | fixed: `delete-todo-button.test.tsx:112` title equals `backlog/plan/E7-todos-hints.md:39` character for character                                                                                                                                                                                                 |
+| every AC-35.n has a test whose assertion matches its Then | pass, unchanged from round 1 (assertion lines of AC-35.1 untouched by `a1a72f1`)                                                                                                                                                                                                                                  |
+| no test weakened after the red commit                     | pass: `git log --first-parent --no-merges 666e313..HEAD -- '*.test.*' e2e/` → only `a1a72f1 test(todos): B7.1 review pass 1 -- AC-35.1 title from the card`, a `test(...)` commit whose body explains it; its diff is the `it(` title line only, 0 assertion lines. `--merges --remerge-diff` → empty (no merges) |
+| every changed file is in `plan.md`                        | pass: same 5 planned files + paperwork; `check-plan-scope.sh` OK                                                                                                                                                                                                                                                  |
+| interfaces match the section's contracts                  | pass, unchanged from round 1 (`src/` identical)                                                                                                                                                                                                                                                                   |
+| Zod / Prisma / SQL / migration                            | n/a: no action, lib, Prisma or migration change                                                                                                                                                                                                                                                                   |
+| no secret, no suppression                                 | pass: `check-suppressions` OK; the one changed line is a test title                                                                                                                                                                                                                                               |
+| features map row moved                                    | pass: F33 §35 ✅ (`4ff14e9`)                                                                                                                                                                                                                                                                                      |
+| would a test fail if one changed line were reverted       | round 1's clone probe stands (guard removed → 4 fail, inverted → 5, message changed → AC-35.1), since `src/` and the assertions are identical; a fresh clone probe this round was denied by the permission system and not retried                                                                                 |
+
+### Findings
+
+None blocking.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: e2e AC-35.4/35.5 have still not been run against a reverted guard (traced: `expect.poll(() =>
+dialogs.length).toBe(1)` cannot pass with 0 dialogs); the guard-inside-transition variant still survives every test
+(equivalent in the browser, round 1).
