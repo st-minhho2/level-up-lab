@@ -4,7 +4,8 @@
 import { useState, useTransition, type ReactNode } from 'react';
 import { completeAllTodosAction } from '@/actions/complete-all';
 
-export function CompleteAllButton({ disabled }: { readonly disabled: boolean }): ReactNode {
+// §36 `count` is accepted but not yet written into the label (B7.2 skeleton).
+export function CompleteAllButton({ disabled }: { readonly disabled: boolean; readonly count?: number }): ReactNode {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | undefined>(undefined);
 
