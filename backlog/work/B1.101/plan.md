@@ -21,8 +21,10 @@ no tracked change → fetch `origin/<branch>`, HEAD equal to it → `origin/main
 files and `scripts/agent/run.sh <n>` → `scripts/ci/check-spec-sections.sh`, `check-features-map.sh`,
 `check-backlog.sh` in the worktree; one fails: `reset --keep <pre>`, names it and `run.sh <n>` (Loop 9 repairs) →
 `scripts/pr-step.sh push` (fails: `reset --keep <pre>`) → issue comment (run.sh's fixed prefix, `**synced**`, branch,
-shas, PR) → `[run] #<n> <card>: synced …; PR #<pr> is mergeable once CI on <sha> is green`. A TERM or INT between
-the merge and the push resets to `<pre>` in `on_signal` (review r1 #3), so the next `--sync` starts from the PR's head.
+shas, PR) → `[run] #<n> <card>: synced …; PR #<pr> is mergeable once CI on <sha> is green`. A TERM or INT after the
+merge: `on_signal` (bash runs it once the running command returns) resets to `<pre>` unless the push landed, i.e.
+`refs/remotes/origin/<branch>` (moved by `git push` only on success) equals HEAD; a landed merge stays, without the
+issue comment (review r1 #3, r2 #1). Either way local and origin's branch agree, so the next `--sync` runs.
 Git in the worktree runs with `GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE` unset. No `claude` binary, login or version
 is needed. No `eligible.sh`: `--sync` acts only on a worktree and an open PR that an eligible run already made.
 
@@ -71,6 +73,7 @@ lead's `approve`; the PR carries `config-change-approved` (D-19). Dev-lead write
 | R22 no PR · draft · unpushed tip · tracked change · no worktree        | rc 1, nothing merged or pushed; `no open ready PR` (+ `run.sh 7`) · `origin/<branch>` · `uncommitted` (file kept) · `no worktree`                                          |
 | R22 live lock · no identity · checkout behind · argv `""`, `7 8`, `x`  | rc 1, nothing changed; `locked` (lock kept) · `no git identity` · `behind origin/main by 1 commit` · usage naming `--sync <issue>`                                         |
 | R22 TERM while a guard runs (after the merge, before the push)         | rc 143; branch, origin's branch, index as before, no MERGE_HEAD; lock gone; no comment                                                                                     |
+| R22 TERM while the push runs, after origin took it (post-receive naps) | rc 143; HEAD the merge (parents tip, main) and origin's branch = HEAD; lock gone                                                                                           |
 
 ## Verification
 
@@ -81,7 +84,7 @@ lead's `approve`; the PR carries `config-change-approved` (D-19). Dev-lead write
 - Green `chore(scripts): B1.101 run.sh --sync brings a ready runner PR level with origin/main`: "22 probes OK"
   (prototype: holds). Mutants (prototype): no trailer, no guards, no reset after a guard, no merge abort, draft
   accepted, no level check, no HEAD = origin check, no dirty check, no lock, `GIT_DIR` kept, no identity, no behind
-  check, no reset on TERM — 13 of 13 fail R21 or R22 only (prototype r2).
+  check, no reset on TERM, reset on TERM even after a landed push — 14 of 14 fail R21 or R22 only (prototypes r1–r3).
 - `hook-smoke.sh` "749 probes OK" before and after; `pnpm test` "Test Files 48 passed (48)", "Tests 298 passed (298)"
   before and after; `pnpm lint && pnpm typecheck` exit 0;
   `next-task.sh --check B1.101` no overlap; `check-plan-scope.sh`, `check-backlog.sh` OK; CI green.
@@ -95,4 +98,4 @@ lead's `approve`; the PR carries `config-change-approved` (D-19). Dev-lead write
 | 3    | reviewer | diff review         | `docs(backlog): B1.101 review pass N`                                                  |
 | 4    | dev-lead | draft PR, label     | —                                                                                      |
 
-Plan review: · Plan approved by: · Rounds: 1
+Plan review: changes requested, round 2 (1 reason, fixed in round 3, not re-reviewed: cap 2) · Plan approved by: · Rounds: 1
