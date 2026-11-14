@@ -70,15 +70,25 @@ Plan review: approved, round 2 (round 1: 2 reasons, AC-23.3 title kept, AC-33.5 
 
 ## Map delta
 
-pending
+F31 · §33 · new row, ✅ — the always-present `<span role="status">` in `src/components/overdue-count.tsx`; evidence: `pnpm test` 273 passed, `pnpm test:e2e` 58 passed, mutation 92.63 (lib, actions unchanged).
+
+The §33 index row (✗) of `docs(spec)` f9d3f3a dropped out in the merge fix 24f6ffa: the union merge driver doubled both shared tables after #280 re-padded them (B1.97), main's copies were restored, and no role's path guard covers `spec/technical-requirements.md` to re-add the row. The closing lane adds §33 to the index as ✅.
 
 ## Review
 
-pending
+`/review-loop`: passes 1/3, findings 0, "ready for PR" (at f28ab17); after the clean merge of origin/main (B6.4, B1.97) `mark-reviewed.sh` re-ran lint, typecheck and tests. Full text: `backlog/work/B6.5/review.md` "Diff review (round 1)".
+
+| Finding | Disposition |
+| ------- | ----------- |
+| none    | —           |
+
+Revert probes on `overdue-count.tsx:23`: the old conditional render → AC-33.2, 33.3, 33.4 red; a `key` per label → AC-33.3, 33.4 red; `aria-live` added → AC-33.1, 33.3 red; `{label ?? ''}` survives and is equivalent (React renders `''` as no text node). Note (not blocking): the metrics row's last column waits on the merge sha.
+
+Riskiest unfalsified: that a real screen reader announces the first text inserted into a region that was empty since the server render (jsdom and Playwright prove node identity and text, not the announcement).
 
 ## Evidence
 
-- AC met: pending
+- AC met: 5/5 (AC-33.1 … AC-33.5)
 - tier: medium
 - plan deviations: none
 - trace: n/a
