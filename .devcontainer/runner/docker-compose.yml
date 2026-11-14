@@ -18,6 +18,9 @@
 # runner-runs volume, so it survives a rebuild and is lost only by `down -v`; run.sh refuses a run without it, B1.69)
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh   → "12 probes OK"
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec -e RUNNER_BUDGET_USD=1 runner scripts/agent/run.sh --check-binary
+#   docker compose -f .devcontainer/runner/docker-compose.yml exec runner sh -c 'git fetch origin && git merge --ff-only origin/main'
+# (before each batch: run.sh fetches origin and refuses an issue while the clone's HEAD is behind origin/main, printing
+# the count, both shas and this fix, since the run.sh it runs is the clone's own copy; B1.95)
 #   docker compose -f .devcontainer/runner/docker-compose.yml stop
 #   docker compose -f .devcontainer/runner/docker-compose.yml up -d --wait
 #   docker compose -f .devcontainer/runner/docker-compose.yml exec runner scripts/agent/sandbox-probe.sh   → "12 probes OK"
