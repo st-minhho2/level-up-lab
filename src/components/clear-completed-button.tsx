@@ -1,10 +1,17 @@
 'use client';
 
-// §9 ClearCompletedButton; §10 the message of a failed clear, directly after the button.
+// §9 ClearCompletedButton; §10 the message of a failed clear, directly after the button; §32 the optional count.
 import { useState, useTransition, type ReactNode } from 'react';
 import { clearCompletedTodosAction } from '@/actions/todos';
+import { clearCompletedLabel } from '@/lib/clear-completed-label';
 
-export function ClearCompletedButton({ disabled }: { readonly disabled: boolean }): ReactNode {
+export function ClearCompletedButton({
+  disabled,
+  completedCount,
+}: {
+  readonly disabled: boolean;
+  readonly completedCount?: number;
+}): ReactNode {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | undefined>(undefined);
 
@@ -26,7 +33,8 @@ export function ClearCompletedButton({ disabled }: { readonly disabled: boolean 
         disabled={disabled || pending}
         className="rounded border border-zinc-300 px-3 py-1 text-sm text-zinc-700 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300"
       >
-        Clear completed
+        {/* §32 REQ-32.6: without a count the label stays §9's "Clear completed". */}
+        {clearCompletedLabel(completedCount ?? 0)}
       </button>
       {error !== undefined && (
         <p role="alert" className="text-sm text-red-600">
