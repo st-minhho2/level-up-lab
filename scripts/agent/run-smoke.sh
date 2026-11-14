@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Probes R1–R18 of scripts/agent/run.sh (B1.44) offline: a `claude` shim that replays fixture stream-json, a `gh` shim
+# Probes R1–R20 of scripts/agent/run.sh (B1.44) offline: a `claude` shim that replays fixture stream-json, a `gh` shim
 # that applies run.sh's own --jq to fixture JSON (real jq), and fakes for the eligibility, claim and worktree seams.
 #   scripts/agent/run-smoke.sh
 #   R1 not logged in            R2 unverified version          R3 ineligible issue        R4 three agent branches in flight
@@ -11,6 +11,7 @@
 #   R17 a run or --poll without a git identity is refused before any call (B1.69)
 #   R18 a merged agent branch is not in flight; an unmerged one or an open PR is; the skip names them (B1.82)
 #   R19 each claude -p run has a TMPDIR of its own outside the worktree and the project, removed at its end (B1.88)
+#   R20 a checkout behind a fetched origin/main, or a failed fetch, refuses each issue before any call; ahead runs (B1.95)
 set -uo pipefail
 command -v jq >/dev/null || { echo "run-smoke: needs jq" >&2; exit 2; }
 HERE="$(cd "$(dirname "$0")" && pwd -P)"
@@ -23,6 +24,14 @@ mkdir -p "$TMP/bin" "$FIX" "$WT"
 # the probes never depend on the host's branches; only R14's probe folder lands in the checkout's .worktrees/, removed
 REPO="$TMP/repo"; git init -q "$REPO"
 git -C "$REPO" -c user.name=s -c user.email=s@x commit -q --allow-empty -m s
+# its origin (B1.95): a bare repository that borrows the scratch repository's objects, so `at` can point both anywhere;
+# run.sh fetches it before each issue
+ORIGIN="$TMP/origin.git"; git init -q --bare "$ORIGIN"; echo "$REPO/.git/objects" > "$ORIGIN/objects/info/alternates"
+git -C "$REPO" remote add origin "$ORIGIN"
+at() { # at <HEAD commit> <origin's main commit>: where the scratch repository's checkout and its origin's main stand
+  git -C "$REPO" update-ref HEAD "$1" && git -C "$ORIGIN" update-ref refs/heads/main "$2"
+}
+b0="$(git -C "$REPO" rev-parse HEAD)"; at "$b0" "$b0"; git -C "$REPO" fetch -q origin
 # run.sh's identity check reads git's config (B1.69): every call gets this file instead of the host's own, so no probe
 # passes or fails on the host's identity; GITCFG swaps it
 printf '[user]\n\tname = smoke runner\n\temail = smoke@runner.invalid\n' > "$TMP/gitconfig"
@@ -424,7 +433,6 @@ reset; GITCFG=/dev/null run --mode
 [[ $r -eq 0 ]] && ok R17 || fail R17
 # R18 (B1.82): a merged agent branch is not in flight; an unmerged one or an open PR is, and the skip names them
 r=0
-b0="$(git -C "$REPO" rev-parse HEAD)"
 tip() { git -C "$REPO" -c user.name=s -c user.email=s@x commit-tree "$b0^{tree}" -p "$b0" -m "$1"; }
 mk() { git -C "$REPO" branch -q -f "$1" "${2:-$(tip "$1")}"; } # mk <branch> [<commit>]: by default a tip no other ref holds
 drop() {
@@ -435,6 +443,7 @@ drop() {
 m1="$(tip m1)"; m2="$(tip m2)"; m3="$(tip m3)"
 om="$(git -C "$REPO" -c user.name=s -c user.email=s@x commit-tree "$b0^{tree}" -p "$b0" -p "$m1" -p "$m2" -p "$m3" -m om)"
 git -C "$REPO" update-ref refs/remotes/origin/main "$om"
+at "$om" "$om" # the checkout stands on its origin's main, which run.sh fetches (B1.95), so every case runs
 reset; drop; mk feat/B9.1-agent "$m1"; mk chore/B9.2-agent "$m2"; mk feat/B9.3-agent "$m3"; run 7
 [[ $RC -eq 0 && $(calls) -eq 1 ]] && ! has 'in flight' "$TMP/out" \
   || { say "tips merged into origin/main: rc=$RC calls=$(calls) $(tr '\n' '|' < "$TMP/out")"; r=1; }
@@ -468,7 +477,7 @@ prs feat/B9.1-agent:CLOSED feat/B9.1-agent feat/B9.6-agent feat/B9.4-agent:MERGE
   || { say "mixed: rc=$RC calls=$(calls) $(tr '\n' '|' < "$TMP/out")"; r=1; }
 reset; drop; mk feat/B9.1-agent; mk chore/B9.2-agent; mk feat/B9.3-agent "$m3"; run 7
 [[ $RC -eq 0 && $(calls) -eq 1 ]] || { say "two unmerged, one merged: rc=$RC calls=$(calls) $(tr '\n' '|' < "$TMP/out")"; r=1; }
-drop; git -C "$REPO" update-ref -d refs/remotes/origin/main
+drop; git -C "$REPO" update-ref refs/remotes/origin/main "$b0"; at "$b0" "$b0"
 [[ $r -eq 0 ]] && ok R18 || fail R18
 # R19 (B1.88): each claude -p run gets a TMPDIR of its own (guard-bash rule 6 lets the reviewer write only there): set,
 # an existing absolute directory, outside the run's worktree and the project, not the host's, not another run's, and
@@ -540,6 +549,48 @@ for m in fail empty "$TMP/victim"; do
     || { say "mktemp $m: rc=$RC calls=$(calls) stopped=$(cat "$RUNS/7/stopped" 2>/dev/null) copy/victim: $(ls "$COPY" "$TMP/victim" 2>&1 | tr '\n' ' ')"; r=1; }
 done
 [[ $r -eq 0 ]] && ok R19 || fail R19
+# R20 (B1.95): before anything of an issue, run.sh fetches origin and refuses a checkout whose HEAD is behind
+# origin/main, naming the count, both shas and the fix; a HEAD ahead runs; a failed fetch refuses with git's reason
+# rather than trusting the last fetched origin/main. The scratch repository's own origin/main stays at b0 until a fetch
+# moves it, so a run.sh that never fetches cannot see the origin move.
+r=0
+c() { git -C "$REPO" -c user.name=s -c user.email=s@x commit-tree "$b0^{tree}" -p "$1" -m "$2"; } # c <parent> <msg>
+c1="$(c "$b0" c1)"; c2="$(c "$c1" c2)"; d1="$(c "$b0" d1)"
+none() { # none: no seam was called and no claude -p started (the refusal came first); --poll's own issue list aside
+  [[ $(calls) -eq 0 ]] && ! grep -qE '^(ELIGIBLE|CLAIM|WORKTREE) ' "$LOG" && ! grep '^GH ' "$LOG" | grep -vq ' issue list '
+}
+refused() { # refused <head> <origin main> <count text> [<fix>]: the refusal names the count, both shas and the fix
+  has "behind origin/main by $3 (HEAD ${1:0:7}" "$TMP/out" && has "origin/main ${2:0:7})" "$TMP/out" \
+    && has "fix: git -C $ROOT ${4:-merge --ff-only origin/main}, then rerun" "$TMP/out"
+}
+for t in "$b0 $c1 1 commit" "$b0 $c2 2 commits"; do
+  set -- $t
+  reset; at "$1" "$2"; run 7
+  [[ $RC -eq 1 ]] && none && refused "$1" "$2" "$3 $4" \
+    || { say "HEAD ${1:0:7}, origin ${2:0:7}: rc=$RC calls=$(calls) $(tr '\n' '|' < "$TMP/out")"; r=1; }
+done
+# diverged (a card branch's own run.sh after main moved): behind as well, and --ff-only could not fix it (plan r1)
+reset; at "$c2" "$d1"; run 7
+[[ $RC -eq 1 ]] && none && refused "$c2" "$d1" "1 commit" "merge origin/main (HEAD also has 2 commits of its own)" \
+  && ! has 'ff-only' "$TMP/out" || { say "diverged: rc=$RC calls=$(calls) $(tr '\n' '|' < "$TMP/out")"; r=1; }
+reset; at "$c1" "$b0"; run 7
+[[ $RC -eq 0 && $(calls) -eq 1 ]] && ! has behind "$TMP/out" || { say "ahead: rc=$RC calls=$(calls) $(tr '\n' '|' < "$TMP/out")"; r=1; }
+reset; echo '[{"number":7},{"number":8}]' > "$FIX/issues.json"; issue 8 B1.45; at "$b0" "$c1"; run --poll
+[[ $(calls) -eq 0 && $(grep -c 'behind origin/main by 1 commit' "$TMP/out") -eq 2 ]] && none \
+  || { say "--poll: rc=$RC calls=$(calls) $(tr '\n' '|' < "$TMP/out")"; r=1; }
+# the last fetched origin/main says "not behind"; the fetch itself fails
+reset; at "$b0" "$c1"; git -C "$REPO" update-ref refs/remotes/origin/main "$b0"
+git -C "$REPO" remote set-url origin "$TMP/nowhere"; run 7
+[[ $RC -eq 1 ]] && none && has 'git fetch origin failed' "$TMP/out" && has "$TMP/nowhere" "$TMP/out" && ! has behind "$TMP/out" \
+  || { say "fetch fails: rc=$RC calls=$(calls) $(tr '\n' '|' < "$TMP/out")"; r=1; }
+git -C "$REPO" remote set-url origin "$ORIGIN"
+# three parallel runs share one clone: a fetch that meets another's ref lock is tried again
+reset; at "$b0" "$c1"; : > "$REPO/.git/refs/remotes/origin/main.lock"
+(sleep 1; rm -f "$REPO/.git/refs/remotes/origin/main.lock") & run 7; wait
+[[ $RC -eq 1 ]] && none && refused "$b0" "$c1" "1 commit" && ! has 'fetch origin failed' "$TMP/out" \
+  || { say "ref lock: rc=$RC $(tr '\n' '|' < "$TMP/out")"; r=1; }
+at "$b0" "$b0"; git -C "$REPO" update-ref refs/remotes/origin/main "$b0"
+[[ $r -eq 0 ]] && ok R20 || fail R20
 
 echo
 if [[ $fails -eq 0 ]]; then echo "$oks probes OK"; exit 0; fi
