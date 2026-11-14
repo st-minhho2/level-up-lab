@@ -205,11 +205,10 @@ at most 3 cards Doing (B1.18).
 | 110  | B1.94 | CI never runs table-merge-smoke, whose verdict follows the host's own git attributes                      | —      | Open   | ~~B1.89~~                       | Lead  | S [estimate] |
 | 114  | B6.4  | The clear-completed button says how many it will clear                                                    | —      | Open   | ~~D-33~~                        | Lead  | S [estimate] |
 | 115  | B6.5  | The overdue count is announced to assistive technology                                                    | —      | Open   | ~~D-33~~                        | Lead  | S [estimate] |
-| 116  | B6.6  | The remaining count is announced to assistive technology                                                  | —      | Open   | ~~D-33~~, D-34                  | Lead  | S [estimate] |
+| 116  | B6.6  | The remaining count is announced to assistive technology                                                  | —      | Open   | ~~D-33~~, ~~D-35~~              | Lead  | S [estimate] |
 | 117  | B1.95 | run.sh runs its own scripts from a clone behind origin/main and never says so                             | —      | Open   | —                               | Lead  | S [estimate] |
 
 ## Waiting on human
 
-| ID   | What                                                                                                                                                                                                                                                                                | Blocks |
-| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| D-34 | B6.6: may its `docs(spec)` lift also delete "live announcement to assistive technology" from §22's Out of scope (`20-all-done.md:60`)? D-33 names §13 only. A extend D-33 to §22 (recommended), B keep "All done" out of the region, C reword §22 (`work/B6.6/decision-request.md`) | B6.6   |
+| ID  | What | Blocks |
+| --- | ---- | ------ |

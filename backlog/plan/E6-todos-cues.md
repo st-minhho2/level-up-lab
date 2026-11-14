@@ -88,7 +88,7 @@ scope (`spec/contracts/11-remaining-count.md:53`; `grep -n 'role=\|aria-live' sr
   announced; their visible text is unchanged; lifts the line from §13's Out of scope in its own `docs(spec)` commit;
   mounts in `src/components/remaining-count.tsx` only; contract `spec/contracts/32-remaining-announce.md`
   (section 34); batch 2
-- **Spec:** §34 — unchanged (section written from `work/B6.6/analysis.md`; contract `spec/contracts/32-remaining-announce.md`; "live announcement" lifted from §13's Out of scope, D-33)
+- **Spec:** §34 — unchanged (section written from `work/B6.6/analysis.md`; contract `spec/contracts/32-remaining-announce.md`; "live announcement" lifted from §13's Out of scope, D-33, and from §22's, D-35)
 - **Test:** `src/components/remaining-count.test.tsx::AC-34.1: renders exactly 1 status element holding the paragraph "0 items left" and "All done", no assertive live region and no alert for a count of 0` — red because: `RemainingCount` renders no element of role `status`
-- **Tier:** full · **Depends on:** ~~D-33~~, D-34 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** full · **Depends on:** ~~D-33~~, ~~D-35~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B6.6/`
