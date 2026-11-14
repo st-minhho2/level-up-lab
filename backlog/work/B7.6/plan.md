@@ -57,4 +57,4 @@ change (B1.100; ≥ 70 holds) · `pnpm build` ok · `scripts/ci/check-features-m
 Costs the lead takes: the button shows with no stored date and then sends `''` (a no-op save, REQ-40.1). A mutant in
 `save` is caught by both AC-15.n and AC-40.n tests. B7.3's AC-37.1 test changes (D-38), in the red commit only.
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: reviewer (D-27, tier medium, issue #310) · Rounds: 1
