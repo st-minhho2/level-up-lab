@@ -17,8 +17,8 @@ duplicate rows). Anything more → no commit, "Waiting on human", stop. Clean �
 `docs(spec): <card> merge repair -- section index rows once`, rerun `scripts/ci/check-spec-sections.sh`, go on.
 
 D-36: its standing rule (the lead's session repairs) is superseded for runs after this card merges; Loop 9's sentence
-says so ("B1.99, replaces D-36's repair by the lead's session"). `00-decisions.md` is not rewritten; a D-37 only if
-the lead wants one (Waiting on you).
+says so ("B1.99, replaces D-36's repair by the lead's session"). `00-decisions.md` is not rewritten; no new D-n (the
+lead's choice).
 
 Costs, for the lead to accept:
 
@@ -80,4 +80,6 @@ and `2 spec/CLAUDE.md` (frontmatter loop, and both modes x 4 layouts); `hg 0 spe
 
 Not in scope: `backlog/00-decisions.md`, `scripts/CLAUDE.md` (B1.95, B1.97), running guards after a clean merge (B1.92).
 
-Plan review: · Plan approved by: · Rounds: 1
+Round 2's one change (`tr -s`, 2b063f4) was accepted by the lead without a round 3 review.
+
+Plan review: changes requested, round 2 (fix accepted by lead) · Plan approved by: lead, 2026-11-14 · Rounds: 1
