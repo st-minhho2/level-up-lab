@@ -210,6 +210,5 @@ at most 3 cards Doing (B1.18).
 
 ## Waiting on human
 
-| ID   | What                                                                                                                                                                                                                                  | Blocks |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| D-34 | B6.5 needs `role="status"` but §23 REQ-23.7 / AC-23.3 (and their test) say "no role"; D-33 lifts only the Out of scope line. Decide A (edit §23 and drop the AC-23.3 role assertion) or B (won't do): `work/B6.5/decision-request.md` | B6.5   |
+| ID  | What | Blocks |
+| --- | ---- | ------ |

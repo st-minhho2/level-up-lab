@@ -76,6 +76,8 @@ _F31 · section 33_
   `docs(spec)` commit; mounts in `src/components/overdue-count.tsx` only; contract
   `spec/contracts/31-overdue-announce.md` (section 33); batch 2
 - **Tier:** full · **Depends on:** ~~D-33~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Spec:** §33 — unchanged
+- **Test:** `src/components/overdue-count.test.tsx::AC-33.1: renders exactly 1 SPAN with role status reading "2 overdue" and no aria-label, aria-live or aria-atomic; 0 paragraph, listitem, button, link and alert roles; the container text is exactly "2 overdue"` — red because: `OverdueCount` renders a `<span>` without `role="status"`, so no element has role status
 - **Work:** `work/B6.5/`
 
 ### B6.6 · The remaining count is announced to assistive technology
