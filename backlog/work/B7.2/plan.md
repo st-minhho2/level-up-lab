@@ -60,4 +60,4 @@ fail on the name. Green: `pnpm lint && pnpm typecheck` clean · `pnpm test` 281 
 | 5    | code-writer                 | F34 row                                             | `docs(map): F34 … [B7.2]`                  |
 | 6    | reviewer (diff)             | `review.md` diff section                            | `docs(backlog): B7.2 review …`             |
 
-Plan review: approved, round 1 · Plan approved by: · Rounds: 1
+Plan review: approved, round 1 · Plan approved by: reviewer (D-27, tier medium, issue #293) · Rounds: 1
