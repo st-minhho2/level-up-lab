@@ -93,4 +93,4 @@ no merge-base. Writes only `reports/mutation-gate.txt` (git-ignored) and Stryker
 
 Closing: `docs/B1.100-partial` ("pending E7 batch 2 per-run duration and load") until batch 2 reports, then Done.
 
-Plan review: approved, round 4 · Plan approved by: · Rounds: 1
+Plan review: approved, round 4 · Plan approved by: lead, 2026-11-14 · Rounds: 1
