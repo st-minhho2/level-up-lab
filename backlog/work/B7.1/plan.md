@@ -51,4 +51,4 @@ untouched; the component's negation, literal and order are killed by AC-35.1/35.
 Costs the lead takes: `window.confirm` blocks the main thread while open (§35 accepts it); a jsdom click without a stub
 reads as a cancel, so every future test that clicks "Delete todo" must stub `window.confirm`.
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: approved, round 1 · Plan approved by: · Rounds: 1
