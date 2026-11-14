@@ -1,16 +1,22 @@
 'use client';
 
-// §19 DeleteTodoButton; §10 the message of a failed delete, directly after the button inside the row.
+// §19 DeleteTodoButton; §10 the message of a failed delete, directly after the button inside the row; §35 the
+// browser confirmation asked before any delete.
 import { useState, useTransition, type ReactNode } from 'react';
 import { deleteTodoAction } from '@/actions/delete-todo';
+
+// §35 REQ-35.1: a fixed string, so the button needs no prop naming the todo.
+const CONFIRM_MESSAGE = 'Delete this todo? This cannot be undone.';
 
 export function DeleteTodoButton({ todoId }: { readonly todoId: string }): ReactNode {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | undefined>(undefined);
 
-  // One activation deletes, no confirmation (REQ-19.5). A failed result carries exactly one of these keys (§5 `id`,
-  // §10 `form`); the next success clears the message (REQ-19.11).
+  // Asked before the transition, so the button is not disabled while the dialog is open and a cancel leaves the row
+  // exactly as it was (REQ-35.3). A failed result carries exactly one of these keys (§5 `id`, §10 `form`); the next
+  // success clears the message (REQ-19.11).
   function onDelete(): void {
+    if (!window.confirm(CONFIRM_MESSAGE)) return;
     startTransition(async () => {
       const result = await deleteTodoAction(todoId);
       setError(result.ok ? undefined : (result.fieldErrors.id?.[0] ?? result.fieldErrors.form?.[0]));
