@@ -1,10 +1,15 @@
 'use client';
 
-// §9 ClearCompletedButton; §10 the message of a failed clear, directly after the button.
+// §9 ClearCompletedButton; §10 the message of a failed clear, directly after the button; §32 the optional count.
 import { useState, useTransition, type ReactNode } from 'react';
 import { clearCompletedTodosAction } from '@/actions/todos';
 
-export function ClearCompletedButton({ disabled }: { readonly disabled: boolean }): ReactNode {
+export function ClearCompletedButton({
+  disabled,
+}: {
+  readonly disabled: boolean;
+  readonly completedCount?: number;
+}): ReactNode {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | undefined>(undefined);
 
