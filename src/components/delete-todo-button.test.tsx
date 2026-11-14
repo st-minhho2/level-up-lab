@@ -52,10 +52,10 @@ afterEach(() => {
 });
 
 describe('<DeleteTodoButton> (§19)', () => {
-  it('AC-19.5: (a) renders exactly 1 enabled button named "Delete todo", calls the action once with exactly ("todo-9") without a confirmation, is disabled while it is pending and enabled again once it resolves', async () => {
+  it('AC-19.5: (a) renders exactly 1 enabled button named "Delete todo", calls window.confirm once and the action once with exactly ("todo-9") and opens no other dialog, is disabled while it is pending and enabled again once it resolves', async () => {
     const action = deferred();
     deleteActions.deleteTodoAction.mockReturnValue(action.promise);
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
     const user = userEvent.setup();
     render(<DeleteTodoButton todoId="todo-9" />);
     expect(screen.getAllByRole('button')).toHaveLength(1);
@@ -67,12 +67,13 @@ describe('<DeleteTodoButton> (§19)', () => {
 
     expect(deleteActions.deleteTodoAction).toHaveBeenCalledTimes(1);
     expect(deleteActions.deleteTodoAction.mock.calls[0]).toEqual(['todo-9']);
-    expect(confirm).toHaveBeenCalledTimes(0);
     expect(screen.queryAllByRole('dialog')).toHaveLength(0);
     expect(screen.getAllByRole('button')).toHaveLength(1);
     await waitFor(() => expect(button).toBeDisabled());
     action.resolve(deleted('todo-9'));
     await waitFor(() => expect(button).toBeEnabled());
+    // Asserted after the action settles, so a failure here leaves no transition pending for the next test.
+    expect(confirm).toHaveBeenCalledTimes(1);
   });
 
   it('AC-19.6: shows exactly one alert "Could not save, try again", then exactly one alert "Todo not found", each directly after the enabled button, and 0 alerts after the next success', async () => {
@@ -80,6 +81,8 @@ describe('<DeleteTodoButton> (§19)', () => {
       .mockResolvedValueOnce(saveFailed())
       .mockResolvedValueOnce(notFound())
       .mockResolvedValueOnce(deleted('todo-9'));
+    // §35: every click is confirmed, so each one reaches the action.
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
     const user = userEvent.setup();
     render(<DeleteTodoButton todoId="todo-9" />);
     const button = screen.getByRole('button', { name: 'Delete todo' });
@@ -99,5 +102,61 @@ describe('<DeleteTodoButton> (§19)', () => {
 
     expect(deleteActions.deleteTodoAction).toHaveBeenCalledTimes(3);
     await waitFor(() => expect(screen.queryAllByRole('alert')).toHaveLength(0));
+  });
+});
+
+// §35: the exact message of the confirmation, copied from REQ-35.1.
+const CONFIRM_MESSAGE = 'Delete this todo? This cannot be undone.';
+
+describe('<DeleteTodoButton> asks for confirmation first (§35)', () => {
+  it('AC-35.1: asks window.confirm once with "Delete this todo? This cannot be undone." before calling deleteTodoAction once with ("todo-9")', async () => {
+    deleteActions.deleteTodoAction.mockResolvedValue(deleted('todo-9'));
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const user = userEvent.setup();
+    render(<DeleteTodoButton todoId="todo-9" />);
+
+    await user.click(screen.getByRole('button', { name: 'Delete todo' }));
+
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(confirm.mock.calls[0]).toEqual([CONFIRM_MESSAGE]);
+    expect(deleteActions.deleteTodoAction).toHaveBeenCalledTimes(1);
+    expect(deleteActions.deleteTodoAction.mock.calls[0]).toEqual(['todo-9']);
+    const confirmOrder = confirm.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY;
+    const actionOrder = deleteActions.deleteTodoAction.mock.invocationCallOrder[0] ?? Number.NEGATIVE_INFINITY;
+    expect(confirmOrder).toBeLessThan(actionOrder);
+  });
+
+  it('AC-35.2: (a) a cancel calls window.confirm once, the action 0 times, leaves the button enabled and 0 alerts; (b) a cancel after a failed attempt calls the action still once and keeps the same single alert "Could not save, try again" with the button enabled', async () => {
+    deleteActions.deleteTodoAction.mockResolvedValue(saveFailed());
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const user = userEvent.setup();
+    const first = render(<DeleteTodoButton todoId="todo-9" />);
+    const cancelled = screen.getByRole('button', { name: 'Delete todo' });
+
+    await user.click(cancelled);
+
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(deleteActions.deleteTodoAction).toHaveBeenCalledTimes(0);
+    expect(cancelled).toBeEnabled();
+    expect(screen.queryAllByRole('alert')).toHaveLength(0);
+
+    // (b) a fresh render: the first click is confirmed and fails, the second is cancelled.
+    first.unmount();
+    confirm.mockReset();
+    confirm.mockReturnValueOnce(true).mockReturnValueOnce(false);
+    render(<DeleteTodoButton todoId="todo-9" />);
+    const button = screen.getByRole('button', { name: 'Delete todo' });
+
+    await user.click(button);
+
+    await expectOneAlertAfter(button, 'Could not save, try again');
+    await waitFor(() => expect(button).toBeEnabled());
+
+    await user.click(button);
+
+    expect(confirm).toHaveBeenCalledTimes(2);
+    expect(deleteActions.deleteTodoAction).toHaveBeenCalledTimes(1);
+    await expectOneAlertAfter(button, 'Could not save, try again');
+    expect(button).toBeEnabled();
   });
 });
