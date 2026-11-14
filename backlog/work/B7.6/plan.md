@@ -39,8 +39,8 @@ export function TodoDueDate({
 Baseline: `pnpm test` 298 passed (48 files). Red (`test(todos): B7.6 … (red)`, no skeleton: red is the missing "Clear
 due date" button and AC-37.1's 5th child, assertions): `scripts/verify-red.sh B7.6` exit 0; AC-40.1–40.5 and AC-37.1
 each red; `pnpm test:e2e e2e/40-due-date-clear.spec.ts` → 1 fails on the "Clear due date" locator, recorded in the body.
-Green: `pnpm lint && pnpm typecheck` clean · `pnpm test` 298 → 298 + N new passed (49 files), every AC-15.n, AC-17.n,
-AC-28.n, AC-31.n, AC-37.n in `todo-due-date*.test.tsx` green · `pnpm test:e2e` +1, `e2e/15-due-date.spec.ts`,
+Green: `pnpm lint && pnpm typecheck` clean · `pnpm test` 298 → 313 passed (49 files: 15 new `it`/`it.each` cases per `advice.md`'s layout, AC-37.1 replaced in place), every AC-15.n, AC-17.n,
+AC-28.n, AC-31.n, AC-37.n in `todo-due-date*.test.tsx` green · `pnpm test:e2e` 70 → 71 (30 → 31 files), `e2e/15-due-date.spec.ts`,
 `e2e/28-escape-due-date.spec.ts`, `e2e/37-due-date-today.spec.ts` green · mutation: CI only, no src/lib or src/actions
 change (B1.100; ≥ 70 holds) · `pnpm build` ok · `scripts/ci/check-features-map.sh`, `scripts/ci/check-plan-scope.sh` OK.
 
