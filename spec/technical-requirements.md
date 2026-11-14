@@ -39,7 +39,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §32 | [contracts/30-clear-completed-count.md](contracts/30-clear-completed-count.md) | Todos: the clear-completed button says how many it will clear          | ✅     |
 | §33 | [contracts/31-overdue-announce.md](contracts/31-overdue-announce.md)           | Todos: announce the overdue count to assistive technology              | ✅     |
 | §34 | [contracts/32-remaining-announce.md](contracts/32-remaining-announce.md)       | Todos: the remaining count is announced to assistive technology        | ✅     |
-| §35 | [contracts/33-delete-confirm.md](contracts/33-delete-confirm.md)               | Todos: deleting a todo asks for confirmation first                     | ✗      |
+| §35 | [contracts/33-delete-confirm.md](contracts/33-delete-confirm.md)               | Todos: deleting a todo asks for confirmation first                     | ✅     |
 | §36 | [contracts/34-complete-all-count.md](contracts/34-complete-all-count.md)       | Todos: the mark-all-complete button says how many it will mark         | ✗      |
 | §37 | [contracts/35-due-date-today.md](contracts/35-due-date-today.md)               | Todos: a "Today" button fills the due-date field                       | ✗      |
 

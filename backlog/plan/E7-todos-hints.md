@@ -23,9 +23,7 @@ No card changes `prisma/`, a dependency or the environment, so every plan is med
 ### B7.1 · Deleting a todo asks for confirmation first
 
 _F33 · section 35_
-**Status: Open** — `spec/contracts/17-delete.md:21` (REQ-19.5) says a delete happens "on a single activation of the
-button: there is no confirmation step". Its Out of scope (line 71) lists "A confirmation dialog or prompt".
-`src/components/delete-todo-button.test.tsx:58,70-71` expects 0 `window.confirm` calls.
+**Status: Done** — 76bdb83 (#302), 5 AC-35.n criteria green (unit 280 → 283: AC-35.1–35.3, red proven by verify-red.sh; e2e 64 → 66, AC-35.4–35.5), mutation 92.74 (lib, actions unchanged); unattended and no-rework 1/1 (D-29), two runner runs: the second merged `origin/main` after GitHub showed the PR conflicting once B7.3 merged (B1.101)
 
 - **Acceptance:**
   - Activating "Delete todo" asks `window.confirm` first. Confirming deletes as today; cancelling calls no Server Action.
