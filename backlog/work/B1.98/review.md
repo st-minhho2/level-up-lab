@@ -90,3 +90,78 @@ run can commit without `Agent-Run:` (lefthook skipped, `LEFTHOOK=0`), a fully un
 issue shows that case: 15 issues read, 2 commits flagged.
 
 Verdict: changes requested
+
+## Plan review (round 2)
+
+Plan at b2c30b0. I re-ran the updated prototype on two `git clone`s of this branch under `$TMPDIR` with `/bin/bash`
+3.2.57: `red` has today's scripts and the prototype smoke, `green` has the prototype scripts. I also re-ran it live
+against GitHub (read-only).
+
+| Check                                                                             | Result                                                                                                                                                                                                             |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every file in the plan belongs to the section's features (map)                    | pass, n/a: no section. The Files list is the same as round 1: 5 files plus `backlog/work/B1.98/*`.                                                                                                                 |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass, n/a: bash only. Column 7 now holds the first word of `- outcome:`, and Interfaces says so (`ended,error:max_turns`). That is r1 #3 option (b). The smoke's `runner()` bolds `${1%%:*}` as `run.sh:252` does. |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass, n/a: there is no `advice.md`.                                                                                                                                                                                |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: 5 acceptance items.                                                                                                                                                                                          |
+| verification lists exact commands with expected numbers                           | pass (r1 #4 fixed): hook-smoke "749 probes OK" and vitest "298 passed (298)" at be888ff. Red is "35 ok, 16 FAIL" and green is "51 ok, 0 FAIL", and I reproduced both.                                              |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass for tooling: red `test(scripts):`, then green `chore(scripts):`, then review. This is the same as B1.95.                                                                                                      |
+| the section has a `Lead approves spec` box, ticked only by a human                | n/a: no section. `Plan approved by:` is empty and I did not touch it.                                                                                                                                              |
+| no settled D-n contradicted                                                       | pass, unchanged from round 1. The D-36 note stands (no change required).                                                                                                                                           |
+| `scripts/next-task.sh --check B1.98` on the committed plan says no overlap        | pass: "[next-task] B1.98: no overlap with any Doing or Review card". `scripts/agent/tier.sh` prints `medium`.                                                                                                      |
+
+Round 1 reasons:
+
+1. **`docs/metrics.md` (fixed).** The Files row now names cell 3 (appended text) and cell 7 (rewritten). Row 28 has 7
+   cells today, and cell 7 holds the old window text "→ the PR's first `ready_for_review`". The overlap paragraph
+   agrees with the Files row.
+2. **B1.87 (fixed).** The plan states both costs: "M1–M49" can no longer be met, and the grep stays red on R1–R15. It
+   also says who re-scopes the card: the lead, in a filing-lane edit. The plan does not edit B1.87.
+   - One wording slip, no change required. After this card, B1.87's row 28 item ("names `touches`") is already met,
+     not unmeetable. The planned re-scope ("no row 28 item") covers either reading.
+3. **The `stops` value (fixed).** M53 now expects `error:max_turns`, and live comments carry the same value on their
+   `- outcome:` line.
+4. **The two numbers (fixed).**
+
+What I ran:
+
+- **Smoke, red:** "[metrics-smoke] 35 ok, 16 FAIL".
+  - The failures are M30, M31, M33, M34, M39, M41 and M44–M53.
+  - M50 and M51 read `yes` on the old 8 columns.
+- **Smoke, green:** "[metrics-smoke] 51 ok, 0 FAIL".
+- **Live `unattended.sh`**, the prototype green script. Every batch matches the plan's table:
+
+  | Batch       | Result                     | Rows that change                                |
+  | ----------- | -------------------------- | ----------------------------------------------- |
+  | 275 276 277 | `unattended 1/3 = 33.3 %`  | #276 `ended` · #277 `ended,ended` and `1bb65dd` |
+  | 207 214 215 | `unattended 1/3 = 33.3 %`  | #207 `ended` and `e65ffc9` · #215 `ended`       |
+  | 223–225     | `unattended 3/3 = 100.0 %` | none                                            |
+  | 261–263     | `unattended 3/3 = 100.0 %` | none                                            |
+  | 292–294     | `unattended 3/3 = 100.0 %` | none                                            |
+
+- **Live `no-rework.sh`** on PRs 211 216 221 278 281 282 300 301 302: today's output and the green prototype's output
+  are byte-identical (`cmp`). Both print "no-rework 9/9 = 100.0 % (pending 0)".
+- **Mutants on the green prototype.** Three single-line mutants each leave the smoke at "51 ok, 0 FAIL":
+  - (a) `// "?"` changed to `// "X"`: nothing tests the value for a runner comment with no `- outcome:` line.
+  - (b) The capture changed from `[^ \n]+` to `[^\n]+`: no probe's outcome carries `run.sh`'s ` (<detail>)` suffix.
+    The live trigger is a `PROBLEM` outcome such as `- outcome: no-tmpdir (mktemp -d under /tmp failed)`. Under the
+    mutant, that row's `stops` cell reads the whole line instead of `no-tmpdir`.
+  - (c) The window's `$2 > l` changed to `$2 >= l`: no probe has a stop at the label's own second.
+
+### Notes (no change required; the diff review checks them)
+
+- **Untested interface.** The plan's Interfaces line defines (a) and (b), and no planned probe pins them. Neither
+  changes a live verdict, because both mutants still produce a non-empty `stops`. The diff review re-runs these three
+  mutants. A survivor of (a) or (b) will be a coverage finding unless the red commit already covers it, for example
+  with a probe whose runner comment carries a detail and one with no outcome line. Adding them changes the planned
+  "35 ok, 16 FAIL" / "51 ok, 0 FAIL". If so, state the new numbers in the commit body.
+- **Prototype-only seam.** The prototype smoke adds `SRC="${SMOKE_SRC:-…}"`. That is an env var, and the plan says
+  "No flag, env var". It must not land, or the Files row must name it.
+- **Plan length.** The plan is 92 lines against the ≈ 40-line rule. B1.95's approved plan was 97 lines, and the change
+  is one coherent filter. I am not asking for a split.
+
+Riskiest unfalsified: e65ffc9, carried from round 1. It is a commit authored as `level-up-lab runner` with no
+`Agent-Run:` trailer, and nothing on record says who made it. If a run can commit without lefthook's trailer, a fully
+unattended run reads `no`. The plan now states this as a cost (`[unverified]`) and names the B1.57 dependency. No live
+issue I read shows such a run.
+
+Verdict: approved (ready for the lead's gate, not approved for build)
