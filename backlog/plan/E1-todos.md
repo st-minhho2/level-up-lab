@@ -1321,10 +1321,9 @@ Batch 2 (B6.4–B6.6, sections 32–34) will append three rows after §31 in par
 ### B1.97 · A row wider than its column makes Prettier re-pad the whole shared table
 
 _tooling · no §_
-**Status: Open** — `spec/features-map.md`, `docs/metrics.md` and `spec/technical-requirements.md` merge with
-`merge=union` (`.gitattributes`, B1.89, B1.96), and `.prettierignore` names none of them. So `format-after-edit.sh` and
-Lefthook's `prettier --check` align each Markdown table to its widest cell. A card whose new cell is wider than its
-column rewrites every row. On 2026-11-14, E6 batch 2's B6.4 (#278) did this to two tables at once:
+**Status: Done** — b35c5d6 (#288), table-merge-smoke T1-T15 (red 729ae12: 3 of 15 FAILED; green f93572b: 15 probes OK, bash 3.2), hook-smoke 726, tier-smoke 9, vitest 280, e2e 64, mutation 92.74 (no src/ change), plan review 1 round, diff review 1 pass, 0 findings; the three union-merged tables are in .prettierignore, rows appended unaligned (scripts/CLAUDE.md names the rule)
+
+On 2026-11-14, E6 batch 2's B6.4 (#278) re-padded two tables at once:
 
 - `docs(spec)` 0495c50 changed 67 lines of `spec/technical-requirements.md` (the contract name
   `30-clear-completed-count.md` is wider than the File column);
