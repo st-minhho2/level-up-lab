@@ -68,8 +68,7 @@ _F30 · section 32_
 ### B6.5 · The overdue count is announced to assistive technology
 
 _F31 · section 33_
-**Status: Open** — §23 lists "announcing changes to assistive technology" under Out of scope
-(`spec/contracts/21-overdue-count.md:70`; `grep -n 'role=\|aria-live' src/components/overdue-count.tsx` → 0)
+**Status: Done** — a2b73ea (#282), 5 AC-33.n criteria green (unit 269 → 273, red proven by verify-red.sh; e2e 57 → 58), mutation 92.63 (lib, actions unchanged); D-34 dropped the role assertion of the AC-23.3 test (the red commit only); unattended and no-rework 1/1 (D-29), two runner runs
 
 - **Acceptance:** the overdue count sits in a polite live region (`role="status"`), present at 0 so a change is
   announced; its visible text is unchanged (§23, hidden at 0); lifts the line from §23's Out of scope in its own
