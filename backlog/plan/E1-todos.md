@@ -1291,12 +1291,7 @@ origin/main`, then rerun). It never updates itself, since it is the script runni
 ### B1.96 · Parallel card PRs conflict on the section index, which B1.89 left on git's default merge
 
 _tooling · no §_
-**Status: Open** — `.gitattributes` gives `merge=union` to `spec/features-map.md` and `docs/metrics.md` only, and
-`scripts/table-merge-smoke.sh:15` pins T9 "spec/technical-requirements.md keeps git's default". B1.89 left the index
-out on purpose (`backlog/work/B1.89/plan.md:17`): its rows are not append-only, because the closing commit flips a
-card's row ✗ → ✅, and a union merge of that flip against a row appended below it would bring the row back twice.
-`scripts/ci/check-spec-sections.sh` checks only that every cited § has a heading, so it would not name a duplicated
-index row. On 2026-11-13, E6 batch 1 (D-33) paid the cost:
+**Status: Done** — 6395eac (#273), table-merge-smoke T1-T12 (red 1b82a46: 4 of 12 FAILED; green 073668a: 12 probes OK, bash 3.2), hook-smoke 726, tier-smoke 9, vitest 269, e2e 57, mutation 92.63 (no src/); union on spec/technical-requirements.md, check-spec-sections.sh names a section with two index rows; B1.92's card names the guard (6948df1); GitHub mergeability [unverified]; plan review 3 rounds, diff review 1 pass
 
 - #265 (B6.3, §31) merged first, and #266 (B6.2, §30) then conflicted on `spec/technical-requirements.md` alone. Both
   had appended a row after §29. The runner's local merge 9337123 shows the index as the only conflicting file;
