@@ -82,8 +82,7 @@ _F31 · section 33_
 ### B6.6 · The remaining count is announced to assistive technology
 
 _F32 · section 34_
-**Status: Open** — §13 lists "live announcement to assistive technology (`role="status"`, `aria-live`)" under Out of
-scope (`spec/contracts/11-remaining-count.md:53`; `grep -n 'role=\|aria-live' src/components/remaining-count.tsx` → 0)
+**Status: Done** — 80dcc73 (#281), 6 AC-34.n criteria green (unit 269 → 272, red proven by verify-red.sh; e2e 57 → 60), mutation 92.63 (lib, actions unchanged); D-35 lifted the live-announcement line from §22 too; unattended and no-rework 1/1 (D-29), three runner runs and the lead's index repair 1bb65dd (D-36)
 
 - **Acceptance:** §13's count and §22's message sit in a polite live region (`role="status"`), so a change is
   announced; their visible text is unchanged; lifts the line from §13's Out of scope in its own `docs(spec)` commit;
