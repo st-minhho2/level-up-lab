@@ -22,7 +22,7 @@ Files:
 
 - `backlog/plan/E8-todos-polish-two.md`: the epic and its three cards, without `Spec:` or `Test:` lines.
 - `backlog/README.md`:
-  - totals: E8 0/0/3/3, total 87/1/44/132;
+  - totals: E8 0/0/3/3, total 89/0/43/132 (after B1.98 and B1.95 closed);
   - nodes S130–S132;
   - Remaining rows 130–132, blocked by D-39;
   - the "Waiting on human" row D-39.
