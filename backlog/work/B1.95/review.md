@@ -131,3 +131,83 @@ Notes (not blocking):
 - The round 1 note on a host network stall stands. The plan now lists it as a cost and says it was not probed.
 
 Verdict: approved (ready for the lead's `approve`, not approved for build)
+
+## Diff review (round 1)
+
+Range: `origin/main...HEAD` (merge base d106fe9; local `main` is stale, so `main...HEAD` lists 27 files from
+other cards). Red cf678d3, change b7e9d83. Six files: the three in the plan, plus `backlog/work/B1.95/*`.
+
+### Command results (last line each, run by the reviewer)
+
+| Command                                           | Result                                                                         |
+| ------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `pnpm lint`                                       | exit 0 ("All matched files use Prettier code style!")                          |
+| `pnpm typecheck`                                  | exit 0                                                                         |
+| `pnpm test`                                       | `Tests  280 passed (280)`                                                      |
+| `pnpm test:e2e`                                   | `64 passed (2.4m)`                                                             |
+| `pnpm test:mutation`                              | `Final mutation score of 92.74 is greater than or equal to break threshold 70` |
+| `/bin/bash scripts/agent/run-smoke.sh` at b7e9d83 | `20 probes OK` (1 min 22 s)                                                    |
+| same at cf678d3 (clone under `$TMPDIR`)           | `1 of 20 probes FAILED` (R20 only; all six R20 cases ran on)                   |
+| `scripts/hook-smoke.sh`                           | `hook-smoke: 726 probes OK`                                                    |
+| `check-suppressions.sh` (BASE_SHA = merge base)   | `OK: no new suppressions`                                                      |
+| `check-config-change.sh`                          | exit 0; lists `scripts/agent/run.sh`, `run-smoke.sh`; PR #296 has the label    |
+| `check-feat-commits.sh`                           | `OK: no feat commit touches tests`                                             |
+| `check-ac-coverage.sh`                            | `OK: every criterion of a shipped section has a test`                          |
+| `check-spec-sections.sh`                          | `OK: sections cited: 1 … 34`                                                   |
+| `check-features-map.sh`                           | `OK`                                                                           |
+| `check-backlog.sh`                                | `OK: README matches the cards`                                                 |
+| `check-plan-scope.sh`                             | `OK: chore/B1.95-run-behind-main stays inside the approved plan of B1.95`      |
+| `next-task.sh --check B1.95`                      | `B1.95: no overlap with any Doing or Review card`                              |
+| `scripts/verify-red.sh B1.95`                     | exit 1: `no 'test(<pkg>): B1.95 … (red)' commit` (expected, see checklist)     |
+| `git diff --stat origin/main...HEAD`              | `6 files changed, 425 insertions(+), 5 deletions(-)`                           |
+
+### Checklist
+
+| Check                                        | pass / fail: reason                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every acceptance item has a probe            | pass: fetch before any claim (R20 `none` on every refusal case), behind → exit 1 with count, both shas, fix (`refused`), ahead runs, fetch failure refuses with git's reason; compose header line present. Scripts-guide row deferred as the approved plan says. Label on #296: present                                                                                                                                                            |
+| red is red on behavior                       | pass: at cf678d3 R1–R19 ok, R20 FAIL with rc=0 and a `-p` run in all six cases (run.sh never fetches)                                                                                                                                                                                                                                                                                                                                              |
+| no `(red)` marker on cf678d3                 | pass, deviation from the plan's breakdown explained in the commit body. `verify-red.sh --auto` (CI) picks only `(red)` subjects, and `verify_feat` fails a red commit that touches no `*.test.ts(x)` ("touch no *.test.ts(x) file"), so the marker would break CI on a smoke-only red                                                                                                                                                              |
+| no test weakened after red                   | pass: `git log --first-parent --no-merges cf678d3..HEAD -- '*.test.*' e2e/ scripts/agent/run-smoke.sh` lists only b7e9d83, which touches neither; no merge commits in range                                                                                                                                                                                                                                                                        |
+| R18 edits in the red commit                  | pass: R18 now sets HEAD and origin's main to `om` so the new fetch keeps `origin/main` at `om`; its end restores `origin/main` to b0 instead of deleting it. R4's "local branch not counted" still holds with `origin/main` = b0 (b0 is on the first-parent line, so it counts). R18 ok at red and at green                                                                                                                                        |
+| every changed file in `plan.md`              | pass (`check-plan-scope.sh` OK)                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| interfaces match the plan                    | pass: `behind_problem` is the plan's block verbatim except plural handling (`commit$([[ $n -eq 1 ]] \|\| echo s)`), which R20 asserts both ways ("1 commit", "2 commits", "2 commits of its own"); called first in `run_issue`, before `eligible.sh`; no new flag, variable or exit code                                                                                                                                                           |
+| no secret, no suppression                    | pass                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Zod / Prisma / raw SQL / migration / map row | n/a: no `src/`, `prisma/`; tooling card, no map row                                                                                                                                                                                                                                                                                                                                                                                                |
+| merges with current `origin/main`            | pass: `origin/main` moved 5 commits since the merge base (B1.97, E7 filings); none touches the six files                                                                                                                                                                                                                                                                                                                                           |
+| would a test fail if one line were reverted  | pass, probed: 11 mutants of `run.sh`, each on its own clone under `$TMPDIR`, all 11 run in parallel (load on the timing race). Killed, each by R20 alone: no fetch, failed fetch ignored, no retry (`-lt 1`), retry without sleep (`sleep 0`), check moved after `card_of` (past `eligible.sh`), `read -r n ahead`, `return 0` on refusal, `--ff-only` always, diverged runs, ahead refuses. Survived: drop `&& [[ -n "$n" ]]` (equivalent, below) |
+
+Questions the caller raised:
+
+- **Ref-lock race (R20 last case).** The lock goes after 1 s; tries run at about t0, t0+2 s, t0+4 s. If the first
+  try lands after the removal (slow preflight), the case still passes but no longer proves the retry. It does not
+  go red falsely. Under 11 smoke runs in parallel, `noretry` and `nosleep` were still killed and the real code still
+  passed, so the margin held under load. Not a finding.
+- **`read -r ahead n < <(git rev-list …)` swallowing a git failure.** In bash 3.2, `read -r a b < <(false)` returns
+  1, so the `&&` chain already falls to "no HEAD or origin/main to compare". `[[ -n "$n" ]]` would matter only for
+  one-field output, which `--left-right --count` never prints. The surviving mutant shows this: the guard is
+  redundant, not wrong.
+- **Compose header placement.** The line sits after `--check-binary` and before the stop/up/probe restart block,
+  with "before each batch" saying when to run it. It reads correctly. The round 2 note on line 10
+  (`git checkout chore/B1.62-runner-image-probes`) was not taken up. A clone that followed that line is diverged, so
+  it would print `merge origin/main` rather than a `checkout main`. The refusal still holds: it is wrong advice,
+  never a stale run. Non-blocking.
+
+Non-blocking notes:
+
+- B1.97 merged on `origin/main` as b35c5d6 (#288). That was the plan's only reason to leave the `agent/run.sh` row of
+  `scripts/CLAUDE.md` out of this PR, and it no longer holds. Round 2 said the row could then join this PR with a
+  re-approval for the added file. Leaving it to the `Partial` closing is still within the approved plan. The lead
+  chooses.
+- The PR body's Verification says "Mutants each fail R20 only". That is now confirmed above.
+
+### Findings
+
+None blocking.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: a runner clone whose `remote.origin.fetch` is not the default refspec (for example
+`clone --single-branch` of another branch). There, `git fetch origin main` updates only `FETCH_HEAD`, and the check
+compares against a stale `refs/remotes/origin/main` without a word. The documented setup does a full clone, and
+`worktree-prune.sh` fetches the same way, so this was not probed or filed.
