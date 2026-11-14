@@ -14,16 +14,15 @@ duration and load`, with mutation-gate-smoke MG1–MG17 (red 4df9203: 1 ok, 15 F
   16 ok; review pass 1 b9bed5c: 17 ok, bash 3.2), the live gate (`--base be888ff^` 13 s, then "(reused)" 1 s), the
   CI-only line on this card, hook-smoke 749, vitest 298, e2e 70, mutation 92.84 (no `src/`), plan review 4 rounds,
   diff review 2 passes
-- `backlog/README.md`: Remaining row 128 stays, status Partial; totals E1 63/1/35 of 99, total 89/1/42 of 132 (the
-  table re-padded by Prettier after the status column widened)
+- `backlog/README.md`: Remaining row 128 stays, status Partial; totals E1 63/2/34 of 99, total 89/2/41 of 132 (B1.101
+  went Partial in #320 first; merged origin/main, rows 128 and 129 both Partial)
 - `backlog/work/B1.100/closing-pr-body.md`: this body (Closing step 6)
 
 No `spec/features-map.md` or `spec/technical-requirements.md` change: B1.100 has no section. No other row names
 B1.100 in Blocked by.
 
-Left for the lead (not in this lane): B1.101's `--sync` row in `scripts/CLAUDE.md` is still unwritten. B1.100's plan
-carried it only if #315 merged before #319 was ready; #315 merged after, so the handoff to "the next card that plans
-`scripts/CLAUDE.md`" stays open.
+Left for the lead (not in this lane): B1.101's `--sync` row in `scripts/CLAUDE.md` is still unwritten (B1.101's own
+Partial, #320). B1.100's plan carried it only if #315 merged before #319 was ready; #315 merged after.
 
 `check-backlog.sh` OK.
 
