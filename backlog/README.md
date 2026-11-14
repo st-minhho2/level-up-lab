@@ -7,7 +7,7 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic                | File                                                       | Done   | Partial | Open   | Total   |
 | ------------------- | ---------------------------------------------------------- | ------ | ------- | ------ | ------- |
-| E1 Todos            | [plan/E1-todos.md](plan/E1-todos.md)                       | 63     | 1       | 35     | 99      |
+| E1 Todos            | [plan/E1-todos.md](plan/E1-todos.md)                       | 63     | 2       | 34     | 99      |
 | E2 Todos plus       | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)             | 5      | 0       | 0      | 5       |
 | E3 Todos polish     | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)         | 3      | 0       | 0      | 3       |
 | E4 Todos details    | [plan/E4-todos-details.md](plan/E4-todos-details.md)       | 3      | 0       | 1      | 4       |
@@ -15,7 +15,7 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | E6 Todos cues       | [plan/E6-todos-cues.md](plan/E6-todos-cues.md)             | 6      | 0       | 0      | 6       |
 | E7 Todos hints      | [plan/E7-todos-hints.md](plan/E7-todos-hints.md)           | 3      | 0       | 3      | 6       |
 | E8 Todos polish two | [plan/E8-todos-polish-two.md](plan/E8-todos-polish-two.md) | 0      | 0       | 3      | 3       |
-| **Total**           |                                                            | **89** | **1**   | **42** | **132** |
+| **Total**           |                                                            | **89** | **2**   | **41** | **132** |
 
 ## Execution order
 
@@ -226,7 +226,7 @@ at most 3 cards Doing (B1.18).
 | 125  | B7.4   | The search form says how many todos match                                                                 | —      | Open    | ~~D-37~~                        | Lead  | S [estimate] |
 | 126  | B7.5   | The new-todo counter warns near the limit                                                                 | —      | Open    | ~~D-37~~                        | Lead  | S [estimate] |
 | 127  | B7.6   | The due-date editor has a "Clear due date" button                                                         | —      | Open    | ~~D-37~~, ~~B7.3~~              | Lead  | S [estimate] |
-| 128  | B1.100 | Each parallel run mutation-tests all of src/lib up to three times, whatever the card changed              | —      | Open    | —                               | Lead  | S [estimate] |
+| 128  | B1.100 | Each parallel run mutation-tests all of src/lib up to three times, whatever the card changed              | —      | Partial | —                               | Lead  | S [estimate] |
 | 129  | B1.101 | GitHub reports parallel runner PRs as conflicting on the union tables, and each needs a re-run            | —      | Partial | —                               | Lead  | S [estimate] |
 | 130  | B8.1   | Opening the title editor selects the whole title                                                          | —      | Open    | ~~D-39~~                        | Lead  | S [estimate] |
 | 131  | B8.2   | The filter nav hides a link whose count is 0, except the current filter                                   | —      | Open    | ~~D-39~~                        | Lead  | S [estimate] |
