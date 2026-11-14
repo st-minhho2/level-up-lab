@@ -45,6 +45,9 @@ implements exactly one numbered section below, and every behavior change goes th
 | §38 | [contracts/36-search-count.md](contracts/36-search-count.md) | Todos: the search form says how many todos match | ✗ |
 | §39 | [contracts/37-title-counter-warning.md](contracts/37-title-counter-warning.md) | Todos: the new-todo counter warns near the 200-character limit | ✗ |
 | §40 | [contracts/38-due-date-clear.md](contracts/38-due-date-clear.md) | Todos: a "Clear due date" button removes the due date in one step | ✗ |
+| §41 | [contracts/39-edit-title-select.md](contracts/39-edit-title-select.md) | Todos: opening the title editor selects the whole title | ✗ |
+| §42 | [contracts/40-filter-hide-empty.md](contracts/40-filter-hide-empty.md) | Todos: the filter nav hides a link whose count is 0 | ✗ |
+| §43 | [contracts/41-complete-all-hidden.md](contracts/41-complete-all-hidden.md) | Todos: "Mark all complete" is not shown when there is nothing to mark | ✗ |
 
 Reading order: §1 → §2 → the section your backlog card names → [features-map.md](features-map.md).
 
