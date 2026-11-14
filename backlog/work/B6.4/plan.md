@@ -59,4 +59,4 @@ never an import; `pnpm test:e2e e2e/32-clear-completed-count.spec.ts` → AC-32.
 | 5    | code-writer                 | F30 row                                                | `docs(map): F30 … [B6.4]`                  |
 | 6    | reviewer (diff)             | `review.md` diff section                               | `docs(backlog): B6.4 review …`             |
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: approved, round 1 · Plan approved by: reviewer (D-27, tier medium, issue #275) · Rounds: 1
