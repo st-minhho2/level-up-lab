@@ -70,18 +70,33 @@ Plan review: approved, round 2 · Plan approved by: reviewer (D-27, tier medium,
 
 ## Map delta
 
-pending
+F38 · §40 · (new) → ✅ — "Clear due date" button in `src/components/todo-due-date.tsx`; evidence: `pnpm test` → 313 passed (49 files), `pnpm test:e2e` → 71 passed (`docs(map)` 940c7aa)
 
 ## Review
 
-pending
+`/review-loop`: passes 1/3, verdict ready for PR, 0 findings (`backlog/work/B7.6/review.md` "Diff review (round 1)").
+
+| Pass | #   | Finding (file:line)                                                | Source   | Kind      | Disposition | Justification                         |
+| ---- | --- | ------------------------------------------------------------------ | -------- | --------- | ----------- | ------------------------------------- |
+| 1    | 1   | `docs/metrics.md` B7.6 row ends `feat B7.6`, not a sha (non-block) | reviewer | paperwork | fix now     | 521af57 sets it to the feat `ab98c4c` |
+
+Gates run by the reviewer: lint, typecheck, `pnpm test` 313/313, `pnpm test:e2e` 71/71, check-suppressions,
+check-config-change, check-feat-commits, check-ac-coverage, check-spec-sections, check-features-map, check-plan-scope OK;
+`scripts/verify-red.sh B7.6` → red for the right reason (16 new red). One-line reverts probed on a clone:
+`save('')` → `save(draft)` 4 fail, → `save(' ')` 4 fail, no `onKeyDown` 1 fail, no `disabled={pending}` 3 fail,
+`type="submit"` 8 fail.
+
+Riskiest unfalsified: Escape on "Clear due date" (REQ-40.6) is covered only in jsdom with `fireEvent` keydowns
+(AC-40.5); no real-browser keyboard path, which §40 allows.
+
+mutation: CI only, no src/lib or src/actions change
 
 ## Evidence
 
-- AC met: pending
+- AC met: 6/6 (AC-40.1–AC-40.6; AC-37.1 rewritten under D-38, green)
 - tier: medium
-- plan deviations: pending
-- trace: pending
+- plan deviations: none
+- trace: n/a
 
 ## Checklist
 
