@@ -4,8 +4,17 @@ B1.99 — No role may write the section index, so a union-merge repair needs the
 
 - spec: none — tooling (`.claude/agents/spec-analyst.md`, `dev-lead.md` Loop 9, the hook-smoke probes); no `src/`
   change, no section
-- test: `scripts/hook-smoke.sh` probes on `spec-analyst`'s index write — pending
-- acceptance: pending
+- test: `scripts/hook-smoke.sh` probes on `spec-analyst`'s index write. Before (origin/main 8b0358e): "726 probes
+  OK". Red `d6b8f1e` (no `(red)` marker: smoke only, as B1.82, B1.88, B1.89): 5 FAIL, 742 ok — the spec-analyst
+  pattern list, its frontmatter write of the index, the headless `--role` write, the two prompt lines. Green
+  `f7de3de`: "747 probes OK". Review hardening `771ca24`/`3b0b797` and `99d685e`/`67008f4` (each probe red alone
+  first): "749 probes OK", also after merging origin/main (`2b2b2fc`). Baseline against green: every pre-existing line
+  identical except `ok spec-analyst passes: …`, which now lists the index.
+- acceptance: 4 of 4 — the guard allows `spec/technical-requirements.md` and every other path keeps its verdict
+  (726 → 749 stated above; `spec/CLAUDE.md` and `spec/features-map.md` stay refused); Loop 9 dispatches `spec-analyst`
+  for the repair and names `docs(spec): <card> merge repair -- section index rows once`; D-36's lead-session repair is
+  stated as replaced in Loop 9 ("B1.99, replaces D-36's repair by the lead's session"), `00-decisions.md` untouched, no
+  new D-n (lead's choice); label `config-change-approved`
 - risk tier: high (`.claude/`); label `config-change-approved` (D-19)
 
 ## Plan
@@ -56,7 +65,7 @@ hook-smoke: `role_patterns`/`role_probes` for spec-analyst (`0 spec/technical-re
 `states spec-analyst 'Merge repair'`.
 
 Verification: before 726 probes OK; red exactly 5 FAIL; green 747 OK (726 + 21), every pre-existing line identical
-except `ok spec-analyst passes: …`.
+except `ok spec-analyst passes: …`. After the two review passes' probes: 749 OK.
 
 Plan review: changes requested, round 2 (its one fix, `tr -s`, accepted by the lead without a round 3) · Plan approved
 by: lead, 2026-11-14 · Rounds: 1
@@ -67,11 +76,27 @@ None: tooling card, no `spec/features-map.md` row.
 
 ## Review
 
-pending
+`/review-loop`: 3 passes of 3 (`backlog/work/B1.99/review.md`). Verdict: ready for PR.
+
+| Pass | Finding                                                                                                                                                                                              | Disposition                                                                                                                                                               |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | [1] `spec-analyst.md:49`: the own row from `git diff origin/main...HEAD^1` lists the stale duplicates once any commit follows the merge (reproduced: a sibling's pre-flip §2 row read as the card's) | fix now: probe `771ca24`, fix `3b0b797` (own commits: `git log --first-parent --no-merges -p origin/main..HEAD`; Loop 9 accepts a `<`/`>` pair only for the card's own §) |
+| 2    | [1] (plausible) that log prints every version of the row, newest first, and the prompt did not say which to keep                                                                                     | fix now: probe `99d685e`, fix `67008f4` ("keep the first `+` line (the newest)")                                                                                          |
+| 3    | none                                                                                                                                                                                                 | —                                                                                                                                                                         |
+
+Plan review: round 1 (3 changes: the diff check, the repair mode and its report line, the changed `passes` line),
+round 2 (1 change: `tr -s`, not `tr -d`, so a dash in a link target stays visible), accepted by the lead without a
+round 3. Every pass ran vitest 280 passed, playwright 64 passed, mutation 92.74 (no `src/` change).
+
+Riskiest unfalsified: whether a headless spec-analyst copies origin/main's index exactly and picks the right `+` line;
+no probe runs an agent or Loop 9's diff check, which is the only gate against a sibling row whose status flips.
+
+The own-row command departs from the approved plan's text (`plan.md` unchanged after approval); the Files table and
+interfaces are as planned. `verify-red.sh B1.99` prints "no (red) commit": expected for smoke-only red commits.
 
 ## Evidence
 
-- AC met: pending
+- AC met: 4/4
 - tier: high
 - plan deviations: none
 - trace: n/a
