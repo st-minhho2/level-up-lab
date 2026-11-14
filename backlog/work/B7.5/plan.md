@@ -55,4 +55,4 @@ AC-29.n, AC-5.7 green · `pnpm test:e2e` 70 → 71 tests, `e2e/18-title-counter`
 Costs the lead takes: amber contrast is not measured [unverified]; a screen reader in browse mode reaches the warning
 (not announced, per Out of scope).
 
-Plan review: approved, round 2 · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: reviewer (D-27, tier medium, issue #309) · Rounds: 1
