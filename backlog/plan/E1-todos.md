@@ -1263,7 +1263,7 @@ nothing)
 ### B1.95 · run.sh runs its own scripts from a clone behind origin/main and never says so
 
 _tooling · no §_
-**Status: Partial** — merged 3643aa3 (#296), pending the `agent/run.sh` row of `scripts/CLAUDE.md`, where the scripts guide is to name the check (B1.97 planned that file at approval; the compose header names it). run-smoke red cf678d3: R20 FAIL, 1 of 20; green b7e9d83: 20 probes OK (bash 3.2); hook-smoke 726, vitest 280, e2e 64, mutation 92.74 (no `src/`); plan review 2 rounds, diff review 1 pass
+**Status: Done** — 3643aa3 (#296), run-smoke R20 (red cf678d3: 1 of 20 FAILED; green b7e9d83: 20 OK, bash 3.2); the scripts guide's agent/run.sh row landed with B1.98 (6da952c, #306); hook-smoke 726, vitest 280, e2e 64, mutation 92.74 (no src/)
 
 - **Spec:** none — tooling (`scripts/agent/run.sh`, its smoke, the scripts guide); no `src/` change, no section
 - **Test:** a `scripts/agent/run-smoke.sh` probe whose fixture clone's `main` is one commit behind its `origin/main`
@@ -1345,8 +1345,7 @@ branch. B1.89's plan counted 3 of 17 map appends and 2 metrics appends that re-p
 ### B1.98 · unattended.sh counts a run the lead stopped, ruled on and relaunched as unattended
 
 _tooling · no §_
-**Status: Open** — `scripts/metrics/unattended.sh 275 276 277` prints `unattended 3/3 = 100.0 %` with `messages` 0 for
-every issue of E6 batch 2. Two of the three needed the lead before their PR was ready:
+**Status: Done** — 6da952c (#306), metrics-smoke M50-M53 (red e7a9bb8: 35 ok, 16 FAIL; green e83061b: 51 ok, bash 3.2); live unattended.sh 275 276 277 -> 1/3, E5 batch 1 -> 1/3 (#207, #215), E5 batch 2 and E6 batch 1 unchanged 3/3; no-rework.sh byte-identical on 15 PRs; hook-smoke 749, vitest 298, e2e 70, mutation 92.84 (no src/); plan review 2 rounds, diff review 1 pass
 
 - #276 (B6.5): the runner's comment at 2026-11-14T03:36:09Z says `**ended** for B6.5` with no PR: the run stopped at
   step 1 for a ruling (REQ-23.7 "no role"). The lead recorded D-34 (#279) in a session and relaunched `run.sh 276`;
