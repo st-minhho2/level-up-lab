@@ -3,9 +3,14 @@
 B1.95 — run.sh runs its own scripts from a clone behind origin/main and never says so (tooling, no spec section)
 
 - spec: none — tooling (`scripts/agent/run.sh`, its smoke, the compose header); no `src/` change, no section
-- test: `scripts/agent/run-smoke.sh` R20 (new). Red: pending. Green: pending.
-- acceptance: pending. The scripts-guide row (`scripts/CLAUDE.md`) is not in this PR (B1.97 plans that file); B1.95
-  closes Partial pending it (plan, review r1 #1)
+- test: `scripts/agent/run-smoke.sh` R20 (new, 6 cases). Red cf678d3 (no `(red)` marker: smoke only, which
+  `verify-red.sh` cannot judge, as B1.82 and B1.88): R1–R19 ok, R20 FAIL, "1 of 20 probes FAILED". Green b7e9d83:
+  "20 probes OK" (bash 3.2.57; run locally, `run-smoke.sh` is in no CI job), again after merging `origin/main`
+  (0a7da08). `hook-smoke.sh` 726 OK; `pnpm test` 280; e2e 64; mutation 92.74 (no `src/` change; reviewer).
+- acceptance: 5 of 6 — fetch, then compare before any claim; behind refuses with exit 1, count, both shas and the
+  fix; ahead still runs; a failed fetch refuses with the reason; label `config-change-approved`. Not in this PR: the
+  scripts guide's `agent/run.sh` row (`scripts/CLAUDE.md` was planned by B1.97 at approval); the compose header names
+  the check. B1.95 closes Partial pending that row (plan, review r1 #1)
 - risk tier: high (`scripts/agent/`, `.devcontainer/`); label `config-change-approved` (D-19)
 
 ## Plan
@@ -90,22 +95,33 @@ None: tooling card, no `spec/features-map.md` row.
 
 ## Review
 
-Pending: `/review-loop` (diff review).
+`/review-loop`: pass 1/3, ready for PR, 0 findings (`backlog/work/B1.95/review.md` "Diff review (round 1)").
+
+| Pass | #   | Finding (file:line)                                        | Source   | Kind      | Disposition      | Justification                                                                                                      |
+| ---- | --- | ---------------------------------------------------------- | -------- | --------- | ---------------- | ------------------------------------------------------------------------------------------------------------------ |
+| 1    | 1   | `run.sh` `behind_problem`: `&& [[ -n "$n" ]]` has no probe | dev-lead | test gap  | no change needed | bash 3.2 `read -r a b < <(false)` returns 1, so a git failure already refuses; the reviewer's mutant is equivalent |
+| 1    | 2   | compose header line 10 still names `chore/B1.62-…` (B1.73) | reviewer | stale doc | out of scope     | B1.73 owns that line; a clone that followed it still refuses (advice says `merge`, never a stale run)              |
+
+Mutants (reviewer, 11 of `run.sh`): 10 killed, each by R20 alone (no fetch, failed fetch ignored, no retry, retry
+without sleep, check after `eligible.sh`, sides swapped, `return 0`, `--ff-only` always, diverged runs, ahead
+refuses); 1 equivalent (finding 1). Riskiest unfalsified: a `--single-branch` clone of another branch would fetch
+`main` into `FETCH_HEAD` only and compare against a stale `origin/main`; the documented setup does a full clone. The
+real HTTPS fetch in the runner container is `[unverified]` (no live run).
 
 ## Evidence
 
-- AC met: pending
+- AC met: 5/6
 - tier: high
-- plan deviations: none
+- plan deviations: none (red commit subject without `(red)`, see test line)
 - trace: n/a
 
 ## Checklist
 
-- [ ] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
-- [ ] Red commit precedes the change commit; no `feat(` commit touches `*.test.*` or `e2e/**`.
-- [ ] Every `AC-§.n` of the section is a test title; mutation on `src/lib` + `src/actions` ≥ 70 %. (n/a: no section)
-- [ ] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected config changed with label `config-change-approved`.
-- [ ] Migrations reviewed as SQL; `prisma/seed.ts` updated if a table changed. (n/a)
-- [ ] `spec/features-map.md` row moved (n/a); `docs/metrics.md` per-card row filled; mistake-log updated if a known mistake repeated.
+- [x] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
+- [x] Red commit precedes the change commit; no `feat(` commit touches `*.test.*` or `e2e/**`.
+- [x] Every `AC-§.n` of the section is a test title; mutation on `src/lib` + `src/actions` ≥ 70 %. (n/a: no section; 92.74)
+- [x] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected config changed with label `config-change-approved`.
+- [x] Migrations reviewed as SQL; `prisma/seed.ts` updated if a table changed. (n/a)
+- [x] `spec/features-map.md` row moved (n/a); `docs/metrics.md` per-card row (n/a: tooling, as B1.88); mistake-log: no repeat.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
