@@ -226,3 +226,91 @@ own §.
 Riskiest unfalsified: whether a headless sonnet `spec-analyst` reproduces origin/main's index cell for cell through
 Write. Since B1.97 (on main now), Prettier no longer re-pads the file, so `tr -s` hides only changes in run length.
 No agent was run, and no probe executes the Loop 9 diff check.
+
+## Diff review (round 2)
+
+Range since round 1: 717c46e (review pass 1), red 771ca24 (`scripts/hook-smoke.sh` only, one new `states` probe),
+fix 3b0b797 (`.claude/agents/spec-analyst.md`, `.claude/agents/dev-lead.md`). origin/main is now 012d479 (B1.97 and
+its closing). No file changed on both sides since the merge base 8b0358e (`git diff --name-only` of both sides share
+no path).
+
+### Commands (last line of each, run by me in the worktree unless the copy is named)
+
+| Command                                               | Result                                                                                                                                                                                                                                                                 |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                           | `All matched files use Prettier code style!`                                                                                                                                                                                                                           |
+| `pnpm typecheck`                                      | exit 0                                                                                                                                                                                                                                                                 |
+| `pnpm test`                                           | `Tests  280 passed (280)`                                                                                                                                                                                                                                              |
+| `pnpm test:e2e`                                       | `64 passed (1.3m)`                                                                                                                                                                                                                                                     |
+| `pnpm test:mutation`                                  | `Final mutation score of 92.74 is greater than or equal to break threshold 70` (no `src/` change)                                                                                                                                                                      |
+| `scripts/hook-smoke.sh`                               | `hook-smoke: 748 probes OK`                                                                                                                                                                                                                                            |
+| `check-suppressions.sh`                               | `[check-suppressions] OK: no new suppressions`                                                                                                                                                                                                                         |
+| `check-config-change.sh`                              | prints `.claude/docs/hooks.md` and exits 1 locally, where the label is not visible. PR #295 carries `config-change-approved` (`gh pr view 295`)                                                                                                                        |
+| `check-feat-commits.sh`                               | `[check-feat-commits] OK: no feat commit touches tests`                                                                                                                                                                                                                |
+| `check-ac-coverage.sh`                                | `[check-ac-coverage] OK: every criterion of a shipped section has a test`                                                                                                                                                                                              |
+| `check-spec-sections.sh`                              | exit 1 on the branch as it is: two sections cited without a heading. The only citing file is this `review.md` (round 1's line about origin/main's new sections). Those headings are on origin/main, so the check passes after the merge (next row). See the note below |
+| `check-spec-sections.sh` (copy merged with 012d479)   | `[check-spec-sections] OK: sections cited: 1 … 37`                                                                                                                                                                                                                     |
+| `check-features-map.sh`                               | `[check-features-map] OK`                                                                                                                                                                                                                                              |
+| `check-agent-frontmatter.sh`                          | `[check-agent-frontmatter] OK: 13 files`                                                                                                                                                                                                                               |
+| `check-plan-scope.sh`                                 | `[check-plan-scope] OK: chore/B1.99-index-guard stays inside the approved plan of B1.99`                                                                                                                                                                               |
+| `scripts/verify-red.sh B1.99`                         | exit 1, `no 'test(<pkg>): B1.99 … (red)' commit`, as in round 1. `--auto` prints `nothing to verify`. The hardening red 771ca24 was proven by the revert probe below                                                                                                   |
+| copy `git clone` + `git merge` of origin/main 012d479 | clean merge. `hook-smoke`: 747 `ok` plus the clone-setup FAIL `require-review.sh spoke on a clean tree` that round 1 also saw (748 probes). `table-merge-smoke.sh`: `15 probes OK`. `prettier --check` on `hooks.md` and the agents: clean                             |
+| `git diff --stat origin/main...HEAD`                  | 7 files: the same 5 plan rows as round 1                                                                                                                                                                                                                               |
+| CI on the pushed head 6282910 (`gh pr checks 295`)    | all 7 jobs pass. 3b0b797 is not pushed yet                                                                                                                                                                                                                             |
+
+### Checklist
+
+| Check                                     | Result                                                                                                                                                                                                                                                                                                                                                                       |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| round 1 finding [1] fixed                 | yes. On a scratch repo (merge=union, a merge followed by more commits), the new command prints only the card's own commits. The old `HEAD^1` form printed the sibling rows. The Loop 9 sentence now accepts a `<`/`>` pair only for the card's own §                                                                                                                         |
+| no test weakened after red                | `git log --first-parent --no-merges 771ca24..HEAD -- '*.test.*' e2e/ scripts/hook-smoke.sh` is empty. No merges in `d6b8f1e..HEAD`                                                                                                                                                                                                                                           |
+| red then fix, convention subjects         | `test(hooks): B1.99 review pass 1 -- …` without `(red)`, as `backlog/CLAUDE.md` says for hardening tests. Then `fix(agents): …`. The fix touches no test file                                                                                                                                                                                                                |
+| would a revert fail a probe?              | copy: putting back 771ca24's `spec-analyst.md` gives exactly one new FAIL, `does not state "git log --first-parent --no-merges -p origin/main..HEAD -- …"`. Putting back 771ca24's `dev-lead.md` (the "only for the card's own §" wording) gives no new FAIL. That is prose, which the plan's cost already names                                                             |
+| every changed file in `plan.md`           | yes. The approach text at `plan.md:9` still names `HEAD^1`, and so does `pr-body.md:21`. dev-lead says the PR body will state the change. It is not done yet (pr-body.md is still at 6282910)                                                                                                                                                                                |
+| no secret, no suppression; Zod/Prisma/SQL | none; n/a (no `src/`, `prisma/`, `e2e/`)                                                                                                                                                                                                                                                                                                                                     |
+| origin/main's B1.97 vs the recipe         | B1.97 puts the index in `.prettierignore` and adds the rule "append a row unaligned; never re-pad the others". The recipe writes origin/main's file plus the card's row as committed, which matches that rule. With no re-pad, duplicates now come only from rows edited on both sides of a conflict hunk. The recipe and `tr -s` still cover that case. No change is needed |
+
+Answers to the two questions in the brief:
+
+- **Own-row change inside a merge resolution.** The index is `merge=union`, so a merge never stops on it, and no
+  sanctioned step edits it inside a merge. The repair is a separate `docs(spec)` commit, and code-writer and
+  test-writer cannot write the file. Any own-row text in the branch therefore starts in a non-merge first-parent
+  commit, and `--no-merges` sees it. If a lead hand-edited the row during a merge, the log would miss it. The Loop 9
+  diff check would then show the row as more than the card's own row, and the run would stop, which is safe. A later
+  repair commit is itself a non-merge commit, so it shows in the log. On the scratch repo its patch printed one
+  sibling `-` line and the card's own `+` line, and no sibling `+` line.
+- **origin/main at b35c5d6/012d479.** See the last checklist row. The merge is clean, and every guard passes on the
+  merged copy.
+
+Note, not a finding: `check-spec-sections.sh` fails on the unmerged branch. The cause is round 1's own `review.md`
+text, which cites two sections that exist only on origin/main. CI runs on `refs/pull/295/merge` and Loop 9 merges
+origin/main before the push, so neither is red. A run that calls the guard before that merge sees a failure that is
+not a duplicate row. The Loop 9 trigger is worded "a section row twice", and the guard's message is different, so a
+repair should not be dispatched for it.
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: .claude/agents/spec-analyst.md:49-51 (Merge repair: "the row the card's own commits add or change, as
+           git log --first-parent --no-merges -p … prints them")
+    DEFECT: the log prints every version of the card's own row, newest first, and the prompt does not say which
+            one to keep. The old net diff printed one version.
+    TRIGGER: the card's own commits edit its row twice. Scratch repo: `docs(spec): §3 add` writes `| §3 | … | ✗ |`,
+            then a later commit makes it `◐`. The log prints `-✗`, `+◐`, `+✗`, and the old `git diff main...HEAD`
+            printed only `+◐`.
+    WRONG BEHAVIOUR: if spec-analyst keeps the older `+✗` line, the Loop 9 check prints one `>` line for the card's
+            own §. That is the accepted shape, so the stale row is committed with no stop. Only the PR diff would show
+            it to the lead.
+    CONFIDENCE: confirmed for the derivation (I ran it); plausible for the pick (no agent was run)
+```
+
+Not blocking. A card editing its own index row twice before Loop 9 is rare, and the result shows in the card's own
+row in the PR diff. Fixing it takes one phrase in the same paragraph, for example "if it prints the row more than
+once, keep the first `+` line (the newest)". dev-lead may fold that in or file it.
+
+Verdict: ready for PR. Before the push: update `pr-body.md:21` to the new command, as the brief says, and run Loop 9's
+merge (it is clean on the copy).
+
+Riskiest unfalsified: whether a headless sonnet `spec-analyst` picks the newest own-row version out of a multi-commit
+log and retypes origin/main's index exactly. No agent was run, and no probe executes the Loop 9 diff check.
