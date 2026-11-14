@@ -3,9 +3,14 @@
 B1.98 — unattended.sh counts a run the lead stopped, ruled on and relaunched as unattended (tooling, no spec section)
 
 - spec: none — tooling (`scripts/metrics/unattended.sh`, its smoke, `docs/metrics.md`'s definition); no `src/` change
-- test: `scripts/metrics-smoke.sh` M50–M53 (new) and M30, M34 (now read the commit inside the window). Red / green:
-  pending.
-- acceptance: pending
+- test: `scripts/metrics-smoke.sh` M50–M53 (new) and M30, M34 (now read the commit inside the window). Red e7a9bb8 (no
+  `(red)` marker: smoke only, which `verify-red.sh --auto` cannot judge, as B1.83 and B1.95): "35 ok, 16 FAIL", M50
+  and M51 read `yes`. Green e83061b: "51 ok, 0 FAIL" (/bin/bash 3.2.57; `metrics-smoke.sh` is in no CI job), again
+  after merging `origin/main` (8f92727). hook-smoke 749 OK; vitest 298; e2e 70; mutation 92.84 (no `src/`; reviewer).
+- acceptance: 6 of 6 — a stop inside the window makes the issue `no` (column `stops`); so does a PR commit without
+  `Agent-Run:` (column `human_commits`); 275–277 print 1/3; E5 and E6 batch 1 verdicts stated (Evidence);
+  `docs/metrics.md` row 28 names both cases, bash 3.2, gh only, read-only; label `config-change-approved`. Also the
+  `scripts/CLAUDE.md` `agent/run.sh` row for B1.95's behind check (B1.95 goes Done in this card's closing lane)
 - risk tier: medium (`scripts/agent/tier.sh`; no CI-protected path); label `config-change-approved` per the card (D-19)
 
 ## Plan
@@ -112,22 +117,46 @@ None: tooling card, no `spec/features-map.md` row.
 
 ## Review
 
-pending
+`/review-loop`: pass 1/3, ready for PR, 0 findings (`backlog/work/B1.98/review.md` "Diff review (round 1)"). Plan
+review: 2 rounds (r1 4 reasons, r2 approved with 3 notes, folded into M51–M53 before red).
+
+| Pass | #   | Finding (file:line)                                        | Source   | Kind      | Disposition      | Justification                                                                                                      |
+| ---- | --- | ---------------------------------------------------------- | -------- | --------- | ---------------- | ------------------------------------------------------------------------------------------------------------------ |
+| 1    | 1   | red commit has no `(red)` marker                           | dev-lead | deviation | no change needed | with the marker and no `*.test.ts(x)`, CI's `verify-red.sh --auto` fails (verify-red.sh:73); B1.83/B1.95 precedent |
+| 1    | 2   | M30 flips `yes` → `no`                                     | dev-lead | test edit | no change needed | not a weakening: its 02:50 trailer-less commit is inside the window; `yes` stays pinned by M33, M44, M46–M49, M52  |
+| 1    | 3   | a lead-finished high-tier run (no trailer) would read `no` | reviewer | note      | out of scope     | the resume path has been undefined since B1.57 Q5; no live issue has reached it                                    |
+
+Mutants (reviewer and dev-lead, on clones): stops/commit bounds `>=`/`<=` at label and ready, whole outcome line,
+`?` fallback, verdict without `human`: all killed (M30, M34, M51–M53). Riskiest unfalsified: e65ffc9 (author
+`level-up-lab runner`, no trailer) counted as human on #207; #207 is `no` on its `ended` stop alone.
 
 ## Evidence
 
-- AC met: pending
+Live, branch `unattended.sh` (gh, 2026-11-14):
+
+| Batch             | Before | After   | Changed rows (stops · human_commits)                                    |
+| ----------------- | ------ | ------- | ----------------------------------------------------------------------- |
+| E6 b2 275–277     | 3/3    | **1/3** | #276 `ended` · -; #277 `ended,ended` · 1bb65dd                          |
+| E5 b1 207 214 215 | 3/3    | 1/3     | #207 `ended` · e65ffc9; #215 `ended` · - (E5 recorded B5.3's D-31 stop) |
+| E5 b2 223–225     | 3/3    | 3/3     | unchanged: no stop, no trailer-less commit in the window                |
+| E6 b1 261–263     | 3/3    | 3/3     | unchanged                                                               |
+| E7 b1 292–294     | 3/3    | 3/3     | unchanged                                                               |
+
+`no-rework.sh` on 15 agent PRs (278 281 282 211 216 221 229 232 235 264 265 266 300 301 302): origin/main's copy and
+the branch's output byte-identical ("no-rework 15/15 = 100.0 % (pending 0)").
+
+- AC met: 6/6
 - tier: medium
-- plan deviations: pending
+- plan deviations: red commit subject without `(red)` (see test line); PR title shortened to the wrapper's 80 characters
 - trace: n/a
 
 ## Checklist
 
-- [ ] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
-- [ ] Red commit precedes the change commit; no `feat(` commit touches `*.test.*` or `e2e/**`.
-- [ ] Every `AC-§.n` of the section is a test title; mutation on `src/lib` + `src/actions` ≥ 70 %. (n/a: no section)
-- [ ] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected config changed with label `config-change-approved`.
-- [ ] Migrations reviewed as SQL; `prisma/seed.ts` updated if a table changed. (n/a)
-- [ ] `spec/features-map.md` row moved (n/a); `docs/metrics.md` per-card row (n/a: tooling); mistake-log: no repeat.
+- [x] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
+- [x] Red commit precedes the change commit; no `feat(` commit touches `*.test.*` or `e2e/**`.
+- [x] Every `AC-§.n` of the section is a test title; mutation on `src/lib` + `src/actions` ≥ 70 %. (n/a: no section; 92.84)
+- [x] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected config changed with label `config-change-approved`.
+- [x] Migrations reviewed as SQL; `prisma/seed.ts` updated if a table changed. (n/a)
+- [x] `spec/features-map.md` row moved (n/a); `docs/metrics.md` per-card row (n/a: tooling); mistake-log: no repeat.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
