@@ -52,4 +52,4 @@ Costs the lead takes: the page's `flex flex-col gap-6` sees one child instead of
 "N items left" and "All done" goes (no visible text changes; §34 names no class; keeping the gap needs a D-n and a
 `docs(spec)` edit, advice question 2). B6.5 adds a second `status` on `/` in this batch; both cards scope by text.
 
-Plan review: approved, round 1 · Plan approved by: · Rounds: 1
+Plan review: approved, round 1 · Plan approved by: reviewer (D-27, tier medium, issue #277) · Rounds: 1
