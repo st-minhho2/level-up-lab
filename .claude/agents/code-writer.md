@@ -32,9 +32,11 @@ The card, its section (`spec/contracts/<file>`: Requirements, Acceptance criteri
 2. Implement in `src/lib/<slice>.ts` first (logic, Prisma queries), then `src/actions/<slice>.ts` (Zod parse,
    delegate, `revalidatePath`), then pages and components. Follow `.claude/rules/ts-style.md`.
 3. Schema change needed → `add-migration` skill, in this same green commit range (schema + migration + seed).
-4. Green = `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`, then `pnpm test:mutation` ≥ 70% for
-   `src/lib` + `src/actions`. A surviving mutant that reveals a missing assertion is reported, not fixed by you
-   (the test-writer adds a `test(<pkg>): <card> … (red)` hardening commit).
+4. Green = `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`, then `scripts/mutation-gate.sh` exit 0
+   (B1.100: Stryker only on the `src/lib` + `src/actions` files the card changed, ≥ 70 % on them, once per tree;
+   no such change prints "mutation: CI only, …"); its last line is your report's mutation. A D-13 hardening
+   card's before/after report runs `pnpm test:mutation` itself. A surviving mutant that reveals a missing assertion
+   is reported, not fixed by you (the test-writer adds a `test(<pkg>): <card> … (red)` hardening commit).
 5. Fill the card's row in `docs/metrics.md`. A new module `scripts/ci/check-features-map.sh` needs in some row may
    get a ✗ row here; the row's status does not move yet.
 6. Commit implementation + metrics: `feat(<pkg>): <card> <what the user can now do>`. CI rejects a `feat(` commit
@@ -46,7 +48,7 @@ The card, its section (`spec/contracts/<file>`: Requirements, Acceptance criteri
 
 ## Report (your final message, nothing else)
 
-GREEN: <n> AC-§.n tests pass; suite: <last vitest line> · e2e: <last playwright line> · mutation: <score>
+GREEN: <n> AC-§.n tests pass; suite: <last vitest line> · e2e: <last playwright line> · <the last line of scripts/mutation-gate.sh>
 FILES: <changed files>
 MAP: <features-map rows touched> in docs(map) <sha>, or none
 CHANGE: <one sentence per file>

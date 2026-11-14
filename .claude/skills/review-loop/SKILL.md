@@ -42,7 +42,8 @@ Never weaken an assertion; never special-case a test input.
 
 ## 4. Re-verify
 
-`pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`, mutation if `src/lib` or `src/actions` changed. A fix
+`pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && scripts/mutation-gate.sh` (B1.100: Stryker only on the
+card's changed `src/lib` + `src/actions` files, and only when `src/` changed since its last run). A fix
 that touched an action or a lib function goes back to step 1 (next pass). Clean → `.claude/hooks/mark-reviewed.sh`
 from the worktree.
 

@@ -62,11 +62,15 @@ blocking finding" with the riskiest unfalsified spot named is a valid outcome.
 **Run yourself; paste the last line of each:**
 
 ```bash
-pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm test:mutation
+pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && scripts/mutation-gate.sh
 scripts/ci/check-suppressions.sh && scripts/ci/check-config-change.sh && scripts/ci/check-feat-commits.sh
 scripts/ci/check-ac-coverage.sh && scripts/ci/check-spec-sections.sh && scripts/ci/check-features-map.sh
 scripts/verify-red.sh <card> && git diff --stat main...HEAD
 ```
+
+`scripts/mutation-gate.sh` (B1.100) reuses the green gate's score when `src/` has not changed since ("(reused)"),
+runs Stryker on the card's changed `src/lib` + `src/actions` files when it has, and prints "mutation: CI only, …"
+when the card changes none (CI's `mutation` job still runs the whole layer). `--force` reruns on doubt.
 
 **Checklist.** every AC-§.n has a test whose assertion matches its Then · no test weakened after the red commit
 (`git log --first-parent --no-merges <red>..HEAD -- '*.test.*' e2e/` empty or explained in a `test(...)` commit;
