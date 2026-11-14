@@ -64,9 +64,7 @@ many were changed". §32 (B6.4) did the same thing for "Clear completed".
 ### B7.3 · The due-date editor has a "Today" button
 
 _F35 · section 37_
-**Status: Open** — `spec/contracts/13-due-date.md:23,76` (REQ-15.6, the §15 contract) list the edit form's children
-as one date field and one "Update due date" button. `26-escape-due-date.md:23` (REQ-28.7) says §15's markup does not
-change. `29-due-today.md:68` and `15-overdue.md:69` (§31's and §17's Out of scope) list "a new control".
+**Status: Done** — 14defd1 (#301), 6 AC-37.n criteria green (unit 280 → 291: AC-37.1–37.5 as 11 cases, red proven by verify-red.sh; e2e 64 → 65, AC-37.6), mutation 93.22 (lib, actions unchanged); unattended and no-rework 1/1 (D-29), one runner run
 
 - **Acceptance:**
   - In edit mode a `type="button"` "Today" fills the date field with `todayOf(new Date())` read on click. It does not
