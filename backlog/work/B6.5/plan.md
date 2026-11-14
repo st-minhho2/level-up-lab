@@ -52,4 +52,4 @@ Costs the lead takes: one assertion of the existing AC-23.3 test goes (D-34; its
 stronger `role="status"` check; §23's function-contract line still reads "renders nothing", which `/spec-trace` will
 report until a D-n tidies it.
 
-Plan review: pending, round 2 (round 1: 2 reasons, AC-23.3 title kept, AC-33.5 locator named) · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 (round 1: 2 reasons, AC-23.3 title kept, AC-33.5 locator named) · Plan approved by: reviewer (D-27, tier medium, issue #276) · Rounds: 1
