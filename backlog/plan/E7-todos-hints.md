@@ -142,5 +142,7 @@ date". REQ-15.6 (line 23) and the §15 contract (line 76) list the edit form's c
     commit (D-37).
   - Mounts in `src/components/todo-due-date.tsx`; contract `spec/contracts/38-due-date-clear.md` (section 40).
   - Batch 2.
-- **Tier:** full · **Depends on:** ~~D-37~~, B7.3 · **Owner:** Lead · **Size:** S [estimate]
+- **Spec:** §40 — unchanged (contract `spec/contracts/38-due-date-clear.md`, written before the label under D-37 and D-38; edits REQ-15.6 and §15's contract, and §37's REQ-37.1, AC-37.1 and REQ-37.3; states REQ-28.7, §28's a "Cancel" button and the "a new control" lines of §17 and §31 do not apply)
+- **Test:** `src/components/todo-due-date-clear.test.tsx::AC-40.2: after typing 2026-12-01, clicking "Clear due date" calls setTodoDueDateAction once with (todo-9, "") for dueDate 2026-11-05 and for no dueDate, then shows 0 "Due date" fields, 0 alerts and 1 button "Edit due date"` — red because: `TodoDueDate` has no button named "Clear due date"
+- **Tier:** full · **Depends on:** ~~D-37~~, ~~D-38~~, B7.3 · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B7.6/`
