@@ -2,7 +2,7 @@
 # Local mutation gate of a card (B1.100): runs Stryker only when the card's diff changes a .ts file under src/lib or
 # src/actions, only on the files it changes, and at most once per unchanged tree. CI's `mutation` job is not this
 # script: it still runs `pnpm test:mutation` on the whole layer for every PR. A D-13 hardening card's before/after
-# report runs `pnpm test:mutation` itself (its tree may not change). Probes: scripts/mutation-gate-smoke.sh MG1–MG16.
+# report runs `pnpm test:mutation` itself (its tree may not change). Probes: scripts/mutation-gate-smoke.sh MG1–MG17.
 #
 #   scripts/mutation-gate.sh [--base <ref>] [--force]
 #
@@ -23,12 +23,13 @@
 # Last stdout line, for the PR's evidence: "mutation: <score> % on <what> (ran|reused), src <tree7>" or the CI-only line.
 set -euo pipefail
 
+usage() { sed -n '2,23p' "$0" >&2; exit 2; }
 BASE_REF=origin/main FORCE=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --base) BASE_REF="${2:?--base needs a ref}"; shift 2 ;;
+    --base) [[ $# -ge 2 && -n "$2" ]] || usage; BASE_REF="$2"; shift 2 ;;
     --force) FORCE=1; shift ;;
-    *) sed -n '2,23p' "$0" >&2; exit 2 ;;
+    *) usage ;;
   esac
 done
 
