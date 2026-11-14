@@ -1395,3 +1395,60 @@ _tooling · no §_
   - The PR carries `config-change-approved` (D-19).
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.99/`
+
+### B1.100 · Each parallel run mutation-tests all of src/lib up to three times, whatever the card changed
+
+_tooling · no §_
+**Status: Open** — `pnpm test:mutation` (Stryker over every `src/lib/**/*.ts` and `src/actions/**/*.ts`,
+`stryker.config.mjs`, `concurrency: 4`) runs in three places of one card: `code-writer` step 4
+(`.claude/agents/code-writer.md:35`), the green gate (`.claude/skills/tdd-loop/SKILL.md:26`) and the `reviewer`'s own
+gate run (`.claude/agents/reviewer.md:65`). CI runs it again on the PR. In E7 batch 1 (2026-11-14, issues 292–294)
+two of the three cards changed no `src/lib` or `src/actions` file (B7.1, B7.3), yet every run mutation-tested the whole
+layer. With three runs at once the runner container's load average reached 29–45 on 8 CPUs, and each run took
+2 h 21 min–2 h 29 min from label to ready, against 37 min for E6's B6.1 run alone. Batch 1's throughput came out
+7.7 cards per 8 h (label 08:23Z, last merge 11:30Z), under D-29's 9.4
+
+- **Spec:** none — tooling (`code-writer.md`, `tdd-loop/SKILL.md`, `reviewer.md`, possibly a `scripts/` helper); no
+  `src/` change, no section
+- **Test:** a `scripts/hook-smoke.sh` probe (or a new script's smoke) on the rule that decides whether a card runs
+  mutation locally — red because: today the prompts run it unconditionally
+- **Acceptance:**
+  - Locally, mutation runs only when the card's diff against its base touches `src/lib/**` or `src/actions/**`, and
+    then at most once per unchanged `src/` tree. The `reviewer` reuses the green gate's score, by reading its report
+    and the tree hash, when `src/` has not changed since; it runs mutation itself only when it has. CI's mutation
+    job is unchanged, so every PR is still mutation-tested before merge.
+  - When it runs locally, the plan may limit `--mutate` to the changed files, and say whether the 70 % bar is read
+    on that subset or on the full report.
+  - A card that skips local mutation says so in its PR evidence ("mutation: CI only, no src/lib or src/actions change").
+  - The next parallel batch's per-run duration and load are reported.
+  - The PR carries `config-change-approved` (D-19).
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.100/`
+
+### B1.101 · GitHub reports parallel runner PRs as conflicting on the union tables, and each needs a re-run
+
+_tooling · no §_
+**Status: Open** — B1.89 left "GitHub's own mergeability check honours `union`" `[unverified]`. Measured in E7 batch 1
+(2026-11-14): after #301 (B7.3) merged at 10:52Z, #300 (B7.2) and #302 (B7.1), both already ready, read
+`mergeStateStatus: DIRTY`, `mergeable: CONFLICTING`. A local `git merge origin/main` of each branch was clean, because
+`.gitattributes` gives `spec/features-map.md` and `docs/metrics.md` `merge=union`. GitHub's merge ignores it. Both runs
+had ended at ready, so the lead re-ran `run.sh 292` (10:55–11:01Z) and `run.sh 293` (11:02–11:11Z) to merge `main`
+in Loop 9 and push. That cost about 15 minutes of runner time, plus each re-run's wait for the previous merge.
+Every parallel batch meets this after its first merge. "Update branch" or GitHub's conflict editor would add a
+human-authored commit, which D-29's no-rework counts against the PR
+
+- **Spec:** none — tooling (the runner, `scripts/agent/run.sh` or `dev-lead.md` Loop 9, `scripts/CLAUDE.md`); no
+  `src/` change, no section
+- **Test:** a `scripts/agent/run-smoke.sh` probe on the chosen mechanism — red because: today nothing brings a ready
+  runner PR back in line after a sibling merges
+- **Acceptance:**
+  - After a sibling's merge, a ready runner PR becomes mergeable on GitHub without a human-authored commit. The plan
+    picks the way, for example:
+    - a light `run.sh --sync <issue>` that only merges `origin/main` with the repo's attributes, runs the guards and
+      pushes, with an `Agent-Run:` trailer;
+    - or the feature PR leaves the union tables to the closing lane, so sibling feature PRs stop sharing lines.
+  - The measured GitHub behaviour replaces B1.89's `[unverified]` line where it is cited.
+  - The time from a sibling's merge to the next PR being mergeable is reported for the next parallel batch.
+  - The PR carries `config-change-approved` (D-19).
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.101/`

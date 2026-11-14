@@ -13,7 +13,7 @@ Files:
 - `backlog/README.md`:
   - Remaining row 124 removed; `~~B7.3~~` in node 124.
   - B7.6's "Blocked by" now `~~D-37~~, ~~B7.3~~`.
-  - Totals updated: E7 1/0/5, total 85/1/41 of 127.
+  - Totals updated: E7 1/0/5, total 85/1/43 of 129 (after the filing #304 added B1.100 and B1.101).
 - `spec/technical-requirements.md`: §37 index row ✗ → ✅.
 - `docs/metrics.md`: B7.3 Green column from the feat commit df8e436 to the merged sha 14defd1, as the E5 and E6
   closings did.
@@ -29,6 +29,9 @@ D-29 for issue #294:
 
 Diff review: 1 round, 0 findings (`work/B7.3/review.md`). Riskiest unfalsified, carried from the feature PR: REQ-37.3
 ("Today" does not change the row's message) has no criterion; guarding it needs a new AC under a D-n.
+
+#304 merged first and re-padded the Remaining table, so `origin/main` was merged in: main's README was kept and
+this card's lines were applied to it again (row 124 out, B7.6's blocker struck, totals).
 
 `check-backlog.sh`, `check-spec-sections.sh`, `check-features-map.sh`, `check-ac-coverage.sh` (`§37 criteria=6
 covered=6`) OK.
