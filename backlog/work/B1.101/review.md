@@ -260,3 +260,51 @@ Verdict: back to test-writer
 Riskiest unfalsified: GitHub's mergeability of a synced PR (holds by construction: once the branch contains
 `origin/main`, GitHub's merge base is main's tip), and INT reaching `git push` itself mid-transfer, which only a real
 batch shows.
+
+## Diff review (round 2)
+
+HEAD 3357890. Since round 1: cf071f4 (this file), 1dae919 `test(scripts): B1.101 review pass 1 -- probe a push origin
+rejects` (run-smoke.sh only, +10 lines), and 3357890, a merge of `origin/main` (#312, #314, docs only). `git diff
+803ef8c HEAD -- scripts/ .claude .devcontainer` is the 10 smoke lines; `run.sh` is unchanged.
+
+### Command results (last line of each)
+
+| Command                                             | Result                                                                                                                                            |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint` · `pnpm typecheck`                      | "All matched files use Prettier code style!" · exit 0                                                                                             |
+| `pnpm test`                                         | "Test Files 48 passed (48)", "Tests 298 passed (298)"                                                                                             |
+| `pnpm test:e2e`                                     | "70 passed (1.4m)"                                                                                                                                |
+| `pnpm test:mutation`                                | "Final mutation score of 92.84 is greater than or equal to break threshold 70" (no `src/` change)                                                 |
+| `/bin/bash scripts/agent/run-smoke.sh`              | "22 probes OK"                                                                                                                                    |
+| the same, push-failure reset removed (copy)         | `push: rc=1 … the branch is back at 5a30eb1`, `after the rejected push: rc=1 … HEAD 839245c is not origin/…`, `FAIL R22`, "1 of 22 probes FAILED" |
+| `scripts/hook-smoke.sh`                             | "hook-smoke: 749 probes OK"                                                                                                                       |
+| suppressions · feat-commits · ac-coverage           | OK · OK · OK                                                                                                                                      |
+| spec-sections · features-map · backlog · plan-scope | OK · OK · "OK: README matches the cards" · "OK: … stays inside the approved plan of B1.101"                                                       |
+| `scripts/next-task.sh --check B1.101`               | "no overlap with any Doing or Review card"                                                                                                        |
+| `git rev-list --count HEAD..origin/main`            | 0 (level with `origin/main`)                                                                                                                      |
+| `git diff --stat origin/main...HEAD`                | 8 files, 665 insertions, 7 deletions                                                                                                              |
+
+`verify-red.sh` and `check-config-change.sh` are as in round 1 (no `(red)` marker, explained; the label is read in CI).
+
+### Checklist
+
+- Round 1 #1 is resolved. The new R22 case refuses a rejected push with the branch, origin's branch, index and comments
+  as before, then a second `--sync` syncs. The mutant that deletes the reset now fails R22. I confirmed this on a copy
+  of HEAD, as shown in the table above.
+- No test was weakened. The only test-side change after the red commit is 1dae919, a `test(...)` hardening commit
+  without `(red)`, which adds a case and loosens nothing. The merge 3357890 touches no test, smoke or script
+  (`--remerge-diff` over those paths is empty).
+- Every changed file is still in the plan (`check-plan-scope.sh`). The extra mutant goes in the PR body's evidence, not
+  in `plan.md`, which is right: the approved plan stays as approved.
+- Round 1 note 3 (wording). I accept leaving it. The comment's last line, "after the next merge: `run.sh --sync <n>`",
+  covers the BEHIND case. The unresolved-thread case is rare on a runner PR, and it is visible on GitHub.
+
+### Findings
+
+None.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: GitHub's mergeability of a synced PR. It holds by construction: once the branch contains
+`origin/main`, GitHub's merge base is main's tip. Only the next real batch shows it, and that batch also yields pending
+item (b). INT reaching `git push` itself mid-transfer is still unprobed (round 1 note 1).
