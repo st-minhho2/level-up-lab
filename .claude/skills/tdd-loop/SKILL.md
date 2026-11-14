@@ -23,7 +23,10 @@ Preconditions: `plan.md` approved, skeleton committed (`chore(<pkg>): <card> ske
    the map (B1.85: dev-lead's path guard refuses `spec/features-map.md`, so the map commit is code-writer's).
 4. **Green gate, run by you**: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`;
    `git log --first-parent --no-merges --stat <red>..HEAD -- '*.test.*' e2e/` empty and
-   `git log --first-parent --merges --remerge-diff --format= <red>..HEAD -- '*.test.*' e2e/` empty or read by the reviewer; `pnpm test:mutation` ≥ 70 on `src/lib` + `src/actions`;
+   `git log --first-parent --merges --remerge-diff --format= <red>..HEAD -- '*.test.*' e2e/` empty or read by the reviewer; `scripts/mutation-gate.sh` exit 0
+   (B1.100: it reuses code-writer's run when `src/` is unchanged, runs Stryker only on the card's changed
+   `src/lib` + `src/actions` files, ≥ 70 % on them; its last line, "mutation: CI only, …" included, goes verbatim into
+   the PR's evidence);
    when the plan's Files hold `spec/features-map.md`, code-writer's `docs(map)` commit after the card's first `feat`,
    naming only `spec/features-map.md` (missing → back to code-writer; a plan without the map wants none). A `DISPUTED` line → `/advise`, then decide: a wrong test goes back to
    test-writer as a new `test(...)` commit, never into the feat commit.
@@ -32,4 +35,5 @@ Preconditions: `plan.md` approved, skeleton committed (`chore(<pkg>): <card> ske
 Hard rules: never delete, skip or `todo` a test; never weaken an assertion; never change an expected value without
 a section that says so; when the section is silent, `/advise` before writing the test.
 
-Report: red titles and their failure reasons, green suite lines verbatim, mutation score, the map delta.
+Report: red titles and their failure reasons, green suite lines verbatim, the `mutation:` line of
+`scripts/mutation-gate.sh`, the map delta.
