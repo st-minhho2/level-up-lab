@@ -31,3 +31,55 @@ Verdict: approved
 
 (Approved means ready for the lead's gate under D-27/D-28: tier medium, so it proceeds on this approval for the
 `agent-ready` issue; not approval for build in an interactive session.)
+
+## Diff review (round 1)
+
+SCOPE: all (`src/lib`, `src/components`, `src/app`, `e2e`). Range `origin/main..HEAD` at `a881ff6`, against §32,
+`plan.md` (reviewer-approved, D-27, tier medium, issue #275).
+
+### Command results (last line, run by me)
+
+| Command                             | Last line                                                                                                       |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!` (exit 0)                                                           |
+| `pnpm typecheck`                    | `tsc --noEmit` (exit 0, no output)                                                                              |
+| `pnpm test`                         | `Tests  273 passed (273)` (45 files; plan: 270 → 273)                                                           |
+| `pnpm test:e2e`                     | `60 passed (1.4m)` (plan: 57 → 60)                                                                              |
+| `pnpm test:mutation`                | `Final mutation score of 92.74 is greater than or equal to break threshold 70`; `clear-completed-label.ts` 100  |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                                       |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                               |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                              |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test`                                                           |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 32`                                                                                    |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                                            |
+| `scripts/verify-red.sh B6.4`        | `RESULT: red for the right reason` (label 1 new failed; component 2 new failed, 0 new passed)                   |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B6.4-agent stays inside the approved plan of B6.4 (D-27 approval)`                                    |
+| `scripts/next-task.sh --check B6.4` | `[next-task] B6.4: no overlap with any Doing or Review card`                                                    |
+| `git diff --stat main...HEAD`       | `16 files changed, 725 insertions(+), 69 deletions(-)` (spec index / map deltas are 1 row each plus re-padding) |
+| `pnpm build`                        | [unverified]: not run (writes `.next` in the worktree)                                                          |
+
+### Checklist
+
+| Check                                                          | Result                                                                                                                                                                                                      |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-32.n has a test whose assertion matches its Then      | pass: 32.1 lib (0, 1, 12 exact strings); 32.2–32.4 component (exact names, role counts, 0 args, same element, no "deleted"); 32.5–32.7 e2e with `exact: true`, four addresses, navigation counter           |
+| no test weakened after the red commit                          | pass: `git log --first-parent --no-merges 2ed6373..HEAD -- '*.test.*' e2e/` empty; `--merges --remerge-diff` empty                                                                                          |
+| every changed file is in `plan.md`                             | pass: 7 plan files; the rest is paperwork the plan names (`docs/metrics.md`, index row) or backlog artifacts; `check-plan-scope.sh` OK                                                                      |
+| interfaces match §32's contracts                               | pass: `clearCompletedLabel(completed: number): string`; `ClearCompletedButton({ disabled, completedCount? })` verbatim; `page.tsx` passes `filterCounts(todos).completed` from unfiltered `todos` (line 51) |
+| Zod at every action boundary / Prisma only in lib / no raw SQL | n/a: no action, schema, Prisma or query changed; `clear-completed-label.ts` imports nothing                                                                                                                 |
+| migration reversible and indexed                               | n/a: no migration                                                                                                                                                                                           |
+| no secret, no suppression                                      | pass: `check-suppressions.sh` OK; no key or env read in the diff                                                                                                                                            |
+| features map row moved                                         | pass: F30 row added in `a881ff6` (`docs(map)`), ✅ as precedent rows; §32 index row stays ✗ as the plan says                                                                                                |
+| plan-review costs                                              | (2) header now names §32 (`clear-completed-button.tsx:3`); (3) AC-32.1 is one `it`, so 273 matches                                                                                                          |
+| revert probe                                                   | confirmed on a clone in `$TMPDIR`: `clearCompletedLabel(completedCount ?? 0)` → `clearCompletedLabel(0)` fails AC-32.2 and AC-32.4 (2 failed, 6 passed); `>= 1` mutants killed (label 100 %)                |
+
+### Findings
+
+None blocking.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: `src/app/page.tsx:51` (`completedCount={filterCounts(todos).completed}`) is covered only by e2e
+AC-32.5/32.6; I traced, not ran, its revert (dropping the prop gives "Clear completed", `filterCounts(shown)` gives
+"Clear completed" on `/?filter=active` and `/?q=zzz`, both fail the exact-name `toHaveCount(1)`), because the probe
+clone has no environment file for Playwright.
