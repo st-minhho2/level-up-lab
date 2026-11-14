@@ -1317,3 +1317,36 @@ Batch 2 (B6.4–B6.6, sections 32–34) will append three rows after §31 in par
   - The PR carries `config-change-approved` (D-19).
 - **Tier:** quick · **Depends on:** ~~B1.89~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.96/`
+
+### B1.97 · A row wider than its column makes Prettier re-pad the whole shared table
+
+_tooling · no §_
+**Status: Open** — `spec/features-map.md`, `docs/metrics.md` and `spec/technical-requirements.md` merge with
+`merge=union` (`.gitattributes`, B1.89, B1.96), and `.prettierignore` names none of them. So `format-after-edit.sh` and
+Lefthook's `prettier --check` align each Markdown table to its widest cell. A card whose new cell is wider than its
+column rewrites every row. On 2026-11-14, E6 batch 2's B6.4 (#278) did this to two tables at once:
+
+- `docs(spec)` 0495c50 changed 67 lines of `spec/technical-requirements.md` (the contract name
+  `30-clear-completed-count.md` is wider than the File column);
+- `docs(map)` a881ff6 changed 63 lines of `spec/features-map.md`.
+
+A re-pad merged by union against a sibling's appended row keeps every row twice (`scripts/table-merge-smoke.sh` T6, T7,
+T12). The guards name it, but only in CI after the push (B1.92), and the fix rewrites the whole table on the card's
+branch. B1.89's plan counted 3 of 17 map appends and 2 metrics appends that re-padded before E6.
+
+- **Spec:** none — tooling (`.prettierignore` or the table layout, the smoke, the scripts guide); no `src/` change,
+  no section
+- **Test:** a `scripts/table-merge-smoke.sh` probe in which one side appends a row whose cell is wider than its column
+  and formats the file as the hooks do, while the other side appends a row → a clean merge, each row once, the
+  guards OK — red because: the formatter re-pads the table, so every row comes back twice
+- **Acceptance:**
+  - A row wider than its column no longer rewrites the other rows of the three shared tables. The way is the plan's
+    choice:
+    - the files leave Prettier (`.prettierignore`), with their rows written unaligned;
+    - or each table's columns are fixed wide with headroom, and a guard keeps a new cell inside them.
+  - The new probe and T1–T12 pass, bash 3.2-safe. T6, T7 and T12 still prove that a re-pad, if one happens, is
+    caught.
+  - The scripts guide names the rule.
+  - The PR carries `config-change-approved` (D-19), since `.prettierignore` is CONFIG_PROTECTED.
+- **Tier:** quick · **Depends on:** ~~B1.96~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.97/`
