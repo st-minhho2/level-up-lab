@@ -61,3 +61,54 @@ caught by AC-15.n and AC-40.n tests both. No dropped behavior; no role blocked. 
 "Rounds: 1"; paperwork, not a reason.
 
 Verdict: approved (ready for the lead's gate, not approved for build)
+
+## Diff review (round 1)
+
+SCOPE: ui. Branch `feat/B7.6-agent` at `940c7aa`; red `17301e0`, feat `ab98c4c`, map `940c7aa`.
+
+### Command results (last line each, run by the reviewer)
+
+| Command                             | Result                                                                                        |
+| ----------------------------------- | --------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!`                                                  |
+| `pnpm typecheck`                    | `tsc --noEmit`, exit 0                                                                        |
+| `pnpm test`                         | `Tests  313 passed (313)`, 49 files (plan: 298 → 313, 49 files)                               |
+| `pnpm test:e2e`                     | `71 passed (2.6m)` (plan: 70 → 71); AC-40.6 green                                             |
+| `scripts/mutation-gate.sh`          | `mutation: CI only, no src/lib or src/actions change`                                         |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                     |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                             |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                            |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test`                                         |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 43`                                                                  |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                          |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B7.6-agent stays inside the approved plan of B7.6 (D-27 approval)`                  |
+| `scripts/verify-red.sh B7.6`        | `RESULT: red for the right reason` (clear test 15/15 new failed; today-button 1/1 new failed) |
+| `git diff --stat main...HEAD`       | `10 files changed, 745 insertions(+), 9 deletions(-)`                                         |
+
+### Checklist
+
+| Check                                                     | Result                                                                                                                                                                                                                                                             |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every AC-40.n has a test whose assertion matches its Then | pass: AC-40.1–40.5 in `todo-due-date-clear.test.tsx` (counts, order, `type`, text, no `aria-label`/`title`, call args, `defaultPrevented`); AC-40.6 in `e2e/40-due-date-clear.spec.ts` (before/after reload, `[C, B, A]`, A/C `innerHTML` unchanged)               |
+| no test weakened after the red commit                     | pass: `git log --first-parent --no-merges 17301e0..HEAD -- '*.test.*' e2e/` empty; no merges with remerge diff                                                                                                                                                     |
+| AC-37.1 rewrite (D-38)                                    | pass: in the red commit only; 4 → 5 children, a strengthening, as §40 edits AC-37.1                                                                                                                                                                                |
+| every changed file is in `plan.md`                        | pass: 5 Files rows + `docs/metrics.md` and `backlog/work/B7.6/*` (paperwork named in the plan)                                                                                                                                                                     |
+| interfaces match §40 Function contracts                   | pass: `TodoDueDate` props and signature unchanged; `save`/`onClear` internal; button order label, input, Today, Clear due date, Update due date                                                                                                                    |
+| Zod at action boundary / Prisma only in lib / raw SQL     | n/a: no action, lib, schema or Prisma change (REQ-40.7)                                                                                                                                                                                                            |
+| migration                                                 | n/a                                                                                                                                                                                                                                                                |
+| no secret, no suppression                                 | pass (`check-suppressions.sh` OK; diff read)                                                                                                                                                                                                                       |
+| features map row moved                                    | pass: F38 (§40) ✅ in `docs(map)` commit `940c7aa`                                                                                                                                                                                                                 |
+| Server/Client boundary                                    | pass: `todo-due-date.tsx` already `'use client'`; no new import                                                                                                                                                                                                    |
+| would a test fail if one changed line were reverted?      | pass, probed on a clone at `$TMPDIR/c`, `todo-due-date-clear.test.tsx` (15 tests): `save('')` → `save(draft)` 4 failed; → `save(' ')` 4 failed; drop Clear's `onKeyDown` 1 failed; drop Clear's `disabled={pending}` 3 failed; `type="button"` → `submit` 8 failed |
+
+### Findings
+
+No blocking finding.
+
+Note, not blocking: the `docs/metrics.md` B7.6 row's last column reads `feat B7.6`, not a sha as the B7.1–B7.3
+rows do (`ab98c4c` exists now). Paperwork; the closing PR can fix it.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: Escape on "Clear due date" (REQ-40.6) is covered only in jsdom with `fireEvent` keydowns
+(AC-40.5); no real-browser keyboard path for it is exercised, which §40 allows (AC-40.6 does not require it).
