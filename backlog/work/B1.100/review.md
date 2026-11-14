@@ -406,3 +406,63 @@ Riskiest unfalsified: the real-Stryker branches that the shim imitates (0 mutant
 NaN, then the fallback; mutants with no test reached). I verified the messages in Stryker 10.1.1's source and the
 plan's live runs, but I did not re-run them. A Stryker upgrade that rewords any of them would turn a pass into
 "? %", exit 1. That fails closed, but no probe would catch the rewording.
+
+## Diff review (round 2)
+
+Range `origin/main` (5e75d2d) `...HEAD` (b9bed5c). New since round 1: bf3ea18
+(`test(scripts): B1.100 review pass 1 -- …`, smoke only) and b9bed5c (`chore(scripts): B1.100 review pass 1 -- …`,
+`mutation-gate.sh` lines 26–32 and the MG range in its header and in `scripts/CLAUDE.md`). The diff still has 11
+files, all of them in the plan's Files list or `backlog/work/B1.100/*`. No merge in `4df9203..HEAD`.
+
+### Command results (last line of each)
+
+| Command                                                                 | Result                                                                                                          |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                                             | `All matched files use Prettier code style!`, exit 0                                                            |
+| `pnpm typecheck`                                                        | `tsc --noEmit`, exit 0                                                                                          |
+| `pnpm test`                                                             | `Tests  298 passed (298)`                                                                                       |
+| `pnpm test:e2e`                                                         | `70 passed (1.4m)`                                                                                              |
+| `pnpm test:mutation` (whole layer)                                      | `Final mutation score of 92.84 is greater than or equal to break threshold 70`                                  |
+| `scripts/mutation-gate.sh`                                              | `mutation: CI only, no src/lib or src/actions change`, exit 0, 0.42 s                                           |
+| `/bin/bash scripts/mutation-gate-smoke.sh` at b9bed5c (clone)           | `[mutation-gate-smoke] 17 ok, 0 FAIL`                                                                           |
+| same at bf3ea18 (script still 14b690b's)                                | `16 ok, 1 FAIL`; the FAIL is MG17 `--base:rc=1 … line 29: 2: --base needs a ref`. This is the stated red        |
+| same at 4df9203 (skeleton)                                              | `1 ok, 15 FAIL`, unchanged                                                                                      |
+| `/bin/bash scripts/hook-smoke.sh`                                       | `hook-smoke: 749 probes OK`                                                                                     |
+| `scripts/ci/check-suppressions.sh`                                      | `OK: no new suppressions`                                                                                       |
+| `scripts/ci/check-config-change.sh`                                     | exit 1: the 5 `.claude/` files lack `config-change-approved`. Expected until the draft carries the label (D-19) |
+| `scripts/ci/check-feat-commits.sh`                                      | `OK: no feat commit touches tests`                                                                              |
+| `scripts/ci/check-ac-coverage.sh`                                       | `OK: every criterion of a shipped section has a test`                                                           |
+| `scripts/ci/check-spec-sections.sh`                                     | `OK: sections cited: 1 … 43`                                                                                    |
+| `scripts/ci/check-features-map.sh`                                      | `OK`                                                                                                            |
+| `check-plan-scope.sh`, `check-agent-frontmatter.sh`, `check-backlog.sh` | `OK: … stays inside the approved plan of B1.100`, `OK: 13 files`, `OK: README matches the cards`                |
+| `scripts/next-task.sh --check B1.100`                                   | `[next-task] B1.100: no overlap with any Doing or Review card`                                                  |
+| `scripts/verify-red.sh B1.100`                                          | `::error::no 'test(<pkg>): B1.100 … (red)' commit`. Expected for a smoke-only red, as in round 1                |
+| `git status --short` after all runs                                     | empty                                                                                                           |
+
+### Checklist
+
+| Check                                       | Result                                                                                                                                                                                                                                                                                            |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| round 1 [1] (below-bar line)                | closed. MG9 now prints Stryker's own `Final mutation score 50.00 under breaking threshold 70` line. Round 1's surviving mutant `(of )?` → `(of )` is now killed (16 ok, 1 FAIL)                                                                                                                   |
+| round 1 [2] (key parts)                     | closed. MG11 edits each of the five keyed files and runs a second `--base`. Killed now: `for p in $KEYED` → two files on line 68, `key="$key"` on line 69, and dropping `vitest.stryker.config.mts`, `package.json` or `pnpm-lock.yaml` from `KEYED` (each 16 ok, 1 FAIL)                         |
+| round 1 [3] (`--base` usage)                | closed. `--base` with no value prints the usage and exits 2. MG17 proves it, and was red at bf3ea18. Mutants removing the guard, `$# -ge 2`, or making `usage` exit 1 are killed                                                                                                                  |
+| no test weakened after the red commit       | pass. `git log --first-parent --no-merges 4df9203..HEAD -- '*.test.*' e2e/ scripts/mutation-gate-smoke.sh` → bf3ea18 only, a `test(scripts): … review pass 1` commit. Its MG9 asserts the same output and exit codes with a more realistic shim line. MG11 adds cases and drops none. MG17 is new |
+| every changed file is in `plan.md`          | pass (`check-plan-scope.sh` OK). The smoke now has MG1–MG17 against the plan's "MG1–MG16". A review-pass probe in a listed file, with no interface change, needs no re-plan                                                                                                                       |
+| interfaces match the plan                   | pass. `[--base <ref>] [--force]`. Exit 2 now covers every usage error (`--base`, `--base ''`, `--nope`) and a bad ref; 1 means below the bar or no score                                                                                                                                          |
+| Zod / Prisma / raw SQL / migration / map    | n/a: no `src/`, `prisma/`, `e2e/` change                                                                                                                                                                                                                                                          |
+| no secret, no suppression                   | pass                                                                                                                                                                                                                                                                                              |
+| revert/mutant probe (clone under `$TMPDIR`) | 18 sed mutants of `mutation-gate.sh` at b9bed5c: 16 killed, 1 no-op. 1 survivor: `&& -n "$2"` dropped on line 30. It is equivalent on exit code: `--base ''` then fails in `git merge-base` with exit 2 and "[mutation-gate] no merge-base with", not the usage. Cosmetic, not a finding          |
+
+### Findings
+
+None blocking, and none open. Round 1's [1]–[3] are closed (see the checklist).
+
+Not blocking: `pr-body.md` line 7 still reads "MG1–MG16 (new). Red: pending. Green: pending", and lines 49 and 87
+still say 16 probes. Before the draft they should read MG1–MG17, red 1 ok / 15 FAIL, green 17 ok / 0 FAIL, and name
+the pass-1 red (16 ok / 1 FAIL on MG17). The dev-lead says this update follows this pass.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: still the real-Stryker text the shim imitates ("with 0 mutant(s)", "No tests were executed",
+"score of NaN", and the two final-score lines). Round 2 made the shim print the real below-bar line, but no probe
+runs real Stryker. A Stryker upgrade that rewords a message fails closed (`? %`, exit 1), and no probe would catch it.
