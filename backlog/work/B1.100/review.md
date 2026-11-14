@@ -254,3 +254,69 @@ Riskiest unfalsified: as in rounds 1 and 2, that code-writer's run and the green
 real agent run, so the gate says "(reused)". An `eslint --fix` from the PostToolUse hook after a late edit, or an
 untracked scratch file under `src/`, would change the key. I could not run an agent, and the batch-2 saving rests on
 this.
+
+## Plan review (round 4)
+
+Plan at 1771bc0 (`docs(backlog): B1.100 plan round 4`), diffed against e1fe7aa. HEAD a5e81d7 merges origin/main
+5e75d2d (backlog and spec only, D-39 added; `plan.md` unchanged by the merge). The lead allowed a fourth round past
+the limit. I re-read the card, D-13, D-39, `stryker.config.mjs`, `vitest.stryker.config.mts`, `package.json`
+(`test:mutation` is `stryker run`, the same call as the gate's `pnpm exec stryker run`), and the round-4 prototype
+(`mutation-gate.sh`, `mutation-gate-smoke.sh`, `skeleton/`, `nan.log`, `full.log`).
+
+Probes (copies and a `git clone --shared` under `$TMPDIR/b1100r4`, `node_modules` linked; the worktree was only read,
+plus `hook-smoke.sh` and `pnpm test`):
+
+- Prototype smoke under `/bin/bash` 3.2.57: green `[mutation-gate-smoke] 16 ok, 0 FAIL`; skeleton
+  `[mutation-gate-smoke] 1 ok, 15 FAIL` (only MG11 ok). Both match the plan's Verification.
+- Baselines at a5e81d7: `hook-smoke: 749 probes OK`, `Tests  298 passed (298)`. Both match the plan.
+- Prototype on the clone at a5e81d7, `--base 5e75d2d` (origin/main): `mutation: CI only, no src/lib or src/actions
+change`, exit 0, 0.38 s. `--base be888ff^` (the diff is still only `complete-all-label.ts` and its test after the
+  merge): `Instrumented 1 source file(s) with 7 mutant(s)`, `mutation: 100.00 % on src/lib/complete-all-label.ts
+(ran), src b28a606`, exit 0, 13 s; again → `(reused)`, exit 0, 1 s (load 3.8).
+- `nan.log` (the plan's r3 trigger): subset `with 2 mutant(s)`, `Final mutation score of NaN`, 7 s; then 670 mutants,
+  `Final mutation score of 92.84`, 3 min 30 s; last line `mutation: 92.84 % on src/lib + src/actions, no valid mutant
+in src/lib/zz-nan.ts (ran)`. Stryker 10.1.1's `determineExitCode` prints both `of <score>` and `<score> under
+breaking threshold`; the prototype's regex reads both.
+- B7.5's row: `title-count.ts` is `100.00 | … 2 killed … 2 errors` in `full.log`, so it has valid mutants and B7.5's
+  subset is scored, not a NaN fallback. The table's "1 subset run" holds.
+- `scripts/next-task.sh --check B1.100` → `[next-task] B1.100: no overlap with any Doing or Review card` (exit 0).
+  `scripts/agent/tier.sh` → `high`. `scripts/ci/plan-files.sh --file` → the 9 Files rows.
+
+| Check                                                                             | Result                                                                                                                                                                                                                       |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: no section (tooling). The 9 Files rows are unchanged from round 3. Every one is in the card's Spec line, carries the mutation step or the evidence line, or is the guide for the two new scripts                       |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass (n/a): no `src/`, `prisma/` or `e2e/` change. The interface (`[--base <ref>] [--force]`, exit 0/1/2, one stamp file) is pasted                                                                                          |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass, same note as rounds 1–3: there is no `advice.md` (tier quick)                                                                                                                                                          |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: 5 acceptance bullets. Acceptance 2 is answered: the bar is read on the subset, except a subset with no valid mutant, which the line names ("no valid mutant in <list>") and holds to the whole layer                   |
+| verification lists exact commands with expected numbers                           | pass: 16 ok / 1 ok + 15 FAIL / 749 / 298 are exact, and I reproduced all four. The live CI-only and `--base be888ff^` runs reproduce (above). MG16 covers round 3's NaN input with its line, exit code and two Stryker calls |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: skeleton `chore(scripts)`, red `test(scripts) … (red)`, green `chore(scripts)`, review `docs(backlog)`. A tooling card has no map                                                                                      |
+| the section has a `Lead approves spec` box, ticked only by a human                | n/a: no section. `Plan approved by:` is empty and stays empty here. Tier `high` (`.claude/`), so the lead's `approve` is required. The D-19 label is planned                                                                 |
+| no settled D-n contradicted                                                       | pass: D-13's before/after report is still the named exception. Spec §2's gate is still met by CI's unchanged `mutation` job. D-39 (new) adds E8, whose cards change no `src/lib` or `src/actions` file                       |
+| `scripts/next-task.sh --check B1.100` says no overlap                             | pass: `[next-task] B1.100: no overlap with any Doing or Review card`                                                                                                                                                         |
+
+Round 3 reason 1 is addressed: a subset scored `NaN` (every mutant a compile error) now falls back to the whole layer
+once, like a subset of 0 mutants. MG16 probes it in the smoke, and the plan measured it live (`nan.log` above).
+
+Verdict: approved (ready for the lead's `approve`; not approved for build)
+
+Not blocking, costs for the lead to see before `approve`:
+
+- **A changed file with no valid mutant is held to the whole layer, not to its own code.** It costs one whole-layer
+  run (7 s + 3 min 30 s here at load ≈ 2.6–3.8; batch 1's load is unmeasured) where a pass line would cost 7 s. The
+  layer's score says nothing about that file. Round 3 offered both options; the plan chose this one and names it in
+  the evidence line.
+- **A changed test whose same-named source does not exist still runs the whole layer** (round 3 note, e.g.
+  `src/lib/todo-due-date-store.test.ts`). The rule says "deleted dropped"; the prototype drops any mapped path not
+  in the tree. This is today's cost, not a regression.
+- **The reuse key leaves out `prisma/schema.prisma`.** The generated client's types (in `node_modules`) feed the
+  TypeScript checker, so a schema edit after a run, with `src/` unchanged, reuses the old score. `[plausible]`, not
+  probed. A `prisma/` card is high tier, and CI still runs mutation on the PR.
+- **Which batch measures Acceptance 4.** B7.4–B7.6 are "To do, eligible" today. If E7 batch 2 is labeled before this
+  PR merges, the next batch is E8, and D-39 says no E8 card changes `src/lib/` or `src/actions/`. That batch would
+  measure only the CI-only branch, and the closing line's "E7 batch 2" would change.
+- **The plan is 96 lines** (round 3: 122). `planning.md` asks for about 40; recent tooling plans run 85–100.
+- Round 2's note still holds: the stamp in the git-ignored `reports/` is trusted as written. The plan now says so.
+
+Riskiest unfalsified: as in rounds 1–3, that code-writer's run and the green gate see the same `src/` tree in a real
+agent run, so the gate says "(reused)". If they do not, the gate runs again, which costs time but is not a wrong
+result. I could not run an agent, and the batch-2 saving rests on this.
