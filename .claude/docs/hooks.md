@@ -73,14 +73,14 @@ sessions are unchanged: there dev-lead's hook fires only for dev-lead.
 
 Role write scopes (`path-guard.sh` arguments, as each agent's frontmatter passes them; `hook-smoke.sh` pins them):
 
-| Role           | May write                                                                                                                               |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `spec-analyst` | `spec/contracts/*`, `backlog/*`; not `spec/features-map.md`, not `backlog/00-decisions.md`, not `backlog/work/*/review.md`              |
-| `advisor`      | `backlog/work/*`; not `backlog/work/*/review.md`                                                                                        |
-| `dev-lead`     | `backlog/*`, `docs/metrics.md`, `docs/mistake-log.md`; not `backlog/00-decisions.md`, not `backlog/work/*/review.md`; `--role dev-lead` |
-| `reviewer`     | `backlog/work/*/review.md`                                                                                                              |
-| `test-writer`  | `*.test.ts`, `*.test.tsx`, `e2e/*`                                                                                                      |
-| `code-writer`  | `src/*`, `prisma/*`, `spec/features-map.md`, `docs/metrics.md`; not tests, not `e2e/`, not `src/lib/prisma.ts`                          |
+| Role           | May write                                                                                                                                                            |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `spec-analyst` | `spec/contracts/*`, `spec/technical-requirements.md` (B1.99), `backlog/*`; not `spec/features-map.md`, not `backlog/00-decisions.md`, not `backlog/work/*/review.md` |
+| `advisor`      | `backlog/work/*`; not `backlog/work/*/review.md`                                                                                                                     |
+| `dev-lead`     | `backlog/*`, `docs/metrics.md`, `docs/mistake-log.md`; not `backlog/00-decisions.md`, not `backlog/work/*/review.md`; `--role dev-lead`                              |
+| `reviewer`     | `backlog/work/*/review.md`                                                                                                                                           |
+| `test-writer`  | `*.test.ts`, `*.test.tsx`, `e2e/*`                                                                                                                                   |
+| `code-writer`  | `src/*`, `prisma/*`, `spec/features-map.md`, `docs/metrics.md`; not tests, not `e2e/`, not `src/lib/prisma.ts`                                                       |
 
 Claude Code skips an agent whose frontmatter is not valid YAML, and with it the agent's `path-guard.sh` hook.
 `scripts/ci/check-agent-frontmatter.sh` (CI `guards`, `hook-smoke.sh`) parses every agent and skill frontmatter;

@@ -225,7 +225,7 @@ role_patterns() { # the patterns each role's path-guard.sh must receive, in orde
     code-writer) echo "src/* prisma/* spec/features-map.md docs/metrics.md !*.test.ts !*.test.tsx !e2e/* !src/lib/prisma.ts" ;;
     dev-lead) echo "--role dev-lead backlog/* docs/metrics.md docs/mistake-log.md !backlog/00-decisions.md !backlog/work/*/review.md" ;;
     reviewer) echo "backlog/work/*/review.md" ;;
-    spec-analyst) echo "spec/contracts/* backlog/* !spec/features-map.md !backlog/00-decisions.md !backlog/work/*/review.md" ;;
+    spec-analyst) echo "spec/contracts/* spec/technical-requirements.md backlog/* !spec/features-map.md !backlog/00-decisions.md !backlog/work/*/review.md" ;;
     test-writer) echo "*.test.ts *.test.tsx e2e/*" ;;
   esac
 }
@@ -235,7 +235,8 @@ role_probes() { # <exit> <path> pairs: one write the role may make, one it may n
     code-writer) echo "0 src/lib/todos.ts 2 src/lib/todos.test.ts 2 e2e/x.spec.ts" ;;
     dev-lead) echo "0 backlog/work/B1.2/plan.md 2 src/lib/todos.ts 2 backlog/00-decisions.md 2 backlog/work/B1.2/review.md" ;;
     reviewer) echo "0 backlog/work/B1.2/review.md 2 backlog/work/B1.2/plan.md" ;;
-    spec-analyst) echo "0 spec/contracts/04-edit-title.md 2 src/lib/todos.ts 2 spec/features-map.md 2 backlog/work/B1.2/review.md" ;;
+    # B1.99: the section index for a union-merge repair, and nothing else under spec/ outside contracts/
+    spec-analyst) echo "0 spec/contracts/04-edit-title.md 2 src/lib/todos.ts 2 spec/features-map.md 2 backlog/work/B1.2/review.md 0 spec/technical-requirements.md 2 spec/CLAUDE.md" ;;
     test-writer) echo "0 src/lib/todos.test.ts 0 e2e/x.spec.ts 2 src/lib/todos.ts" ;;
   esac
 }
@@ -285,6 +286,8 @@ hg 2 - "$REV"; hg 2 - "$SRC"; hg 0 - "$PLAN"
 for t in general-purpose Explore claude; do hg 2 "$t" "$PLAN" a4; done
 # HG9: advisor and spec-analyst never write review.md (their own lists, read from their frontmatter)
 hg 2 advisor "$REV" a5; hg 2 spec-analyst "$REV" a6
+# HG9b (B1.99): headless, spec-analyst repairs the section index after a union merge (its own list allows it)
+hg 0 spec-analyst spec/technical-requirements.md a6
 # HG10: a type that is not a plain agent name is never looked up
 for t in ../hooks/lib Reviewer ns:reviewer; do hg 2 "$t" "$PLAN" a7; done
 hg 2 ../agents/reviewer "$REV" a7 # resolves to reviewer.md, whose list would allow it (review pass 1)
@@ -768,6 +771,13 @@ for r in test-writer code-writer reviewer dev-lead; do # RP7-RP10: the forbidden
 done
 states reviewer 'still write with Bash'    # RP5: probes on the $TMPDIR copy
 states dev-lead 'are commands, not edits'  # RP6: Prettier in "Committing a review"
+states dev-lead 'section index rows once'  # B1.99: Loop 9 names the union-merge repair of the section index
+states spec-analyst 'Merge repair'         # B1.99: the mode spec-analyst runs it in
+# B1.99 review pass 1: the card's own row comes from its own commits, not from HEAD^1 (a commit after the merge
+# would make HEAD^1 the merge itself, and the stale duplicates would read as the card's)
+states spec-analyst 'git log --first-parent --no-merges -p origin/main..HEAD -- spec/technical-requirements.md'
+# B1.99 review pass 2: that log prints every version of the row, newest first; the newest is the one kept
+states spec-analyst 'keep the first `+` line (the newest)'
 
 echo "== check-ac-coverage.sh (B1.86): a test title counts wherever its it/test/.each call breaks lines"
 ACG="$PWD/scripts/ci/check-ac-coverage.sh"

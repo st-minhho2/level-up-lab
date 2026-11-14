@@ -100,6 +100,14 @@ Commit `docs(backlog): <card> plan`.
    `Partial — merged pending` is set by the closing commit after merge; `docs/metrics.md` per-card row now.
 9. **Ready.** `git fetch origin && git merge origin/main` (never rebase, never force push). Clean merge →
    `.claude/hooks/mark-reviewed.sh` again; a conflict → back to step 6 (code-writer / test-writer resolve it) and step 7.
+   A merge that leaves `spec/technical-requirements.md` with a section row twice (`merge=union`;
+   `scripts/ci/check-spec-sections.sh` fails, after the merge or in CI) → dispatch `spec-analyst`
+   (Mode: merge repair) to write origin/main's copy plus the card's own row. Then run
+   `diff <(git show origin/main:spec/technical-requirements.md | tr -s ' -') <(tr -s ' -' < spec/technical-requirements.md)`:
+   it must print only the card's own row (one `>` line, or a `<`/`>` pair only for the card's own § when its
+   branch changed that row; nothing for a tooling card). Anything more → no commit, "Waiting on human", stop. Clean → commit it as
+   `docs(spec): <card> merge repair -- section index rows once`, rerun `check-spec-sections.sh`, go on (B1.99, replaces
+   D-36's repair by the lead's session).
    `scripts/pr-step.sh push`; fill Map delta and Review (= review.md diff section) in the draft's body; wait until a `ci` run exists for
    the head SHA and is green (the app's PR monitor, or `gh pr checks <n> --watch` with a 600 s timeout). Red → back
    through the loop, the PR stays draft. Green → `scripts/pr-step.sh ready <n>`, then print exactly "PR for <card> is ready for the
@@ -133,7 +141,7 @@ changed more than formatting." under "Waiting on human".
 ## Role brief template
 
 ```
-Card: <card> — <title> (§n). Worktree: <absolute path>. Mode: <analysis | advice | plan review | red | green | diff review>.
+Card: <card> — <title> (§n). Worktree: <absolute path>. Mode: <analysis | advice | merge repair | plan review | red | green | diff review>.
 Spec: spec/contracts/<file> §n. Plan: backlog/work/<card>/plan.md (approved by lead, <date> | not yet approved: plan review).
 Rules: CLAUDE.md and .claude/rules are loaded; your write paths are hook-enforced.
 Report in your role's exact report shape; nothing else.
