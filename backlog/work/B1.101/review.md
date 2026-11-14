@@ -159,3 +159,104 @@ Verdict: changes requested
 Riskiest unfalsified: GitHub's "mergeable" once the branch contains `origin/main`. It holds by construction, but only
 the next real batch shows it. INT (Ctrl-C reaches `git push` itself) is also unprobed: its outcome depends on how far
 the push got.
+
+## Diff review (round 1)
+
+Diff at 803ef8c, red e21f041, against `origin/main` 1fe8f00 (the branch's merge base). The plan's round 3 was not
+re-reviewed, so this pass also checks the r2 #1 fix in the code. Probes ran on `git clone .` copies under `$TMPDIR`,
+with `/bin/bash` 3.2.
+
+### Command results (last line of each)
+
+| Command                                        | Result                                                                                                                                                                     |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                    | "All matched files use Prettier code style!" (eslint clean)                                                                                                                |
+| `pnpm typecheck`                               | `tsc --noEmit`, exit 0                                                                                                                                                     |
+| `pnpm test`                                    | "Test Files 48 passed (48)", "Tests 298 passed (298)"                                                                                                                      |
+| `pnpm test:e2e`                                | "70 passed (1.7m)"                                                                                                                                                         |
+| `pnpm test:mutation`                           | "Final mutation score of 92.84 is greater than or equal to break threshold 70" (no `src/` change)                                                                          |
+| `/bin/bash scripts/agent/run-smoke.sh` (green) | "22 probes OK"                                                                                                                                                             |
+| the same at e21f041 (red)                      | `FAIL R21`, `FAIL R22`, "2 of 22 probes FAILED"                                                                                                                            |
+| `scripts/hook-smoke.sh`                        | "hook-smoke: 749 probes OK"                                                                                                                                                |
+| `scripts/ci/check-suppressions.sh`             | "OK: no new suppressions"                                                                                                                                                  |
+| `scripts/ci/check-config-change.sh`            | `::error::` locally (it reads the label only in CI); PR #315 carries `config-change-approved`                                                                              |
+| `scripts/ci/check-feat-commits.sh`             | "OK: no feat commit touches tests"                                                                                                                                         |
+| `scripts/ci/check-ac-coverage.sh`              | "OK: every criterion of a shipped section has a test"                                                                                                                      |
+| `scripts/ci/check-spec-sections.sh`            | "OK: sections cited: 1 … 40"                                                                                                                                               |
+| `scripts/ci/check-features-map.sh`             | "OK"                                                                                                                                                                       |
+| `scripts/ci/check-backlog.sh`                  | "OK: README matches the cards"                                                                                                                                             |
+| `scripts/ci/check-plan-scope.sh`               | "OK: chore/B1.101-sync-ready-pr stays inside the approved plan of B1.101"                                                                                                  |
+| `scripts/verify-red.sh B1.101`                 | `::error::no 'test(<pkg>): B1.101 … (red)' commit`: expected, the red commit drops the marker (smoke only, as B1.82, B1.88, B1.95; its body says so); I ran the red myself |
+| `scripts/next-task.sh --check B1.101`          | "[next-task] B1.101: no overlap with any Doing or Review card"                                                                                                             |
+| `git diff --stat origin/main...HEAD`           | 8 files, 554 insertions, 7 deletions (run.sh 86, run-smoke.sh 128, the rest docs and `work/B1.101/`)                                                                       |
+
+### Checklist
+
+- AC: no section. The card's acceptance 1 (`--sync`) is R21 and R22; acceptance 2 (`[unverified]` replaced) is the
+  two status lines in `E1-todos.md`; acceptance 3 (the time metric) is the planned `-partial` pending item; acceptance 4
+  (label) is on PR #315.
+- No test weakened: `git log --first-parent --no-merges e21f041..HEAD -- '*.test.*' e2e/ 'scripts/*smoke*'` is empty,
+  and the remerge-diff of merges in that range touching tests is empty. The green commit touches no smoke file.
+- Every changed file is in the plan's Files table (`check-plan-scope.sh` agrees). Interfaces match the plan: usage
+  string, exit 0 or 1, refusal shape, comment prefix (no-rework.sh and unattended.sh read it as a runner comment; its
+  outcome `synced` falls after `ready`, outside unattended.sh's stop window).
+- n/a: Zod, Prisma, SQL, migration (bash only). No secret, no suppression. No features-map row (tooling).
+- Revert probes (one changed line at a time, on copies):
+  - the push-failure `wgit reset -q --keep "$pre"` removed: "22 probes OK" (finding 1);
+  - `wgit merge --abort` removed from `on_signal`: "22 probes OK" (note 2);
+  - `SYNC_PRE=""` after the push removed: "22 probes OK" (equivalent: the HEAD = `origin/<branch>` check in
+    `on_signal` already keeps a landed merge, so no test can see it).
+- Behaviour probe: a bare origin whose `pre-receive` exits 1. Result: rc 1, HEAD back at the tip, origin's branch
+  unchanged, no MERGE_HEAD, lock gone, no comment, "scripts/pr-step.sh push failed: error: failed to push some refs …;
+  the branch is back at 103bf7b". The next `--sync` (hook removed) synced, rc 0. So the code is right; only the test
+  is missing.
+
+### Findings
+
+```
+[1] KIND: coverage
+    WHERE: scripts/agent/run.sh:374 (push failure: `wgit reset -q --keep "$pre"`), scripts/agent/run-smoke.sh R22
+    DEFECT: no probe makes `pr-step.sh push` fail, so the reset that keeps the plan's "each refusal … the branch as it
+            was" on the push step can be deleted with every probe still green.
+    TRIGGER: on a copy, delete `wgit reset -q --keep "$pre";` from the push-failure branch and run
+             `/bin/bash scripts/agent/run-smoke.sh`.
+    WRONG BEHAVIOUR: "22 probes OK". With that mutant, a rejected or failed push (network, a GitHub branch rule) leaves
+             the worktree on an unpushed merge; the next `--sync` refuses with "HEAD … is not origin/<branch> …: run
+             scripts/agent/run.sh <n>", which is the 6–9 minute full run that plan review r1 #3 set out to avoid. R22's
+             header says "every --sync refusal", but the push step is not one of its cases.
+    CONFIDENCE: confirmed (mutant ran: 22 probes OK; the push-reject probe on the unmutated code passes)
+```
+
+Fix: an R22 case. A bare-origin `pre-receive` that exits 1, then `refuse push "$k1" 'pr-step.sh push failed'`; my
+probe above is that case. It lands as `test(scripts): B1.101 review pass 1 -- …`, and the plan's mutant list gains
+"no reset after a failed push".
+
+### Notes (not blocking)
+
+1. Dev-lead's question (1), a push that lands and still exits non-zero. `pr-step.sh push` is only `git push -u`
+   under `set -e`, so this needs a connection lost after the remote updated its ref. The reset then leaves HEAD below
+   origin's branch. The next `--sync` refuses, naming `run.sh <n>`, which is visible, not silent. The
+   `refs/remotes/origin/<branch>` check from `on_signal` would not help here: git does not move that ref when the
+   report is lost. Only `ls-remote` would. I would leave it.
+2. `on_signal`'s `merge --abort` has no probe. It matters when TERM arrives while a conflicting `git merge` runs: bash
+   runs the trap after the merge returns, with MERGE_HEAD set, and `git reset --keep` refuses in the middle of a merge.
+   The timing is hard to hit from the smoke. The line is correct by reading; the plan did not list it as a case.
+3. Dev-lead's question (2). "PR #n is mergeable once CI on <sha> is green", in stderr and in the issue comment, claims
+   GitHub's call. It is false if another sibling merges first (BEHIND again) or if a review thread is unresolved (the
+   ruleset sets `required_review_thread_resolution`). Pending item (b) reads that comment. Wording such as "contains
+   origin/main <sha>; required checks run on <sha>" states only what run.sh knows. Not a defect in behaviour.
+4. Dev-lead's question (3). `wgit` reads the global `SYNC_WT`, which `sync_issue` sets before its first `wgit` call.
+   `on_signal` calls `wgit` only while `SYNC_PRE` is set, which is after that point. Unset, `cd ""` would act on the
+   clone itself, but no path reaches it.
+5. Dev-lead's question (4). The guards run from the merged worktree's `scripts/ci/`, the copy CI runs on the PR.
+   Inside the runner container this is no new exposure. Run on the host, `--sync` executes a branch's scripts as the
+   lead with no permission hook. A full run on the host already runs `pnpm test` on agent-written code, so this is
+   the same kind of exposure, without the `dontAsk` layer. The compose header documents only `exec runner`.
+6. The branch is 2 commits behind `origin/main` (#312, #314, docs only); PR #315 reads `BEHIND`. The PR head on GitHub
+   is 1234757, without the red and green commits. Push before the PR leaves draft.
+
+Verdict: back to test-writer
+
+Riskiest unfalsified: GitHub's mergeability of a synced PR (holds by construction: once the branch contains
+`origin/main`, GitHub's merge base is main's tip), and INT reaching `git push` itself mid-transfer, which only a real
+batch shows.
