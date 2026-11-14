@@ -165,3 +165,64 @@ unattended run reads `no`. The plan now states this as a cost (`[unverified]`) a
 issue I read shows such a run.
 
 Verdict: approved (ready for the lead's gate, not approved for build)
+
+## Diff review (round 1)
+
+Diff `origin/main...HEAD` (merge-base be888ff): red e7a9bb8, green e83061b. It touches 8 files: the 5 files in the
+plan plus `backlog/work/B1.98/{plan,pr-body,review}.md`. Scope: scripts and docs only, so no `src/`, `prisma/` or `e2e/` change.
+
+### Commands (last line of each)
+
+| Command                                                                 | Result                                                                                                                                                        |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint` / `pnpm typecheck`                                          | exit 0 / exit 0                                                                                                                                               |
+| `pnpm test`                                                             | `Tests  298 passed (298)`                                                                                                                                     |
+| `pnpm test:e2e`                                                         | `70 passed (2.3m)`                                                                                                                                            |
+| `pnpm test:mutation`                                                    | `Final mutation score of 92.84 is greater than or equal to break threshold 70` (no `src/` change)                                                             |
+| `/bin/bash scripts/metrics-smoke.sh` (3.2.57) at e83061b                | `[metrics-smoke] 51 ok, 0 FAIL`                                                                                                                               |
+| the same at e7a9bb8 (a `git clone` under `$TMPDIR`)                     | `35 ok, 16 FAIL`: M30 M31 M33 M34 M39 M41 M44–M53, as the plan says                                                                                           |
+| `scripts/hook-smoke.sh`                                                 | `hook-smoke: 749 probes OK`                                                                                                                                   |
+| `check-suppressions`, `check-config-change`                             | `OK: no new suppressions` · `OK: no protected config changed`                                                                                                 |
+| `check-feat-commits`, `check-ac-coverage`                               | `OK: no feat commit touches tests` · `OK: every criterion of a shipped section has a test`                                                                    |
+| `check-spec-sections`, `check-features-map`                             | `OK: sections cited: 1 … 37` · `OK`                                                                                                                           |
+| `check-backlog`, `check-plan-scope`                                     | `OK: README matches the cards` · `OK: chore/B1.98-unattended-honest stays inside the approved plan of B1.98`                                                  |
+| `scripts/next-task.sh --check B1.98`                                    | `[next-task] B1.98: no overlap with any Doing or Review card`                                                                                                 |
+| `scripts/verify-red.sh B1.98`                                           | `::error::no 'test(<pkg>): B1.98 … (red)' commit`. This is expected: see the checklist row "red commit".                                                      |
+| live `unattended.sh 275 276 277 207 214 215 223 224 225`                | the rows match the plan's table: #276 `ended` · #277 `ended,ended` and `1bb65dd` · #207 `ended` and `e65ffc9` · #215 `ended` · the 5 others `yes` with `-\t-` |
+| live `no-rework.sh 278 281 282 211 216 221`, origin/main copy vs branch | byte-identical (`cmp`). Both print `no-rework 6/6 = 100.0 % (pending 0)`                                                                                      |
+
+### Checklist
+
+| Check                                                  | Result                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every Acceptance item has a probe that asserts it      | pass. Stop: M50 (`ended`) and M51 (`ended,ended`). Commit: M30 and M51 (sha7). 1/3 on 275–277, plus E5 and E6 b1 stated: live (above). Row 28: cell 3 names both cases, cell 7 defines them. bash 3.2: smoke on `/bin/bash`. Label `config-change-approved` is on #306.                                                                                                                       |
+| no test weakened after the red commit                  | pass. `git log --first-parent --no-merges e7a9bb8..HEAD -- '*.test.*' e2e/ scripts/metrics-smoke.sh` is empty, and the merge `--remerge-diff` is empty. e83061b touches 4 files, and none is the smoke.                                                                                                                                                                                       |
+| red commit                                             | pass, with the plan's deviation explained. e7a9bb8 drops the plan's `(red)` marker. Its body says why: `verify-red.sh` judges only `*.test.ts(x)`, and a `(red)` subject with none fails CI's `--auto` ("touch no *.test.ts(x) file", verify-red.sh:73). This is the B1.95 precedent (B1.95 review, line 170).                                                                                |
+| M30 flipped `yes` → `no`, M34 share 3/6 → 2/6          | pass, and not a weakening. M30 still pins `messages` 0, so the runner comment and the bot comment are still not messages. Its 02:50 trailer-less commit is inside the window, and the new rule says `no` for that. The `yes` path is still pinned in full rows by M33, M44, M46–M49 and M52. Moving the fixture commit instead would have changed M35/M36 (no-rework reads the same PR #601). |
+| `runner()` bolds `${1%%:*}`                            | pass. This matches `run.sh:252` (`**${out%%:*}**`). In M42, `error:max_turns` now bolds `error`: still class `runner` (no `**gate**`), so the gate reset M42 tests is unchanged, and M53 reads its column 9 as `error:max_turns`. M43 calls `runner()` only through `GATE_HIGH` (`gate`, which has no colon), so it is unchanged.                                                             |
+| every changed file is in the plan                      | pass (check-plan-scope OK). The `SMOKE_SRC` prototype seam from round 2 did not land (`SRC="$PWD/scripts/metrics"`, line 56).                                                                                                                                                                                                                                                                 |
+| interfaces match the plan                              | pass. 10 TSV columns, and columns 1–8 are unchanged. The filter is identical in both scripts (column 7 added). No flag, env var or exit code.                                                                                                                                                                                                                                                 |
+| `docs/metrics.md` row 28                               | pass. Only cells 3 and 7 differ. They are unaligned and the other cells are byte-identical (B1.97). Cell 3 now reads "…no lead message in between (D-29), no runner stop and no PR commit without `Agent-Run:` (B1.98)". "In between" grammatically covers only the message, but cell 7 bounds all three cases with "inside the window". Not a finding.                                       |
+| secrets, suppressions, raw SQL, Prisma, migration, map | n/a or pass. No `src/` or `prisma/` change. Tooling card, so no map row.                                                                                                                                                                                                                                                                                                                      |
+| would a test fail if a changed line were reverted      | pass. Five mutants on a `$TMPDIR` clone of e83061b, each killed: stops lower bound `>=` → M52 · human upper bound `<=` → M52 · capture `[^\n]+` → M51 · verdict without `-z "$human"` → M30, M34 · M53 kills `// "?"` (dev-lead's check, which I did not re-run). The round-2 survivors (a), (b) and (c) are all killed now.                                                                  |
+
+### Findings
+
+None blocking.
+
+Notes (no change required):
+
+- `pr-body.md` still reads "Red / green: pending", "acceptance: pending" and "plan deviations: pending". PR #306's
+  head is 06c5644, so e7a9bb8 and e83061b are not pushed yet. Before ready, the deviations field should name the
+  dropped `(red)` marker, and the Evidence section should quote the live table above.
+- High-tier runs. `scripts/ci/plan-files.sh --run` refuses tier high (line 74), so no run can carry a high-tier plan
+  past its gate. A lead who finishes one by hand commits without the trailer, and the issue now reads `no` under
+  `human_commits`. D-29's exception covers the gate comment and its `approve`, and this card keeps both. The resume
+  path is undefined since B1.57 (analysis Q5), and no live issue has reached it.
+
+Riskiest unfalsified: `e65ffc9` on #207 (author `level-up-lab runner`, no `Agent-Run:`). If a run can commit
+without lefthook's `prepare-commit-msg` (a checkout without `pnpm install`, B1.57), then an unattended run reads `no`.
+E5 batch 1's drop to 1/3 rests partly on that commit. #207 is `no` on its `ended` stop alone, so the batch verdict
+does not depend on it, but the `human_commits` cell might. The plan records this as `[unverified]`.
+
+Verdict: ready for PR
