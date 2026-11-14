@@ -1263,15 +1263,7 @@ nothing)
 ### B1.95 · run.sh runs its own scripts from a clone behind origin/main and never says so
 
 _tooling · no §_
-**Status: Open** — `scripts/agent/run.sh` runs from the runner clone's checked-out `main` and never compares it with
-`origin/main` (`grep -c 'git fetch' scripts/agent/run.sh` → 0; `origin/main` appears only in `in_flight`, lines
-193–203, read "as last fetched").
-On 2026-11-13 the clone in the runner container was at bd99f86, 31 commits behind `origin/main` (278ee80). The
-`run.sh` it ran predated B1.82 and B1.88. So `run.sh 262` and `run.sh 263` printed "[run] skip #262: 3 agent branches
-in flight", counting the merged `feat/B5.5-agent` and `feat/B5.6-agent`. Run 261 (B6.1, #264) also got no per-run
-`TMPDIR`, and its diff-review `reviewer` wrote "Probe not run: TMPDIR unset" twice. The card worktree itself was cut
-from the fresh `origin/main`, so only the runner's own logic was stale, which made the gap silent. The lead's
-`git merge --ff-only origin/main` in the container fixed it by hand.
+**Status: Partial** — merged 3643aa3 (#296), pending the `agent/run.sh` row of `scripts/CLAUDE.md`, where the scripts guide is to name the check (B1.97 planned that file at approval; the compose header names it). run-smoke red cf678d3: R20 FAIL, 1 of 20; green b7e9d83: 20 probes OK (bash 3.2); hook-smoke 726, vitest 280, e2e 64, mutation 92.74 (no `src/`); plan review 2 rounds, diff review 1 pass
 
 - **Spec:** none — tooling (`scripts/agent/run.sh`, its smoke, the scripts guide); no `src/` change, no section
 - **Test:** a `scripts/agent/run-smoke.sh` probe whose fixture clone's `main` is one commit behind its `origin/main`
