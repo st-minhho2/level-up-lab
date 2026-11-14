@@ -46,3 +46,35 @@ Not blocking, noted for the lead: the card's `Spec:` line reads "§33 — unchan
 (D-34); §23's contract line 55 ("renders nothing") stays in textual tension with §33, as the plan's "Costs" states.
 
 Verdict: changes requested
+
+## Plan review (round 2)
+
+Plan: `backlog/work/B6.5/plan.md` at 6e8aa63 (only `plan.md` changed since 8e27aa1, besides this file).
+
+| Check                                                                             | Result                                                                                                                                                                                                                                                                                                        |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: unchanged from round 1 (F21's component and test, one e2e file per section, F31 row)                                                                                                                                                                                                                    |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass: signature identical to §33's function contract; no action, Prisma or query                                                                                                                                                                                                                              |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: approach A                                                                                                                                                                                                                                                                                              |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: 5 ACs, all with counts, exact strings or `toBe` identity                                                                                                                                                                                                                                                |
+| verification lists exact commands with expected numbers                           | pass: round-1 reason 1 resolved by option (a). AC-23.3's title stays verbatim (`overdue-count.test.tsx:45`), so `verify-red.sh` sees it as a pre-existing test; only line 54 (`not.toHaveAttribute('role')`) goes. The 4 new `it`s fail on the current component (`overdue-count.tsx:22` renders no `status`) |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: skeleton omitted with the reason; subjects follow `backlog/CLAUDE.md`                                                                                                                                                                                                                                   |
+| `Lead approves spec` box, ticked only by a human                                  | pass: `spec/contracts/31-overdue-announce.md:5` unticked; not touched by me                                                                                                                                                                                                                                   |
+| no settled D-n contradicted                                                       | pass: D-34 "removes only the `role` assertion" now matches the plan literally; no other section changes                                                                                                                                                                                                       |
+| `scripts/next-task.sh --check B6.5`                                               | pass: `[next-task] B6.5: no overlap with any Doing or Review card`                                                                                                                                                                                                                                            |
+
+Round-1 reason 2 resolved: AC-33.5's locator is `getByRole('status')` filtered by `compareDocumentPosition`
+FOLLOWING and not CONTAINS, the same mechanism as `e2e/23-overdue-count.spec.ts:124-127`; it excludes a B6.6
+`<div role="status">` that wraps the paragraph and does not depend on sibling adjacency.
+
+Traced, holds after the change: AC-23.3's remaining assertions (`queryAllByText('2 overdue')` finds the span, not
+`P`, no `aria-label`, 0 of the five roles since `status` is not counted, text `2 overdue`), AC-23.4 (empty span →
+`textContent` `""`), AC-23.5 (no `overdue` in the empty span's markup), AC-23.7 (`getByText` on exact text; the empty
+span matches no `N overdue`).
+
+Costs for the lead (stated in the plan, not blocking): (1) AC-23.3's test title keeps "no role" while §23's AC-23.3
+Then (`21-overdue-count.md:35`) no longer says it and the test no longer asserts it, until a later non-`(red)` commit
+renames it; (2) §23's function-contract "renders nothing" line stays in tension with §33 until a D-n tidies it; (3) the
+card's `Spec:` line says "unchanged" although f9d3f3a changed §23.
+
+Verdict: approved (ready for the lead's gate; not approved for build)
