@@ -66,7 +66,8 @@ new flag, variable, outcome or exit code. R20 (scratch repo's `origin/main` left
   fetches"): R1–R19 ok, R20 FAIL, "1 of 20 probes FAILED" (prototype on d106fe9: holds).
 - Green `chore(scripts): B1.95 run.sh refuses a clone behind origin/main`: "20 probes OK" (prototype: holds).
   Mutants (prototype): no fetch, failed fetch ignored, no retry, check after the lock, ahead count, return 0, symmetric
-  count, diverged runs — each must fail R20.
+  count, diverged runs — each must fail R20, and only R20 (setup fetches once, so `origin/main` exists without
+  run.sh's fetch).
 - `hook-smoke.sh` OK before/after; `next-task.sh --check B1.95` no overlap; `check-plan-scope.sh`, `check-backlog.sh`
   OK; `pnpm lint && pnpm typecheck` clean; `pnpm test` unchanged; CI green.
 
