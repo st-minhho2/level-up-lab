@@ -30,3 +30,80 @@ Costs the lead takes (already in the plan): the count is not announced (REQ-38.4
 `src/components/CLAUDE.md` line about `todo-search-form.tsx` stays stale after this card.
 
 Verdict: approved
+
+## Diff review (round 1)
+
+Range `main...0b1d65b`: skeleton `2ec5b9d`, pin `7488f47`, red `8a8376e`, feat `171c703`, map `0b1d65b`. Scope: ui.
+
+### Command results (run by the reviewer, last line of each)
+
+| Command                             | Last line                                                                                    |
+| ----------------------------------- | -------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!` (exit 0)                                        |
+| `pnpm typecheck`                    | `> tsc --noEmit` (exit 0, no error)                                                          |
+| `pnpm test`                         | `Tests  302 passed (302)` (48 files; plan: 298 → 302)                                        |
+| `pnpm test:e2e`                     | `73 passed (2.9m)` (3 new tests in `e2e/38-search-count.spec.ts`, the only e2e file added)   |
+| `scripts/mutation-gate.sh`          | `mutation: CI only, no src/lib or src/actions change` (component mutants probed by hand)     |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                    |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                            |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                           |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test`                                        |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 38 … 43`                                                            |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                         |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B7.4-agent stays inside the approved plan of B7.4 (D-27 approval)`                 |
+| `scripts/verify-red.sh B7.4`        | `RESULT: red for the right reason` (2 new unit tests failed on behavior; e2e skipped there)  |
+| `git diff --stat main...HEAD`       | `10 files changed, 684 insertions(+), 5 deletions(-)` (4 are `backlog/work/B7.4/` artifacts) |
+
+### Checklist
+
+| Check                                                                            | Result                                                                                                                                                                                                                                         |
+| -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-38.n has a test whose assertion matches its Then                        | pass: AC-38.1–38.4 in `todo-search-form.test.tsx`, AC-38.5–38.7 in `e2e/38-search-count.spec.ts`; each Then's counts, exact texts, last-child position, forbidden attributes and innerHTML equality are asserted as written                    |
+| no test weakened after the red commit                                            | pass: `git log --first-parent --no-merges 8a8376e..HEAD -- '*.test.*' e2e/` empty; the `--merges --remerge-diff` form empty (no merges)                                                                                                        |
+| pin and red commits touch only tests                                             | pass: `7488f47` and `8a8376e` change only the two test files; the pin's one deleted line is the `within` import widening                                                                                                                       |
+| every changed file is in `plan.md`                                               | pass: the 5 planned files; `docs/metrics.md` is the plan's "Paperwork (exempt)" row; `check-plan-scope.sh` OK                                                                                                                                  |
+| interfaces match the section's contracts                                         | pass: `count?: number` readonly prop, `ReactNode` return, `<p>{count === 1 ? '1 match' : \`${count} matches\`}</p>`as the form's last child;`page.tsx`passes`count={shown.length}`with`shown = searchTodos(filterTodos(todos, filter), query)` |
+| Zod at every action boundary · Prisma only in `src/lib` · no raw SQL · migration | n/a: no action, `src/lib`, `prisma/` or query change                                                                                                                                                                                           |
+| Server/Client boundary                                                           | pass: the form was already `'use client'`; the page stays a Server Component and passes a number                                                                                                                                               |
+| no secret, no suppression                                                        | pass: `check-suppressions.sh` OK; no key or env value in the diff                                                                                                                                                                              |
+| features map row moved                                                           | pass: F36 §38 ✅ added in `0b1d65b`                                                                                                                                                                                                            |
+| every AC-16/21/25/27 unit test unchanged                                         | pass: the test-file diff is the `within` import plus an appended `describe` block; no existing line changed                                                                                                                                    |
+| would a test fail if one changed line were reverted?                             | pass, probed on `$TMPDIR/probe` (table below)                                                                                                                                                                                                  |
+
+Probe (copy of the worktree, one mutant at a time, original restored with `cp` after each):
+
+| Mutant                                                                  | Result                                                                                                                                      |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| drop `isSearchInEffect(query) &&`                                       | killed by AC-38.3                                                                                                                           |
+| drop `Number.isInteger(count) &&`                                       | killed by AC-38.3 (the 1.5 case)                                                                                                            |
+| `count >= 1` → `count >= 0`                                             | killed by AC-38.3 (the 0 case)                                                                                                              |
+| `count >= 1` → `count > 1`                                              | killed by AC-38.2                                                                                                                           |
+| `count === 1` → `false` (always plural)                                 | killed by AC-38.2                                                                                                                           |
+| `role="status"` on the `<p>`                                            | killed by AC-38.1                                                                                                                           |
+| `aria-live="polite"` on the `<p>`                                       | killed by AC-38.1                                                                                                                           |
+| drop `count !== undefined &&`                                           | survives vitest (16 passed) but `tsc` rejects it: `TS18048: 'count' is possibly 'undefined'`; not a shippable mutant, equivalent at runtime |
+| `page.tsx` `count={todos.length}`                                       | killed by e2e AC-38.5 (`2 matches` expected 1, received 0) and AC-38.6                                                                      |
+| `page.tsx` `count={filterTodos(todos, filter).length}` (search ignored) | killed by e2e AC-38.5 (line 110) and AC-38.6 (line 144)                                                                                     |
+
+The paragraph-before-the-link order is pinned by AC-38.1's `landmark.lastChild` and `compareDocumentPosition` assertions.
+
+On the three doubts the lead raised:
+
+1. `count !== undefined` is a type narrowing; its removal is runtime-equivalent and caught by `pnpm typecheck`, as above.
+2. AC-38.7's button names `/^Mark all complete( \(\d+\))?$/` and `/^Clear completed( \(\d+\))?$/`: the Then asks only
+   that both are enabled; §32 and §36 append "(n)", so the optional suffix is faithful, and `toHaveCount(1)` on each
+   locator rules out the pattern matching a second button. Not a weakening.
+3. e2e AC-38.5 kills both wrong wirings of `page.tsx` (stored count and filter-only count), confirmed above.
+
+Non-blocking note: the `docs/metrics.md` row ends in "this feat commit" where earlier rows carry a hash (B7.3:
+`14defd1`); the closing PR can write `171c703`.
+
+### Findings
+
+None blocking.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: no e2e asserts that the count paragraph sits inside the page's search landmark (AC-38.5 finds it
+by text anywhere on the page); only the unit test AC-38.1 pins its placement, so a page that rendered a second count
+outside `TodoSearchForm` would fail AC-38.5's count-of-1 but a page that moved it out would not be caught in e2e.
