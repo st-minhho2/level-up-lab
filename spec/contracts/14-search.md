@@ -53,9 +53,17 @@ export function parseSearchQuery(value: string | string[] | undefined): string; 
 export function searchTodos<T extends { readonly title: string }>(todos: readonly T[], query: string): T[]; // trims query; a trimmed query whose length exceeds SEARCH_QUERY_MAX_LENGTH (UTF-16 code units, as §5 counts titles) returns [] before any comparison; '' keeps all; else title.toLowerCase().includes(query.toLowerCase()); keeps input order; returns a new array; never mutates
 export function searchEmptyMessage(filter: TodoFilter, totalCount: number, query: string): string; // for an empty list shown: totalCount === 0 → 'No todos yet'; trimmed query !== '' → 'No todos match your search'; else emptyListMessage(filter, totalCount) (§12)
 // src/components/todo-search-form.tsx (no 'use client' in §16 itself: a native GET form, no state or events; §25 adds 'use client' to this file)
-export function TodoSearchForm({ filter, query }: { readonly filter: TodoFilter; readonly query: string }): ReactNode; // <form role="search" method="get" action="/"> with <label htmlFor> "Search todos" (sr-only), <input type="search" name="q" maxLength={200} defaultValue={query}>, <button type="submit">Search</button>, and <input type="hidden" name="filter" value={filter}> only when filter !== 'all'
+export function TodoSearchForm({
+  filter,
+  query,
+  count,
+}: {
+  readonly filter: TodoFilter;
+  readonly query: string;
+  readonly count?: number;
+}): ReactNode; // `count` is optional and added by §38 (the match count; without it the markup below is the whole render); <form role="search" method="get" action="/"> with <label htmlFor> "Search todos" (sr-only), <input type="search" name="q" maxLength={200} defaultValue={query}>, <button type="submit">Search</button>, and <input type="hidden" name="filter" value={filter}> only when filter !== 'all'
 // src/app/page.tsx: HomePage({ searchParams }: { searchParams: Promise<{ filter?: string | string[]; q?: string | string[] }> }) reads
-// parseSearchQuery((await searchParams).q); the list is searchTodos(filterTodos(todos, filter), query); renders <TodoSearchForm filter={filter} query={query} />
+// parseSearchQuery((await searchParams).q); the list is searchTodos(filterTodos(todos, filter), query); renders <TodoSearchForm filter={filter} query={query} count={shown.length} /> (§38)
 // outside the list in both states (position is the mounting card's choice); the empty <p> text is searchEmptyMessage(filter, todos.length, query);
 // <RemainingCount>, <ClearCompletedButton disabled> and <CompleteAllButton disabled> keep deriving from the unfiltered, unsearched todos
 ```
@@ -72,7 +80,7 @@ unchanged.
 Highlighting the matched text, search as you type or any debounce, searching anything but the title (a due date,
 section 15, is not searched), several words, fuzzy matching, regular expressions, wildcards, accent folding,
 locale-aware case folding, a search in the database query, client-side navigation for the form (`next/form`),
-keeping the search when a filter link is followed (that needs a change to §12 REQ-12.6), counts of matches,
+keeping the search when a filter link is followed (that needs a change to §12 REQ-12.6),
 limiting the remaining count, "Clear completed" or "Mark all complete" to the todos shown, remembering the search
 outside the address (cookie, local storage), keyboard shortcuts other than the slash key (§25) and Escape in the search box (§27), any ordering other than creation time newest
 first (§1).
