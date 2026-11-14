@@ -143,3 +143,86 @@ Not blocking. These are costs for the lead to see:
 
 Riskiest unfalsified: whether a headless `spec-analyst` retypes the 46-line index exactly. With `tr -s` the diff check
 would catch any difference except a change in how many spaces or dashes sit in a row. I could not run an agent here.
+
+## Diff review (round 1)
+
+Range: origin/main merge-base 8b0358e..f7de3de. Red d6b8f1e (`scripts/hook-smoke.sh` only), green f7de3de
+(`.claude/agents/spec-analyst.md`, `.claude/agents/dev-lead.md`, `.claude/docs/hooks.md`). origin/main is now
+b35c5d6, 4 commits ahead (B1.97, the §35–§37 sections). No file changed on both sides since 8b0358e, so the merge in
+Loop 9 has no overlapping files. I did not run the merge itself: the guard refuses `git -c … merge` and
+`git merge-tree`.
+
+### Commands (last line of each, run by me in the worktree unless a clone is named)
+
+| Command                                              | Result                                                                                                                                                                                                 |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm lint`                                          | `All matched files use Prettier code style!`                                                                                                                                                           |
+| `pnpm typecheck`                                     | `> tsc --noEmit` (exit 0)                                                                                                                                                                              |
+| `pnpm test`                                          | `Tests  280 passed (280)`                                                                                                                                                                              |
+| `pnpm test:e2e`                                      | `64 passed (1.5m)`                                                                                                                                                                                     |
+| `pnpm test:mutation`                                 | `Final mutation score of 92.74 is greater than or equal to break threshold 70` (no `src/` change)                                                                                                      |
+| `scripts/hook-smoke.sh` (green, worktree)            | `hook-smoke: 747 probes OK`                                                                                                                                                                            |
+| `scripts/hook-smoke.sh` (red d6b8f1e, clone)         | `hook-smoke: FAILURES above`: 741 ok + the 5 planned FAILs + `require-review.sh spoke on a clean tree`. The last one comes from my clone setup: it also fails on origin/main in the same kind of clone |
+| `scripts/hook-smoke.sh` (origin/main b35c5d6, clone) | 725 ok + that same setup FAIL. Normalized diff against green: only `ok spec-analyst passes: …` changes, and the 21 new `ok` lines are added (2 frontmatter, 16 layout, 1 `hg`, 2 `states`)             |
+| `check-suppressions.sh`                              | `[check-suppressions] OK: no new suppressions`                                                                                                                                                         |
+| `check-config-change.sh`                             | exit 1 locally (the label is not visible to it there). PR #295 carries `config-change-approved` (`gh pr view 295 --json labels`)                                                                       |
+| `check-feat-commits.sh`                              | `[check-feat-commits] OK: no feat commit touches tests`                                                                                                                                                |
+| `check-ac-coverage.sh`                               | `[check-ac-coverage] OK: every criterion of a shipped section has a test`                                                                                                                              |
+| `check-spec-sections.sh`                             | `[check-spec-sections] OK: sections cited: 1 … 34`                                                                                                                                                     |
+| `check-features-map.sh`                              | `[check-features-map] OK`                                                                                                                                                                              |
+| `check-agent-frontmatter.sh`                         | `[check-agent-frontmatter] OK: 13 files`                                                                                                                                                               |
+| `check-plan-scope.sh`                                | `[check-plan-scope] OK: chore/B1.99-index-guard stays inside the approved plan of B1.99`                                                                                                               |
+| `scripts/verify-red.sh B1.99`                        | exit 1, `no 'test(<pkg>): B1.99 … (red)' commit`. `--auto` (CI's form) prints `nothing to verify` and exits 0                                                                                          |
+| `scripts/next-task.sh --check B1.99`                 | `[next-task] B1.99: no overlap with any Doing or Review card`                                                                                                                                          |
+| `git diff --stat origin/main...HEAD`                 | 7 files: 3 under `.claude/`, `scripts/hook-smoke.sh`, 3 under `backlog/work/B1.99/`                                                                                                                    |
+
+### Checklist
+
+| Check                                               | Result                                                                                                                                                                                                                                                                                                                                    |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every acceptance bullet has a check that matches it | guard allows the index: frontmatter, `hg` and 16 layout probes, all `ok`. Every other verdict is unchanged, and the count is stated (726 → 747). Loop 9 names the dispatch and the exact commit title (`states` probe). D-36 is superseded in Loop 9's sentence. The label is on #295                                                     |
+| no test weakened after red                          | `git log --first-parent --no-merges d6b8f1e..HEAD -- '*.test.*' e2e/ scripts/hook-smoke.sh` is empty. No merges in the range                                                                                                                                                                                                              |
+| every changed file is in `plan.md`                  | yes, all 5 Files rows                                                                                                                                                                                                                                                                                                                     |
+| interfaces match the plan                           | the guard list matches it in order. `Mode: … merge repair …` and the `REPAIR:` line match Interfaces verbatim. The `tr -s` command matches `plan.md:11`                                                                                                                                                                                   |
+| red commit subject                                  | it deviates from the plan. Work breakdown names `… index write (red)`, and the commit has no `(red)`. The body explains why (smoke only, as B1.89, whose plan named no marker). With the marker, `verify-red.sh --auto` would look for vitest files of B1.99 and find none. Not blocking. The red was proven by my run of d6b8f1e instead |
+| Zod / Prisma / raw SQL / migration                  | n/a: no `src/`, `prisma/` or `e2e/` change                                                                                                                                                                                                                                                                                                |
+| no secret, no suppression                           | none                                                                                                                                                                                                                                                                                                                                      |
+| features map                                        | n/a: tooling, no feature                                                                                                                                                                                                                                                                                                                  |
+| guard-bash lets the recipe run                      | exit 0 for spec-analyst and for dev-lead on `git diff origin/main...HEAD^1 -- …`, `git show origin/main:…`, and the `diff <(…tr -s…) <(…)` command                                                                                                                                                                                        |
+| would a revert fail a probe?                        | the guard path, `section index rows once` and `Merge repair` would. On a clone I changed `tr -s` → `tr -d`, `HEAD^1` → `HEAD`, and removed `merge repair` from the brief's Mode list. hook-smoke then showed no new FAIL. That is the plan's stated cost ("prose, not probed"), so I do not count it as a finding                         |
+| Prettier re-pad of `hooks.md`'s table               | formatting only. `pnpm lint` (prettier --check) needs it, and every row's cells other than spec-analyst's are unchanged                                                                                                                                                                                                                   |
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: .claude/agents/spec-analyst.md:49 (Merge repair: "git diff origin/main...HEAD^1")
+    DEFECT: the own-row derivation assumes HEAD is the merge that duplicated the row; after any later commit, HEAD^1
+            is that merge, so the derivation returns every stale duplicate as the card's "own" row.
+    TRIGGER: Loop 9 merges, pushes, and CI goes red on both check-spec-sections and another job. The dev-lead takes
+            "back through the loop", and a fix commit (or a review commit) lands before the repair is dispatched.
+            Reproduced on a toy repo under $TMPDIR (merge=union; the card appends §3; trunk flips §2 ✗→✅ and appends §4).
+            With HEAD = the merge, `git diff trunk...HEAD^1` gives `+| §3 …`. After one more commit it gives
+            `+| §2 | … | ✗ |` and `+| §3 …`.
+    WRONG BEHAVIOUR: the card says to restore "origin/main's copy plus the card's own row". Here spec-analyst is told
+            that the sibling's pre-flip §2 ✗ row is the branch's change. dev-lead's diff check then prints a §2 `<`/`>` pair:
+            it stops ("Waiting on human"), which is the lead's session that this card exists to remove. Or it accepts
+            the pair as "a row the branch changed" (the wording allows it for a card with no new row), which undoes
+            the sibling's ✅. The plan's normal trigger until B1.92 is "in CI after the push", so this state is reachable.
+    CONFIDENCE: confirmed for the derivation (I ran it); plausible for the acceptance branch (no agent run)
+```
+
+The fix is one phrase, inside the approved Files and Interfaces. Take `^1` of the merge that left the row twice, not
+HEAD's. For example, `m=$(git log --first-parent --merges -1 --format=%H); git diff origin/main...$m^1 -- …`, or
+`git log --first-parent --no-merges -p origin/main..HEAD -- spec/technical-requirements.md`. On the toy repo after the
+extra commit, both print only `+| §3 …`. It changes the plan's approach text (`plan.md:9`), so the lead should see
+the new line. Round 2 of the plan review raised a sibling of this (a second merge) as a cost. This trigger is a
+plain commit, which the CI-red path produces.
+
+Verdict: back to code-writer (for this tooling card, the dev-lead writes `.claude/agents/spec-analyst.md`). Fix [1]
+in spec-analyst.md's Merge repair. Optionally, in Loop 9, say that the `<`/`>` pair is allowed only for the card's
+own §.
+
+Riskiest unfalsified: whether a headless sonnet `spec-analyst` reproduces origin/main's index cell for cell through
+Write. Since B1.97 (on main now), Prettier no longer re-pads the file, so `tr -s` hides only changes in run length.
+No agent was run, and no probe executes the Loop 9 diff check.
