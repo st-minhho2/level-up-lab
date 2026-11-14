@@ -17,7 +17,7 @@
 
 ## Open questions
 
-1. §22's Out of scope still lists "live announcement to assistive technology (`role="status"`, `aria-live`, as in §13)"
+1. **Settled by D-35 A.** §22's Out of scope listed "live announcement to assistive technology (`role="status"`, `aria-live`, as in §13)"
    (`spec/contracts/20-all-done.md:60`), and D-33 lifts only §13's line. This card puts §22's message in the region.
    Proposed: the `docs(spec)` commit also deletes that phrase from §22's Out of scope, and nothing else of §22.
    Why: otherwise two sections contradict. Otherwise: §34 and §22 disagree and a reviewer must pick a side.
@@ -33,6 +33,4 @@
 
 ## Needs a ruling
 
-Open question 1 touches §22's text (behavior unchanged, one Out-of-scope phrase removed) outside the D-33 lift list.
-Proposed: lead confirms it in the plan; no human D-n needed if D-33 is read to cover "the line from §13" by extension,
-otherwise one line added to D-33.
+None. Settled by D-35 A: the phrase is lifted from §22's Out of scope, nothing else of §22 changes.
