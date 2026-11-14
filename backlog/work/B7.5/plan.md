@@ -35,10 +35,12 @@ export function isTitleNearLimit(value: string): boolean; // titleCharacterCount
 ## Verification
 
 Baseline `pnpm test` 298 passed (48 files). Red: `scripts/verify-red.sh B7.5` exit 0; AC-39.1 red on the stub's
-`NotImplementedError`, AC-39.2–39.6 red on the missing `#new-todo-warning` (assertion); `pnpm test:e2e
-e2e/39-title-counter-warning.spec.ts` → 1 red on the warning locator. Green: `pnpm lint && pnpm typecheck` clean ·
-`pnpm test` 298 → 304 passed (49 files), AC-18.n, AC-29.n, AC-5.7 green · `pnpm test:e2e` +1, `e2e/18-title-counter`
-and `e2e/29-escape-new-todo` green · mutation ≥ 70 (`src/lib/title-count.ts` changes) · `pnpm build` ok.
+`NotImplementedError`, AC-39.2–39.6 red on the missing `#new-todo-warning` (assertion); each AC is one `it` that first
+asserts a present warning: AC-39.4 keeps (a) and (b) in one test, AC-39.5 first asserts exactly 1 `#new-todo-warning`
+while the box holds `'x'` ×190, before Escape. `pnpm test:e2e e2e/39-title-counter-warning.spec.ts` → 1 red on the
+warning locator. Green: `pnpm lint && pnpm typecheck` clean · `pnpm test` 298 → 304 passed (49 files), AC-18.n,
+AC-29.n, AC-5.7 green · `pnpm test:e2e` 70 → 71 tests, `e2e/18-title-counter` and `e2e/29-escape-new-todo` green ·
+`scripts/mutation-gate.sh` → score ≥ 70 on `src/lib/title-count.ts` · `pnpm build` ok.
 
 ## Work breakdown
 
