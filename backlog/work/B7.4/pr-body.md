@@ -79,26 +79,38 @@ Plan review: approved, round 1 · Plan approved by: reviewer (D-27, tier medium,
 
 ## Map delta
 
-pending
+- `spec/features-map.md`: new row F36 · §38 · match count in the search form · `src/components/todo-search-form.tsx`,
+  `src/app/page.tsx` · ✅ (0b1d65b)
+- `spec/technical-requirements.md`: §38 index row, ✗ until the closing PR
 
 ## Review
 
-pending
+`backlog/work/B7.4/review.md`, plan review 1 round (approved) and diff review 1 pass: **Verdict: ready for PR**, 0 findings.
+
+- Range: skeleton 2ec5b9d, pin 7488f47 (AC-38.3, 38.4, 38.7 green on the skeleton), red 8a8376e, feat 171c703, map 0b1d65b.
+- Reviewer's gates: `pnpm test` 302 passed (298 → 302), `pnpm test:e2e` 73 passed (+3), mutation CI only (no `src/lib`
+  or `src/actions` change), all seven CI guards OK, `verify-red.sh B7.4` red for the right reason, no test changed after
+  the red commit.
+- Revert probes (on a copy): 9 of 10 mutants killed (gate dropped, `isInteger` dropped, `>= 0`, `> 1`, always plural,
+  `role="status"`, `aria-live`, `page.tsx` `todos.length`, filter-only length); dropping `count !== undefined` survives
+  vitest but fails `tsc` (TS18048), equivalent at runtime.
+- Riskiest unfalsified: e2e AC-38.5 finds the count text anywhere on the page; only unit AC-38.1 pins it as the search
+  form's last child.
 
 ## Evidence
 
-- AC met: pending
+- AC met: 7/7 (AC-38.1 … AC-38.7; 4 unit, 3 e2e)
 - tier: medium
 - plan deviations: none
 - trace: n/a
 
 ## Checklist
 
-- [ ] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
-- [ ] Red commit precedes the feat commit; no `feat(` commit touches `*.test.*` or `e2e/**`.
-- [ ] Every `AC-§.n` of the section is a test title; mutation on `src/lib` + `src/actions` ≥ 70 %.
-- [ ] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; no protected config change (or label `config-change-approved` with the reason).
-- [ ] Migrations reviewed as SQL; `prisma/seed.ts` updated if a table changed.
-- [ ] `spec/features-map.md` row moved; `docs/metrics.md` per-card row filled; mistake-log updated if a known mistake repeated.
+- [x] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
+- [x] Red commit precedes the feat commit; no `feat(` commit touches `*.test.*` or `e2e/**`.
+- [x] Every `AC-§.n` of the section is a test title; mutation on `src/lib` + `src/actions` ≥ 70 %.
+- [x] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; no protected config change (or label `config-change-approved` with the reason).
+- [x] Migrations reviewed as SQL; `prisma/seed.ts` updated if a table changed.
+- [x] `spec/features-map.md` row moved; `docs/metrics.md` per-card row filled; mistake-log updated if a known mistake repeated.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
