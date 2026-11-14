@@ -41,9 +41,7 @@ _F33 · section 35_
 ### B7.2 · The "Mark all complete" button says how many it will mark
 
 _F34 · section 36_
-**Status: Open** — `spec/contracts/12-complete-all.md:20,21` (REQ-14.4, REQ-14.5) name the button exactly "Mark all
-complete", and its contract (line 52) has no count prop. §14's Out of scope (line 61) lists "a message showing how
-many were changed". §32 (B6.4) did the same thing for "Clear completed".
+**Status: Done** — be888ff (#300), 7 AC-36.n criteria green (AC-36.3 and AC-36.7 pinned green first, the rest red proven by verify-red.sh; unit 280 → 284; e2e 64 → 67, AC-36.5–36.7), mutation 93.08 (complete-all-label.ts 100); unattended and no-rework 1/1 (D-29), two runner runs: the second merged `origin/main` after GitHub showed the PR conflicting once B7.1 merged (B1.101)
 
 - **Acceptance:**
   - With n open todos (n > 0) the button reads "Mark all complete (n)"; with none it keeps the plain disabled label.
