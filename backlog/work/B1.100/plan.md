@@ -61,9 +61,10 @@ At batch 1's load (29–45 on 8 CPUs, 3 runs × 4 Stryker workers each) a whole-
 unmeasured factor, so the saving per run is ≥ 11 min and plausibly 30–45 min `[unverified]`; with no Stryker in
 B7.4/B7.6 the container load should also drop. Batch 2 measures it (Acceptance 4).
 
-**`scripts/CLAUDE.md` is out** (B1.98's branch `chore/B1.98-unattended-honest` edits it, plan at the lead's gate;
-B1.101 may): no row for the two scripts here. Usage and the probe range MG1–MG15 are documented in the two scripts' headers; the guide rows go to the next card that holds
-`scripts/CLAUDE.md` (Waiting on you). `dev-lead.md`, `agent/run.sh`, `agent/run-smoke.sh` are B1.101's: not touched.
+**`scripts/CLAUDE.md` is in** (round 3): B1.98, which held it, merged (#306, 6da952c) and is merged here (17ccd2b);
+B1.101's plan (local branch `chore/B1.101-sync-ready-pr`, round 2) does not list it; `next-task.sh --check B1.100`
+after the merge: no overlap. Two rows, appended after `pr-step-smoke.sh`, unchanged neighbours. `dev-lead.md`,
+`agent/run.sh`, `agent/run-smoke.sh` are B1.101's: not touched.
 
 Tier: `scripts/agent/tier.sh` → **high** (`.claude/`); interactive, so the lead's `approve` gate holds. `config-change-approved`
 added at draft (card acceptance; `.claude/` is protected). Dev-lead writes `scripts/` and `.claude/` here
@@ -71,16 +72,17 @@ added at draft (card acceptance; `.claude/` is protected). Dev-lead writes `scri
 
 ## Files
 
-| File                                  | Change                                                                      | Why                |
-| ------------------------------------- | --------------------------------------------------------------------------- | ------------------ |
-| `scripts/mutation-gate.sh`            | new: the rule above; header = usage, rule, output                           | Acceptance 1, 2, 3 |
-| `scripts/mutation-gate-smoke.sh`      | new: MG1–MG15 on a throwaway repo with a `pnpm` shim                        | Test line          |
-| `.claude/agents/code-writer.md`       | step 4: the script, not `pnpm test:mutation` (D-13 report excepted); Report | Acceptance 1       |
-| `.claude/skills/tdd-loop/SKILL.md`    | step 4 green gate: the script (reuses code-writer's run); Report: its line  | Acceptance 1, 3    |
-| `.claude/agents/reviewer.md`          | diff-review gate run: the script (reuses unless `src/` changed); paste line | Acceptance 1       |
-| `.claude/skills/review-loop/SKILL.md` | re-verify after a fix: the script instead of "mutation if … changed"        | Acceptance 1       |
-| `.claude/skills/work-next/SKILL.md`   | Exit: the `mutation:` line in the PR evidence                               | Acceptance 3       |
-| `backlog/work/B1.100/*`               | plan, review, pr-body                                                       | pipeline           |
+| File                                  | Change                                                                              | Why                |
+| ------------------------------------- | ----------------------------------------------------------------------------------- | ------------------ |
+| `scripts/mutation-gate.sh`            | new: the rule above; header = usage, rule, output                                   | Acceptance 1, 2, 3 |
+| `scripts/mutation-gate-smoke.sh`      | new: MG1–MG15 on a throwaway repo with a `pnpm` shim                                | Test line          |
+| `.claude/agents/code-writer.md`       | step 4: the script, not `pnpm test:mutation` (D-13 report excepted); Report         | Acceptance 1       |
+| `.claude/skills/tdd-loop/SKILL.md`    | step 4 green gate: the script (reuses code-writer's run); Report: its line          | Acceptance 1, 3    |
+| `.claude/agents/reviewer.md`          | diff-review gate run: the script (reuses unless `src/` changed); paste line         | Acceptance 1       |
+| `.claude/skills/review-loop/SKILL.md` | re-verify after a fix: the script instead of "mutation if … changed"                | Acceptance 1       |
+| `.claude/skills/work-next/SKILL.md`   | Exit: the `mutation:` line in the PR evidence                                       | Acceptance 3       |
+| `scripts/CLAUDE.md`                   | rows `mutation-gate.sh [--base <ref>] [--force]`, `mutation-gate-smoke.sh` MG1–MG15 | guide              |
+| `backlog/work/B1.100/*`               | plan, review, pr-body                                                               | pipeline           |
 
 ## Interfaces touched
 
@@ -100,7 +102,7 @@ No env var, no config change; `stryker.config.mjs`, `package.json`, `.github/wor
   the worktree): a type-only `src/lib/*.ts` → "no mutant in …", whole layer, exit 0; an untested function → "no test
   reaches it", exit 1.
 - `hook-smoke.sh` "749 probes OK" (RP1–RP10 still read the edited prompts) and `pnpm test` "298 passed (298)" at
-  4c7d9e4, the same after; `pnpm lint && pnpm typecheck` 0; `check-plan-scope.sh`, `check-agent-frontmatter.sh` OK;
+  17ccd2b (origin/main 6da952c merged), the same after; `pnpm lint && pnpm typecheck` 0; `check-plan-scope.sh`, `check-agent-frontmatter.sh` OK;
   `next-task.sh --check B1.100` no overlap; CI green (its `mutation` job unchanged).
 
 ## Work breakdown
