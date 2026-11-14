@@ -61,4 +61,4 @@ AC-38.6 fail on the absent count text, recorded in the commit body. Green: `pnpm
 Costs the lead takes: the count is not announced (REQ-38.4), so a screen-reader user learns it only by reading the
 form. B7.5 and B7.6 (same batch) touch other components; neither touches `todo-search-form.tsx` or `page.tsx`.
 
-Plan review: approved, round 1 · Plan approved by: · Rounds: 1
+Plan review: approved, round 1 · Plan approved by: reviewer (D-27, tier medium, issue #308) · Rounds: 1
