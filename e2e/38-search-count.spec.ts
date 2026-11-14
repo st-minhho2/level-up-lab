@@ -46,6 +46,36 @@ function rows(page: Page): Locator {
   return page.getByRole('listitem');
 }
 
+function exactText(page: Page, text: string): Locator {
+  return page.getByText(text, { exact: true });
+}
+
+// Any §38 count text, "N match" or "N matches", as the whole text of an element.
+const COUNT_TEXT = /^\d+ match(es)?$/;
+
+function countTexts(page: Page): Locator {
+  return page.getByText(COUNT_TEXT);
+}
+
+// "The number in a count text equals the number of rows": with a count text on the page, its number is the row count.
+async function expectCountMatchesRows(page: Page): Promise<void> {
+  const texts = await countTexts(page).allTextContents();
+  const rowCount = await rows(page).count();
+  expect(texts.map((text) => Number.parseInt(text, 10))).toEqual(texts.length === 0 ? [] : [rowCount]);
+}
+
+// REQ-38.5 "without a full reload": counts every document navigation of the main frame from now on. A Server Action
+// is a fetch and never counts; a native form POST, a reload or a link to another page does.
+function watchNavigations(page: Page): () => number {
+  let navigations = 0;
+  page.on('request', (request) => {
+    if (request.isNavigationRequest() && request.frame() === page.mainFrame()) {
+      navigations += 1;
+    }
+  });
+  return () => navigations;
+}
+
 // The §13 remaining count, whatever its number (the pattern e2e §23 and §33 use).
 function remainingCount(page: Page): Locator {
   return page.getByText(/^\d+ items? left$/);
@@ -69,6 +99,70 @@ async function openHydrated(page: Page, path: string): Promise<void> {
 
 // §38 search match count (B7.4).
 test.describe('§38 search match count', () => {
+  test('AC-38.5: /?q=milk shows "2 matches" once with [D, C] and "2 items left" once, /?filter=active&q=milk "1 match" once with [D], /?q=zzz 0 rows, one "No todos match your search" and 0 count texts, / and /?q=%20%20 4 rows and 0 count texts, and every count text equals the number of rows', async ({
+    page,
+  }) => {
+    await seedFourTodos();
+
+    await page.goto('/?q=milk');
+
+    await expect(rows(page)).toHaveText(['Buy milk', 'Milkshake']);
+    await expect(exactText(page, '2 matches')).toHaveCount(1);
+    await expect(exactText(page, '2 items left')).toHaveCount(1);
+    await expect(countTexts(page)).toHaveCount(1);
+    await expectCountMatchesRows(page);
+
+    await page.goto('/?filter=active&q=milk');
+
+    await expect(rows(page)).toHaveText(['Buy milk']);
+    await expect(exactText(page, '1 match')).toHaveCount(1);
+    await expect(countTexts(page)).toHaveCount(1);
+    await expectCountMatchesRows(page);
+
+    await page.goto('/?q=zzz');
+
+    await expect(rows(page)).toHaveCount(0);
+    await expect(exactText(page, 'No todos match your search')).toHaveCount(1);
+    await expect(countTexts(page)).toHaveCount(0);
+    await expectCountMatchesRows(page);
+
+    for (const path of ['/', '/?q=%20%20']) {
+      await page.goto(path);
+
+      await expect(rows(page)).toHaveText(['Buy milk', 'Milkshake', 'Call mom', 'Walk the dog']);
+      await expect(countTexts(page)).toHaveCount(0);
+      await expectCountMatchesRows(page);
+    }
+  });
+
+  test('AC-38.6: on /?filter=active&q=milk with [D] and "1 match", ticking D leaves 0 rows, one "No todos match your search", 0 count texts and 0 document navigations, the same after a reload, and /?q=milk then shows [D, C] and "2 matches" once', async ({
+    page,
+  }) => {
+    await seedFourTodos();
+    await openHydrated(page, '/?filter=active&q=milk');
+    await expect(rows(page)).toHaveText(['Buy milk']);
+    await expect(exactText(page, '1 match')).toHaveCount(1);
+    const navigations = watchNavigations(page);
+
+    await page.getByRole('checkbox', { name: 'Buy milk', exact: true }).click();
+
+    await expect(rows(page)).toHaveCount(0);
+    await expect(exactText(page, 'No todos match your search')).toHaveCount(1);
+    await expect(countTexts(page)).toHaveCount(0);
+    expect(navigations()).toBe(0);
+
+    await page.reload();
+
+    await expect(rows(page)).toHaveCount(0);
+    await expect(exactText(page, 'No todos match your search')).toHaveCount(1);
+    await expect(countTexts(page)).toHaveCount(0);
+
+    await page.goto('/?q=milk');
+
+    await expect(rows(page)).toHaveText(['Buy milk', 'Milkshake']);
+    await expect(exactText(page, '2 matches')).toHaveCount(1);
+  });
+
   test('AC-38.7: opening /?q=milk and /?q=zzz leaves the stored titles and completed flags equal to the snapshot, "Mark all complete" and "Clear completed" enabled, and the "N items left" text unchanged between the two addresses', async ({
     page,
   }) => {

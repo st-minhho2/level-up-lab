@@ -420,7 +420,46 @@ function markupOf(searchCase: CountCase): { readonly html: string; readonly para
   return { html, paragraphs };
 }
 
+// The attributes REQ-38.4 forbids on the count paragraph: it is not a live region, a landmark, a status or an alert.
+const FORBIDDEN_COUNT_ATTRIBUTES = ['id', 'role', 'aria-live', 'aria-atomic', 'aria-label'] as const;
+
 describe('<TodoSearchForm> match count (§38)', () => {
+  it('AC-38.1: renders exactly 1 paragraph "3 matches" as the last child of the search form, after the link "Clear search", with no id, role, aria-live, aria-atomic or aria-label, for filter all, query milk and count 3', () => {
+    const searchCase: CountCase = { filter: 'all', query: 'milk', count: 3 };
+
+    renderCountCase(searchCase);
+
+    const landmark = screen.getByRole('search');
+    const paragraphs = landmark.querySelectorAll('p');
+    expect(paragraphs).toHaveLength(1);
+    const paragraph = paragraphs[0];
+    expect(paragraph?.textContent).toBe('3 matches');
+    expect(landmark.lastChild).toBe(paragraph);
+    const link = screen.getByRole('link', { name: 'Clear search' });
+    expect(paragraph !== undefined && link.compareDocumentPosition(paragraph)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(FORBIDDEN_COUNT_ATTRIBUTES.filter((name) => paragraph?.hasAttribute(name) === true)).toEqual([]);
+    expect(screen.queryAllByRole('status')).toHaveLength(0);
+    expect(screen.queryAllByRole('alert')).toHaveLength(0);
+    expect(screen.queryAllByRole('log')).toHaveLength(0);
+  });
+
+  it('AC-38.2: with filter active and query milk, count 1, 2 and 11 render the landmark\'s one p as exactly "1 match", "2 matches" and "11 matches"', () => {
+    const counts: readonly number[] = [1, 2, 11];
+
+    const outcomes = counts.map((count) => {
+      const { unmount } = renderCountCase({ filter: 'active', query: 'milk', count });
+      const paragraphs = Array.from(screen.getByRole('search').querySelectorAll('p'));
+      unmount();
+      return { count: paragraphs.length, texts: paragraphs.map((paragraph) => paragraph.textContent) };
+    });
+
+    expect(outcomes).toEqual([
+      { count: 1, texts: ['1 match'] },
+      { count: 1, texts: ['2 matches'] },
+      { count: 1, texts: ['11 matches'] },
+    ]);
+  });
+
   it("AC-38.3: with (milk, 0), (milk, no count), ('', 3), ('   ', 3), (milk, -1) and (milk, 1.5) each render has 0 p elements in the document and the same innerHTML as the render with the same filter and query and no count prop", () => {
     const cases: readonly CountCase[] = [
       { filter: 'all', query: 'milk', count: 0 },
