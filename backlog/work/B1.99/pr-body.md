@@ -18,8 +18,10 @@ names the dispatch. Headless runs need nothing more: `path-guard.sh --role dev-l
 from its frontmatter (B1.78), so the same line covers `claude -p --agent dev-lead`.
 
 The repair, as 1bb65dd did it by hand: write `git show origin/main:spec/technical-requirements.md` plus the card's own
-row (the row its branch adds or changes in `git diff origin/main...HEAD^1 -- spec/technical-requirements.md`; none for
-a tooling card), through Write (B1.79). Then D-36's own check, made layout-proof: `dev-lead` runs
+row, through Write (B1.79). The approved plan derives the own row from `git diff origin/main...HEAD^1`; diff review
+pass 1 showed that a commit after the merge makes it list the stale duplicates too, so the prompt now reads the card's
+own commits, `git log --first-parent --no-merges -p origin/main..HEAD -- spec/technical-requirements.md`, keeping the
+newest `+` line (pass 2); none for a tooling card. Then D-36's own check, made layout-proof: `dev-lead` runs
 `diff <(git show origin/main:spec/technical-requirements.md | tr -s ' -') <(tr -s ' -' < spec/technical-requirements.md)`;
 it must print only the card's own row (measured: ca2a58d against 1bb65dd prints `39a40` and the one §34 `>` line,
 1bb65dd^ against it prints 34 duplicate rows). Anything more → no commit, "Waiting on human", stop. Clean → commit
