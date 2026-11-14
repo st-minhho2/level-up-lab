@@ -34,7 +34,9 @@ stops at the gate; interactive sessions always keep it.
 ## Exit
 
 Report after dev-lead Loop 9 (merged `origin/main`, CI green, `scripts/pr-step.sh ready <n>`) with the line "PR for <card> is ready for
-the lead: <url>": PR link, verification numbers (tests, e2e, mutation %), rounds (plan, review), one "Waiting on you" list.
+the lead: <url>": PR link, verification numbers (tests, e2e, and the `mutation:` line of `scripts/mutation-gate.sh`, also
+verbatim in the PR's evidence: "mutation: CI only, no src/lib or src/actions change" for a card that skips it, B1.100),
+rounds (plan, review), one "Waiting on you" list.
 Merging is the lead's; add `config-change-approved` at PR creation when the approved plan changes a protected path
 (D-19). After the merge: the closing lane on `docs/<card>-done` (`scripts/card-status.sh <card> Done "<sha>, <tests>"`,
 `docs(backlog): <card> done`), its PR via `scripts/pr-step.sh push` and `scripts/pr-step.sh open`, then
