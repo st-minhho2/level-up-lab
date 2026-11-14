@@ -57,4 +57,4 @@ in `todo-due-date*.test.tsx` green · `pnpm test:e2e` +1, `e2e/15-due-date.spec.
 Costs the lead takes: Enter or Space on the focused "Today" activates it (native button), which only fills the field.
 "Today" keeps a row's error message (REQ-37.3). B7.6 (same batch) later adds "Clear due date" to the same form.
 
-Plan review: approved, round 1 · Plan approved by: · Rounds: 1
+Plan review: approved, round 1 · Plan approved by: reviewer (D-27, tier medium, issue #294) · Rounds: 1
