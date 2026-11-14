@@ -36,3 +36,58 @@ the plan keeps the name and widens the type without saying which. Either is fine
 existing REQ-28.5/28.6 comment to name REQ-37.4/37.5 as well.
 
 Verdict: approved (ready for the lead's gate, not approved for build)
+
+## Diff review (round 1)
+
+Scope: ui. Diff `main...HEAD` at `672d9f8`: red `a2db3b4`, feat `df8e436`, map `672d9f8`. Read: §37 contract, `plan.md`,
+`src/components/todo-due-date.tsx`, `todo-due-date-today-button.test.tsx`, `e2e/37-due-date-today.spec.ts`.
+
+### Command results (last line of each, run by the reviewer)
+
+| Command                             | Last line                                                                                          |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!` (exit 0)                                              |
+| `pnpm typecheck`                    | `> tsc --noEmit` (exit 0, no output)                                                               |
+| `pnpm test`                         | `Tests  291 passed (291)` (46 files)                                                               |
+| `pnpm test:e2e`                     | `65 passed (5.9m)` (run alone; a first run beside Stryker ended `61 passed`, exit 1, load-related) |
+| `pnpm test:mutation`                | `Final mutation score of 93.22 is greater than or equal to break threshold 70`                     |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                          |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                  |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                 |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test` (§37 still ✗ in the index, by plan)          |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 37`                                                                       |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                               |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B7.3-agent stays inside the approved plan of B7.3 (D-27 approval)`                       |
+| `scripts/verify-red.sh B7.3`        | `RESULT: red for the right reason` (11 ran, 11 new failed; e2e skipped, needs a server)            |
+| `git diff --stat main...HEAD`       | `9 files changed, 671 insertions(+), 3 deletions(-)`                                               |
+
+### Checklist
+
+| Check                                                                | Result                                                                                                                                                                                                 |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every AC-37.n has a test whose assertion matches its Then            | pass: 37.1–37.5 in the component test (11 cases), 37.6 in `e2e/37-due-date-today.spec.ts`; each asserts the Then's counts, values, call lists and `defaultPrevented`                                   |
+| no test weakened after the red commit                                | pass: `git log --first-parent --no-merges a2db3b4..HEAD -- '*.test.*' e2e/` empty; `--merges --remerge-diff` empty (no merges)                                                                         |
+| every changed file is in `plan.md`                                   | pass: the 4 Files rows plus the plan's exempt paperwork (`docs/metrics.md`, `backlog/work/B7.3/*`)                                                                                                     |
+| interfaces match the section's contracts                             | pass: props and signature unchanged; form children label, input, `button type="button"` "Today" (`disabled={pending}`), submit; `todayOf(new Date())` read in the handler                              |
+| Zod at every action boundary · Prisma only in `src/lib` · no raw SQL | n/a: no action, lib, schema or query changed                                                                                                                                                           |
+| migration reversible and indexed                                     | n/a: no migration                                                                                                                                                                                      |
+| no secret, no suppression                                            | pass (check-suppressions; diff read)                                                                                                                                                                   |
+| features map row moved                                               | pass: F35 §37 ✅ in `672d9f8`                                                                                                                                                                          |
+| would a test fail if one changed line were reverted?                 | pass, probed on a clone under `$TMPDIR`: drop "Today"'s `onKeyDown` → AC-37.4 fails; drop its `disabled={pending}` → AC-37.5 (a) fails; read the mount-time day (`today ?? …`) → AC-37.3 fails; drop ` |     | pending` → AC-37.5 (a) and AC-28.4 fail |
+
+### Findings
+
+None blocking.
+
+Notes for the lead (non-blocking, no change asked of this card):
+
+1. REQ-37.3 "SHALL NOT … change the row's message" has no criterion: no AC-37.n Given holds a message when "Today" is
+   clicked. Probe: adding `setError(undefined)` to `onToday` leaves all 38 `todo-due-date*` tests green. The code is
+   correct today; the guard would need a new AC (a `docs(spec)` change under a D-n), not a test in this card.
+2. `plan.md` expected `pnpm test` 280 → 285 ("5 new `it`s"); the red commit has 5 criteria as 11 `it.each` cases, so 291. The number in the plan was wrong, the tests are not extra.
+3. `docs/metrics.md` row says mutation 92.74; this run measured 93.22 with `src/lib` and `src/actions` unchanged
+   (timeout count varies with load). The row also says "this feat commit" instead of `df8e436`.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: REQ-37.3's "does not change the row's message" (note 1), held only by the code, not by a test.
