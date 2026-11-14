@@ -35,7 +35,7 @@ button: there is no confirmation step". Its Out of scope (line 71) lists "A conf
   - The e2e accepts the dialog.
   - Mounts in `src/components/delete-todo-button.tsx`; contract `spec/contracts/33-delete-confirm.md` (section 35).
   - Batch 1.
-- **Tier:** full · **Depends on:** D-37 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** full · **Depends on:** ~~D-37~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B7.1/`
 
 ### B7.2 · The "Mark all complete" button says how many it will mark
@@ -54,7 +54,7 @@ many were changed". §32 (B6.4) did the same thing for "Clear completed".
   - Mounts in `src/components/complete-all-button.tsx`, with the count passed from `src/app/page.tsx` (the batch's one
     `page.tsx` card); contract `spec/contracts/34-complete-all-count.md` (section 36).
   - Batch 1.
-- **Tier:** full · **Depends on:** D-37 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** full · **Depends on:** ~~D-37~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B7.2/`
 
 ### B7.3 · The due-date editor has a "Today" button
@@ -72,7 +72,7 @@ change. `29-due-today.md:68` and `15-overdue.md:69` (§31's and §17's Out of sc
     apply: they limit their own sections and the marker. All in the card's `docs(spec)` commit (D-37).
   - Mounts in `src/components/todo-due-date.tsx`; contract `spec/contracts/35-due-date-today.md` (section 37).
   - Batch 1.
-- **Tier:** full · **Depends on:** D-37 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** full · **Depends on:** ~~D-37~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B7.3/`
 
 ### B7.4 · The search form says how many todos match
@@ -93,7 +93,7 @@ _F36 · section 38_
   - Mounts in `src/components/todo-search-form.tsx`, with the count passed from `src/app/page.tsx` (the batch's one
     `page.tsx` card); contract `spec/contracts/36-search-count.md` (section 38).
   - Batch 2.
-- **Tier:** full · **Depends on:** D-37 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** full · **Depends on:** ~~D-37~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B7.4/`
 
 ### B7.5 · The new-todo counter warns near the limit
@@ -113,7 +113,7 @@ _F37 · section 39_
     a threshold" stay. REQ-29.7 is stated to limit only the Escape change. All in the card's `docs(spec)` commit (D-37).
   - Mounts in `src/components/todo-form.tsx`; contract `spec/contracts/37-title-counter-warning.md` (section 39).
   - Batch 2.
-- **Tier:** full · **Depends on:** D-37 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** full · **Depends on:** ~~D-37~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B7.5/`
 
 ### B7.6 · The due-date editor has a "Clear due date" button
@@ -132,5 +132,5 @@ date". REQ-15.6 (line 23) and the §15 contract (line 76) list the edit form's c
     commit (D-37).
   - Mounts in `src/components/todo-due-date.tsx`; contract `spec/contracts/38-due-date-clear.md` (section 40).
   - Batch 2.
-- **Tier:** full · **Depends on:** D-37, B7.3 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** full · **Depends on:** ~~D-37~~, B7.3 · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B7.6/`

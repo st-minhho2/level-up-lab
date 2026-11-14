@@ -220,15 +220,14 @@ at most 3 cards Doing (B1.18).
 | 119  | B1.97 | A row wider than its column makes Prettier re-pad the whole shared table                                  | —      | Open   | ~~B1.96~~                       | Lead  | S [estimate] |
 | 120  | B1.98 | unattended.sh counts a run the lead stopped, ruled on and relaunched as unattended                        | —      | Open   | —                               | Lead  | S [estimate] |
 | 121  | B1.99 | No role may write the section index, so a union-merge repair needs the lead                               | —      | Open   | —                               | Lead  | S [estimate] |
-| 122  | B7.1  | Deleting a todo asks for confirmation first                                                               | —      | Open   | D-37                            | Lead  | S [estimate] |
-| 123  | B7.2  | The "Mark all complete" button says how many it will mark                                                 | —      | Open   | D-37                            | Lead  | S [estimate] |
-| 124  | B7.3  | The due-date editor has a "Today" button                                                                  | —      | Open   | D-37                            | Lead  | S [estimate] |
-| 125  | B7.4  | The search form says how many todos match                                                                 | —      | Open   | D-37                            | Lead  | S [estimate] |
-| 126  | B7.5  | The new-todo counter warns near the limit                                                                 | —      | Open   | D-37                            | Lead  | S [estimate] |
-| 127  | B7.6  | The due-date editor has a "Clear due date" button                                                         | —      | Open   | D-37, B7.3                      | Lead  | S [estimate] |
+| 122  | B7.1  | Deleting a todo asks for confirmation first                                                               | —      | Open   | ~~D-37~~                        | Lead  | S [estimate] |
+| 123  | B7.2  | The "Mark all complete" button says how many it will mark                                                 | —      | Open   | ~~D-37~~                        | Lead  | S [estimate] |
+| 124  | B7.3  | The due-date editor has a "Today" button                                                                  | —      | Open   | ~~D-37~~                        | Lead  | S [estimate] |
+| 125  | B7.4  | The search form says how many todos match                                                                 | —      | Open   | ~~D-37~~                        | Lead  | S [estimate] |
+| 126  | B7.5  | The new-todo counter warns near the limit                                                                 | —      | Open   | ~~D-37~~                        | Lead  | S [estimate] |
+| 127  | B7.6  | The due-date editor has a "Clear due date" button                                                         | —      | Open   | ~~D-37~~, B7.3                  | Lead  | S [estimate] |
 
 ## Waiting on human
 
-| ID   | What                                                                                                                                        | Blocks    |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| D-37 | E7 batch rule, spec first: sections 35–40, contract files, components, the lines each card lifts or edits (`work/B7.1/decision-request.md`) | B7.1–B7.6 |
+| ID  | What | Blocks |
+| --- | ---- | ------ |
