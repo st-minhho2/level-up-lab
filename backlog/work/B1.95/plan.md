@@ -31,13 +31,17 @@ No advice (tier quick, no section). Risk tier **high** (`scripts/agent/`, `.devc
 `approve`; the PR carries `config-change-approved` (D-19). Dev-lead writes `scripts/` and `.devcontainer/` (interactive,
 as B1.82, B1.88). Not touched: `.prettierignore`, `scripts/table-merge-smoke.sh` (B1.97); B1.73's stale branch line.
 
+Carried by B1.98: the acceptance item "the scripts guide names the check" (the `agent/run.sh` row of
+`scripts/CLAUDE.md`). `next-task.sh --check` found that file planned by B1.97 (Doing, at its gate); re-planned around
+it, not approved over it. This PR names the check in the `run.sh` header and the compose header only, so B1.95 closes
+**Partial — pending B1.98's guide row**, unless the lead rules otherwise.
+
 ## Files
 
 | File                                      | Change                                                                                                                        | Why        |
 | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | `scripts/agent/run.sh`                    | `behind_problem` as above, called first in `run_issue`; header "Each run" chain names it; `in_flight` comment (fresh fetch)   | Acceptance |
 | `scripts/agent/run-smoke.sh`              | bare `origin` borrowing the scratch repo's objects, `at <head> <main>`; R18 moves both; R20; header R1–R20                    | Test line  |
-| `scripts/CLAUDE.md`                       | `agent/run.sh` row: refuses a checkout behind a fetched `origin/main` (B1.95); cell stays inside the column width             | Acceptance |
 | `.devcontainer/runner/docker-compose.yml` | header: before each batch `exec runner sh -c 'git fetch origin && git merge --ff-only origin/main'`; run.sh refuses otherwise | Acceptance |
 | `backlog/work/B1.95/*`                    | plan, review, pr-body                                                                                                         | pipeline   |
 
