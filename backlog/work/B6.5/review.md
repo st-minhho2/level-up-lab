@@ -78,3 +78,57 @@ renames it; (2) §23's function-contract "renders nothing" line stays in tension
 card's `Spec:` line says "unchanged" although f9d3f3a changed §23.
 
 Verdict: approved (ready for the lead's gate; not approved for build)
+
+## Diff review (round 1)
+
+Scope: ui. Diff `origin/main...HEAD`; red 6caad18, feat ef5bf29, map ec5a7dd, metrics f28ab17. Run by the reviewer
+at f28ab17.
+
+| Command                              | Last line                                                                                     |
+| ------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `pnpm lint`                          | `All matched files use Prettier code style!`                                                  |
+| `pnpm typecheck`                     | `tsc --noEmit` (exit 0, no output)                                                            |
+| `pnpm test`                          | `Tests  273 passed (273)` (43 files)                                                          |
+| `pnpm test:e2e`                      | `58 passed (2.3m)`                                                                            |
+| `pnpm test:mutation`                 | `Final mutation score of 92.63 is greater than or equal to break threshold 70`                |
+| `scripts/ci/check-suppressions.sh`   | `OK: no new suppressions`                                                                     |
+| `scripts/ci/check-config-change.sh`  | `OK: no protected config changed`                                                             |
+| `scripts/ci/check-feat-commits.sh`   | `OK: no feat commit touches tests`                                                            |
+| `scripts/ci/check-ac-coverage.sh`    | `OK: every criterion of a shipped section has a test`                                         |
+| `scripts/ci/check-spec-sections.sh`  | `OK: sections cited: 1 … 31 33`                                                               |
+| `scripts/ci/check-features-map.sh`   | `OK`                                                                                          |
+| `scripts/ci/check-plan-scope.sh`     | `OK: feat/B6.5-agent stays inside the approved plan of B6.5 (D-27 approval)`                  |
+| `scripts/verify-red.sh B6.5`         | `RESULT: red for the right reason` (4 new, 4 failed; e2e skipped by the script, needs server) |
+| `git diff --stat origin/main...HEAD` | 15 files, 779 insertions, 15 deletions; `src/`: `overdue-count.tsx` +6/-2, its test +124/-1   |
+
+Checklist
+
+| Check                                                    | Result                                                                                                                                                                                                                                                                                                                                                               |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-§.n has a test whose assertion matches its Then | pass: AC-33.1–33.4 in `overdue-count.test.tsx` assert each Then item (SPAN, role, 3 absent attributes, 5 role counts, exact text; 5 cases with 0 child nodes; identical `<span role="status"></span>`, 0 stderr writes, `toBe` node; 3 steps + 0 timers); AC-33.5 in `e2e/33-overdue-announce.spec.ts` (one handle, attached, texts and child counts, 0 navigations) |
+| no test weakened after the red commit                    | pass: `git log --first-parent --no-merges 6caad18..HEAD -- '*.test.*' e2e/` empty; remerge-diff empty. In the red commit only AC-23.3's `not.toHaveAttribute('role')` line goes, as D-34 and the plan state                                                                                                                                                          |
+| every changed file in `plan.md`                          | pass: `overdue-count.tsx`, its test, `e2e/33-…`, `features-map.md`; `docs/metrics.md` is plan-named paperwork; `page.tsx`, `src/lib` untouched                                                                                                                                                                                                                       |
+| interfaces match §33 contracts                           | pass: signature and props unchanged; `overdue-count.tsx:23` `return <span role="status">{label}</span>;` with no aria-label/live/atomic                                                                                                                                                                                                                              |
+| Zod at action boundary / Prisma only in lib / no raw SQL | n/a: no action, query or schema changed                                                                                                                                                                                                                                                                                                                              |
+| migration                                                | n/a                                                                                                                                                                                                                                                                                                                                                                  |
+| no secret, no suppression                                | pass (check-suppressions OK; diff read)                                                                                                                                                                                                                                                                                                                              |
+| features map row moved                                   | pass: F31 §33 ✅ in ec5a7dd; §33 index row stays ✗ until the closing PR, per plan                                                                                                                                                                                                                                                                                    |
+| revert probes (on a clone under `$TMPDIR`)               | see below                                                                                                                                                                                                                                                                                                                                                            |
+
+Revert probes on `overdue-count.tsx:23`, `vitest run src/components/overdue-count.test.tsx`:
+
+- back to `label === undefined ? undefined : <span role="status">…` → AC-33.2, 33.3, 33.4 fail (3 failed / 8).
+- `key={label ?? 'none'}` (remount per change) → AC-33.3, 33.4 fail.
+- `aria-live="polite"` added → AC-33.1, 33.3 fail.
+- `{label ?? ''}` → 8 passed: equivalent (React renders `''` as no text node; SSR markup identical), not a finding.
+
+Findings: none blocking.
+
+Notes (not blocking, no behavior trigger): `docs/metrics.md` B6.5 row's last column still reads `pending (feat)`
+although the feat commit is ef5bf29; the dev-lead may fill it before the PR. The plan-review costs (AC-23.3 title
+still says "no role", §23 "renders nothing" contract line) stand as stated.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: that a real screen reader announces the first text insertion into a region that was empty
+since server render (jsdom and Playwright prove node identity and text, not the announcement itself).
