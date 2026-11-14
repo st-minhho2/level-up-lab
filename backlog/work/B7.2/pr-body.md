@@ -78,15 +78,23 @@ Plan review: approved, round 1 · Plan approved by: reviewer (D-27, tier medium,
 
 ## Map delta
 
-pending
+F34 · §36 · added ✅ — `completeAllLabel` in `src/lib/complete-all-label.ts`, `count` prop on `CompleteAllButton`, `page.tsx` passes `filterCounts(todos).active`; evidence: `pnpm test` → 284 passed, `pnpm test:e2e` → 67 passed (`docs(map)` 3d35c16). §36 index row stays ✗ until the closing PR.
 
 ## Review
 
-pending
+`/review-loop`: passes 1/3, verdict ready for PR (`backlog/work/B7.2/review.md` "Diff review (round 1)").
+
+Reviewer's suites: `pnpm test` 284 passed (47 files) · `pnpm test:e2e` 67 passed · mutation 93.08 ≥ 70 (`complete-all-label.ts` 100, 6 killed, 0 survived; `--concurrency 1`, the plain run was killed by host memory pressure from a sibling worktree's Stryker) · `check-plan-scope.sh` OK (D-27 approval) · `check-feat-commits.sh` OK · `verify-red.sh B7.2` red for the right reason.
+
+| Pass | #   | Finding (file:line)                                                                  | Source   | Kind        | Disposition | Justification                                                                                      |
+| ---- | --- | ------------------------------------------------------------------------------------ | -------- | ----------- | ----------- | -------------------------------------------------------------------------------------------------- |
+| 1    | 1   | `docs/metrics.md:146` Green cell = red commit cbbe08c; mutation 92.84 not reproduced | reviewer | correctness | fix now     | c153cdb: Green = feat c6a9e99, mutation 93.08; the closing PR replaces the sha with the squash sha |
+
+Riskiest unfalsified: the e2e revert probe for `page.tsx` (`count=` dropped or counted from the filtered list) was traced, not run; AC-36.5's `/?filter=completed` and `/?q=zzz` legs are the guard.
 
 ## Evidence
 
-- AC met: pending/7
+- AC met: 7/7
 - tier: medium
 - plan deviations: none
 - trace: n/a
