@@ -1398,14 +1398,7 @@ _tooling · no §_
 ### B1.100 · Each parallel run mutation-tests all of src/lib up to three times, whatever the card changed
 
 _tooling · no §_
-**Status: Open** — `pnpm test:mutation` (Stryker over every `src/lib/**/*.ts` and `src/actions/**/*.ts`,
-`stryker.config.mjs`, `concurrency: 4`) runs in three places of one card: `code-writer` step 4
-(`.claude/agents/code-writer.md:35`), the green gate (`.claude/skills/tdd-loop/SKILL.md:26`) and the `reviewer`'s own
-gate run (`.claude/agents/reviewer.md:65`). CI runs it again on the PR. In E7 batch 1 (2026-11-14, issues 292–294)
-two of the three cards changed no `src/lib` or `src/actions` file (B7.1, B7.3), yet every run mutation-tested the whole
-layer. With three runs at once the runner container's load average reached 29–45 on 8 CPUs, and each run took
-2 h 21 min–2 h 29 min from label to ready, against 37 min for E6's B6.1 run alone. Batch 1's throughput came out
-7.7 cards per 8 h (label 08:23Z, last merge 11:30Z), under D-29's 9.4
+**Status: Partial** — merged db01758 (#319), pending E7 batch 2 per-run duration and load: mutation-gate-smoke MG1–MG17 (red 4df9203: 1 ok, 15 FAIL on the skeleton; green 14b690b: 16 ok; review pass 1 b9bed5c: 17 ok, bash 3.2), live gate --base be888ff^ 13 s then (reused) 1 s, CI-only line on this card, hook-smoke 749, vitest 298, e2e 70, mutation 92.84 (no src/), plan review 4 rounds, diff review 2 passes
 
 - **Spec:** none — tooling (`code-writer.md`, `tdd-loop/SKILL.md`, `reviewer.md`, possibly a `scripts/` helper); no
   `src/` change, no section
