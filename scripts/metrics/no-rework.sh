@@ -22,8 +22,11 @@ TL='.[] | select(.event == "labeled" or .event == "commented" or .event == "revi
         (if ($b | contains("**gate**")) and ($b | test("(\\A|\\n)- tier: high(\\n|\\z)")) then "gate-high" else "runner" end)
       elif ($b | test("\\A\\s*approve([^A-Za-z]|\\z)")) then "approve"
       elif ($b | test("(\\A|\\n)Agent-Run: ")) then "agent-run"
+      else "-" end),
+     (if ($b | startswith("Runner (`scripts/agent/run.sh`")) then
+        ((($b | capture("(\\A|\\n)- outcome: (?<o>[^ \\n]+)")) | .o) // "?")
       else "-" end)]
-  | @tsv' # unattended.sh's filter, kept identical
+  | @tsv' # unattended.sh's filter, kept identical (column 7, a runner comment's outcome, is unattended's only)
 TMPD="$(mktemp -d)"
 trap 'rm -rf "$TMPD"' EXIT
 
