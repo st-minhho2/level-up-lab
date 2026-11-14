@@ -89,4 +89,4 @@ reader of 8 columns by position still works. `no-rework.sh` output unchanged. No
 | 3    | reviewer | diff review     | `docs(backlog): B1.98 review pass N`                                                   |
 | 4    | dev-lead | draft PR, label | —                                                                                      |
 
-Plan review: round 2 pending · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: · Rounds: 1
