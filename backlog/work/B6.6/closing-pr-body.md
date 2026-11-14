@@ -3,8 +3,15 @@ technology (section 34). Feature PR #281 merged as 80dcc73. The agent runner ope
 #277 (D-27). The lead asked for this closing lane in the session. The checklist is the plan, so there is no
 `Plan approved by` line. It is the last card of epic E6, batch 2 (D-33, D-35, D-36).
 
-**Stacked on #285 (B6.5 done), itself on #284 (B6.4 done).** The totals count all three cards. Until those merge,
-this PR's diff also shows their commits. After each merge, `origin/main` is merged in.
+This branch was stacked on `docs/B6.5-done` (#285), itself on `docs/B6.4-done` (#284). Both merged (fe1e583), and
+`origin/main` was then merged in (ab716a0):
+
+- README: this branch's side was kept, since it already held B6.4's and B6.5's lines.
+- `backlog/work/B6.5/closing-pr-body.md`: main's final copy was kept.
+- The union merge of the section index kept §34 twice: main's ✗ row, after B6.5's added §33 row, next to this branch's
+  ✅ row. `check-spec-sections.sh` named it, as B1.96 designed, and the ✗ copy is removed.
+
+The diff now holds B6.6's lines only.
 
 Files:
 
