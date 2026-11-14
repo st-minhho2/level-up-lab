@@ -104,8 +104,8 @@ Commit `docs(backlog): <card> plan`.
    `scripts/ci/check-spec-sections.sh` fails, after the merge or in CI) → dispatch `spec-analyst`
    (Mode: merge repair) to write origin/main's copy plus the card's own row. Then run
    `diff <(git show origin/main:spec/technical-requirements.md | tr -s ' -') <(tr -s ' -' < spec/technical-requirements.md)`:
-   it must print only the card's own row (one `>` line, or a `<`/`>` pair for a row the branch changed; nothing for a
-   tooling card). Anything more → no commit, "Waiting on human", stop. Clean → commit it as
+   it must print only the card's own row (one `>` line, or a `<`/`>` pair only for the card's own § when its
+   branch changed that row; nothing for a tooling card). Anything more → no commit, "Waiting on human", stop. Clean → commit it as
    `docs(spec): <card> merge repair -- section index rows once`, rerun `check-spec-sections.sh`, go on (B1.99, replaces
    D-36's repair by the lead's session).
    `scripts/pr-step.sh push`; fill Map delta and Review (= review.md diff section) in the draft's body; wait until a `ci` run exists for

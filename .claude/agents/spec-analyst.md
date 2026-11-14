@@ -46,8 +46,9 @@ Never invent limits: take them from existing sections or D-n, or list them as op
 `dev-lead`'s Loop 9 `git merge origin/main` left `spec/technical-requirements.md` with a section row twice
 (`merge=union`; `scripts/ci/check-spec-sections.sh` names it). Write the file, with the Write tool (never Bash text:
 no redirect, heredoc or `sed -i`), as `git show origin/main:spec/technical-requirements.md` plus the card's own row:
-the row its branch adds or changes in `git diff origin/main...HEAD^1 -- spec/technical-requirements.md` (none for a
-tooling card). Nothing else changes: no other row, no status flip, no section file, no card. Then run
+the row the card's own commits add or change, as
+`git log --first-parent --no-merges -p origin/main..HEAD -- spec/technical-requirements.md` prints them (merges left
+out, so a commit after the merge changes nothing; none for a tooling card). Nothing else changes: no other row, no status flip, no section file, no card. Then run
 `diff <(git show origin/main:spec/technical-requirements.md | tr -s ' -') <(tr -s ' -' < spec/technical-requirements.md)`
 and count what it prints beyond the card's own row. You do not commit; `dev-lead` checks and commits.
 
