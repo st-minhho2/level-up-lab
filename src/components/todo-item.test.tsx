@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TodoItem } from './todo-item';
 
 const actions = vi.hoisted(() => ({
@@ -35,6 +35,11 @@ function saveFailed() {
 
 beforeEach(() => {
   vi.resetAllMocks();
+});
+
+// §35: removes the window.confirm stub of the tests that click "Delete todo".
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 describe('<TodoItem>', () => {
@@ -188,6 +193,8 @@ describe('<TodoItem> when a mutation fails (§10)', () => {
 describe('<TodoItem> delete button (§19)', () => {
   it('AC-19.5: (b) holds exactly 1 button "Delete todo" in view mode and exactly 1 in edit mode, adds no text to the row, and a click in view mode calls deleteTodoAction once with ("todo-1")', async () => {
     deleteActions.deleteTodoAction.mockResolvedValue({ ok: true, data: { id: 'todo-1' } });
+    // §35: the click in view mode is confirmed.
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
     const user = userEvent.setup();
     render(<TodoItem todo={walkTheDog()} />);
     const row = screen.getByRole('listitem');
@@ -204,6 +211,32 @@ describe('<TodoItem> delete button (§19)', () => {
 
     expect(within(row).getByRole('textbox', { name: 'Edit title' })).toBeInTheDocument();
     expect(within(row).getAllByRole('button', { name: 'Delete todo' })).toHaveLength(1);
+  });
+});
+
+describe('<TodoItem> delete asks for confirmation first (§35)', () => {
+  it('AC-35.3: asks 0 confirmations on render and on "Edit title", holds exactly 1 button "Delete todo" in view mode and in edit mode, and adds no text to the row', async () => {
+    deleteActions.deleteTodoAction.mockResolvedValue({ ok: true, data: { id: 'todo-1' } });
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const user = userEvent.setup();
+    render(<TodoItem todo={walkTheDog()} />);
+    const row = screen.getByRole('listitem');
+    expect(confirm).toHaveBeenCalledTimes(0);
+    expect(within(row).getAllByRole('button', { name: 'Delete todo' })).toHaveLength(1);
+    expect(row).toHaveTextContent(/^Walk the dog$/);
+    expect(screen.queryAllByRole('dialog')).toHaveLength(0);
+
+    await user.click(within(row).getByRole('button', { name: 'Edit title' }));
+
+    expect(confirm).toHaveBeenCalledTimes(0);
+    expect(within(row).getByRole('textbox', { name: 'Edit title' })).toBeInTheDocument();
+    expect(within(row).getAllByRole('button', { name: 'Delete todo' })).toHaveLength(1);
+    expect(screen.queryAllByRole('dialog')).toHaveLength(0);
+
+    await user.click(within(row).getByRole('button', { name: 'Delete todo' }));
+
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(screen.queryAllByRole('dialog')).toHaveLength(0);
   });
 });
 

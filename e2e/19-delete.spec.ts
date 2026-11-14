@@ -65,6 +65,10 @@ test.describe('§19 delete a todo', () => {
     page,
   }) => {
     await seedInDisplayOrder([{ title: 'C' }, { title: 'B', completed: true }, { title: 'A' }]);
+    // §35: every confirmation dialog is accepted.
+    page.on('dialog', (dialog) => {
+      void dialog.accept(); // settles inside Playwright; the assertions below wait for its effect
+    });
     await openHydrated(page, '/');
     await expect(page.getByRole('listitem')).toHaveText(['C', 'B', 'A']);
 
@@ -86,5 +90,105 @@ test.describe('§19 delete a todo', () => {
     await page.reload();
 
     await expectEmpty(page);
+  });
+});
+
+// §35: the exact message of the confirmation, copied from REQ-35.1.
+const CONFIRM_MESSAGE = 'Delete this todo? This cannot be undone.';
+
+interface SeenDialog {
+  readonly type: string;
+  readonly message: string;
+}
+
+// Records every dialog the page opens. A listener present stops Playwright's auto-dismiss, so an unexpected second
+// dialog stays open and fails the test instead of passing unseen.
+function recordDialogs(page: Page): SeenDialog[] {
+  const seen: SeenDialog[] = [];
+  page.on('dialog', (dialog) => {
+    seen.push({ type: dialog.type(), message: dialog.message() });
+  });
+  return seen;
+}
+
+// Registers the answer to the next dialog before the click (§35 "How tests drive the dialog").
+function answerNextDialog(page: Page, answer: 'accept' | 'dismiss'): void {
+  page.once('dialog', (dialog) => {
+    // Settles inside Playwright; the assertions after the click wait for its effect.
+    void (answer === 'accept' ? dialog.accept() : dialog.dismiss());
+  });
+}
+
+// "The list reads [C, B, A] (3 rows) with B's checkbox checked and C's and A's unchecked".
+async function expectCBA(page: Page): Promise<void> {
+  await expect(page.getByRole('listitem')).toHaveCount(3);
+  await expect(page.getByRole('listitem')).toHaveText(['C', 'B', 'A']);
+  await expect(page.getByRole('checkbox', { name: 'B', exact: true })).toBeChecked();
+  await expect(page.getByRole('checkbox', { name: 'C', exact: true })).not.toBeChecked();
+  await expect(page.getByRole('checkbox', { name: 'A', exact: true })).not.toBeChecked();
+}
+
+// §35 deleting a todo asks for confirmation first (B7.1).
+test.describe('§35 delete asks for confirmation first', () => {
+  test('AC-35.4: accepting the dialog "Delete this todo? This cannot be undone." on B leaves [C, A] before and after a reload; accepting it on C and on A leaves 0 rows and "No todos yet" before and after a reload', async ({
+    page,
+  }) => {
+    await seedInDisplayOrder([{ title: 'C' }, { title: 'B', completed: true }, { title: 'A' }]);
+    const dialogs = recordDialogs(page);
+    await openHydrated(page, '/');
+    await expect(page.getByRole('listitem')).toHaveText(['C', 'B', 'A']);
+    const confirmOnce = { type: 'confirm', message: CONFIRM_MESSAGE };
+
+    answerNextDialog(page, 'accept');
+    await clickDelete(page, 'B');
+
+    await expect.poll(() => dialogs.length).toBe(1);
+    await expectCAOnly(page);
+    expect(dialogs).toEqual([confirmOnce]);
+
+    await page.reload();
+
+    await expectCAOnly(page);
+
+    await page.waitForLoadState('networkidle');
+    answerNextDialog(page, 'accept');
+    await clickDelete(page, 'C');
+    await expect.poll(() => dialogs.length).toBe(2);
+    await expect(page.getByRole('listitem')).toHaveText(['A']);
+    answerNextDialog(page, 'accept');
+    await clickDelete(page, 'A');
+
+    await expect.poll(() => dialogs.length).toBe(3);
+    await expectEmpty(page);
+    expect(dialogs).toEqual([confirmOnce, confirmOnce, confirmOnce]);
+
+    await page.reload();
+
+    await expectEmpty(page);
+  });
+
+  test('AC-35.5: dismissing the one dialog on B leaves [C, B, A] with B checked before and after a reload, B\'s row holding exactly 1 button "Delete todo" and 0 alerts', async ({
+    page,
+  }) => {
+    await seedInDisplayOrder([{ title: 'C' }, { title: 'B', completed: true }, { title: 'A' }]);
+    const dialogs = recordDialogs(page);
+    await openHydrated(page, '/');
+    await expect(page.getByRole('listitem')).toHaveText(['C', 'B', 'A']);
+
+    answerNextDialog(page, 'dismiss');
+    await clickDelete(page, 'B');
+
+    await expect.poll(() => dialogs.length).toBe(1);
+    await page.waitForLoadState('networkidle');
+    await expectCBA(page);
+    await expect(deleteButtonOf(page, 'B')).toHaveCount(1);
+    await expect(rowOf(page, 'B').getByRole('alert')).toHaveCount(0);
+    expect(dialogs).toHaveLength(1);
+
+    await page.reload();
+
+    await expectCBA(page);
+    await expect(deleteButtonOf(page, 'B')).toHaveCount(1);
+    await expect(rowOf(page, 'B').getByRole('alert')).toHaveCount(0);
   });
 });

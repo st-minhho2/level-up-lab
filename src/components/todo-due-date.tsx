@@ -2,7 +2,7 @@
 
 // §15 TodoDueDate: a todo's due-date text and its edit control, rendered inside the TodoItem row; §17 adds the
 // overdue marker after the date; §28 Escape in the field closes the editor without saving; §31 adds the due-today
-// marker after the overdue slot.
+// marker after the overdue slot; §37 adds a "Today" button that fills the field.
 import {
   useLayoutEffect,
   useRef,
@@ -60,8 +60,8 @@ export function TodoDueDate({
   }
 
   // Ignored while pending so an in-flight save ends the edit through its own result (REQ-28.5); a modified Escape or
-  // any other key keeps §15 (REQ-28.6).
-  function onDueDateKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
+  // any other key keeps §15 (REQ-28.6). "Today" shares it (REQ-37.4, REQ-37.5).
+  function onDueDateKeyDown(event: KeyboardEvent<HTMLInputElement | HTMLButtonElement>): void {
     const modified = event.ctrlKey || event.metaKey || event.altKey || event.shiftKey;
     if (event.key !== CANCEL_KEY || modified || pending) {
       return;
@@ -70,6 +70,11 @@ export function TodoDueDate({
     setEditing(false);
     setDraft(dueDate ?? '');
     setError(undefined);
+  }
+
+  // The day is read at the click, not the one read at mount (REQ-37.2); only the draft changes (REQ-37.3).
+  function onToday(): void {
+    setDraft(todayOf(new Date()));
   }
 
   // The draft is sent as typed ('' clears); a rejection or a failed save keeps the field open with it (REQ-15.7,
@@ -104,6 +109,15 @@ export function TodoDueDate({
             aria-describedby={error !== undefined ? errorId : undefined}
             className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
           />
+          <button
+            type="button"
+            onClick={onToday}
+            onKeyDown={onDueDateKeyDown}
+            disabled={pending}
+            className="rounded border border-zinc-300 px-3 py-1 disabled:opacity-50 dark:border-zinc-700"
+          >
+            Today
+          </button>
           <button
             type="submit"
             disabled={pending}
