@@ -230,12 +230,11 @@ at most 3 cards Doing (B1.18).
 | 127  | B7.6   | The due-date editor has a "Clear due date" button                                                         | —      | Open    | ~~D-37~~, ~~B7.3~~              | Lead  | S [estimate] |
 | 128  | B1.100 | Each parallel run mutation-tests all of src/lib up to three times, whatever the card changed              | —      | Open    | —                               | Lead  | S [estimate] |
 | 129  | B1.101 | GitHub reports parallel runner PRs as conflicting on the union tables, and each needs a re-run            | —      | Open    | —                               | Lead  | S [estimate] |
-| 130  | B8.1   | Opening the title editor selects the whole title                                                          | —      | Open    | D-39                            | Lead  | S [estimate] |
-| 131  | B8.2   | The filter nav hides a link whose count is 0, except the current filter                                   | —      | Open    | D-39                            | Lead  | S [estimate] |
-| 132  | B8.3   | "Mark all complete" is hidden when there is nothing to mark                                               | —      | Open    | D-39                            | Lead  | S [estimate] |
+| 130  | B8.1   | Opening the title editor selects the whole title                                                          | —      | Open    | ~~D-39~~                        | Lead  | S [estimate] |
+| 131  | B8.2   | The filter nav hides a link whose count is 0, except the current filter                                   | —      | Open    | ~~D-39~~                        | Lead  | S [estimate] |
+| 132  | B8.3   | "Mark all complete" is hidden when there is nothing to mark                                               | —      | Open    | ~~D-39~~                        | Lead  | S [estimate] |
 
 ## Waiting on human
 
-| ID   | What                                                                                                                                        | Blocks    |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| D-39 | E8 batch rule, spec first: sections 41–43, contract files, components, the lines each card lifts or edits (`work/B8.1/decision-request.md`) | B8.1–B8.3 |
+| ID  | What | Blocks |
+| --- | ---- | ------ |

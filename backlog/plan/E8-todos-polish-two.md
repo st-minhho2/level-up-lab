@@ -36,7 +36,7 @@ field before typing (`src/components/todo-item.test.tsx`) or uses Playwright's `
   - The card's `docs(spec)` commit states once that the sibling sections' "`todo-item.tsx` unchanged" notes do not
     apply (D-39).
   - Mounts in `src/components/todo-item.tsx`; contract `spec/contracts/39-edit-title-select.md` (section 41).
-- **Tier:** full · **Depends on:** D-39 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** full · **Depends on:** ~~D-39~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B8.1/`
 
 ### B8.2 · The filter nav hides a link whose count is 0, except the current filter
@@ -56,7 +56,7 @@ included)". §30 (`28-filter-counts.md`) puts a count next to each one, lists "h
   - The red commit rewrites `todo-filter-nav-counts.test.tsx` (AC-30.3), `e2e/12-filter.spec.ts` (AC-12.7) and
     `e2e/30-filter-counts.spec.ts` (AC-30.6, AC-30.7) to the edited text.
   - Mounts in `src/components/todo-filter-nav.tsx` only.
-- **Tier:** full · **Depends on:** D-39 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** full · **Depends on:** ~~D-39~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B8.2/`
 
 ### B8.3 · "Mark all complete" is hidden when there is nothing to mark
@@ -77,5 +77,5 @@ button at 0" in its Out of scope (line 64).
   - The red commit rewrites `complete-all-button.test.tsx` (AC-14.4 a), `complete-all-button-count.test.tsx`
     (AC-36.3), `e2e/14-complete-all.spec.ts` (AC-14.6) and `e2e/36-complete-all-count.spec.ts` (AC-36.6, AC-36.7).
   - Mounts in `src/components/complete-all-button.tsx` only.
-- **Tier:** full · **Depends on:** D-39 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** full · **Depends on:** ~~D-39~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B8.3/`
