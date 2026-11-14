@@ -2,7 +2,8 @@
 
 // §15 TodoDueDate: a todo's due-date text and its edit control, rendered inside the TodoItem row; §17 adds the
 // overdue marker after the date; §28 Escape in the field closes the editor without saving; §31 adds the due-today
-// marker after the overdue slot; §37 adds a "Today" button that fills the field.
+// marker after the overdue slot; §37 adds a "Today" button that fills the field; §40 adds a "Clear due date" button
+// that saves an empty date.
 import {
   useLayoutEffect,
   useRef,
@@ -77,12 +78,11 @@ export function TodoDueDate({
     setDraft(todayOf(new Date()));
   }
 
-  // The draft is sent as typed ('' clears); a rejection or a failed save keeps the field open with it (REQ-15.7,
-  // REQ-15.10) and the next success removes the message (REQ-15.11).
-  function onSave(event: FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
+  // A rejection or a failed save keeps the field open with the draft (REQ-15.7, REQ-15.10) and the next success
+  // removes the message (REQ-15.11); "Update due date" and "Clear due date" share it (REQ-40.3, REQ-40.4).
+  function save(value: string): void {
     startTransition(async () => {
-      const result = await setTodoDueDateAction(todoId, draft);
+      const result = await setTodoDueDateAction(todoId, value);
       if (result.ok) {
         setEditing(false);
         setError(undefined);
@@ -90,6 +90,17 @@ export function TodoDueDate({
       }
       setError(result.fieldErrors.dueDate?.[0] ?? result.fieldErrors.id?.[0] ?? result.fieldErrors.form?.[0]);
     });
+  }
+
+  // The draft is sent as typed ('' clears).
+  function onSave(event: FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
+    save(draft);
+  }
+
+  // Whatever the field holds, '' is sent (REQ-40.2).
+  function onClear(): void {
+    save('');
   }
 
   return (
@@ -117,6 +128,15 @@ export function TodoDueDate({
             className="rounded border border-zinc-300 px-3 py-1 disabled:opacity-50 dark:border-zinc-700"
           >
             Today
+          </button>
+          <button
+            type="button"
+            onClick={onClear}
+            onKeyDown={onDueDateKeyDown}
+            disabled={pending}
+            className="rounded border border-zinc-300 px-3 py-1 disabled:opacity-50 dark:border-zinc-700"
+          >
+            Clear due date
           </button>
           <button
             type="submit"
