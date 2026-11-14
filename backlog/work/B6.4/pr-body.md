@@ -77,15 +77,31 @@ Plan review: approved, round 1 · Plan approved by: reviewer (D-27, tier medium,
 
 ## Map delta
 
-pending
+F30 · §32 · new row ✅ — `clearCompletedLabel` in `src/lib/clear-completed-label.ts`, `completedCount` on
+`ClearCompletedButton`, wired in `src/app/page.tsx` (a881ff6); evidence: `pnpm test` → 273 passed, `pnpm test:e2e` →
+60 passed. §32's index row stays ✗ until the closing PR.
 
 ## Review
 
-pending
+`/review-loop`: passes 1/3, verdict ready for PR, 0 findings (confirmed 0, plausible 0); plan review approved round 1.
+
+| Command                            | Last line                                                                    |
+| ---------------------------------- | ---------------------------------------------------------------------------- |
+| `pnpm test`                        | `Tests  273 passed (273)` (plan: 270 → 273)                                  |
+| `pnpm test:e2e`                    | `60 passed (1.4m)` (plan: 57 → 60)                                           |
+| `pnpm test:mutation`               | 92.74 ≥ 70; `clear-completed-label.ts` 100                                   |
+| `scripts/verify-red.sh B6.4`       | `RESULT: red for the right reason` (3 new failed, 0 new passed)              |
+| `scripts/ci/check-plan-scope.sh`   | `OK: feat/B6.4-agent stays inside the approved plan of B6.4 (D-27 approval)` |
+| `scripts/ci/check-feat-commits.sh` | `OK: no feat commit touches tests`                                           |
+| `pnpm build`                       | [unverified] not run by the reviewer; CI runs it                             |
+
+Dispositions: none needed (0 findings). Revert probe: `clearCompletedLabel(completedCount ?? 0)` → `(0)` fails
+AC-32.2 and AC-32.4. Riskiest unfalsified: `src/app/page.tsx:51` is covered only by e2e AC-32.5/32.6; its revert was
+traced, not run.
 
 ## Evidence
 
-- AC met: pending/7
+- AC met: 7/7
 - tier: medium
 - plan deviations: none
 - trace: n/a
