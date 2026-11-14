@@ -98,4 +98,4 @@ lead's `approve`; the PR carries `config-change-approved` (D-19). Dev-lead write
 | 3    | reviewer | diff review         | `docs(backlog): B1.101 review pass N`                                                  |
 | 4    | dev-lead | draft PR, label     | —                                                                                      |
 
-Plan review: changes requested, round 2 (1 reason, fixed in round 3, not re-reviewed: cap 2) · Plan approved by: · Rounds: 1
+Plan review: changes requested, round 2 (1 reason, fixed in round 3, not re-reviewed: cap 2) · Plan approved by: lead, 2026-11-14 · Rounds: 1
