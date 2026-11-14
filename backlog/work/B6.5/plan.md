@@ -8,12 +8,12 @@ CI-protected path (no `config-change-approved`). No skeleton: the component exis
 
 ## Files
 
-| File                                    | Change                                                                                                                                                            | Why (AC-§.n)           |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| `src/components/overdue-count.tsx`      | Change: always render `<span role="status">{label}</span>`, `label` undefined while `today` or `overdueLabel(…)` is undefined; header names §23, §33              | 33.1–33.5              |
-| `src/components/overdue-count.test.tsx` | Change (red): add AC-33.1–33.4; per D-34 drop only the `role` assertion of AC-23.3 and "role or" from its title (prefix `AC-23.3:` kept, every other assert kept) | 33.1–33.4, 23.3 (D-34) |
-| `e2e/33-overdue-announce.spec.ts`       | Add (red): AC-33.5, our status located as the one after the `N items left` paragraph, never "exactly one status on the page" (B6.6 adds another)                  | 33.5                   |
-| `spec/features-map.md`                  | Add the F31 row (§33), ✅, in code-writer's `docs(map)` commit                                                                                                    | map                    |
+| File                                    | Change                                                                                                                                                                                                                                                                                                             | Why (AC-§.n)           |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------- |
+| `src/components/overdue-count.tsx`      | Change: always render `<span role="status">{label}</span>`, `label` undefined while `today` or `overdueLabel(…)` is undefined; header names §23, §33                                                                                                                                                               | 33.1–33.5              |
+| `src/components/overdue-count.test.tsx` | Change (red): add AC-33.1–33.4; per D-34 drop only the `role` assertion line of AC-23.3, its title unchanged (a renamed title reads as a new, green test to `verify-red.sh`)                                                                                                                                       | 33.1–33.4, 23.3 (D-34) |
+| `e2e/33-overdue-announce.spec.ts`       | Add (red): AC-33.5, among `getByRole('status')` the one the `N items left` paragraph precedes in document order (`compareDocumentPosition` FOLLOWING and not CONTAINS, as `e2e/23-overdue-count.spec.ts:124-127`), never adjacency or "exactly one status on the page" (B6.6 adds another, may wrap the paragraph) | 33.5                   |
+| `spec/features-map.md`                  | Add the F31 row (§33), ✅, in code-writer's `docs(map)` commit                                                                                                                                                                                                                                                     | map                    |
 
 Paperwork (exempt): §33 index row stays ✗ until the closing PR; `docs/metrics.md` per-card row.
 
@@ -48,8 +48,8 @@ unchanged ≥ 70 · `pnpm build` ok · `scripts/ci/check-features-map.sh`, `chec
 | 3    | code-writer     | F31 row ✅                                           | `docs(map): F31 … [B6.5]`      |
 | 4    | reviewer (diff) | `review.md` diff section                             | `docs(backlog): B6.5 review …` |
 
-Costs the lead takes: one assertion and two title words of the existing AC-23.3 test go (D-34), replaced by AC-33.1's
+Costs the lead takes: one assertion of the existing AC-23.3 test goes (D-34; its title still says "no role or aria-label" until a later card renames it outside a red commit), replaced by AC-33.1's
 stronger `role="status"` check; §23's function-contract line still reads "renders nothing", which `/spec-trace` will
 report until a D-n tidies it.
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: pending, round 2 (round 1: 2 reasons, AC-23.3 title kept, AC-33.5 locator named) · Plan approved by: · Rounds: 1
