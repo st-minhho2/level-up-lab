@@ -18,6 +18,10 @@
 #   T11 a card's appended section row merged with main's closing flip (✗ → ✅) of the row above it:
 #       check-spec-sections.sh names that section and says to keep origin/main's copy
 #   T12 a re-padded index table against an appended section row: check-spec-sections.sh fails
+#   T13–T15 (B1.97) a row wider than its column, formatted as format-after-edit.sh and Lefthook do (prettier from the
+#       top level, so .prettierignore applies), against an appended row, in the map, the metrics "Per card" table and
+#       the index: a clean merge, both rows once, the file's guard OK, and the wide row's side changed one line only
+# Needs node_modules (prettier) for T13–T15.
 # Reads this checkout's tracked files as they are on disk, plus .gitattributes; writes only under its own mktemp -d.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
@@ -133,6 +137,35 @@ t12a() { awk '/^\| (§[0-9]*|---) /{ sub(/ \|$/, "  |") } { print }' "$R/$IX" > 
 t12b() { add_section 904; }
 merge_sides t12a t12b; guard check-spec-sections.sh
 probe "T12 a re-padded index against an appended row is caught" named "§1 has 2 rows"
+
+# B1.97: one side appends a row wider than its column and formats the file as the hooks do, the other appends a row
+PRETTIER="$ROOT/node_modules/.bin/prettier"
+[[ -x "$PRETTIER" ]] || { echo "table-merge-smoke: $PRETTIER missing (pnpm install)" >&2; exit 2; }
+fmt() { (cd "$R" && "$PRETTIER" --write --log-level warn "$1" >/dev/null 2>&1); }
+W="$(printf 'wide%.0s' $(seq 1 45))" # 180 characters, wider than any column of the three tables
+# wide_once <file> <key-a> <key-b>: kept_once, and side a's own commit (a^1 after the clean merge) added one line to
+# the file and changed no other, so the formatter re-padded nothing
+wide_once() { kept_once "$@" && [[ "$("${G[@]}" diff --numstat main 'a^1' -- "$1" | cut -f1,2 | tr '\t' ' ')" == "1 0" ]]; }
+
+t13a() { put_after $FM '^\| F[0-9]' "| F905 | §1 | Smoke $W | \`src/lib/env.ts\` | \`src/lib/env.test.ts\` | ✅ |" && fmt $FM; }
+t13b() { put_after $FM '^\| F[0-9]' "$(f_row F906)"; }
+merge_sides t13a t13b; guard check-features-map.sh
+probe "T13 a map row wider than its column, formatted, against an appended row: each row once" wide_once $FM F905 F906
+
+t14a() { put_after $MT '^\| B[0-9]' "| B9.905 | — (tooling) $W | 0 | n/a | smoke | 0 | smoke | this PR |" && fmt $MT; }
+t14b() { put_after $MT '^\| B[0-9]' "$(c_row B9.906)"; }
+merge_sides t14a t14b; guard check-backlog.sh
+probe "T14 a metrics row wider than its column, formatted, against an appended row: each row once" \
+  wide_once $MT 'B9\.905' 'B9\.906'
+
+t15a() {
+  printf '# §905 Smoke\n' > "$R/spec/contracts/smoke-905.md" && "${G[@]}" add spec/contracts/smoke-905.md \
+    && put_after $IX '^\| §[0-9]' "| §905 | [contracts/smoke-905.md](contracts/smoke-905.md) | Smoke $W | ✗ |" && fmt $IX
+}
+t15b() { add_section 906; }
+merge_sides t15a t15b; guard check-spec-sections.sh
+probe "T15 an index row wider than its column, formatted, against an appended row: each row once" \
+  wide_once $IX '§905' '§906'
 
 if [[ $fails -eq 0 ]]; then echo "$oks probes OK"; exit 0; fi
 echo "$fails of $((oks + fails)) probes FAILED"; exit 1
