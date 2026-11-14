@@ -57,8 +57,7 @@ is vacuously true when nothing is stored.
 
 Hiding the message on an empty list (needs the stored total in the component, hence a change to `src/app/page.tsx`
 that D-24 rules out for this batch), a different text for a filtered or searched view, a celebration, icon, colour or
-animation, replacing "0 items left", live announcement to assistive technology (`role="status"`, `aria-live`, as in
-§13), a "mark all active again" control, a message in the page title, any count that is negative or fractional.
+animation, replacing "0 items left", a "mark all active again" control, a message in the page title, any count that is negative or fractional.
 
 ## Unchanged behavior
 

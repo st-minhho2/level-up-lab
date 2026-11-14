@@ -37,6 +37,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §30 | [contracts/28-filter-counts.md](contracts/28-filter-counts.md)                 | Todos: show how many todos each filter lists                           | ✅     |
 | §31 | [contracts/29-due-today.md](contracts/29-due-today.md)                         | Todos: say "Due today" on an open todo due today                       | ✅     |
 | §32 | [contracts/30-clear-completed-count.md](contracts/30-clear-completed-count.md) | Todos: the clear-completed button says how many it will clear          | ✗      |
+| §34 | [contracts/32-remaining-announce.md](contracts/32-remaining-announce.md)       | Todos: the remaining count is announced to assistive technology        | ✗      |
 
 Reading order: §1 → §2 → the section your backlog card names → [features-map.md](features-map.md).
 

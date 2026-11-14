@@ -207,7 +207,7 @@ at most 3 cards Doing (B1.18).
 | 110  | B1.94 | CI never runs table-merge-smoke, whose verdict follows the host's own git attributes                      | —      | Open   | ~~B1.89~~                       | Lead  | S [estimate] |
 | 114  | B6.4  | The clear-completed button says how many it will clear                                                    | —      | Open   | ~~D-33~~                        | Lead  | S [estimate] |
 | 115  | B6.5  | The overdue count is announced to assistive technology                                                    | —      | Open   | ~~D-33~~                        | Lead  | S [estimate] |
-| 116  | B6.6  | The remaining count is announced to assistive technology                                                  | —      | Open   | ~~D-33~~                        | Lead  | S [estimate] |
+| 116  | B6.6  | The remaining count is announced to assistive technology                                                  | —      | Open   | ~~D-33~~, ~~D-35~~, ~~D-36~~    | Lead  | S [estimate] |
 | 117  | B1.95 | run.sh runs its own scripts from a clone behind origin/main and never says so                             | —      | Open   | —                               | Lead  | S [estimate] |
 | 119  | B1.97 | A row wider than its column makes Prettier re-pad the whole shared table                                  | —      | Open   | ~~B1.96~~                       | Lead  | S [estimate] |
 
