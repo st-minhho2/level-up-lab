@@ -17,8 +17,8 @@ reload. If the step cannot be saved, the person is told right beside the control
 | REQ-14.1  | Event-driven      | WHEN a person activates "Mark all complete" THE SYSTEM SHALL set the completion state of every todo that is not completed to completed.                                                                                                                          |
 | REQ-14.2  | Event-driven      | WHEN all todos are marked complete THE SYSTEM SHALL keep every todo's title, keep every todo that was already completed as it was, and keep the same relative order (newest first, §5).                                                                          |
 | REQ-14.3  | Event-driven      | WHEN all todos are marked complete THE SYSTEM SHALL report how many todos were changed from not completed to completed.                                                                                                                                          |
-| REQ-14.4  | State-driven      | WHILE at least one todo is not completed THE SYSTEM SHALL show a button named "Mark all complete" that is enabled.                                                                                                                                               |
-| REQ-14.5  | State-driven      | WHILE every todo is completed (including while no todo exists) THE SYSTEM SHALL show the button named "Mark all complete" disabled; it is never hidden.                                                                                                          |
+| REQ-14.4  | State-driven      | WHILE at least one todo is not completed THE SYSTEM SHALL show an enabled button whose accessible name contains "Mark all complete" (exactly that text when no count is given, §36).                                                                             |
+| REQ-14.5  | State-driven      | WHILE every todo is completed (including while no todo exists) THE SYSTEM SHALL show the button disabled with the accessible name exactly "Mark all complete"; it is never hidden.                                                                               |
 | REQ-14.6  | Ubiquitous        | THE SYSTEM SHALL keep the result of marking all complete in PostgreSQL, refresh the page's list after it, so that the list and a full page reload show the same state.                                                                                           |
 | REQ-14.7  | Unwanted behavior | IF no todo is open when marking all complete is requested THEN THE SYSTEM SHALL change nothing and report 0 changed (no criterion; covered by the lib test, see below).                                                                                          |
 | REQ-14.8  | Unwanted behavior | IF marking all complete fails for any reason THEN THE SYSTEM SHALL change nothing, refresh nothing, report a field error on `form` with the §10 message, never a thrown error, and write exactly one log entry as §11 specifies, named `completeAllTodosAction`. |
@@ -49,8 +49,14 @@ export function completeAllTodos(): Promise<number>; // one updateMany({ where: 
 export function completeAllTodosAction(): Promise<ActionResult<{ updated: number }>>; // no input to parse; one lib call, then revalidatePath('/'); any thrown value (lib or revalidatePath) resolves to failure('form', MUTATION_FAILED_MESSAGE) after logMutationFailure('completeAllTodosAction', error), nothing rethrown
 // src/lib/logger.ts (§11): the union MutationActionName gains one member, 'completeAllTodosAction'; no other change to §11
 // src/components/complete-all-button.tsx ('use client')
-export function CompleteAllButton({ disabled }: { readonly disabled: boolean }): ReactNode; // button "Mark all complete"; calls completeAllTodosAction in a transition; disabled also while pending; after a failed result <p role="alert"> with fieldErrors.form?.[0] as the button's next sibling inside one wrapper element; a successful result clears it
-// src/app/page.tsx: renders <CompleteAllButton disabled={!todos.some((todo) => !todo.completed)} /> outside the list (never a listitem), in both the empty and the non-empty state; where it sits among the other controls is the mounting card's choice
+export function CompleteAllButton({
+  disabled,
+  count,
+}: {
+  readonly disabled: boolean;
+  readonly count?: number;
+}): ReactNode; // button "Mark all complete" (§36 writes "Mark all complete (n)" for a count n >= 1; without count the name is exactly "Mark all complete"); calls completeAllTodosAction in a transition; disabled also while pending; after a failed result <p role="alert"> with fieldErrors.form?.[0] as the button's next sibling inside one wrapper element; a successful result clears it
+// src/app/page.tsx: renders <CompleteAllButton disabled={!todos.some((todo) => !todo.completed)} count={filterCounts(todos).active} /> (§36) outside the list (never a listitem), in both the empty and the non-empty state; where it sits among the other controls is the mounting card's choice
 ```
 
 Lib test for REQ-14.7 (no criterion): `completeAllTodos()` with `updateMany` resolving `{ count: 0 }` resolves to `0`
@@ -61,6 +67,9 @@ and the update is still scoped to `completed: false`.
 Marking all incomplete (a toggle of the whole list), a confirmation dialog, undo, a message showing how many were
 changed, marking only the todos in a filtered or searched view, two tabs acting at once, ordering by completion,
 a Zod schema (there is no input).
+
+The item "a message showing how many were changed" does not apply to the count on the button (§36): that count is a
+label shown before the click, not a message about a mark-all that already happened.
 
 ## Unchanged behavior
 
