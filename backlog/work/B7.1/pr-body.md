@@ -69,26 +69,40 @@ Plan review: approved, round 1 · Plan approved by: reviewer (D-27, tier medium,
 
 ## Map delta
 
-pending
+- `spec/features-map.md`: new row F33 · §35 · Confirm before deleting a todo · `src/components/delete-todo-button.tsx` ·
+  ✅ (4ff14e9)
+- `spec/technical-requirements.md`: §35 index row, ✗ until the closing PR
 
 ## Review
 
-pending
+`backlog/work/B7.1/review.md`, diff review, 2 passes: **Verdict: ready for PR** (round 2), 0 open findings.
+
+- Range: red 666e313, feat 13f1eef, map 4ff14e9, review fix a1a72f1.
+- Round 1: 1 confirmed finding (plan mismatch): the AC-35.1 test title differed from the card's `Test:` line.
+  Disposition: fix now, title-only `test(todos): B7.1 review pass 1 -- AC-35.1 title from the card` (a1a72f1), no
+  assertion changed. Round 2: fixed, 0 findings.
+- Reviewer's gates: `pnpm test` 283 passed, `pnpm test:e2e` 66 passed, mutation 92.74 (≥ 70), all seven CI guards OK
+  (suppressions, config-change, feat-commits, ac-coverage, spec-sections, features-map, plan-scope), `verify-red.sh B7.1`
+  red for the right reason, no test changed after the red commit except the title fix.
+- Revert probes (round 1, on a clone): guard removed → 4 tests fail; guard inverted → 5 fail; message changed → AC-35.1
+  fails.
+- Riskiest unfalsified: e2e AC-35.4/35.5 never run against a removed guard (traced only); moving the guard inside the
+  transition keeps every test green (judged equivalent in the browser).
 
 ## Evidence
 
-- AC met: pending
+- AC met: 5/5 (AC-35.1 … AC-35.5; 3 unit, 2 e2e)
 - tier: medium
-- plan deviations: pending
+- plan deviations: none (`docs/metrics.md` row is listed paperwork)
 - trace: n/a
 
 ## Checklist
 
-- [ ] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
-- [ ] Red commit precedes the feat commit; no `feat(` commit touches `*.test.*` or `e2e/**`.
-- [ ] Every `AC-§.n` of the section is a test title; mutation on `src/lib` + `src/actions` ≥ 70 %.
-- [ ] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; no protected config change (or label `config-change-approved` with the reason).
-- [ ] Migrations reviewed as SQL; `prisma/seed.ts` updated if a table changed. (n/a: no migration)
-- [ ] `spec/features-map.md` row moved; `docs/metrics.md` per-card row filled; mistake-log updated if a known mistake repeated.
+- [x] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
+- [x] Red commit precedes the feat commit; no `feat(` commit touches `*.test.*` or `e2e/**`.
+- [x] Every `AC-§.n` of the section is a test title; mutation on `src/lib` + `src/actions` ≥ 70 %.
+- [x] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; no protected config change (or label `config-change-approved` with the reason).
+- [x] Migrations reviewed as SQL; `prisma/seed.ts` updated if a table changed. (n/a: no migration)
+- [x] `spec/features-map.md` row moved; `docs/metrics.md` per-card row filled; mistake-log updated if a known mistake repeated.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
