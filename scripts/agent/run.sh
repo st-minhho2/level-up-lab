@@ -10,7 +10,8 @@
 #   scripts/agent/run.sh --check-binary   prove dev-lead's frontmatter hooks fire under this claude; record its version
 #   scripts/agent/run.sh --mode           print the permission mode a run here would get (bypassPermissions | dontAsk)
 #   exit 0 ran to an end, or skipped with the reason · 1 refused (stderr "[run] <why>")
-# Each run: a git identity (B1.69) → auth status → a verified version → eligible.sh → under 3 agent branches in flight → a per-issue lock →
+# Each run: a git identity (B1.69) → auth status → a verified version → per issue, this checkout's HEAD not behind a
+# just-fetched origin/main (B1.95) → eligible.sh → under 3 agent branches in flight → a per-issue lock →
 # next-task.sh --claim → worktree.sh <chore|feat>/<card>-agent → claude -p with the outcome read from the stream's last
 # line (is_error, then subtype; one retry on an error) → a comment on the issue → runs/<issue>/stopped.
 # Logs: $RUNNER_RUNS/<issue>/<UTC timestamp>-<pid>.jsonl, .err (line 1: --version), .exit. Each claude -p gets a TMPDIR
@@ -98,6 +99,27 @@ preflight() { # a git identity, the lead's own login and a version whose hooks w
   [[ "${1:-}" == binary ]] && return 0
   grep -qxF -- "$VERSION" "$RUNS/verified-versions" 2>/dev/null \
     || die "claude '$VERSION' is not verified: run scripts/agent/run.sh --check-binary first"
+}
+
+behind_problem() { # why this checkout may not run an issue, empty when its HEAD is not behind a just-fetched
+  # origin/main (B1.95): the run.sh running is this checkout's copy, and a stale one runs stale logic on a fresh card
+  # worktree without a word (31 commits on 2026-11-13). It never updates itself: it is the script running. Parallel
+  # runs share the clone, so a fetch that fails (another's ref lock) is tried 3 times before it refuses.
+  # A HEAD that is also ahead (a card branch's own run.sh once main moved) lacks main's commits too: it refuses, and its
+  # fix is a merge, since --ff-only cannot move it (plan r1).
+  local err try=1 ahead n head main fix
+  until err="$(GIT_TERMINAL_PROMPT=0 git fetch -q origin main 2>&1 </dev/null)"; do
+    [[ $try -lt 3 ]] || { echo "git fetch origin failed, so origin/main is not known: $(grep -m1 . <<< "$err")"; return; }
+    try=$((try + 1)); sleep 2
+  done
+  head="$(git rev-parse --short HEAD)" && main="$(git rev-parse --short origin/main)" \
+    && read -r ahead n < <(git rev-list --left-right --count HEAD...origin/main) && [[ -n "$n" ]] \
+    || { echo "no HEAD or origin/main to compare after git fetch"; return; }
+  [[ $n -gt 0 ]] || return 0
+  fix="merge --ff-only origin/main"
+  [[ $ahead -eq 0 ]] || fix="merge origin/main (HEAD also has $ahead commit$([[ $ahead -eq 1 ]] || echo s) of its own)"
+  echo "this checkout is behind origin/main by $n commit$([[ $n -eq 1 ]] || echo s) (HEAD $head, origin/main $main)," \
+    "so the run.sh running is stale; fix: git -C $ROOT $fix, then rerun"
 }
 
 stamp_base() { # stamp_base <dir>: a fresh <UTC timestamp>-<pid> path, never one an earlier run used
@@ -193,7 +215,8 @@ in_flight() { # in_flight <own branch>: the agent branches in flight, one per li
   # an open PR's head, or a local branch not merged. Merged: its tip reached origin/main through a merge (an ancestor
   # off the first-parent line, where a run's branch sits before its first commit), or a PR of it merged (main squashes,
   # which leaves the tip outside origin/main; GitHub may have moved the head past the tip, as on #200), or one closed
-  # at its tip (a commit after a close counts again). origin/main is as last fetched; gh failing counts the branch.
+  # at its tip (a commit after a close counts again). origin/main is as run_issue just fetched it (B1.95); gh failing
+  # counts the branch.
   local b heads line
   line="$(git rev-list --first-parent origin/main 2>/dev/null)"
   { gh_ pr list --state open --limit 100 --json headRefName --jq '.[].headRefName'
@@ -245,6 +268,8 @@ run_issue() { # run_issue <issue>: 0 ran or skipped, 1 refused
   local n="$1" card branch wt base out attempt=1 prompt dir="$RUNS/$1" perm
   local why
   trap 'on_signal 143' TERM; trap 'on_signal 130' INT # --poll runs this in a subshell, which starts with default traps
+  why="$(behind_problem)"
+  [[ -z "$why" ]] || { say "refused #$n: $why"; return 1; }
   why="$("$ELIGIBLE" "$n" 2>&1 >/dev/null)" || { say "skip #$n: ${why:-not eligible}"; return 0; }
   card="$(card_of "$n")"
   [[ "$card" =~ ^B[0-9]+\.[0-9]+$ ]] || { say "skip #$n: no card id in the issue form (got '$card')"; return 0; }
