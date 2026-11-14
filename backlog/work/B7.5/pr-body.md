@@ -60,17 +60,33 @@ Plan review: approved, round 2 · Plan approved by: reviewer (D-27, tier medium,
 
 ## Map delta
 
-pending
+- `spec/features-map.md`: new row F37 · §39 · Near-limit warning on the new-todo counter · `src/lib/title-count.ts`,
+  `src/components/todo-form.tsx` · `src/lib/title-count.test.ts`, `src/components/todo-form-warning.test.tsx`,
+  `e2e/39-title-counter-warning.spec.ts` · ✅ (b1ced0e)
+- `spec/technical-requirements.md`: §39 index row, ✗ until the closing PR
 
 ## Review
 
-pending
+`backlog/work/B7.5/review.md`, diff review round 1: **Verdict: ready for PR**, 1 finding (non-blocking).
+
+- Range: skeleton 9c87412, red eaa2ae9, feat c7ec922, map b1ced0e.
+- Reviewer's gates: `pnpm test` 304 passed (49 files), `pnpm test:e2e` 71 passed, mutation 100.00 % on
+  `src/lib/title-count.ts`, suppressions, config-change, feat-commits, ac-coverage, spec-sections, features-map all OK,
+  `verify-red.sh B7.5` red for the right reason (6 of 6 new unit failed; e2e red run by test-writer).
+- Finding 1 (coverage, out of scope): REQ-39.3's "before the §5 error" is pinned by no test (moving the warning below the
+  error keeps 34 of 34 form tests green). The code is correct; the gap is AC-39.4 (b)'s wording, a spec edit for the lead.
+- Riskiest unfalsified: no test reads the server HTML before hydration (REQ-39.2); by trace `draft` starts `''`.
+
+Dev-lead's green gate: `pnpm lint` 0 errors (1 existing `react-hooks/exhaustive-deps` warning on the §18 layout effect),
+`pnpm typecheck` clean, `pnpm test` 304 passed, `pnpm test:e2e` 71 passed; no test file changed after red; branch
+contains origin/main, `check-spec-sections.sh` OK.
 
 ## Evidence
 
-- AC met: pending
+- AC met: AC-39.1 … AC-39.7 (7 of 7; 6 unit, 1 e2e)
 - tier: medium
-- plan deviations: pending
+- mutation: 100.00 % on src/lib/title-count.ts (`scripts/mutation-gate.sh`)
+- plan deviations: none (`docs/metrics.md` row is listed paperwork; it landed in the feat commit)
 - trace: n/a
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
