@@ -62,6 +62,8 @@ _F30 · section 32_
   deleted-count message; mounts in `src/components/clear-completed-button.tsx`, with the count passed from
   `src/app/page.tsx` (the batch's one `page.tsx` card); contract `spec/contracts/30-clear-completed-count.md`
   (section 32); batch 2
+- **Spec:** §32 — unchanged (contract `spec/contracts/30-clear-completed-count.md`; states that the label count is not §9's deleted-count message, D-33)
+- **Test:** `src/lib/clear-completed-label.test.ts::AC-32.1: writes "Clear completed" for 0, "Clear completed (1)" for 1 and "Clear completed (12)" for 12` — red because `clearCompletedLabel` does not exist yet
 - **Tier:** full · **Depends on:** ~~D-33~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B6.4/`
 
