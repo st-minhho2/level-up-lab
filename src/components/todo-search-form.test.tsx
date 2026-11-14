@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { isSearchInEffect } from '@/lib/clear-search';
@@ -397,5 +397,107 @@ describe('<TodoSearchForm> Escape key (§27)', () => {
       { prevented: false, value: 'milk' },
     ]);
     expect(clearLink.count()).toBe(0);
+  });
+});
+
+interface CountCase extends SearchCase {
+  readonly count?: number;
+}
+
+// Renders with the §38 `count` prop only when the case carries one, so "no count" is the render without the prop.
+function renderCountCase({ filter, query, count }: CountCase): ReturnType<typeof render> {
+  return count === undefined
+    ? renderForm(filter, query)
+    : render(<TodoSearchForm filter={filter} query={query} count={count} />);
+}
+
+// The form's markup for one case, unmounted afterwards so the next render starts from an empty document.
+function markupOf(searchCase: CountCase): { readonly html: string; readonly paragraphs: number } {
+  const { container, unmount } = renderCountCase(searchCase);
+  const html = container.innerHTML;
+  const paragraphs = document.querySelectorAll('p').length;
+  unmount();
+  return { html, paragraphs };
+}
+
+// The attributes REQ-38.4 forbids on the count paragraph: it is not a live region, a landmark, a status or an alert.
+const FORBIDDEN_COUNT_ATTRIBUTES = ['id', 'role', 'aria-live', 'aria-atomic', 'aria-label'] as const;
+
+describe('<TodoSearchForm> match count (§38)', () => {
+  it('AC-38.1: renders exactly 1 paragraph "3 matches" as the last child of the search form, after the link "Clear search", with no id, role, aria-live, aria-atomic or aria-label, for filter all, query milk and count 3', () => {
+    const searchCase: CountCase = { filter: 'all', query: 'milk', count: 3 };
+
+    renderCountCase(searchCase);
+
+    const landmark = screen.getByRole('search');
+    const paragraphs = landmark.querySelectorAll('p');
+    expect(paragraphs).toHaveLength(1);
+    const paragraph = paragraphs[0];
+    expect(paragraph?.textContent).toBe('3 matches');
+    expect(landmark.lastChild).toBe(paragraph);
+    const link = screen.getByRole('link', { name: 'Clear search' });
+    expect(paragraph !== undefined && link.compareDocumentPosition(paragraph)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(FORBIDDEN_COUNT_ATTRIBUTES.filter((name) => paragraph?.hasAttribute(name) === true)).toEqual([]);
+    expect(screen.queryAllByRole('status')).toHaveLength(0);
+    expect(screen.queryAllByRole('alert')).toHaveLength(0);
+    expect(screen.queryAllByRole('log')).toHaveLength(0);
+  });
+
+  it('AC-38.2: with filter active and query milk, count 1, 2 and 11 render the landmark\'s one p as exactly "1 match", "2 matches" and "11 matches"', () => {
+    const counts: readonly number[] = [1, 2, 11];
+
+    const outcomes = counts.map((count) => {
+      const { unmount } = renderCountCase({ filter: 'active', query: 'milk', count });
+      const paragraphs = Array.from(screen.getByRole('search').querySelectorAll('p'));
+      unmount();
+      return { count: paragraphs.length, texts: paragraphs.map((paragraph) => paragraph.textContent) };
+    });
+
+    expect(outcomes).toEqual([
+      { count: 1, texts: ['1 match'] },
+      { count: 1, texts: ['2 matches'] },
+      { count: 1, texts: ['11 matches'] },
+    ]);
+  });
+
+  it("AC-38.3: with (milk, 0), (milk, no count), ('', 3), ('   ', 3), (milk, -1) and (milk, 1.5) each render has 0 p elements in the document and the same innerHTML as the render with the same filter and query and no count prop", () => {
+    const cases: readonly CountCase[] = [
+      { filter: 'all', query: 'milk', count: 0 },
+      { filter: 'all', query: 'milk' },
+      { filter: 'all', query: '', count: 3 },
+      { filter: 'all', query: '   ', count: 3 },
+      { filter: 'all', query: 'milk', count: -1 },
+      { filter: 'all', query: 'milk', count: 1.5 },
+    ];
+
+    const outcomes = cases.map((searchCase) => {
+      const withCount = markupOf(searchCase);
+      const withoutCount = markupOf({ filter: searchCase.filter, query: searchCase.query });
+      return { paragraphs: withCount.paragraphs, sameMarkup: withCount.html === withoutCount.html };
+    });
+
+    expect(outcomes).toEqual(cases.map(() => ({ paragraphs: 0, sameMarkup: true })));
+  });
+
+  it('AC-38.4: with filter completed, query milk and count 2 the landmark still holds exactly 1 searchbox "Search todos" with value milk, 1 submit button "Search", 1 link "Clear search" with href /?filter=completed, 1 hidden input filter with value completed and 0 list items', () => {
+    const searchCase: CountCase = { filter: 'completed', query: 'milk', count: 2 };
+
+    renderCountCase(searchCase);
+
+    const landmark = screen.getByRole('search');
+    const boxes = within(landmark).getAllByRole('searchbox', { name: 'Search todos' });
+    expect(boxes).toHaveLength(1);
+    expect(boxes[0]).toHaveValue('milk');
+    const buttons = within(landmark).getAllByRole('button', { name: 'Search' });
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0]).toHaveAttribute('type', 'submit');
+    const links = within(landmark).getAllByRole('link', { name: 'Clear search' });
+    expect(links).toHaveLength(1);
+    expect(links[0]?.getAttribute('href')).toBe('/?filter=completed');
+    const hidden = hiddenFilterInputs(landmark);
+    expect(hidden).toHaveLength(1);
+    expect(hidden[0]).toHaveAttribute('type', 'hidden');
+    expect(hidden[0]).toHaveValue('completed');
+    expect(within(landmark).queryAllByRole('listitem')).toHaveLength(0);
   });
 });
