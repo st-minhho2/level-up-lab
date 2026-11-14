@@ -41,7 +41,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §34 | [contracts/32-remaining-announce.md](contracts/32-remaining-announce.md)       | Todos: the remaining count is announced to assistive technology        | ✅     |
 | §35 | [contracts/33-delete-confirm.md](contracts/33-delete-confirm.md)               | Todos: deleting a todo asks for confirmation first                     | ✅     |
 | §36 | [contracts/34-complete-all-count.md](contracts/34-complete-all-count.md)       | Todos: the mark-all-complete button says how many it will mark         | ✗      |
-| §37 | [contracts/35-due-date-today.md](contracts/35-due-date-today.md)               | Todos: a "Today" button fills the due-date field                       | ✗      |
+| §37 | [contracts/35-due-date-today.md](contracts/35-due-date-today.md)               | Todos: a "Today" button fills the due-date field                       | ✅     |
 
 Reading order: §1 → §2 → the section your backlog card names → [features-map.md](features-map.md).
 

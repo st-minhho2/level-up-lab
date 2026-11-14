@@ -12,7 +12,7 @@ Files:
   - unattended and no-rework 1/1 (D-29), two runner runs (below).
 - `backlog/README.md`:
   - Remaining row 122 removed; `~~B7.1~~` in node 122. No other Remaining row was blocked by B7.1.
-  - Totals updated: E7 1/0/5, total 85/1/41 of 127.
+  - Totals updated: E7 2/0/4, total 86/1/42 of 129 (after the filing #304 and B7.3's closing #305).
 - `spec/technical-requirements.md`: §35 index row ✗ → ✅.
 - `docs/metrics.md`: B7.1 Green column from `pending merge` to the merged sha 76bdb83, as the E5 and E6 closings did.
 - `backlog/work/B7.1/closing-pr-body.md`: this body (Closing step 6).
@@ -32,6 +32,12 @@ D-29 for issue #292:
 Diff review: 2 passes (`work/B7.1/review.md`). Pass 1 found the AC-35.1 test title differed from the card's `Test:`
 line; fixed title-only in a1a72f1 (no assertion changed). Pass 2: 0 findings. Riskiest unfalsified, carried from the
 feature PR: e2e AC-35.4/35.5 were never run against a removed guard (traced only).
+
+`origin/main` (#304, #305) was merged in before the push:
+
+- README: main's copy was kept (#304 re-padded the Remaining table) and this card's lines were applied to it again.
+- `docs/metrics.md`: the union merge kept the B7.1 and B7.3 rows twice; the stale copies (`pending merge`, df8e436)
+  are removed.
 
 `check-backlog.sh`, `check-spec-sections.sh`, `check-features-map.sh`, `check-ac-coverage.sh` (`§35 criteria=5
 covered=5`) OK.
