@@ -3,8 +3,10 @@ Closing lane (`backlog/CLAUDE.md` "Closing a card") for B6.5: the overdue count 
 The lead asked for this closing lane in the session. The checklist is the plan, so there is no `Plan approved by` line.
 Epic E6, batch 2 (D-33, D-34).
 
-**Stacked on #284 (B6.4 done).** This branch starts from `docs/B6.4-done`, and its totals count both cards. Until #284
-merges, this PR's diff also shows B6.4's commit. After that, `origin/main` is merged in.
+This branch started from `docs/B6.4-done` (#284), so its totals count both cards. #284 merged as 02042ed, and
+`origin/main` was then merged in. The README conflict was resolved by keeping this branch's side, which already held
+B6.4's lines. The union merge of `docs/metrics.md` kept the B6.5 row twice, and `check-backlog.sh` named it, as B1.89
+designed. The `pending (merge)` copy is removed (52eb746). The diff now holds B6.5's lines only.
 
 Files:
 
