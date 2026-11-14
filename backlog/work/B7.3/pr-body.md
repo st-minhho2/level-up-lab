@@ -75,26 +75,42 @@ Plan review: approved, round 1 · Plan approved by: reviewer (D-27, tier medium,
 
 ## Map delta
 
-pending
+- `spec/features-map.md`: new row F35 · §37 · "Today" button in the due-date editor · `src/components/todo-due-date.tsx` ·
+  `src/components/todo-due-date-today-button.test.tsx`, `e2e/37-due-date-today.spec.ts` · ✅ (672d9f8)
+- `spec/technical-requirements.md`: §37 index row, ✗ until the closing PR
 
 ## Review
 
-pending
+`backlog/work/B7.3/review.md`, diff review round 1: **Verdict: ready for PR**, 0 findings.
+
+- Range: red a2db3b4, feat df8e436, map 672d9f8.
+- Reviewer's gates: `pnpm test` 291 passed (46 files), `pnpm test:e2e` 65 passed, mutation 93.22 (≥ 70), suppressions,
+  config-change, feat-commits, ac-coverage, spec-sections, features-map, plan-scope (D-27 approval) all OK,
+  `verify-red.sh B7.3` red for the right reason (11 of 11 new failed).
+- Revert probes: drop "Today"'s `onKeyDown` → AC-37.4 fails; drop `disabled={pending}` → AC-37.5 (a) fails; read the
+  mount-time day → AC-37.3 fails; drop the `pending` guard → AC-37.5 (a) and AC-28.4 fail.
+- Notes (non-blocking): the plan said 285 tests; the 5 criteria run as 11 `it.each` cases, so 291. The metrics row now
+  reads 93.22 and df8e436 (47ee80e).
+- Riskiest unfalsified: REQ-37.3 "does not change the row's message" has no criterion; adding `setError(undefined)` to
+  `onToday` keeps all 38 `todo-due-date*` tests green. Guarding it needs a new AC (`docs(spec)` under a D-n).
+
+Dev-lead's green gate: `pnpm lint`, `pnpm typecheck` clean, `pnpm test` 291 passed, `pnpm test:e2e` 65 passed;
+branch already contains origin/main (7e8a32f), `check-spec-sections.sh` OK.
 
 ## Evidence
 
-- AC met: pending
+- AC met: AC-37.1 … AC-37.6 (6 of 6; 5 unit as 11 cases, 1 e2e)
 - tier: medium
-- plan deviations: none
+- plan deviations: none (`docs/metrics.md` row is listed paperwork)
 - trace: n/a
 
 ## Checklist
 
-- [ ] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
-- [ ] Red commit precedes the feat commit; no `feat(` commit touches `*.test.*` or `e2e/**`.
-- [ ] Every `AC-§.n` of the section is a test title; mutation on `src/lib` + `src/actions` ≥ 70 %.
-- [ ] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; no protected config change (or label `config-change-approved` with the reason).
-- [ ] Migrations reviewed as SQL; `prisma/seed.ts` updated if a table changed.
-- [ ] `spec/features-map.md` row moved; `docs/metrics.md` per-card row filled; mistake-log updated if a known mistake repeated.
+- [x] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
+- [x] Red commit precedes the feat commit; no `feat(` commit touches `*.test.*` or `e2e/**`.
+- [x] Every `AC-§.n` of the section is a test title; mutation on `src/lib` + `src/actions` ≥ 70 %.
+- [x] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; no protected config change (or label `config-change-approved` with the reason).
+- [x] Migrations reviewed as SQL; `prisma/seed.ts` updated if a table changed. (n/a: no migration)
+- [x] `spec/features-map.md` row moved; `docs/metrics.md` per-card row filled; mistake-log updated if a known mistake repeated.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
