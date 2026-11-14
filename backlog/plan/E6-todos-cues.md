@@ -53,9 +53,7 @@ _F29 · section 31_
 ### B6.4 · The clear-completed button says how many it will clear
 
 _F30 · section 32_
-**Status: Open** — the button reads "Clear completed" whatever the number (`ClearCompletedButton` takes only
-`disabled`, `src/app/page.tsx:46`); §9's Out of scope names "a message showing the deleted count"
-(`spec/contracts/07-clear-completed.md:52`), a message after the clear, not the label before it
+**Status: Done** — ca2a58d (#278), 7 AC-32.n criteria green (unit 269 → 273: AC-32.3, 32.7 pinned green first, the rest red proven by verify-red.sh; e2e 57 → 60), mutation 92.74 (clear-completed-label.ts 100); unattended and no-rework 1/1 (D-29), two runner runs
 
 - **Acceptance:** while n > 0 todos are completed the button reads `Clear completed (n)`, and `Clear completed`
   (disabled) at 0; §9's clear itself is unchanged; the `docs(spec)` commit states that the label count is not §9's
