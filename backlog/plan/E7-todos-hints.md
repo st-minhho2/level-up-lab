@@ -95,6 +95,8 @@ _F36 · section 38_
   - Mounts in `src/components/todo-search-form.tsx`, with the count passed from `src/app/page.tsx` (the batch's one
     `page.tsx` card); contract `spec/contracts/36-search-count.md` (section 38).
   - Batch 2.
+- **Spec:** §38 — unchanged (contract `spec/contracts/36-search-count.md`, written before the label under D-37; lifts "counts of matches" from §16's Out of scope, adds the optional `count` to §16's contracts; states REQ-25.6, REQ-27.6 and §21's lines do not apply)
+- **Test:** `src/components/todo-search-form.test.tsx::AC-38.1: renders exactly 1 paragraph "3 matches" as the last child of the search form, after the link "Clear search", with no id, role, aria-live, aria-atomic or aria-label, for filter all, query milk and count 3` — red because: `TodoSearchForm` ignores `count`, so the paragraph is absent
 - **Tier:** full · **Depends on:** ~~D-37~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B7.4/`
 
@@ -115,6 +117,8 @@ _F37 · section 39_
     a threshold" stay. REQ-29.7 is stated to limit only the Escape change. All in the card's `docs(spec)` commit (D-37).
   - Mounts in `src/components/todo-form.tsx`; contract `spec/contracts/37-title-counter-warning.md` (section 39).
   - Batch 2.
+- **Spec:** §39 — unchanged (contract `spec/contracts/37-title-counter-warning.md`, written before the label under D-37; lifts only "a warning colour, a threshold" from §18's Out of scope; states REQ-29.7 and §29's "markup unchanged" do not apply)
+- **Test:** `src/lib/title-count.test.ts::AC-39.1: isTitleNearLimit is false for 0, 179 and 175 counted characters and true for 180, 200, 201, a padded 180 and 90 emoji, and TITLE_WARNING_THRESHOLD is 180` — red because: `isTitleNearLimit` is the skeleton's stub that throws `NotImplementedError`
 - **Tier:** full · **Depends on:** ~~D-37~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B7.5/`
 
@@ -134,5 +138,7 @@ date". REQ-15.6 (line 23) and the §15 contract (line 76) list the edit form's c
     commit (D-37).
   - Mounts in `src/components/todo-due-date.tsx`; contract `spec/contracts/38-due-date-clear.md` (section 40).
   - Batch 2.
-- **Tier:** full · **Depends on:** ~~D-37~~, B7.3 · **Owner:** Lead · **Size:** S [estimate]
+- **Spec:** §40 — unchanged (contract `spec/contracts/38-due-date-clear.md`, written before the label under D-37 and D-38; edits REQ-15.6 and §15's contract, and §37's REQ-37.1, AC-37.1 and REQ-37.3; states REQ-28.7, §28's a "Cancel" button and the "a new control" lines of §17 and §31 do not apply)
+- **Test:** `src/components/todo-due-date-clear.test.tsx::AC-40.2: after typing 2026-12-01, clicking "Clear due date" calls setTodoDueDateAction once with (todo-9, "") for dueDate 2026-11-05 and for no dueDate, then shows 0 "Due date" fields, 0 alerts and 1 button "Edit due date"` — red because: `TodoDueDate` has no button named "Clear due date"
+- **Tier:** full · **Depends on:** ~~D-37~~, ~~D-38~~, B7.3 · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B7.6/`
