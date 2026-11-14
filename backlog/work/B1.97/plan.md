@@ -66,4 +66,4 @@ All with `/bin/bash` (3.2).
 Not in scope: B1.95's files (`scripts/agent/run*.sh`, `.devcontainer/runner/`), `.claude/`, a CI job for the smoke
 (B1.94), Loop 9's post-merge guards (B1.92), re-aligning or un-aligning existing rows.
 
-Plan review: approved, round 1 (0b447c7; its 3 notes folded in) · Plan approved by: · Rounds: 1
+Plan review: approved, round 1 (0b447c7; its 3 notes folded in) · Plan approved by: lead, 2026-11-14 · Rounds: 1
