@@ -60,7 +60,8 @@ export function titleCounterText(value: string): string; // `${titleCharacterCou
 ## Out of scope
 
 Counting user-perceived characters (grapheme clusters), Unicode normalization or case folding, a "characters left"
-figure or a countdown, a warning colour, a threshold (for example "80 % used") or any text announced at a threshold,
+figure or a countdown, any text announced at a threshold (§39 lifts only "a warning colour, a threshold": its
+warning is a separate element, not announced, and the counter's text and `aria-describedby` stay as above),
 a live region, truncating or rejecting text beyond the limit (the box's `maxlength` and the §5 error do that), a
 counter on the edit box (§6), the search box (§16) or the due-date input (§15), a value that reaches the box without
 an input event and without a submit (typed before the page is interactive, restored by the browser, set by an

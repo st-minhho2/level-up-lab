@@ -12,7 +12,7 @@ Files:
   - unattended and no-rework 1/1 (D-29), two runner runs (below).
 - `backlog/README.md`:
   - Remaining row 123 removed; `~~B7.2~~` in node 123. No other Remaining row was blocked by B7.2.
-  - Totals updated: E7 1/0/5, total 85/1/41 of 127.
+  - Totals updated: E7 3/0/3, total 87/1/41 of 129 (after the filing #304 and the closings #305, #307).
 - `spec/technical-requirements.md`: §36 index row ✗ → ✅.
 - `docs/metrics.md`: B7.2 Green column from the feat commit c6a9e99 to the merged sha be888ff, as the E5 and E6
   closings did (the feature PR's review finding 1 said the closing PR would do this).
@@ -34,6 +34,12 @@ Diff review: 1 pass (`work/B7.2/review.md`), verdict ready for PR. Its one findi
 the red commit and a mutation score not reproduced) was fixed in c153cdb. Riskiest unfalsified, carried from the
 feature PR: the e2e revert probe for `src/app/page.tsx` was traced, not run; AC-36.5's `/?filter=completed` and
 `/?q=zzz` legs are the guard.
+
+`origin/main` (#303, #304, #305, #307) was merged in before the push:
+
+- README: main's copy was kept (#304 re-padded the Remaining table) and this card's lines were applied to it again.
+- `docs/metrics.md` and `spec/technical-requirements.md`: the union merge kept the B7.1–B7.3 rows and the §35–§37
+  rows twice. Main's copy of each file was kept and this card's one line applied again (B7.2 Green be888ff, §36 ✅).
 
 `check-backlog.sh`, `check-spec-sections.sh`, `check-features-map.sh`, `check-ac-coverage.sh` (`§36 criteria=7
 covered=7`) OK.

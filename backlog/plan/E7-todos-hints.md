@@ -23,9 +23,7 @@ No card changes `prisma/`, a dependency or the environment, so every plan is med
 ### B7.1 · Deleting a todo asks for confirmation first
 
 _F33 · section 35_
-**Status: Open** — `spec/contracts/17-delete.md:21` (REQ-19.5) says a delete happens "on a single activation of the
-button: there is no confirmation step". Its Out of scope (line 71) lists "A confirmation dialog or prompt".
-`src/components/delete-todo-button.test.tsx:58,70-71` expects 0 `window.confirm` calls.
+**Status: Done** — 76bdb83 (#302), 5 AC-35.n criteria green (unit 280 → 283: AC-35.1–35.3, red proven by verify-red.sh; e2e 64 → 66, AC-35.4–35.5), mutation 92.74 (lib, actions unchanged); unattended and no-rework 1/1 (D-29), two runner runs: the second merged `origin/main` after GitHub showed the PR conflicting once B7.3 merged (B1.101)
 
 - **Acceptance:**
   - Activating "Delete todo" asks `window.confirm` first. Confirming deletes as today; cancelling calls no Server Action.
@@ -62,9 +60,7 @@ _F34 · section 36_
 ### B7.3 · The due-date editor has a "Today" button
 
 _F35 · section 37_
-**Status: Open** — `spec/contracts/13-due-date.md:23,76` (REQ-15.6, the §15 contract) list the edit form's children
-as one date field and one "Update due date" button. `26-escape-due-date.md:23` (REQ-28.7) says §15's markup does not
-change. `29-due-today.md:68` and `15-overdue.md:69` (§31's and §17's Out of scope) list "a new control".
+**Status: Done** — 14defd1 (#301), 6 AC-37.n criteria green (unit 280 → 291: AC-37.1–37.5 as 11 cases, red proven by verify-red.sh; e2e 64 → 65, AC-37.6), mutation 93.22 (lib, actions unchanged); unattended and no-rework 1/1 (D-29), one runner run
 
 - **Acceptance:**
   - In edit mode a `type="button"` "Today" fills the date field with `todayOf(new Date())` read on click. It does not
@@ -97,6 +93,8 @@ _F36 · section 38_
   - Mounts in `src/components/todo-search-form.tsx`, with the count passed from `src/app/page.tsx` (the batch's one
     `page.tsx` card); contract `spec/contracts/36-search-count.md` (section 38).
   - Batch 2.
+- **Spec:** §38 — unchanged (contract `spec/contracts/36-search-count.md`, written before the label under D-37; lifts "counts of matches" from §16's Out of scope, adds the optional `count` to §16's contracts; states REQ-25.6, REQ-27.6 and §21's lines do not apply)
+- **Test:** `src/components/todo-search-form.test.tsx::AC-38.1: renders exactly 1 paragraph "3 matches" as the last child of the search form, after the link "Clear search", with no id, role, aria-live, aria-atomic or aria-label, for filter all, query milk and count 3` — red because: `TodoSearchForm` ignores `count`, so the paragraph is absent
 - **Tier:** full · **Depends on:** ~~D-37~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B7.4/`
 
@@ -117,6 +115,8 @@ _F37 · section 39_
     a threshold" stay. REQ-29.7 is stated to limit only the Escape change. All in the card's `docs(spec)` commit (D-37).
   - Mounts in `src/components/todo-form.tsx`; contract `spec/contracts/37-title-counter-warning.md` (section 39).
   - Batch 2.
+- **Spec:** §39 — unchanged (contract `spec/contracts/37-title-counter-warning.md`, written before the label under D-37; lifts only "a warning colour, a threshold" from §18's Out of scope; states REQ-29.7 and §29's "markup unchanged" do not apply)
+- **Test:** `src/lib/title-count.test.ts::AC-39.1: isTitleNearLimit is false for 0, 179 and 175 counted characters and true for 180, 200, 201, a padded 180 and 90 emoji, and TITLE_WARNING_THRESHOLD is 180` — red because: `isTitleNearLimit` is the skeleton's stub that throws `NotImplementedError`
 - **Tier:** full · **Depends on:** ~~D-37~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B7.5/`
 
@@ -136,5 +136,7 @@ date". REQ-15.6 (line 23) and the §15 contract (line 76) list the edit form's c
     commit (D-37).
   - Mounts in `src/components/todo-due-date.tsx`; contract `spec/contracts/38-due-date-clear.md` (section 40).
   - Batch 2.
-- **Tier:** full · **Depends on:** ~~D-37~~, B7.3 · **Owner:** Lead · **Size:** S [estimate]
+- **Spec:** §40 — unchanged (contract `spec/contracts/38-due-date-clear.md`, written before the label under D-37 and D-38; edits REQ-15.6 and §15's contract, and §37's REQ-37.1, AC-37.1 and REQ-37.3; states REQ-28.7, §28's a "Cancel" button and the "a new control" lines of §17 and §31 do not apply)
+- **Test:** `src/components/todo-due-date-clear.test.tsx::AC-40.2: after typing 2026-12-01, clicking "Clear due date" calls setTodoDueDateAction once with (todo-9, "") for dueDate 2026-11-05 and for no dueDate, then shows 0 "Due date" fields, 0 alerts and 1 button "Edit due date"` — red because: `TodoDueDate` has no button named "Clear due date"
+- **Tier:** full · **Depends on:** ~~D-37~~, ~~D-38~~, B7.3 · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B7.6/`
