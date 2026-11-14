@@ -1378,13 +1378,7 @@ unattended; read the same way, E6 batch 2 is 1/3, which misses D-29's > 50 %
 ### B1.99 · No role may write the section index, so a union-merge repair needs the lead
 
 _tooling · no §_
-**Status: Open** — `spec-analyst`'s path guard allows `spec/contracts/*` and `backlog/*` only
-(`.claude/agents/spec-analyst.md:11`), although its own procedure (line 28) says to register a new section in
-`spec/technical-requirements.md` with status ✗. `code-writer` holds `spec/features-map.md` only; `dev-lead` holds
-`backlog/*`. On 2026-11-14 B6.6's Loop 9 merge left the index with every row twice (B1.97). `spec-analyst` was
-dispatched to repair it and refused by the guard, and the run stopped. The lead's session committed the repair
-(1bb65dd, D-36 option A), which cost the run its unattended verdict. D-36 named option B, "widen `spec-analyst`'s
-guard", as the fix for the next batch
+**Status: Done** — b547a60 (#295); hook-smoke 726 -> 749 OK (red d6b8f1e 5 FAIL; review probes 771ca24, 99d685e each red alone), vitest 280, e2e 64, mutation 92.74 (no src/); plan review 2 rounds, diff review 3 passes
 
 - **Spec:** none — tooling (`.claude/agents/spec-analyst.md`, `dev-lead.md` Loop 9, the hook-smoke probe); no `src/`
   change, no section
