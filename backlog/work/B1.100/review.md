@@ -170,3 +170,87 @@ Riskiest unfalsified: as in round 1, that code-writer's run and the green gate s
 agent run, so the gate says "(reused)". Lefthook's pre-commit only checks (`prettier --check`, no `stage_fixed`), so it
 does not change the tree. The PostToolUse `eslint --fix` after a late edit, or an untracked scratch file under `src/`,
 would change it. I could not run an agent, and the batch-2 saving rests on this.
+
+## Plan review (round 3)
+
+Plan at e1fe7aa (`docs(backlog): B1.100 plan round 3 -- scripts/CLAUDE.md rows`), diffed against c008cf1. The lead
+allowed a third round past the two-round limit. I re-read the card, `stryker.config.mjs` (`thresholds.break: 70`,
+`checkers: ['typescript']`), `vitest.stryker.config.mts`, and the round-3 prototype (`mutation-gate.sh`,
+`mutation-gate-smoke.sh`, `skeleton/`). I read Stryker 10.1.1's `determineExitCode`
+(`core/dist/src/reporters/mutation-test-report-helper.js:133-150`): the check is `mutationScore < breaking`, so a
+`NaN` score logs `Final mutation score of NaN is greater than or equal to break threshold 70` and exits 0.
+
+Probes (copies and a `git clone --shared` under `$TMPDIR/b1100r3`, `node_modules` linked; the worktree was only read,
+plus `hook-smoke.sh` and `pnpm test`):
+
+- Prototype smoke under `/bin/bash` 3.2.57: green `[mutation-gate-smoke] 15 ok, 0 FAIL`; skeleton
+  `[mutation-gate-smoke] 1 ok, 14 FAIL` (only MG11 ok). Both match the plan's Verification.
+- Baselines at e1fe7aa (only `plan.md` differs from 17ccd2b): `hook-smoke: 749 probes OK`, `Tests  298 passed (298)`.
+  Both match the plan.
+- Real Stryker on the clone (load 2.4). I added an untracked `src/lib/zz-nan.ts`
+  (`export type ZzMode = 'on' | 'off'; export function zzDefault(): ZzMode { return 'on'; }`) and a test,
+  `zz-nan.test.ts`, that asserts `zzDefault()` is `'on'`. Prototype `--base HEAD`: `Instrumented 1 source file(s) with
+2 mutant(s)`, `Initial test run succeeded. Ran 1 tests`, table row `zz-nan.ts | n/a | n/a | 0 | 0 | 0 | 0 | 2`
+  (both mutants are compile errors), `Final mutation score of NaN is greater than or equal to break threshold 70`.
+  The gate's last line was `mutation: ? % on src/lib/zz-nan.ts (ran), src 0319527`, exit 1, 7 s. The same tree under
+  today's rule (`pnpm exec stryker run`): 670 mutants, `All files | 92.84`, `zz-nan.ts | n/a`, exit 0, 187 s
+  (reason 1).
+- `scripts/next-task.sh --check B1.100` → `[next-task] B1.100: no overlap with any Doing or Review card` (exit 0).
+  `scripts/agent/tier.sh` → `high`. `scripts/ci/plan-files.sh --file` → the 9 Files rows, `scripts/CLAUDE.md`
+  included. The B1.101 plan (`chore/B1.101-sync-ready-pr`, Files at lines 55-60) does not list `scripts/CLAUDE.md`.
+
+| Check                                                                             | Result                                                                                                                                                                                                              |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: no section (tooling). 9 Files rows. The new row, `scripts/CLAUDE.md`, is the guide for the two new scripts. B1.98, which held it, is merged (6da952c, merged here in 17ccd2b). B1.101's plan does not list it |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass (n/a): no `src/`, `prisma/` or `e2e/` change. The interface (`[--base <ref>] [--force]`, exit 0/1/2, one stamp file) is pasted                                                                                 |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass, same note as rounds 1 and 2: there is no `advice.md` (tier quick)                                                                                                                                             |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: 5 acceptance bullets. Acceptance 2 is met by "on the changed-file subset", except for a subset with 0 valid mutants (reason 1)                                                                                |
+| verification lists exact commands with expected numbers                           | pass, with a gap: 15 ok / 1 ok + 14 FAIL / 749 / 298 are exact, and I reproduced all four. No MG probe has a shim that prints `Final mutation score of NaN` (reason 1)                                              |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: skeleton `chore(scripts)`, red `test(scripts) … (red)`, green `chore(scripts)`, review `docs(backlog)`. A tooling card has no map                                                                             |
+| the section has a `Lead approves spec` box, ticked only by a human                | n/a: no section. `Plan approved by:` is empty and stays empty here. Tier `high` (`.claude/`), so the lead's `approve` is required. The D-19 label is planned                                                        |
+| no settled D-n contradicted                                                       | pass: D-13's before/after report is still the named exception. Spec §2's gate is still met by CI's unchanged `mutation` job                                                                                         |
+| `scripts/next-task.sh --check B1.100` says no overlap                             | pass: `[next-task] B1.100: no overlap with any Doing or Review card`                                                                                                                                                |
+
+Round 2 reason 1 is addressed by option (a). The fallback now fires only on `with 0 mutant(s)` (MG14). A subset that
+has mutants but no test that reaches it gives `? % on <list>, no test reaches it`, exit 1, with no fallback (MG15,
+measured live in the plan). The `scripts/CLAUDE.md` deferral from round 1 is resolved.
+
+Verdict: changes requested. This is round 3, so the plan is **waiting on human**: the lead decides whether a fourth
+round runs.
+
+1. **A subset whose mutants are all compile errors fails the gate, and nothing clears it. Today's whole-layer run
+   passes on the same tree.** Round 3 added `exit = … no score line (or NaN) → "?" and exit 1`. That was a reply to
+   round 2's non-blocking note, which asked only what the evidence line would read. Stryker scores a file with 0
+   valid mutants as `NaN` and exits 0 (the `determineExitCode` check above). The prototype's regex does not take
+   `NaN` as a score. The log has neither `with 0 mutant(s)` nor `No tests were executed`. So the gate prints
+   `? %`, exits 1, and records exit 1 for reuse; `--force` fails the same way. No test the test-writer adds can kill a
+   mutant that never compiles. In a runner the green gate is then red with no way out, which is the same dead end as
+   round 1's reason 1. It is not a rare input. In the plan's own whole-layer run, 249 of the 668 mutants are compile
+   errors: `health.ts` has 3 of its 4, `complete-all.ts` 7 of 9. A new helper that returns a string-literal union (the
+   shape `ts-style.md` asks for) has only compile-error mutants (measured above). A subset that mixes such a file with
+   a type-only file also lands here, because its instrumented count is not 0. Fix: treat a `NaN` score (0 valid
+   mutants) like 0 instrumented mutants. One option is the whole-layer fallback with a line such as `…, no valid
+mutant in <list>`. Another is a passing line such as `mutation: n/a on <list>, no valid mutant (ran)`, exit 0.
+   Either way, say which in the rule block and add an MG probe whose shim prints `with 2 mutant(s)` and `Final
+mutation score of NaN is greater than or equal to break threshold 70`, exit 0, with the expected line, exit code
+   and Stryker call count. The red/green counts in Verification move by one.
+
+Not blocking, for the lead:
+
+- **The plan is 122 lines** (round 2: 114). `planning.md` asks for about 40. It is now longer than every recent
+  tooling plan (B1.95 97, B1.96 100, B1.99 85).
+- **B1.101's deferred `scripts/CLAUDE.md` edit now points at this card.** B1.101's plan (lines 39-42 on its branch)
+  leaves the `--sync` mention in the `agent/run.sh` row to "the next card that plans `scripts/CLAUDE.md`". B1.100 is
+  that card, and it plans only its two new rows. That is correct, because `--sync` is not on main. But B1.101's
+  hand-off now names no card.
+- **A change to a test file that has no same-named source runs the whole layer.** `src/lib/todo-due-date-store.test.ts`
+  has no `todo-due-date-store.ts`. The prototype maps it to a path that is not in the tree and drops it (lines 58-60),
+  so `files` is empty and Stryker runs on all 668 mutants. This is today's cost, not a regression, but the plan's
+  rule names only `prisma.ts` and deleted files as the inputs that empty the list.
+- Round 2's note on the stamp still holds. `reports/mutation-gate.txt` is git-ignored and any role can write it, and
+  the gate repeats whatever it holds. CI's `mutation` job remains the check before merge.
+
+Riskiest unfalsified: as in rounds 1 and 2, that code-writer's run and the green gate see the same `src/` tree in a
+real agent run, so the gate says "(reused)". An `eslint --fix` from the PostToolUse hook after a late edit, or an
+untracked scratch file under `src/`, would change the key. I could not run an agent, and the batch-2 saving rests on
+this.
