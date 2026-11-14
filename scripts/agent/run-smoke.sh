@@ -699,6 +699,16 @@ new="$(g rev-parse HEAD)"
   && [[ "$(git -C "$ORIGIN" rev-parse "refs/heads/$B")" == "$new" ]] \
   || { say "TERM in push: rc=$RC nap=$([[ -e "$nap" ]] && echo y) HEAD=$(g rev-parse --short HEAD) origin=$(git -C "$ORIGIN" rev-parse --short "refs/heads/$B")"; r=1; }
 rm -f "$ORIGIN/hooks/post-receive"
+# a push origin rejects (its pre-receive exits 1): the merge goes, the branch is back at the tip, nothing is posted, and
+# the next --sync syncs instead of refusing an unpushed tip (review pass 1 #1)
+printf '#!/bin/bash\n[[ -z "${SMOKE_REJECT:-}" ]]\n' > "$ORIGIN/hooks/pre-receive"; chmod +x "$ORIGIN/hooks/pre-receive"
+reset; spr; sync_at "$k1" "$m1"; SMOKE_REJECT=1 run --sync 7
+refuse push "$k1" 'pr-step.sh push failed'
+run --sync 7
+[[ $RC -eq 0 && "$(g rev-parse HEAD^1) $(g rev-parse HEAD^2)" == "$k1 $m1" ]] \
+  && [[ "$(git -C "$ORIGIN" rev-parse "refs/heads/$B")" == "$(g rev-parse HEAD)" ]] \
+  || { say "after the rejected push: rc=$RC $(tr '\n' '|' < "$TMP/out")"; r=1; }
+rm -f "$ORIGIN/hooks/pre-receive"
 reset; spr; sync_at "$k1" "$m1"; issue 8 B1.45; run --sync 8
 [[ $RC -eq 1 ]] && quiet && has 'no worktree' "$TMP/out" && same "$k1" || { say "no worktree: rc=$RC $(tr '\n' '|' < "$TMP/out")"; r=1; }
 reset; spr; sync_at "$k1" "$m1"; sleep 30 & live=$!; mkdir -p "$RUNS/7/lock"; echo "$live" > "$RUNS/7/lock/pid"; run --sync 7
