@@ -8,8 +8,9 @@ from its frontmatter (B1.78), so the same line covers `claude -p --agent dev-lea
 The repair, as 1bb65dd did it by hand: write `git show origin/main:spec/technical-requirements.md` plus the card's own
 row (the row its branch adds or changes in `git diff origin/main...HEAD^1 -- spec/technical-requirements.md`; none for
 a tooling card), through Write (B1.79). Then D-36's own check, made layout-proof (review r1 [1]): `dev-lead` runs
-`diff <(git show origin/main:spec/technical-requirements.md | tr -d ' -') <(tr -d ' -' < spec/technical-requirements.md)`
-(spaces and dashes dropped, so a Prettier re-pad of the table, or none after B1.97's ignore, reads the same): it must
+`diff <(git show origin/main:spec/technical-requirements.md | tr -s ' -') <(tr -s ' -' < spec/technical-requirements.md)`
+(runs of spaces and dashes squeezed, not dropped (review r2 [1]: a dash in a link target stays visible), so a Prettier
+re-pad of the table, or none after B1.97's ignore, reads the same): it must
 print only the card's own row (one `>` line, or a `<`/`>` pair for a row the branch changed; nothing for a tooling
 card; measured: ca2a58d against 1bb65dd prints `39a40` and the one §34 `>` line, 1bb65dd^ against it prints 34
 duplicate rows). Anything more → no commit, "Waiting on human", stop. Clean → commit
