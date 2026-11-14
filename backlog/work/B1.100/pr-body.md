@@ -4,10 +4,16 @@ B1.100 — Each parallel run mutation-tests all of src/lib up to three times, wh
 spec section)
 
 - spec: none — tooling (`scripts/mutation-gate.sh`, its smoke, the role prompts that run mutation); no `src/` change
-- test: `scripts/mutation-gate-smoke.sh` MG1–MG16 (new). Red: pending. Green: pending
-- acceptance: pending — local mutation only on a `src/lib`/`src/actions` change, once per tree, the reviewer reuses
-  it; `--mutate` limited to the changed files, the 70 % bar read on that subset; the PR evidence line; batch 2's
-  per-run duration and load (closing lane); label `config-change-approved`
+- test: `scripts/mutation-gate-smoke.sh` MG1–MG17 (new; MG17 added in review pass 1). Red 4df9203 on the skeleton
+  5168a25 (today's rule): "1 ok, 15 FAIL" (no `(red)` marker: smoke only, which `verify-red.sh --auto` cannot judge,
+  as B1.83, B1.95, B1.98). Green 14b690b: "16 ok, 0 FAIL". Review pass 1: bf3ea18 "16 ok, 1 FAIL" (MG17), b9bed5c
+  "17 ok, 0 FAIL" (/bin/bash 3.2.57; the smoke is in no CI job). hook-smoke 749 OK; vitest 298; e2e 70 (reviewer);
+  mutation 92.84 on the whole layer (reviewer); the gate on this branch: "mutation: CI only, no src/lib or
+  src/actions change"
+- acceptance: 4 of 5 here, the 5th in the closing lane — local mutation only on a `src/lib`/`src/actions` `*.ts`
+  change, at most once per tree, the reviewer reuses it (live: `--base be888ff^` 13 s, then "(reused)" 1 s);
+  `--mutate` limited to the changed files and the 70 % bar read on that subset; the PR evidence line (tdd-loop,
+  work-next); label `config-change-approved`. Pending: E7 batch 2's per-run duration and load (closing `-partial`)
 - risk tier: high (`scripts/agent/tier.sh`: `.claude/`); label `config-change-approved` per the card (D-19)
 
 ## Plan
@@ -102,13 +108,28 @@ None: tooling card, no `spec/features-map.md` row.
 
 ## Review
 
-Pending: `/review-loop` after the green commit.
+`/review-loop`: 2 passes of 3, ready for PR (`backlog/work/B1.100/review.md` "Diff review (round 1)" 1d929d1, "(round
+2)" 4c8ac53). Plan review: 4 rounds (r1 3 reasons, r2 1, r3 1, r4 approved with 6 costs; the lead allowed r3 and r4).
+
+| Pass | #   | Finding                                                                         | Kind          | Disposition | Fix                                                                   |
+| ---- | --- | ------------------------------------------------------------------------------- | ------------- | ----------- | --------------------------------------------------------------------- |
+| 1    | 1   | the shim never prints Stryker's below-bar line ("score 50.00 under breaking …") | coverage      | fix now     | bf3ea18: MG9 prints it; the narrowed-regex mutant now dies            |
+| 1    | 2   | no probe holds the list, vitest config, `package.json`, lockfile in the key     | coverage      | fix now     | bf3ea18: MG11 changes each keyed file and the merge-base              |
+| 1    | 3   | `--base` without a ref exits 1, the plan says 2                                 | plan-mismatch | fix now     | bf3ea18 MG17 (red), b9bed5c usage → exit 2                            |
+| 1    | 4   | red commit has no `(red)` marker                                                | deviation     | no change   | with it and no `*.test.ts`, `verify-red.sh --auto` fails; B1.83/95/98 |
+
+Pass 2: 0 findings; 18 sed mutants of the script, 16 killed, 1 no-op, 1 survivor with the same exit code (message
+only). Riskiest unfalsified: no probe runs real Stryker, so a Stryker upgrade that rewords "with 0 mutant(s)", "No
+tests were executed" or the final-score lines makes the gate fail closed ("? %", exit 1) with no probe saying why.
 
 ## Evidence
 
-- AC met: pending
+mutation: CI only, no src/lib or src/actions change
+
+- AC met: 4/5 (batch 2's duration and load: closing lane)
 - tier: high
-- plan deviations: none
+- plan deviations: none (red subject without `(red)`; smoke MG1–MG17, one probe more than the plan's MG1–MG16, from
+  review pass 1; PR title shortened to the wrapper's 80 characters)
 - trace: n/a
 
 ## Checklist
