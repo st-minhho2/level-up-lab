@@ -1,6 +1,5 @@
 // §18 the new-todo title counter (B3.2), §39 its near-limit warning (B7.5): pure, no Prisma, no server-only, so the
 // client form may import it.
-import { NotImplementedError } from '@/lib/errors';
 import { TITLE_MAX_LENGTH } from '@/lib/todo-schema';
 
 // §39: the warning shows from this many counted characters, below TITLE_MAX_LENGTH (§5).
@@ -16,6 +15,5 @@ export function titleCounterText(value: string): string {
 }
 
 export function isTitleNearLimit(value: string): boolean {
-  void value;
-  throw new NotImplementedError('isTitleNearLimit');
+  return titleCharacterCount(value) >= TITLE_WARNING_THRESHOLD;
 }
