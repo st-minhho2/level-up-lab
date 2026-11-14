@@ -39,6 +39,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §32 | [contracts/30-clear-completed-count.md](contracts/30-clear-completed-count.md) | Todos: the clear-completed button says how many it will clear          | ✅     |
 | §33 | [contracts/31-overdue-announce.md](contracts/31-overdue-announce.md)           | Todos: announce the overdue count to assistive technology              | ✅     |
 | §34 | [contracts/32-remaining-announce.md](contracts/32-remaining-announce.md)       | Todos: the remaining count is announced to assistive technology        | ✅     |
+| §35 | [contracts/33-delete-confirm.md](contracts/33-delete-confirm.md)               | Todos: deleting a todo asks for confirmation first                     | ✗      |
 
 Reading order: §1 → §2 → the section your backlog card names → [features-map.md](features-map.md).
 
