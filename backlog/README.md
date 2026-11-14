@@ -12,8 +12,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3       |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4       |
 | E5 Todos keys    | [plan/E5-todos-keys.md](plan/E5-todos-keys.md)       | 6      | 0       | 0      | 6       |
-| E6 Todos cues    | [plan/E6-todos-cues.md](plan/E6-todos-cues.md)       | 3      | 0       | 3      | 6       |
-| **Total**        |                                                      | **79** | **0**   | **40** | **119** |
+| E6 Todos cues    | [plan/E6-todos-cues.md](plan/E6-todos-cues.md)       | 4      | 0       | 2      | 6       |
+| **Total**        |                                                      | **80** | **0**   | **39** | **119** |
 
 ## Execution order
 
@@ -153,7 +153,7 @@ flowchart TD
   S111["111 · Escape clears the new-todo title<br/>~~B6.1~~"]
   S112["112 · filter links show their counts<br/>~~B6.2~~"]
   S113["113 · an open todo due today says so<br/>~~B6.3~~"]
-  S114["114 · clear-completed says how many<br/>B6.4"]
+  S114["114 · clear-completed says how many<br/>~~B6.4~~"]
   S115["115 · overdue count announced<br/>B6.5"]
   S116["116 · remaining count announced<br/>B6.6"]
   S117["117 · run.sh refuses a clone behind origin/main<br/>B1.95"]
@@ -205,7 +205,6 @@ at most 3 cards Doing (B1.18).
 | 108  | B1.92 | A union merge's duplicate row reaches CI before any guard reads it                                        | —      | Open   | ~~B1.89~~                       | Lead  | S [estimate] |
 | 109  | B1.93 | Eight smokes remove the caller's directory when `mktemp -d` fails                                         | —      | Open   | —                               | Lead  | S [estimate] |
 | 110  | B1.94 | CI never runs table-merge-smoke, whose verdict follows the host's own git attributes                      | —      | Open   | ~~B1.89~~                       | Lead  | S [estimate] |
-| 114  | B6.4  | The clear-completed button says how many it will clear                                                    | —      | Open   | ~~D-33~~                        | Lead  | S [estimate] |
 | 115  | B6.5  | The overdue count is announced to assistive technology                                                    | —      | Open   | ~~D-33~~                        | Lead  | S [estimate] |
 | 116  | B6.6  | The remaining count is announced to assistive technology                                                  | —      | Open   | ~~D-33~~, ~~D-35~~, ~~D-36~~    | Lead  | S [estimate] |
 | 117  | B1.95 | run.sh runs its own scripts from a clone behind origin/main and never says so                             | —      | Open   | —                               | Lead  | S [estimate] |
