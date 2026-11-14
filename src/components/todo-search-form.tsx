@@ -1,7 +1,8 @@
 'use client';
 
 // §16 TodoSearchForm, extended by §21 (a "Clear search" link), §25 (the `/` key focuses the box) and §27 (Escape in
-// the box clears it): a native GET form; 'use client' only for the refs and keydown handlers of §25 and §27.
+// the box clears it) and §38 (the match count): a native GET form; 'use client' only for the refs and keydown handlers
+// of §25 and §27.
 import Link from 'next/link';
 import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { CLEAR_SEARCH_LABEL, clearSearchHref, isSearchInEffect } from '@/lib/clear-search';
@@ -14,6 +15,7 @@ import { SEARCH_QUERY_MAX_LENGTH } from '@/lib/todo-search';
 export function TodoSearchForm({
   filter,
   query,
+  count,
 }: {
   readonly filter: TodoFilter;
   readonly query: string;
@@ -92,6 +94,13 @@ export function TodoSearchForm({
         >
           {CLEAR_SEARCH_LABEL}
         </Link>
+      )}
+      {/* REQ-38.1, REQ-38.3, REQ-38.4: the form's last child, a plain paragraph (not announced), only while a search
+          is in effect and count is a whole number of at least 1. */}
+      {isSearchInEffect(query) && count !== undefined && Number.isInteger(count) && count >= 1 && (
+        <p className="self-center text-sm text-zinc-600 dark:text-zinc-400">
+          {count === 1 ? '1 match' : `${count} matches`}
+        </p>
       )}
     </form>
   );
