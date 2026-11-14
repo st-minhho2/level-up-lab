@@ -78,3 +78,84 @@ Verdict: changes requested
 Riskiest unfalsified: GitHub's "mergeable" once the branch contains `origin/main`. With the measured union merge in
 the branch, the squash diff is the card's own change, so GitHub should not see a conflict. That holds by
 construction, but nothing outside the next real batch can show it.
+
+## Plan review (round 2)
+
+Plan at b314f95. I ran prototype r2 (scratchpad `proto`) on copies under `$TMPDIR` with `/bin/bash` 3.2.
+
+| Check                                                                             | Result                                                                                                                                 |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass, n/a: no section. Same 5 files plus `backlog/work/B1.101/*`. The `run.sh` row now also names the `on_signal` reset.               |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass, n/a: bash only. The new interface is TERM/INT → rc 143 (or 130) with the branch reset; it is pasted in the R22 row.              |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: no advice, stated                                                                                                                |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: 4 acceptance items and 7 R21/R22 rows                                                                                            |
+| verification lists exact commands with expected numbers                           | pass: r1 #2 is resolved. `pnpm test` now reads "48 passed (48)", "298 passed (298)", and red, green and hook-smoke keep their numbers. |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass for tooling (unchanged from round 1)                                                                                              |
+| the section has a `Lead approves spec` box, ticked only by a human                | n/a: no section. `Plan approved by:` is empty and I did not touch it.                                                                  |
+| no settled D-n contradicted                                                       | pass (unchanged). `tier.sh` prints `high`.                                                                                             |
+| `scripts/next-task.sh --check B1.101` on the committed plan says no overlap       | pass: "[next-task] B1.101: no overlap with any Doing or Review card"                                                                   |
+
+What round 1's reasons became:
+
+- **#1 (guide row): resolved.** The plan now makes B1.101 its own carrier: the closing lane is `-partial`, pending (a)
+  the `--sync` mention in `scripts/CLAUDE.md` and (b) the time metric, "Done when both are in". The card stays in
+  README "Remaining", so the item is tracked.
+- **#2 (`pnpm test` number): resolved.**
+- **#3 (signal): only partly resolved.** See reason 1 below.
+- **Notes.** Both are taken up: the `eligible.sh` choice is stated, and the plan says which paths git-workflow.md
+  describes.
+
+What I ran:
+
+- **Green.** Prototype r2: "22 probes OK".
+- **Red.** Today's `run.sh` (`orig/run.sh`) under the r2 smoke: `FAIL R21`, `FAIL R22`, "2 of 22 probes FAILED". The
+  TERM case also fails there, on the usage line.
+- **Probe: TERM during the push.** On a copy (`$TMPDIR/b1101-r2push`) with two changes:
+  - the guard stubs no longer nap (`SMOKE_NAP` renamed in `run-smoke.sh:605`);
+  - `pr-step.sh push` naps 3 s after its `git push` returns.
+
+  The smoke's existing R22 TERM case then lands its TERM while `pr-step.sh push` is still running, after the remote
+  has taken the merge. Result: `PROBE HEAD=f7a918e ORIGIN=945a82a K1=f7a918e RC=143`, `FAIL R22`, "1 of 22 probes
+  FAILED".
+
+### Reasons (changes requested)
+
+1. **The r2 signal reset rolls back a push that has already landed.**
+
+   ```
+   [1] KIND: correctness
+       WHERE: prototype r2 scripts/agent/run.sh:355-370 (SYNC_PRE set before `git merge`, cleared only after
+              `pr-step.sh push` returns) and on_signal:269
+       DEFECT: SYNC_PRE stays set while `pr-step.sh push` runs, so a signal that bash handles after the push has
+               updated origin resets the worktree to <pre> below the pushed head.
+       TRIGGER: TERM to run.sh (`kill`, `docker compose stop`) or Ctrl-C while `pr-step.sh push` runs. Bash runs the
+                trap only when the foreground child returns, so a push that has reached the remote still completes,
+                and then the trap runs `reset --keep <pre>`.
+       WRONG BEHAVIOUR: origin/<branch> = the merge (945a82a) and the worktree's HEAD = <pre> (f7a918e), with no issue
+                comment. The next `--sync` fetches, finds HEAD ≠ origin/<branch> and refuses with "run
+                scripts/agent/run.sh <n>": the full run that r1 #3 set out to avoid, now with the PR's real head
+                ahead of the worktree. The missing comment also loses the data point that pending item (b) reads
+                ("from the issue comment").
+       CONFIDENCE: confirmed (probe above, bash 3.2)
+   ```
+
+   - Not wrong: the plan's R22 row only states "TERM while a guard runs", and that holds.
+   - Wrong: "resets to `<pre>` … so the next `--sync` starts from the PR's head" does not hold for the push step,
+     which is the slowest of the three steps after the merge (network).
+   - Fix (the plan picks one):
+     - (a) Before resetting, `on_signal` checks whether the push landed (for example, the remote-tracking ref that
+       `push -u` updates, or `ls-remote`, against the merge) and keeps the merge if it did. Add an R22 case: TERM
+       during the push, then HEAD = origin's branch.
+     - (b) Clear `SYNC_PRE` just before the push and state the push window as a cost: after a signal during the
+       push, the next `--sync` may say "nothing to do" or refuse.
+   - Either way, the 13-mutant list gains the case.
+
+### Notes (not blocking)
+
+- The plan is 98 lines. It is still within the B1.95 precedent, and the extra lines answer round 1.
+
+Verdict: changes requested
+
+Riskiest unfalsified: GitHub's "mergeable" once the branch contains `origin/main`. It holds by construction, but only
+the next real batch shows it. INT (Ctrl-C reaches `git push` itself) is also unprobed: its outcome depends on how far
+the push got.
