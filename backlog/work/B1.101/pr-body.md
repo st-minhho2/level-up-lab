@@ -4,8 +4,15 @@ B1.101 — GitHub reports parallel runner PRs as conflicting on the union tables
 spec section)
 
 - spec: none — tooling (`scripts/agent/run.sh`, its smoke, the compose header, git-workflow.md); no `src/` change
-- test: `scripts/agent/run-smoke.sh` R21, R22 (new). Red: pending. Green: pending.
-- acceptance: pending
+- test: `scripts/agent/run-smoke.sh` R21, R22 (new). Red e21f041 (no `(red)` marker: smoke only, which
+  `verify-red.sh` cannot judge, as B1.82, B1.88, B1.95): R1–R20 ok, R21, R22 FAIL, "2 of 22 probes FAILED". Green
+  803ef8c, review pass 1 case 1dae919: "22 probes OK" (bash 3.2.57; `run-smoke.sh` is in no CI job), again after
+  merging `origin/main` (3357890). hook-smoke 749; vitest 298; e2e 70; mutation 92.84 (no `src/` change; reviewer).
+  A real-lefthook merge with `RUNNER_CHILD=sync` carries exactly one `Agent-Run: sync`.
+- acceptance: 3 of 4 — a ready runner PR becomes up to date without a human-authored commit (`run.sh --sync`); the
+  measured GitHub behaviour replaces `[unverified]` in B1.89's and B1.96's status lines; label `config-change-approved`.
+  Pending: the time from a sibling's merge to the next PR being mergeable, which E7 batch 2 measures. B1.101 closes
+  Partial pending that and the `--sync` mention in `scripts/CLAUDE.md` (plan costs, plan review r1 #1)
 - risk tier: high (`scripts/agent/`, `.claude/`, `.devcontainer/`); label `config-change-approved` (D-19)
 
 ## Plan
@@ -49,22 +56,37 @@ None: tooling card, no `spec/features-map.md` row.
 
 ## Review
 
-pending
+Plan review: 2 rounds (r1: 3 reasons, r2: 1 reason, fixed in round 3, not re-reviewed; the lead approved round 3).
+`/review-loop`: 2 passes of 3, ready for PR (`backlog/work/B1.101/review.md` "Diff review (round 1)", "(round 2)").
+
+| Pass | #   | Finding (file:line)                                                        | Source   | Kind     | Disposition      | Justification                                                                                                                      |
+| ---- | --- | -------------------------------------------------------------------------- | -------- | -------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | 1   | `run.sh:374` no probe makes `pr-step.sh push` fail                         | reviewer | test gap | fix now          | 1dae919: R22 pre-receive rejects; mutant "no reset after a failed push" → "1 of 22 probes FAILED", code unchanged → "22 probes OK" |
+| 1    | 2   | a push that lands but exits non-zero is reset locally                      | dev-lead | edge     | no change needed | only a reply lost after the remote took it; the next `--sync` then refuses visibly; `origin/<branch>` does not move then either    |
+| 1    | 3   | "mergeable once CI on <sha> is green" overclaims (a sibling merging first) | dev-lead | wording  | no change needed | the comment's last line says to `--sync` again after the next merge; the ruleset decides mergeability on GitHub                    |
+| 1    | 4   | guards run from the card branch's own `scripts/ci`                         | dev-lead | design   | no change needed | the same copy CI runs on the PR; a full run on the host already runs the branch's own tests                                        |
+
+Mutants (prototypes and pass 1): 15 of 15 fail R21 or R22 only (no trailer, no guards, no reset after a guard, no merge
+abort, draft accepted, no level check, no HEAD = origin check, no dirty check, no lock, `GIT_DIR` kept, no identity, no
+behind check, no reset on TERM, reset after a landed push, no reset after a failed push). Not probed: `merge --abort`
+in `on_signal` (timing), `SYNC_PRE=""` after the push (covered by the HEAD = origin check). Riskiest unfalsified:
+whether GitHub reports a synced PR mergeable (by construction its merge base is main's tip; E7 batch 2 shows it), and a
+Ctrl-C inside `git push` mid-transfer.
 
 ## Evidence
 
-- AC met: pending
+- AC met: 3/4
 - tier: high
-- plan deviations: pending
+- plan deviations: none (red commit subject without `(red)`, see test line)
 - trace: n/a
 
 ## Checklist
 
-- [ ] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
-- [ ] Red commit precedes the change commit; no `feat(` commit touches `*.test.*` or `e2e/**`.
-- [ ] Every `AC-§.n` of the section is a test title; mutation on `src/lib` + `src/actions` ≥ 70 %.
-- [ ] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected config changed with label `config-change-approved`.
-- [ ] Migrations reviewed as SQL; `prisma/seed.ts` updated if a table changed.
-- [ ] `spec/features-map.md` row moved; `docs/metrics.md` per-card row filled; mistake-log updated if a known mistake repeated.
+- [x] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
+- [x] Red commit precedes the change commit; no `feat(` commit touches `*.test.*` or `e2e/**`.
+- [x] Every `AC-§.n` of the section is a test title; mutation on `src/lib` + `src/actions` ≥ 70 %. (n/a: no section; 92.84)
+- [x] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected config changed with label `config-change-approved`.
+- [x] Migrations reviewed as SQL; `prisma/seed.ts` updated if a table changed. (n/a)
+- [x] `spec/features-map.md` row moved (n/a); `docs/metrics.md` per-card row (n/a: tooling, as B1.95); mistake-log: no repeat.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
