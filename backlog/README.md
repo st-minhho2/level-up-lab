@@ -7,14 +7,14 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic             | File                                                 | Done   | Partial | Open   | Total   |
 | ---------------- | ---------------------------------------------------- | ------ | ------- | ------ | ------- |
-| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 61     | 1       | 37     | 99      |
+| E1 Todos         | [plan/E1-todos.md](plan/E1-todos.md)                 | 63     | 0       | 36     | 99      |
 | E2 Todos plus    | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)       | 5      | 0       | 0      | 5       |
 | E3 Todos polish  | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)   | 3      | 0       | 0      | 3       |
 | E4 Todos details | [plan/E4-todos-details.md](plan/E4-todos-details.md) | 3      | 0       | 1      | 4       |
 | E5 Todos keys    | [plan/E5-todos-keys.md](plan/E5-todos-keys.md)       | 6      | 0       | 0      | 6       |
 | E6 Todos cues    | [plan/E6-todos-cues.md](plan/E6-todos-cues.md)       | 6      | 0       | 0      | 6       |
-| E7 Todos hints   | [plan/E7-todos-hints.md](plan/E7-todos-hints.md)     | 1      | 0       | 5      | 6       |
-| **Total**        |                                                      | **85** | **1**   | **43** | **129** |
+| E7 Todos hints   | [plan/E7-todos-hints.md](plan/E7-todos-hints.md)     | 3      | 0       | 3      | 6       |
+| **Total**        |                                                      | **89** | **0**   | **40** | **129** |
 
 ## Execution order
 
@@ -157,16 +157,16 @@ flowchart TD
   S114["114 · clear-completed says how many<br/>~~B6.4~~"]
   S115["115 · overdue count announced<br/>~~B6.5~~"]
   S116["116 · remaining count announced<br/>~~B6.6~~"]
-  S117["117 · run.sh refuses a clone behind origin/main<br/>B1.95"]
+  S117["117 · run.sh refuses a clone behind origin/main<br/>~~B1.95~~"]
   S118["118 · section index merges by union, duplicate § named<br/>~~B1.96~~"]
   S105 --> S118
   S119["119 · shared tables keep their padding when a row is wider<br/>~~B1.97~~"]
   S118 --> S119
-  S120["120 · unattended.sh counts a stop, relaunch or human commit as attended<br/>B1.98"]
+  S120["120 · unattended.sh counts a stop, relaunch or human commit as attended<br/>~~B1.98~~"]
   S121["121 · spec-analyst repairs the section index after a union merge<br/>~~B1.99~~"]
   S118 --> S121
-  S122["122 · deleting a todo asks for confirmation<br/>B7.1"]
-  S123["123 · Mark all complete says how many<br/>B7.2"]
+  S122["122 · deleting a todo asks for confirmation<br/>~~B7.1~~"]
+  S123["123 · Mark all complete says how many<br/>~~B7.2~~"]
   S124["124 · the due-date editor has a Today button<br/>~~B7.3~~"]
   S125["125 · the search form says how many match<br/>B7.4"]
   S126["126 · the new-todo counter warns near the limit<br/>B7.5"]
@@ -182,52 +182,48 @@ flowchart TD
 Board state (To do · Doing · Review · Closing) is derived, not typed: `scripts/next-task.sh --list` (BOARD column),
 at most 3 cards Doing (B1.18).
 
-| Step | ID     | Title                                                                                                     | Spec § | Status  | Blocked by                      | Owner | Size         |
-| ---- | ------ | --------------------------------------------------------------------------------------------------------- | ------ | ------- | ------------------------------- | ----- | ------------ |
-| 41   | B1.30  | guard-bash reads shell words before matching a push                                                       | —      | Open    | —                               | Lead  | S [estimate] |
-| 45   | B1.34  | Package guide headings and the app page header cite the sections their modules name                       | —      | Open    | —                               | Lead  | S [estimate] |
-| 46   | B1.35  | A guard checks that the guide tables cite the sections their packages name                                | —      | Open    | —                               | Lead  | S [estimate] |
-| 47   | B1.36  | hook-smoke's review-gate probe judges "clean" from the gate's own base                                    | —      | Open    | —                               | Lead  | S [estimate] |
-| 48   | B1.37  | hook-smoke's check-plan-scope probes ignore an exported HEAD_SHA and BASE_SHA                             | —      | Open    | —                               | Lead  | S [estimate] |
-| 49   | B1.38  | pr-step accepts the ci type that commit-msg accepts                                                       | —      | Open    | —                               | Lead  | S [estimate] |
-| 50   | B1.39  | plan-deviations judges a merged PR's files by the guard's plan_lists rule                                 | —      | Open    | —                               | Lead  | S [estimate] |
-| 51   | B1.40  | next-task --check reads plan tokens by the plan_lists rule                                                | —      | Open    | —                               | Lead  | S [estimate] |
-| 52   | B1.41  | Guides state the plan-token rule and name hook-smoke's L1–L15                                             | —      | Open    | —                               | Lead  | S [estimate] |
-| 53   | B4.4   | Section 22 criteria measure the reload rule and the no-role rule                                          | —      | Open    | —                               | Lead  | S [estimate] |
-| 60   | B1.48  | CI runs the agent-ready eligibility probes                                                                | —      | Open    | ~~B1.43~~                       | Lead  | S [estimate] |
-| 62   | B1.50  | The client layer rule also stops a component reaching @prisma/client                                      | —      | Open    | ~~B1.46~~                       | Lead  | S [estimate] |
-| 63   | B1.51  | The daily feature map reaches the agent board and its PRs carry a tier                                    | —      | Open    | ~~B1.44~~                       | Lead  | S [estimate] |
-| 64   | B1.52  | dev-lead fills the PR Evidence section after CI is green                                                  | —      | Open    | ~~B1.45~~                       | Lead  | S [estimate] |
-| 65   | B1.53  | CI runs the feature-map probes                                                                            | —      | Open    | ~~B1.45~~                       | Lead  | S [estimate] |
-| 66   | B1.54  | The feature map reads the issue form's card field, warns when it truncates, and folds before it trims     | —      | Open    | ~~B1.45~~                       | Lead  | S [estimate] |
-| 68   | B1.56  | A high-tier gate stop resumes when the lead approves on the issue                                         | —      | Open    | ~~B1.44~~, ~~B1.55~~            | Lead  | S [estimate] |
-| 71   | B1.59  | A launchd job runs the runner's poll every 15 minutes, inside the sandbox                                 | —      | Open    | ~~B1.44~~, ~~B1.58~~, ~~B1.62~~ | Lead  | S [estimate] |
-| 72   | B1.60  | CI runs the runner and tier probes, under bash 5 as well                                                  | —      | Open    | ~~B1.44~~                       | Lead  | S [estimate] |
-| 73   | B1.61  | The runner's deny list spares commit messages, and TERM ends the tools a run started                      | —      | Open    | ~~B1.44~~                       | Lead  | S [estimate] |
-| 78   | B1.66  | A plan for how long the runner keeps its run logs                                                         | —      | Open    | —                               | Lead  | S [estimate] |
-| 79   | B1.67  | CI's token proof runs the eligibility check's timeline query, and the scripts guide states its rules      | —      | Open    | ~~B1.63~~                       | Lead  | S [estimate] |
-| 81   | B1.70  | The runner firewall reads GitHub's ranges with a token, so a restart never hits the anonymous rate limit  | —      | Open    | ~~B1.58~~                       | Lead  | S [estimate] |
-| 82   | B1.71  | worktree.sh stops when the Prisma client was not generated                                                | —      | Open    | ~~B1.62~~                       | Lead  | S [estimate] |
-| 83   | B1.72  | The scripts guide lists sandbox probes S1–S10                                                             | —      | Open    | ~~B1.62~~                       | Lead  | S [estimate] |
-| 84   | B1.73  | The runner's setup steps check out a branch that exists                                                   | —      | Open    | ~~B1.69~~                       | Lead  | S [estimate] |
-| 87   | B1.77  | guard-bash blocks commands that print a git or gh credential                                              | —      | Open    | —                               | Lead  | S [estimate] |
-| 96   | B1.80  | The components guide says the search form is a client component once section 25 lands                     | —      | Open    | ~~B5.3~~                        | Lead  | S [estimate] |
-| 97   | B1.81  | guard-bash's secret-read rule lets any command through once it names `.env.example`                       | —      | Open    | —                               | Lead  | S [estimate] |
-| 103  | B1.87  | Docs still describe unattended.sh and pr-step.sh as they were before B1.83                                | —      | Open    | —                               | Lead  | S [estimate] |
-| 106  | B1.90  | Nothing in CI keeps the `docs(map)` step with code-writer                                                 | —      | Open    | —                               | Lead  | S [estimate] |
-| 107  | B1.91  | The closing lane still flips the feature's map row, which the card's own `docs(map)` commit already moved | —      | Open    | —                               | Lead  | S [estimate] |
-| 108  | B1.92  | A union merge's duplicate row reaches CI before any guard reads it                                        | —      | Open    | ~~B1.89~~                       | Lead  | S [estimate] |
-| 109  | B1.93  | Eight smokes remove the caller's directory when `mktemp -d` fails                                         | —      | Open    | —                               | Lead  | S [estimate] |
-| 110  | B1.94  | CI never runs table-merge-smoke, whose verdict follows the host's own git attributes                      | —      | Open    | ~~B1.89~~                       | Lead  | S [estimate] |
-| 117  | B1.95  | run.sh runs its own scripts from a clone behind origin/main and never says so                             | —      | Partial | —                               | Lead  | S [estimate] |
-| 120  | B1.98  | unattended.sh counts a run the lead stopped, ruled on and relaunched as unattended                        | —      | Open    | —                               | Lead  | S [estimate] |
-| 122  | B7.1   | Deleting a todo asks for confirmation first                                                               | —      | Open    | ~~D-37~~                        | Lead  | S [estimate] |
-| 123  | B7.2   | The "Mark all complete" button says how many it will mark                                                 | —      | Open    | ~~D-37~~                        | Lead  | S [estimate] |
-| 125  | B7.4   | The search form says how many todos match                                                                 | —      | Open    | ~~D-37~~                        | Lead  | S [estimate] |
-| 126  | B7.5   | The new-todo counter warns near the limit                                                                 | —      | Open    | ~~D-37~~                        | Lead  | S [estimate] |
-| 127  | B7.6   | The due-date editor has a "Clear due date" button                                                         | —      | Open    | ~~D-37~~, ~~B7.3~~              | Lead  | S [estimate] |
-| 128  | B1.100 | Each parallel run mutation-tests all of src/lib up to three times, whatever the card changed              | —      | Open    | —                               | Lead  | S [estimate] |
-| 129  | B1.101 | GitHub reports parallel runner PRs as conflicting on the union tables, and each needs a re-run            | —      | Open    | —                               | Lead  | S [estimate] |
+| Step | ID     | Title                                                                                                     | Spec § | Status | Blocked by                      | Owner | Size         |
+| ---- | ------ | --------------------------------------------------------------------------------------------------------- | ------ | ------ | ------------------------------- | ----- | ------------ |
+| 41   | B1.30  | guard-bash reads shell words before matching a push                                                       | —      | Open   | —                               | Lead  | S [estimate] |
+| 45   | B1.34  | Package guide headings and the app page header cite the sections their modules name                       | —      | Open   | —                               | Lead  | S [estimate] |
+| 46   | B1.35  | A guard checks that the guide tables cite the sections their packages name                                | —      | Open   | —                               | Lead  | S [estimate] |
+| 47   | B1.36  | hook-smoke's review-gate probe judges "clean" from the gate's own base                                    | —      | Open   | —                               | Lead  | S [estimate] |
+| 48   | B1.37  | hook-smoke's check-plan-scope probes ignore an exported HEAD_SHA and BASE_SHA                             | —      | Open   | —                               | Lead  | S [estimate] |
+| 49   | B1.38  | pr-step accepts the ci type that commit-msg accepts                                                       | —      | Open   | —                               | Lead  | S [estimate] |
+| 50   | B1.39  | plan-deviations judges a merged PR's files by the guard's plan_lists rule                                 | —      | Open   | —                               | Lead  | S [estimate] |
+| 51   | B1.40  | next-task --check reads plan tokens by the plan_lists rule                                                | —      | Open   | —                               | Lead  | S [estimate] |
+| 52   | B1.41  | Guides state the plan-token rule and name hook-smoke's L1–L15                                             | —      | Open   | —                               | Lead  | S [estimate] |
+| 53   | B4.4   | Section 22 criteria measure the reload rule and the no-role rule                                          | —      | Open   | —                               | Lead  | S [estimate] |
+| 60   | B1.48  | CI runs the agent-ready eligibility probes                                                                | —      | Open   | ~~B1.43~~                       | Lead  | S [estimate] |
+| 62   | B1.50  | The client layer rule also stops a component reaching @prisma/client                                      | —      | Open   | ~~B1.46~~                       | Lead  | S [estimate] |
+| 63   | B1.51  | The daily feature map reaches the agent board and its PRs carry a tier                                    | —      | Open   | ~~B1.44~~                       | Lead  | S [estimate] |
+| 64   | B1.52  | dev-lead fills the PR Evidence section after CI is green                                                  | —      | Open   | ~~B1.45~~                       | Lead  | S [estimate] |
+| 65   | B1.53  | CI runs the feature-map probes                                                                            | —      | Open   | ~~B1.45~~                       | Lead  | S [estimate] |
+| 66   | B1.54  | The feature map reads the issue form's card field, warns when it truncates, and folds before it trims     | —      | Open   | ~~B1.45~~                       | Lead  | S [estimate] |
+| 68   | B1.56  | A high-tier gate stop resumes when the lead approves on the issue                                         | —      | Open   | ~~B1.44~~, ~~B1.55~~            | Lead  | S [estimate] |
+| 71   | B1.59  | A launchd job runs the runner's poll every 15 minutes, inside the sandbox                                 | —      | Open   | ~~B1.44~~, ~~B1.58~~, ~~B1.62~~ | Lead  | S [estimate] |
+| 72   | B1.60  | CI runs the runner and tier probes, under bash 5 as well                                                  | —      | Open   | ~~B1.44~~                       | Lead  | S [estimate] |
+| 73   | B1.61  | The runner's deny list spares commit messages, and TERM ends the tools a run started                      | —      | Open   | ~~B1.44~~                       | Lead  | S [estimate] |
+| 78   | B1.66  | A plan for how long the runner keeps its run logs                                                         | —      | Open   | —                               | Lead  | S [estimate] |
+| 79   | B1.67  | CI's token proof runs the eligibility check's timeline query, and the scripts guide states its rules      | —      | Open   | ~~B1.63~~                       | Lead  | S [estimate] |
+| 81   | B1.70  | The runner firewall reads GitHub's ranges with a token, so a restart never hits the anonymous rate limit  | —      | Open   | ~~B1.58~~                       | Lead  | S [estimate] |
+| 82   | B1.71  | worktree.sh stops when the Prisma client was not generated                                                | —      | Open   | ~~B1.62~~                       | Lead  | S [estimate] |
+| 83   | B1.72  | The scripts guide lists sandbox probes S1–S10                                                             | —      | Open   | ~~B1.62~~                       | Lead  | S [estimate] |
+| 84   | B1.73  | The runner's setup steps check out a branch that exists                                                   | —      | Open   | ~~B1.69~~                       | Lead  | S [estimate] |
+| 87   | B1.77  | guard-bash blocks commands that print a git or gh credential                                              | —      | Open   | —                               | Lead  | S [estimate] |
+| 96   | B1.80  | The components guide says the search form is a client component once section 25 lands                     | —      | Open   | ~~B5.3~~                        | Lead  | S [estimate] |
+| 97   | B1.81  | guard-bash's secret-read rule lets any command through once it names `.env.example`                       | —      | Open   | —                               | Lead  | S [estimate] |
+| 103  | B1.87  | Docs still describe unattended.sh and pr-step.sh as they were before B1.83                                | —      | Open   | —                               | Lead  | S [estimate] |
+| 106  | B1.90  | Nothing in CI keeps the `docs(map)` step with code-writer                                                 | —      | Open   | —                               | Lead  | S [estimate] |
+| 107  | B1.91  | The closing lane still flips the feature's map row, which the card's own `docs(map)` commit already moved | —      | Open   | —                               | Lead  | S [estimate] |
+| 108  | B1.92  | A union merge's duplicate row reaches CI before any guard reads it                                        | —      | Open   | ~~B1.89~~                       | Lead  | S [estimate] |
+| 109  | B1.93  | Eight smokes remove the caller's directory when `mktemp -d` fails                                         | —      | Open   | —                               | Lead  | S [estimate] |
+| 110  | B1.94  | CI never runs table-merge-smoke, whose verdict follows the host's own git attributes                      | —      | Open   | ~~B1.89~~                       | Lead  | S [estimate] |
+| 125  | B7.4   | The search form says how many todos match                                                                 | —      | Open   | ~~D-37~~                        | Lead  | S [estimate] |
+| 126  | B7.5   | The new-todo counter warns near the limit                                                                 | —      | Open   | ~~D-37~~                        | Lead  | S [estimate] |
+| 127  | B7.6   | The due-date editor has a "Clear due date" button                                                         | —      | Open   | ~~D-37~~, ~~B7.3~~              | Lead  | S [estimate] |
+| 128  | B1.100 | Each parallel run mutation-tests all of src/lib up to three times, whatever the card changed              | —      | Open   | —                               | Lead  | S [estimate] |
+| 129  | B1.101 | GitHub reports parallel runner PRs as conflicting on the union tables, and each needs a re-run            | —      | Open   | —                               | Lead  | S [estimate] |
 
 ## Waiting on human
 
