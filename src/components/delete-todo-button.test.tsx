@@ -109,7 +109,7 @@ describe('<DeleteTodoButton> (§19)', () => {
 const CONFIRM_MESSAGE = 'Delete this todo? This cannot be undone.';
 
 describe('<DeleteTodoButton> asks for confirmation first (§35)', () => {
-  it('AC-35.1: calls window.confirm once with exactly "Delete this todo? This cannot be undone.", then deleteTodoAction once with exactly ("todo-9"), the confirm call first', async () => {
+  it('AC-35.1: asks window.confirm once with "Delete this todo? This cannot be undone." before calling deleteTodoAction once with ("todo-9")', async () => {
     deleteActions.deleteTodoAction.mockResolvedValue(deleted('todo-9'));
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
     const user = userEvent.setup();
