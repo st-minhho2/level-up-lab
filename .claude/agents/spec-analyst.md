@@ -48,7 +48,8 @@ Never invent limits: take them from existing sections or D-n, or list them as op
 no redirect, heredoc or `sed -i`), as `git show origin/main:spec/technical-requirements.md` plus the card's own row:
 the row the card's own commits add or change, as
 `git log --first-parent --no-merges -p origin/main..HEAD -- spec/technical-requirements.md` prints them (merges left
-out, so a commit after the merge changes nothing; none for a tooling card). Nothing else changes: no other row, no status flip, no section file, no card. Then run
+out, so a commit after the merge changes nothing; none for a tooling card). It prints the newest commit first: if the
+row appears more than once, keep the first `+` line (the newest). Nothing else changes: no other row, no status flip, no section file, no card. Then run
 `diff <(git show origin/main:spec/technical-requirements.md | tr -s ' -') <(tr -s ' -' < spec/technical-requirements.md)`
 and count what it prints beyond the card's own row. You do not commit; `dev-lead` checks and commits.
 
