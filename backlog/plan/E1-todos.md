@@ -1123,7 +1123,7 @@ _tooling · no §_
 ### B1.89 · Parallel runner PRs conflict on the rows they append to the shared tables
 
 _tooling · no §_
-**Status: Done** — 9f5e2dc (#253), table-merge-smoke T1-T9 (red 0a89057: 9 of 9 FAILED; green ac3db84 + review pass 1 4cee58f: 9 probes OK, bash 3.2), hook-smoke 726, tier-smoke 9, vitest 241, mutation 92.62 (no src/); union on spec/features-map.md and docs/metrics.md, technical-requirements out of scope; GitHub mergeability [unverified]; plan review 2 rounds, diff review 2 passes
+**Status: Done** — 9f5e2dc (#253), table-merge-smoke T1-T9 (red 0a89057: 9 of 9 FAILED; green ac3db84 + review pass 1 4cee58f: 9 probes OK, bash 3.2), hook-smoke 726, tier-smoke 9, vitest 241, mutation 92.62 (no src/); union on spec/features-map.md and docs/metrics.md, technical-requirements out of scope; GitHub's mergeability ignores union (measured in E7 batch 1: #300, #302 CONFLICTING while a local merge was clean; a ready runner PR is synced by `run.sh --sync`, B1.101); plan review 2 rounds, diff review 2 passes
 
 - **Spec:** none — tooling (the headless runner's merge step); no `src/` change, no section
 - **Test:** a probe in `scripts/agent/run-smoke.sh` (or a new smoke) that builds two branches from one base, each
@@ -1283,7 +1283,7 @@ origin/main`, then rerun). It never updates itself, since it is the script runni
 ### B1.96 · Parallel card PRs conflict on the section index, which B1.89 left on git's default merge
 
 _tooling · no §_
-**Status: Done** — 6395eac (#273), table-merge-smoke T1-T12 (red 1b82a46: 4 of 12 FAILED; green 073668a: 12 probes OK, bash 3.2), hook-smoke 726, tier-smoke 9, vitest 269, e2e 57, mutation 92.63 (no src/); union on spec/technical-requirements.md, check-spec-sections.sh names a section with two index rows; B1.92's card names the guard (6948df1); GitHub mergeability [unverified]; plan review 3 rounds, diff review 1 pass
+**Status: Done** — 6395eac (#273), table-merge-smoke T1-T12 (red 1b82a46: 4 of 12 FAILED; green 073668a: 12 probes OK, bash 3.2), hook-smoke 726, tier-smoke 9, vitest 269, e2e 57, mutation 92.63 (no src/); union on spec/technical-requirements.md, check-spec-sections.sh names a section with two index rows; B1.92's card names the guard (6948df1); GitHub's mergeability ignores union (measured in E7 batch 1: #300, #302 CONFLICTING while a local merge was clean; a ready runner PR is synced by `run.sh --sync`, B1.101); plan review 3 rounds, diff review 1 pass
 
 - #265 (B6.3, §31) merged first, and #266 (B6.2, §30) then conflicted on `spec/technical-requirements.md` alone. Both
   had appended a row after §29. The runner's local merge 9337123 shows the index as the only conflicting file;

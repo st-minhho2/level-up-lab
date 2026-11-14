@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Probes R1–R20 of scripts/agent/run.sh (B1.44) offline: a `claude` shim that replays fixture stream-json, a `gh` shim
+# Probes R1–R22 of scripts/agent/run.sh (B1.44) offline: a `claude` shim that replays fixture stream-json, a `gh` shim
 # that applies run.sh's own --jq to fixture JSON (real jq), and fakes for the eligibility, claim and worktree seams.
 #   scripts/agent/run-smoke.sh
 #   R1 not logged in            R2 unverified version          R3 ineligible issue        R4 three agent branches in flight
@@ -12,6 +12,10 @@
 #   R18 a merged agent branch is not in flight; an unmerged one or an open PR is; the skip names them (B1.82)
 #   R19 each claude -p run has a TMPDIR of its own outside the worktree and the project, removed at its end (B1.88)
 #   R20 a checkout behind a fetched origin/main, or a failed fetch, refuses each issue before any call; ahead runs (B1.95)
+#   R21 --sync merges origin/main into a ready PR's branch under `merge=union`, runs the guards, pushes with
+#       `Agent-Run: sync` and comments, with no claude call; a level branch is left alone (B1.101)
+#   R22 every --sync refusal (conflict, guard, no ready PR, unpushed, dirty, no worktree, lock, identity, behind, argv)
+#       and a TERM leave local and origin's branch agreeing; a merge the push landed stays (B1.101)
 set -uo pipefail
 command -v jq >/dev/null || { echo "run-smoke: needs jq" >&2; exit 2; }
 HERE="$(cd "$(dirname "$0")" && pwd -P)"
@@ -591,6 +595,138 @@ reset; at "$b0" "$c1"; : > "$REPO/.git/refs/remotes/origin/main.lock"
   || { say "ref lock: rc=$RC $(tr '\n' '|' < "$TMP/out")"; r=1; }
 at "$b0" "$b0"; git -C "$REPO" update-ref refs/remotes/origin/main "$b0"
 [[ $r -eq 0 ]] && ok R20 || fail R20
+
+# R21, R22 (B1.101): --sync <issue> brings a ready runner PR's branch level with origin/main, with no claude run. The
+# card's worktree is a real worktree of the scratch repository, pushed to its bare origin. Its base holds a table under
+# `merge=union`, a plain file and stand-ins for the three table guards: each logs its name and fails on a first cell
+# kept twice, as check-features-map.sh, check-backlog.sh and check-spec-sections.sh do on a union merge (B1.89, B1.96).
+B=chore/B1.44-agent; CW="$TMP/sync-wt" # outside $WT, which reset() empties
+g() { (cd "$CW" && env -u GIT_DIR git -c user.name=s -c user.email=s@x "$@"); }
+git -C "$REPO" worktree add -q -b "$B" "$CW" "$b0"
+mkdir -p "$CW/scripts/ci"; echo 'table.md merge=union' > "$CW/.gitattributes"; printf '| F1 |\n' > "$CW/table.md"
+echo x > "$CW/plain.txt"
+for gd in check-spec-sections check-features-map check-backlog; do
+  printf '#!/bin/bash\necho "GUARD %s $(pwd -P)" >> "$SMOKE_LOG"\n[[ -z "${SMOKE_NAP:-}" ]] || { : > "$SMOKE_NAP"; sleep 3; }\n! awk '"'"'{ print $2 }'"'"' table.md | sort | uniq -d | grep -q .\n' "$gd" \
+    > "$CW/scripts/ci/$gd.sh"
+done
+chmod +x "$CW/scripts/ci/"*; g add -A; g commit -q -m s0; s0="$(g rev-parse HEAD)"
+side() { # side <parent> <file> <content> <msg>: a commit on top of <parent> with <file> set to <content>, not checked out
+  local t="$TMP/side-idx"; rm -f "$t"
+  (cd "$CW" && env -u GIT_DIR GIT_INDEX_FILE="$t" git read-tree "$1" \
+    && blob="$(printf '%b' "$3" | env -u GIT_DIR git hash-object -w --stdin)" \
+    && env -u GIT_DIR GIT_INDEX_FILE="$t" git update-index --add --cacheinfo "100644,$blob,$2" \
+    && env -u GIT_DIR git -c user.name=s -c user.email=s@x commit-tree "$(env -u GIT_DIR GIT_INDEX_FILE="$t" git write-tree)" -p "$1" -m "$4")
+}
+m1="$(side "$s0" table.md '| F1 |\n| F2 |\n' m1)"      # main appends F2 (a sibling's merge)
+k1="$(side "$s0" table.md '| F1 |\n| F3 |\n' k1)"      # the card appends F3: union keeps both, plain git conflicts
+m2="$(side "$s0" plain.txt 'z\n' m2)"; k2="$(side "$s0" plain.txt 'y\n' k2)"           # a real conflict
+m3="$(side "$s0" table.md '| F1 main |\n' m3)"; k3="$(side "$s0" table.md '| F1 card |\n' k3)" # union keeps F1 twice
+sync_at() { # sync_at <card tip> <origin main> [<origin's card branch>]: the worktree clean at the tip, pushed
+  at "$2" "$2"; g reset -q --hard "$1"; g update-ref -d MERGE_HEAD 2>/dev/null
+  git -C "$ORIGIN" update-ref "refs/heads/$B" "${3:-$1}"; g fetch -q origin
+}
+spr() { echo "[{\"number\":12,\"headRefName\":\"$B\",\"state\":\"OPEN\",\"isDraft\":${1:-false}}]" > "$FIX/prs.json"; }
+same() { # same <tip>: a refusal left the branch as it was: HEAD and origin's branch at <tip>, no merge, nothing staged
+  [[ "$(g rev-parse HEAD)" == "$1" && "$(git -C "$ORIGIN" rev-parse "refs/heads/$B")" == "$1" ]] \
+    && [[ -z "$(g status --porcelain --untracked-files=no)" ]] && ! g rev-parse -q --verify MERGE_HEAD >/dev/null
+}
+quiet() { ! grep -q '^CLAUDE ' "$LOG" && ! grep -qE '^(ELIGIBLE|CLAIM|WORKTREE) ' "$LOG" && ! has '=== #' "$FIX/comments" \
+  && ! grep -q '^GH .* pr ready' "$LOG"; }
+# R21: a ready PR behind origin/main, union-merged clean: one merge commit (parents: the tip, then origin/main) with
+# `Agent-Run: sync`, pushed; the three guards ran in the worktree; one runner comment; no claude call at all (not even
+# --version or auth status: a sync runs where the login is gone), no claim, no ready --undo, no stopped mark
+r=0
+reset; spr; sync_at "$k1" "$m1"; SMOKE_AUTH=false run --sync 7
+new="$(g rev-parse HEAD)"
+[[ $RC -eq 0 && "$(g rev-parse HEAD^1) $(g rev-parse HEAD^2)" == "$k1 $m1" ]] \
+  && [[ "$(g log -1 --format='%s')" == "Merge remote-tracking branch 'origin/main' into $B" ]] \
+  && [[ "$(g log -1 --format='%(trailers:key=Agent-Run,valueonly)' | grep .)" == sync ]] \
+  && [[ "$(git -C "$ORIGIN" rev-parse "refs/heads/$B")" == "$new" ]] \
+  && [[ "$(g show HEAD:table.md | tr -d '\n')" == '| F1 || F3 || F2 |' || "$(g show HEAD:table.md | tr -d '\n')" == '| F1 || F2 || F3 |' ]] \
+  && [[ $(grep -c "^GUARD .* $CW$" "$LOG") -eq 3 ]] && ! grep -q '^CLAUDE ' "$LOG" && ! grep -qE '^(ELIGIBLE|CLAIM|WORKTREE) ' "$LOG" \
+  && ! grep -q '^GH .* pr ready' "$LOG" && [[ $(grep -c '^=== #7' "$FIX/comments") -eq 1 ]] \
+  && has 'Runner (`scripts/agent/run.sh`, B1.44): **synced** for B1.44.' "$FIX/comments" && has '- outcome: synced' "$FIX/comments" \
+  && has "#12" "$FIX/comments" && has "${new:0:7}" "$FIX/comments" && has "${new:0:7}" "$TMP/out" \
+  && [[ ! -e "$RUNS/7/stopped" && ! -e "$RUNS/7/lock" ]] \
+  || { say "clean: rc=$RC $(tr '\n' '|' < "$TMP/out") log: $(grep -v '^GH ' "$LOG" | tr '\n' '|')"; r=1; }
+# again, now level: nothing to do, nothing pushed or posted
+: > "$LOG"; rm -f "$FIX/comments"; run --sync 7
+[[ $RC -eq 0 && "$(g rev-parse HEAD)" == "$new" ]] && has 'already contains origin/main' "$TMP/out" && quiet \
+  && ! grep -q '^GUARD ' "$LOG" || { say "level: rc=$RC $(tr '\n' '|' < "$TMP/out")"; r=1; }
+[[ $r -eq 0 ]] && ok R21 || fail R21
+# R22: each refusal exits 1 before or instead of any change, names a way on, and leaves the branch as it was
+r=0
+refuse() { # refuse <label> <tip> <text>…: rc 1, the branch untouched, each text in the output, no comment, no claude
+  local l="$1" tip="$2" t; shift 2
+  [[ $RC -eq 1 ]] && same "$tip" && quiet || { say "$l: rc=$RC $(tr '\n' '|' < "$TMP/out")"; r=1; return; }
+  for t in "$@"; do has "$t" "$TMP/out" || { say "$l: no '$t' in $(tr '\n' '|' < "$TMP/out")"; r=1; }; done
+}
+reset; spr; sync_at "$k2" "$m2"; run --sync 7
+refuse conflict "$k2" 'conflict' 'plain.txt' 'scripts/agent/run.sh 7'
+reset; spr; sync_at "$k3" "$m3"; run --sync 7
+refuse guard "$k3" 'check-' 'scripts/agent/run.sh 7'
+reset; echo '[]' > "$FIX/prs.json"; sync_at "$k1" "$m1"; run --sync 7
+refuse no-pr "$k1" 'no open ready PR'
+reset; spr true; sync_at "$k1" "$m1"; run --sync 7
+refuse draft "$k1" 'no open ready PR' 'scripts/agent/run.sh 7'
+reset; spr; sync_at "$k1" "$m1" "$s0"; run --sync 7
+[[ $RC -eq 1 && "$(g rev-parse HEAD)" == "$k1" && "$(git -C "$ORIGIN" rev-parse "refs/heads/$B")" == "$s0" ]] && quiet \
+  && has "origin/$B" "$TMP/out" || { say "unpushed: rc=$RC $(tr '\n' '|' < "$TMP/out")"; r=1; }
+reset; spr; sync_at "$k1" "$m1"; echo dirty > "$CW/plain.txt"; run --sync 7
+[[ $RC -eq 1 && "$(g rev-parse HEAD)" == "$k1" && "$(cat "$CW/plain.txt")" == dirty ]] && quiet && has 'uncommitted' "$TMP/out" \
+  || { say "dirty: rc=$RC $(tr '\n' '|' < "$TMP/out")"; r=1; }
+g checkout -q -- plain.txt
+# a TERM after the merge, while a guard runs: the branch goes back to the pushed tip, nothing pushed, the lock gone
+# (plan review r1 #3), so the next --sync starts from the PR's head instead of refusing an unpushed one
+reset; spr; sync_at "$k1" "$m1"; nap="$TMP/nap"; rm -f "$nap"
+(cd "$ROOT" && SMOKE_LOG="$LOG" SMOKE_FIX="$FIX" SMOKE_NAP="$nap" PATH="$TMP/bin:$PATH" GIT_DIR="$REPO/.git" \
+  RUNNER_RUNS="$RUNS" exec env "${IDENT[@]}" "$SRC" --sync 7) > "$TMP/out" 2>&1 &
+bg=$!; i=0; while [[ ! -e "$nap" && $i -lt 40 ]]; do sleep 0.5; i=$((i + 1)); done
+kill -TERM "$bg" 2>/dev/null; wait "$bg"; RC=$?
+[[ -e "$nap" && $RC -eq 143 && ! -e "$RUNS/7/lock" ]] && same "$k1" && quiet \
+  || { say "TERM: rc=$RC nap=$([[ -e "$nap" ]] && echo y) HEAD=$(g rev-parse --short HEAD) $(tr '\n' '|' < "$TMP/out")"; r=1; }
+# a TERM while the push runs, after origin took it (the bare origin's post-receive naps): the landed merge stays, local
+# and origin's branch equal, so the next --sync finds the PR level (plan review r2 #1)
+printf '#!/bin/bash\n[[ -z "${SMOKE_PUSHNAP:-}" ]] || { : > "$SMOKE_PUSHNAP"; sleep 3; }\n' > "$ORIGIN/hooks/post-receive"
+chmod +x "$ORIGIN/hooks/post-receive"
+reset; spr; sync_at "$k1" "$m1"; rm -f "$nap"
+(cd "$ROOT" && SMOKE_LOG="$LOG" SMOKE_FIX="$FIX" SMOKE_PUSHNAP="$nap" PATH="$TMP/bin:$PATH" GIT_DIR="$REPO/.git" \
+  RUNNER_RUNS="$RUNS" exec env "${IDENT[@]}" "$SRC" --sync 7) > "$TMP/out" 2>&1 &
+bg=$!; i=0; while [[ ! -e "$nap" && $i -lt 40 ]]; do sleep 0.5; i=$((i + 1)); done
+kill -TERM "$bg" 2>/dev/null; wait "$bg"; RC=$?
+new="$(g rev-parse HEAD)"
+[[ -e "$nap" && $RC -eq 143 && ! -e "$RUNS/7/lock" && "$(g rev-parse HEAD^1) $(g rev-parse HEAD^2)" == "$k1 $m1" ]] \
+  && [[ "$(git -C "$ORIGIN" rev-parse "refs/heads/$B")" == "$new" ]] \
+  || { say "TERM in push: rc=$RC nap=$([[ -e "$nap" ]] && echo y) HEAD=$(g rev-parse --short HEAD) origin=$(git -C "$ORIGIN" rev-parse --short "refs/heads/$B")"; r=1; }
+rm -f "$ORIGIN/hooks/post-receive"
+# a push origin rejects (its pre-receive exits 1): the merge goes, the branch is back at the tip, nothing is posted, and
+# the next --sync syncs instead of refusing an unpushed tip (review pass 1 #1)
+printf '#!/bin/bash\n[[ -z "${SMOKE_REJECT:-}" ]]\n' > "$ORIGIN/hooks/pre-receive"; chmod +x "$ORIGIN/hooks/pre-receive"
+reset; spr; sync_at "$k1" "$m1"; SMOKE_REJECT=1 run --sync 7
+refuse push "$k1" 'pr-step.sh push failed'
+run --sync 7
+[[ $RC -eq 0 && "$(g rev-parse HEAD^1) $(g rev-parse HEAD^2)" == "$k1 $m1" ]] \
+  && [[ "$(git -C "$ORIGIN" rev-parse "refs/heads/$B")" == "$(g rev-parse HEAD)" ]] \
+  || { say "after the rejected push: rc=$RC $(tr '\n' '|' < "$TMP/out")"; r=1; }
+rm -f "$ORIGIN/hooks/pre-receive"
+reset; spr; sync_at "$k1" "$m1"; issue 8 B1.45; run --sync 8
+[[ $RC -eq 1 ]] && quiet && has 'no worktree' "$TMP/out" && same "$k1" || { say "no worktree: rc=$RC $(tr '\n' '|' < "$TMP/out")"; r=1; }
+reset; spr; sync_at "$k1" "$m1"; sleep 30 & live=$!; mkdir -p "$RUNS/7/lock"; echo "$live" > "$RUNS/7/lock/pid"; run --sync 7
+refuse lock "$k1" 'locked'
+[[ -d "$RUNS/7/lock" ]] || { say "lock: the live lock was removed"; r=1; }
+kill "$live" 2>/dev/null; wait "$live" 2>/dev/null
+printf '[user]\n\tname = \n' > "$TMP/noident"
+reset; spr; sync_at "$k1" "$m1"; GITCFG="$TMP/noident" run --sync 7
+refuse identity "$k1" 'no git identity'
+reset; spr; sync_at "$k1" "$m1"; at "$s0" "$m1"; run --sync 7
+refuse behind "$k1" 'behind origin/main by 1 commit'
+for a in "" "7 8" "x"; do
+  reset; run --sync $a
+  [[ $RC -eq 1 ]] && has 'usage:' "$TMP/out" && has '--sync <issue>' "$TMP/out" && quiet \
+    || { say "argv '$a': rc=$RC $(tr '\n' '|' < "$TMP/out")"; r=1; }
+done
+[[ $r -eq 0 ]] && ok R22 || fail R22
+git -C "$REPO" worktree remove --force "$CW"; at "$b0" "$b0"
 
 echo
 if [[ $fails -eq 0 ]]; then echo "$oks probes OK"; exit 0; fi
