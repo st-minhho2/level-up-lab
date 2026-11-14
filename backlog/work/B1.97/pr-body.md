@@ -5,9 +5,17 @@
 B1.97 — A row wider than its column makes Prettier re-pad the whole shared table (tooling, no spec section)
 
 - spec: none — tooling (`.prettierignore`, the smoke, the scripts guide); no `src/` change, no section
-- test: `scripts/table-merge-smoke.sh` T13–T15 new (no `(red)` marker: smoke only, as B1.89/B1.96). Red: pending.
-  Green: pending.
-- acceptance: pending.
+- test: `scripts/table-merge-smoke.sh` T13–T15 new (no `(red)` marker: smoke only, as B1.89/B1.96).
+  - Red `729ae12`: "3 of 15 probes FAILED" (T13–T15: merge clean, guard names every row kept twice); T1–T12 ok.
+  - Green `f93572b`: "15 probes OK" (bash 3.2.57; run locally, the smoke is in no CI job, B1.94).
+  - `hook-smoke.sh` 726 OK, `tier-smoke.sh` 9 OK.
+  - `pnpm test` 280, e2e 64, mutation 92.74 (no `src/` change; reviewer).
+- acceptance: 4 of 4.
+  - A wider row no longer rewrites the other rows: the three files are in `.prettierignore` (T13–T15: side a's diff
+    `1 0`).
+  - The new probes and T1–T12 pass, bash 3.2-safe; T6, T7, T12 still catch a re-pad.
+  - The scripts guide names the rule (`scripts/CLAUDE.md`, the smoke's row and a line under the table).
+  - The PR carries `config-change-approved`.
 
 ## Plan
 
@@ -87,11 +95,27 @@ None: tooling card, no `spec/features-map.md` row.
 
 ## Review
 
-pending
+`/review-loop`: 1 pass of 3 (`backlog/work/B1.97/review.md`). Verdict: ready for PR, 0 findings.
+
+| Pass | Finding | Disposition |
+| ---- | ------- | ----------- |
+| 1    | none    | —           |
+
+Revert probes, run on a clone under `$TMPDIR`: dropping only one of the three `.prettierignore` lines fails only its
+probe (map → T13, metrics → T14, index → T15), `1 of 15`. The real `format-after-edit.sh` on a 180-char map row
+(physical path) changed `1 0` lines; Lefthook's `prettier --check` with ignored and formatted files mixed → rc 0.
+
+Plan review: 1 round, approved, 0 blocking; 3 notes folded into the plan (symlink cost, no `(red)` marker, PR/label
+step).
+
+Riskiest unfalsified: a session whose `CLAUDE_PROJECT_DIR` reaches the checkout through a symlink still re-pads on
+edit (Prettier matches the ignore against the physical cwd), and Lefthook would pass it; only T6, T7, T12's guards in
+CI catch the doubled rows, after the push. Plan cost, measured in plan review r1. `verify-red.sh B1.97` prints "no
+(red) commit", expected for a smoke-only red. No `docs/metrics.md` per-card row (as B1.89, B1.96).
 
 ## Evidence
 
-- AC met: pending
+- AC met: 4/4
 - tier: high
 - plan deviations: none
 - trace: n/a
