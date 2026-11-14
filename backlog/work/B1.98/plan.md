@@ -1,7 +1,8 @@
 # B1.98 plan — unattended.sh counts a stopped run and a human commit as attended (tooling, no §)
 
-Approach: the shared timeline filter gets a 7th TSV column, the runner comment's outcome word (`**ended**` → `ended`,
-`?` if absent, `-` for any other event). `unattended.sh` then derives two lists inside the window it already has
+Approach: the shared timeline filter gets a 7th TSV column, a runner comment's outcome: the first word of its
+`- outcome: ` line (run.sh:253 `$out`, so `error:max_turns`, `limit:error_max_turns`, `ended`; not the bold header,
+which keeps only `${out%%:*}`), `?` if the line is missing, `-` for any other event (review r1 #3). `unattended.sh` then derives two lists inside the window it already has
 (strictly after `labeled`, strictly before `ready`, the bounds `messages` uses), printed as two new last columns:
 
 ```bash
@@ -27,13 +28,22 @@ Prototype (scratchpad copy of origin/main be888ff, live gh, bash 3.2) — the ac
 | E6 b1 261–263     | 3/3   | 3/3     | unchanged                                                                                      |
 | E7 292–294        | 3/3   | 3/3     | unchanged (read for the orchestrator, not acceptance)                                          |
 
-Cost for the lead: E5 batch 1 drops to 1/3, so E5's "two batches > 50 %" no longer holds as recorded.
+Costs for the lead:
 
-Overlap with **B1.87** (Open, unclaimed, no plan): this card rewrites `docs/metrics.md` row 28's definition cell to
-the script's current rule, B1.83's window and `touches` included, and the `scripts/CLAUDE.md` unattended and
-metrics-smoke rows (M1–M53). B1.87 keeps the `pr-step.sh` row, R1–R16 and its mistake-log row; its Test line (`M1–M43`
-grep) then passes without it. Carried from B1.95: the `agent/run.sh` row names its behind check; this card's closing
-lane also sets B1.95 Done.
+- E5 batch 1 drops to 1/3, so E5's "two batches > 50 %" no longer holds as recorded. #207 is `no` on its `ended`
+  stop alone; e65ffc9 (author `level-up-lab runner`, no trailer) is the riskiest reading: the run's own merges on the
+  same PR (bad1d8f, 7465491) carry `Agent-Run:`, so it was made outside a run (RUNNER_CHILD unset) `[unverified]`.
+- A run whose checkout lacks lefthook's prepare-commit-msg hook (B1.57: needs `pnpm install` there) commits without
+  the trailer and reads `no`; `no-rework.sh` already has that dependency.
+
+Overlap with **B1.87** (Open, unclaimed, no plan; review r1 #2): this card rewrites `docs/metrics.md` row 28 and the
+`scripts/CLAUDE.md` `metrics/unattended.sh` and `metrics-smoke.sh` rows (M1–M53). B1.87's Acceptance ("M1–M49",
+row 28 "names `touches`") can then no longer be met as written, and its Test grep `M1–M43|R1–R15` stays red on
+R1–R15 alone. B1.87 keeps the `pr-step.sh` row, R1–R16 and the mistake-log row; the lead re-scopes its card text
+(Acceptance to M1–M53 and no row 28 item) in a filing-lane edit, or rules otherwise; this card does not edit B1.87.
+
+Carried from B1.95: the `agent/run.sh` row names its behind check. The closing lane (branch `docs/B1.98-done`, title
+`docs(backlog): B1.98 done`) also runs `card-status.sh B1.95 Done "…"` and drops B1.95's README row in its one commit.
 
 Tier: `scripts/agent/tier.sh` → **medium** (no CI-protected path; the brief's "high" does not hold); interactive, so
 the lead's `approve` gate holds. The card asks for `config-change-approved` (D-19 needs it only for a protected path): added.
@@ -41,19 +51,20 @@ Dev-lead writes `scripts/` and `docs/` here (interactive, as B1.95).
 
 ## Files
 
-| File                            | Change                                                                                                                        | Why                   |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | --------------------- |
-| `scripts/metrics/unattended.sh` | column 7 in TL; `stops`, `human_commits` columns; verdict; header (definition, output)                                        | Acceptance            |
-| `scripts/metrics/no-rework.sh`  | TL identical to unattended's (column 7 unused)                                                                                | filter kept identical |
-| `scripts/metrics-smoke.sh`      | M50–M53; M30 flips (its 02:50 trailer-less commit is inside the window), M34 share 2/6; full-row probes gain `\t-\t-`; header | Test line             |
-| `docs/metrics.md`               | row 28 definition cell names the two cases (appended text only, unaligned, B1.97)                                             | Acceptance            |
-| `scripts/CLAUDE.md`             | rows: `metrics/unattended.sh`, `metrics-smoke.sh` M1–M53, `agent/run.sh` behind check (B1.95), each within its column width   | Acceptance, B1.95     |
-| `backlog/work/B1.98/*`          | plan, review, pr-body                                                                                                         | pipeline              |
+| File                            | Change                                                                                                                                                                                                                                                               | Why                   |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| `scripts/metrics/unattended.sh` | column 7 in TL; `stops`, `human_commits` columns; verdict; header (definition, output)                                                                                                                                                                               | Acceptance            |
+| `scripts/metrics/no-rework.sh`  | TL identical to unattended's (column 7 unused)                                                                                                                                                                                                                       | filter kept identical |
+| `scripts/metrics-smoke.sh`      | M50–M53; M30 flips (its 02:50 trailer-less commit is inside the window), M34 share 2/6; full-row probes gain `\t-\t-`; `runner()` bolds `${1%%:*}` as run.sh does; header                                                                                            | Test line             |
+| `docs/metrics.md`               | row 28 only, two cells rewritten, the others byte-identical, unaligned (B1.97): cell 3 (metric) appends "no runner stop and no PR commit without `Agent-Run:`"; cell 7 (method) restates `unattended.sh`'s header: B1.83 window, `touches`, `stops`, `human_commits` | Acceptance            |
+| `scripts/CLAUDE.md`             | rows: `metrics/unattended.sh`, `metrics-smoke.sh` M1–M53, `agent/run.sh` behind check (B1.95), each within its column width                                                                                                                                          | Acceptance, B1.95     |
+| `backlog/work/B1.98/*`          | plan, review, pr-body                                                                                                                                                                                                                                                | pipeline              |
 
 ## Interfaces touched
 
 `unattended.sh` output: TSV `issue card pr labeled ready messages unattended touches stops human_commits` (`stops`:
-comma-separated outcome words; `human_commits`: comma-separated sha7s; `-` none). Columns 1–8 keep their meaning; a
+comma-separated `- outcome:` words, e.g. `ended,error:max_turns`; `human_commits`: comma-separated sha7s; `-` none).
+Timeline filter (both scripts): column 7 added, columns 1–6 unchanged. Columns 1–8 keep their meaning; a
 reader of 8 columns by position still works. `no-rework.sh` output unchanged. No flag, env var or exit code.
 
 ## Verification
@@ -65,7 +76,8 @@ reader of 8 columns by position still works. `no-rework.sh` output unchanged. No
 - Green `chore(scripts): B1.98 unattended counts a runner stop and a commit without Agent-Run`: "51 ok, 0 FAIL".
 - Live: `unattended.sh 275 276 277` → `unattended 1/3 = 33.3 % (pending 0)`; the four other batches as the table;
   `no-rework.sh` on the same PRs byte-identical before/after.
-- `hook-smoke.sh` OK (count unchanged), `pnpm lint && pnpm typecheck` 0, `pnpm test` unchanged,
+- `hook-smoke.sh` "749 probes OK" and `pnpm test` "298 passed (298)" at be888ff, the same after (review r1 #4; neither
+  reads these scripts); `pnpm lint && pnpm typecheck` 0;
   `check-plan-scope.sh`, `check-backlog.sh` OK; `next-task.sh --check B1.98` no overlap; CI green.
 
 ## Work breakdown
@@ -77,4 +89,4 @@ reader of 8 columns by position still works. `no-rework.sh` output unchanged. No
 | 3    | reviewer | diff review     | `docs(backlog): B1.98 review pass N`                                                   |
 | 4    | dev-lead | draft PR, label | —                                                                                      |
 
-Plan review: · Plan approved by: · Rounds: 1
+Plan review: round 2 pending · Plan approved by: · Rounds: 1
