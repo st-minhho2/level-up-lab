@@ -776,6 +776,8 @@ states spec-analyst 'Merge repair'         # B1.99: the mode spec-analyst runs i
 # B1.99 review pass 1: the card's own row comes from its own commits, not from HEAD^1 (a commit after the merge
 # would make HEAD^1 the merge itself, and the stale duplicates would read as the card's)
 states spec-analyst 'git log --first-parent --no-merges -p origin/main..HEAD -- spec/technical-requirements.md'
+# B1.99 review pass 2: that log prints every version of the row, newest first; the newest is the one kept
+states spec-analyst 'keep the first `+` line (the newest)'
 
 echo "== check-ac-coverage.sh (B1.86): a test title counts wherever its it/test/.each call breaks lines"
 ACG="$PWD/scripts/ci/check-ac-coverage.sh"
