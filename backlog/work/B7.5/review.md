@@ -76,3 +76,63 @@ Costs the lead takes on approval:
    follow the §5 verdict. This one is not in `plan.md`'s Costs line; it is §39's stated rule, stated here instead.
 
 Verdict: approved (ready for the lead's gate, not approved for build)
+
+## Diff review (round 1)
+
+Scope: ui plus the pure `src/lib/title-count.ts`. HEAD `c2e9268`, red `eaa2ae9`, feat `c7ec922`. Read: §39 contract,
+`plan.md`, the full `main...HEAD` diff of `src/`, `e2e/`, `spec/features-map.md`, `docs/metrics.md`.
+
+### Command results (last line of each, run by the reviewer)
+
+| Command                             | Last line                                                                                                      |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!`                                                                   |
+| `pnpm typecheck`                    | `tsc --noEmit` (exit 0, no output)                                                                             |
+| `pnpm test`                         | `Tests  304 passed (304)` (49 files; plan: 298 → 304, 48 → 49)                                                 |
+| `pnpm test:e2e`                     | `71 passed (2.3m)` (plan: 70 → 71)                                                                             |
+| `scripts/mutation-gate.sh`          | `mutation: 100.00 % on src/lib/title-count.ts (reused), src d7a5294` (`HEAD:src` = d7a5294)                    |
+| `scripts/ci/check-suppressions.sh`  | `[check-suppressions] OK: no new suppressions`                                                                 |
+| `scripts/ci/check-config-change.sh` | `[check-config-change] OK: no protected config changed`                                                        |
+| `scripts/ci/check-feat-commits.sh`  | `[check-feat-commits] OK: no feat commit touches tests`                                                        |
+| `scripts/ci/check-ac-coverage.sh`   | `[check-ac-coverage] OK: every criterion of a shipped section has a test`                                      |
+| `scripts/ci/check-spec-sections.sh` | `[check-spec-sections] OK: sections cited: 1 … 43`                                                             |
+| `scripts/ci/check-features-map.sh`  | `[check-features-map] OK`                                                                                      |
+| `scripts/verify-red.sh B7.5`        | `RESULT: red for the right reason` (1/1 lib new failed, 5/5 component new failed; e2e skipped, needs a server) |
+| `git diff --stat main...HEAD`       | `13 files changed, 716 insertions(+), 8 deletions(-)`                                                          |
+
+### Checklist
+
+| Check                                                                | Result                                                                                                                                                                                                                                                                                        |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-39.n has a test whose assertion matches its Then            | pass: AC-39.1 `title-count.test.ts` (nine values, 180, < `TITLE_MAX_LENGTH`); AC-39.2–39.6 `todo-form-warning.test.tsx`; AC-39.7 `e2e/39-title-counter-warning.spec.ts`. See finding 1 for AC-39.2's "precedes any alert"                                                                     |
+| no test weakened after the red commit                                | pass: `git log --first-parent --no-merges eaa2ae9..HEAD -- '*.test.*' e2e/` empty; `--merges --remerge-diff` empty                                                                                                                                                                            |
+| every changed file is in `plan.md`                                   | pass: the 8 Files rows; `docs/metrics.md` and `backlog/work/B7.5/*` are paperwork the plan names exempt                                                                                                                                                                                       |
+| interfaces match the section's contracts                             | pass: `TITLE_WARNING_THRESHOLD = 180`, `isTitleNearLimit(value: string): boolean` = `titleCharacterCount(value) >= TITLE_WARNING_THRESHOLD`; the `<p>` id, class, text and position are §39's Function contracts line for line; `aria-describedby` untouched; no other 180 in `todo-form.tsx` |
+| Zod at every action boundary / Prisma only in `src/lib` / no raw SQL | n/a: no action, schema, Prisma or SQL change; `title-count.ts` stays pure (no `server-only`, client-imported)                                                                                                                                                                                 |
+| migration reversible and indexed                                     | n/a: no `prisma/` change                                                                                                                                                                                                                                                                      |
+| no secret, no suppression                                            | pass: `check-suppressions` OK; diff read, nothing secret                                                                                                                                                                                                                                      |
+| features map row moved                                               | pass: F37 (§39) ✅ in `docs(map)` commit `b1ced0e`                                                                                                                                                                                                                                            |
+| would a test fail if one changed line were reverted?                 | pass for the feat lines (verify-red: all 6 new unit tests red on the skeleton; mutation 100 % on `title-count.ts`). Moving the warning after the §5 error survives every test: finding 1                                                                                                      |
+
+### Findings
+
+```
+[1] KIND: coverage
+    WHERE: src/components/todo-form.tsx:92-96 (order vs the error <p> at 97-101); src/components/todo-form-warning.test.tsx (AC-39.2)
+    DEFECT: REQ-39.3's "before the §5 error message" is pinned by no test: AC-39.2's "precedes any role=alert" runs with no alert in the form, so it holds vacuously, and AC-39.4 (b), the only test with both elements, states no order.
+    TRIGGER: probe on a clone ($TMPDIR/c): the warning block moved below the `{error !== undefined && …}` block; `vitest run src/components/todo-form-warning.test.tsx src/components/todo-form.test.tsx` → `Tests 34 passed (34)`.
+    WRONG BEHAVIOUR: none in this diff (the order is correct today); a later reorder that breaks REQ-39.3 would ship green.
+    CONFIDENCE: confirmed
+```
+
+Non-blocking: the code is correct and each test asserts exactly its AC's Then; the gap is in the AC text (AC-39.2's Given
+has no failed save; AC-39.4 (b)'s Then has no order clause), so the fix is a spec edit for the lead (add "and the warning
+precedes the alert" to AC-39.4 (b)), then a `test(todos)` follow-up, not a change on this branch.
+
+Minor, non-blocking: `plan.md`'s footer says `Rounds: 1`; the plan review ran 2 rounds.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the server-rendered HTML before hydration (REQ-39.2 "in the HTML the server renders before any
+script runs") is not asserted by any test; AC-39.7 reads only after `networkidle`. The initial `draft` is `''`, so SSR
+renders no warning by trace, but no test would catch a change that seeded `draft` from a non-empty source.
