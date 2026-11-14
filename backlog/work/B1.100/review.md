@@ -320,3 +320,89 @@ Not blocking, costs for the lead to see before `approve`:
 Riskiest unfalsified: as in rounds 1–3, that code-writer's run and the green gate see the same `src/` tree in a real
 agent run, so the gate says "(reused)". If they do not, the gate runs again, which costs time but is not a wrong
 result. I could not run an agent, and the batch-2 saving rests on this.
+
+## Diff review (round 1)
+
+Range `origin/main` (5e75d2d) `...HEAD` (14b690b): skeleton 5168a25, red 4df9203, green 14b690b. Local `main`
+(d975c38) is stale, so the diff is read against `origin/main`. It has 11 files, 785 insertions and 9 deletions:
+the 8 Files rows plus `backlog/work/B1.100/{plan,pr-body,review}.md`.
+
+### Command results (last line of each)
+
+| Command                                                      | Result                                                                                                                                              |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                                  | `All matched files use Prettier code style!`                                                                                                        |
+| `pnpm typecheck`                                             | `tsc --noEmit`, no output, exit 0                                                                                                                   |
+| `pnpm test`                                                  | `Tests  298 passed (298)` (plan: 298)                                                                                                               |
+| `pnpm test:e2e`                                              | `70 passed (1.5m)`                                                                                                                                  |
+| `pnpm test:mutation` (whole layer, my role's gate)           | `Final mutation score of 92.84 is greater than or equal to break threshold 70`, exit 0, 5 min 13 s                                                  |
+| `scripts/mutation-gate.sh` (this card's gate)                | `mutation: CI only, no src/lib or src/actions change`, exit 0, 0.41 s                                                                               |
+| `scripts/mutation-gate.sh --base 'be888ff^'`                 | `mutation: 100.00 % on src/lib/complete-all-label.ts (reused), src b28a606`, exit 0 (the stamp of the plan's live run)                              |
+| `/bin/bash scripts/mutation-gate-smoke.sh` at 14b690b        | `[mutation-gate-smoke] 16 ok, 0 FAIL`                                                                                                               |
+| same smoke at 4df9203 (skeleton), on a clone under `$TMPDIR` | `[mutation-gate-smoke] 1 ok, 15 FAIL` (MG11 holds, as planned)                                                                                      |
+| `/bin/bash scripts/hook-smoke.sh`                            | `hook-smoke: 749 probes OK` (plan: 749)                                                                                                             |
+| `scripts/ci/check-suppressions.sh`                           | `OK: no new suppressions`                                                                                                                           |
+| `scripts/ci/check-config-change.sh`                          | exit 1: the 5 `.claude/` files lack `config-change-approved`. This is expected before the draft; the plan adds the label at draft (D-19)            |
+| `scripts/ci/check-feat-commits.sh`                           | `OK: no feat commit touches tests`                                                                                                                  |
+| `scripts/ci/check-ac-coverage.sh`                            | `OK: every criterion of a shipped section has a test`                                                                                               |
+| `scripts/ci/check-spec-sections.sh`                          | `OK: sections cited: 1 … 43`                                                                                                                        |
+| `scripts/ci/check-features-map.sh`                           | `OK`                                                                                                                                                |
+| `scripts/ci/check-plan-scope.sh`                             | `OK: chore/B1.100-mutation-once stays inside the approved plan of B1.100`                                                                           |
+| `scripts/ci/check-agent-frontmatter.sh`, `check-backlog.sh`  | `OK: 13 files`, `OK: README matches the cards`                                                                                                      |
+| `scripts/next-task.sh --check B1.100`                        | `[next-task] B1.100: no overlap with any Doing or Review card`                                                                                      |
+| `scripts/verify-red.sh B1.100`                               | `::error::no 'test(<pkg>): B1.100 … (red)' commit`. This is expected for a smoke-only red (see the checklist). My skeleton run above proves the red |
+| `git status --short` after all runs                          | empty                                                                                                                                               |
+
+### Checklist
+
+| Check                                        | Result                                                                                                                                                                                                                                                                                                                                           |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every criterion has a test matching its Then | n/a (no §). Card Acceptance 1–3 map to MG1–MG16. Acceptance 4 (batch-2 load) is the closing lane's. Acceptance 5 (label) is applied at the draft                                                                                                                                                                                                 |
+| no test weakened after the red commit        | pass: `git log --first-parent --no-merges 4df9203..HEAD -- '*.test.*' e2e/ scripts/mutation-gate-smoke.sh` is empty, and the range has no merges                                                                                                                                                                                                 |
+| red commit                                   | pass, with a stated deviation. 4df9203 drops the plan's `(red)` marker, and its body says why: smoke only, which `--auto` cannot judge. This is the B1.95/B1.98/B1.99 precedent. The red was reproduced: 1 ok / 15 FAIL                                                                                                                          |
+| every changed file is in `plan.md`           | pass: the 8 Files rows plus `backlog/work/B1.100/*`. `check-plan-scope.sh` OK                                                                                                                                                                                                                                                                    |
+| interfaces match the plan                    | pass with one exception, finding [3]. `[--base <ref>] [--force]`, the one stamp file and the line formats match. `--bogus` → 2, bad ref → 2, `--base` with no value → 1                                                                                                                                                                          |
+| Zod / Prisma / raw SQL / migration           | n/a: no `src/`, `prisma/` or `e2e/` change                                                                                                                                                                                                                                                                                                       |
+| no secret, no suppression                    | pass                                                                                                                                                                                                                                                                                                                                             |
+| features map row moved                       | n/a: tooling card, no map row                                                                                                                                                                                                                                                                                                                    |
+| prompts                                      | pass: code-writer step 4 and Report, tdd-loop green gate and Report, reviewer gate run, review-loop re-verify, and work-next Exit all name the script. D-13's before/after is kept on `pnpm test:mutation`. CI `ci.yml:107` is untouched. `dev-lead.md:55` is unchanged, as planned                                                              |
+| real Stryker text the script parses          | pass: `mutation-test-report-helper.js:139,144` (core 10.1.1) prints both `Final mutation score <s> under breaking threshold` and `Final mutation score of <s> is greater…`. `instrumenter.js:53` prints `with %d mutant(s)`. `3-dry-run-executor.js:47` prints `No tests were executed`. The regex reads `50.00` from the colored below-bar line |
+| reuse assumption                             | pass: `lefthook.yml` pre-commit only checks and never rewrites a staged file. Code-writer's commit leaves the working tree's `src/` hash unchanged, so the green gate and the reviewer get "(reused)"                                                                                                                                            |
+| revert/mutant probe (copy under `$TMPDIR`)   | 16 sed mutants of `mutation-gate.sh` against the smoke: 11 killed. 5 survived. `sort -u`→`sort` and dropping `--no-renames` are equivalent (cosmetic duplicate, or the old path is dropped by `cat-file` anyway). Three are real gaps: findings [1] and [2]                                                                                      |
+
+### Findings (none blocking)
+
+```
+[1] KIND: coverage
+    WHERE: scripts/mutation-gate.sh:79 (regex), scripts/mutation-gate-smoke.sh:34 (shim)
+    DEFECT: the shim always prints "Final mutation score of <s> is greater than or equal…", even for FAKE_SCORE=50.00 FAKE_RC=1, so Stryker's real below-bar line "Final mutation score 50.00 under breaking threshold 70" is never probed.
+    TRIGGER: mutant `(of )?` → `(of )` on line 79: smoke still "16 ok, 0 FAIL"; on real Stryker below 70 that mutant prints "mutation: ? % on …" instead of "mutation: 50.00 % on …".
+    WRONG BEHAVIOUR: none today (the shipped regex reads 50.00, checked); a later edit could lose the below-bar score from the PR evidence line with no probe failing. Exit code stays 1 either way.
+    CONFIDENCE: confirmed (mutant run; regex run on the real line)
+[2] KIND: coverage
+    WHERE: scripts/mutation-gate.sh:67-68 (reuse key)
+    DEFECT: the smoke does not probe the mutate list in the key, nor vitest.stryker.config.mts / package.json / pnpm-lock.yaml as key parts (MG11 covers stryker.config.mjs and tsconfig.json only).
+    TRIGGER: mutant line 68 → `key="$key"`, and mutant line 67 → `for p in stryker.config.mjs tsconfig.json`: both "16 ok, 0 FAIL".
+    WRONG BEHAVIOUR: none today; such an edit would let a run with another --base, or after a vitest.stryker.config.mts / lockfile change, reuse a stale line, unnoticed by the smoke.
+    CONFIDENCE: confirmed (mutants run)
+[3] KIND: plan-mismatch
+    WHERE: scripts/mutation-gate.sh:29
+    DEFECT: `${2:?--base needs a ref}` exits 1, while the plan's Interfaces say usage errors exit 2 and 1 means "below the bar or no score".
+    TRIGGER: `scripts/mutation-gate.sh --base` (no value) → stderr "line 29: 2: --base needs a ref", exit 1.
+    WRONG BEHAVIOUR: a usage error reads as a failed mutation gate (exit 1), with no `mutation:` line; `--bogus` correctly exits 2.
+    CONFIDENCE: confirmed (ran it on the clone)
+```
+
+None of these changes a pass/fail result on input that any prompt produces. Every prompt calls the script with no
+argument, or with `--force`. Fixing [1] and [2] means a `test(scripts): B1.100 review pass 1 -- …` commit, and
+fixing [3] a one-line `fix`. That is the dev-lead's call. If they stay open, the PR body should say so.
+
+Not blocking either: `pr-body.md` line 7 still reads "Red: pending. Green: pending". Fill it with 1 ok / 15 FAIL and
+16 ok / 0 FAIL before the draft.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the real-Stryker branches that the shim imitates (0 mutants, then "No tests were executed";
+NaN, then the fallback; mutants with no test reached). I verified the messages in Stryker 10.1.1's source and the
+plan's live runs, but I did not re-run them. A Stryker upgrade that rewords any of them would turn a pass into
+"? %", exit 1. That fails closed, but no probe would catch the rewording.
