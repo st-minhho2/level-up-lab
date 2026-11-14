@@ -1,6 +1,6 @@
 // §7 home page; §12 the list filtered by the `filter` query parameter; §13 the remaining count; §14 mark all complete;
 // §16 the list searched by title through the `q` query parameter; §23 the overdue count; §26 the tab title;
-// §30 the filter counts.
+// §30 the filter counts; §32 the clear-completed count.
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { ClearCompletedButton } from '@/components/clear-completed-button';
@@ -45,7 +45,11 @@ export default async function HomePage({
       <TodoSearchForm filter={filter} query={query} />
       {/* §9: outside the list and in both states, so it is never a listitem and never hidden (REQ-9.5). */}
       {/* §12 REQ-12.10: enabled from the stored todos, not the filtered ones. */}
-      <ClearCompletedButton disabled={!todos.some((todo) => todo.completed)} />
+      {/* §32 REQ-32.3: counted from the stored todos, never the filtered or searched ones. */}
+      <ClearCompletedButton
+        disabled={!todos.some((todo) => todo.completed)}
+        completedCount={filterCounts(todos).completed}
+      />
       {/* §14 REQ-14.4: enabled from the stored todos, not the filtered ones; outside the list in both states. */}
       <CompleteAllButton disabled={!todos.some((todo) => !todo.completed)} />
       {/* §30 REQ-30.3: counted from the stored todos, never the filtered or searched ones. */}
