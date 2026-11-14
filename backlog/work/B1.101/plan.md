@@ -21,8 +21,10 @@ no tracked change → fetch `origin/<branch>`, HEAD equal to it → `origin/main
 files and `scripts/agent/run.sh <n>` → `scripts/ci/check-spec-sections.sh`, `check-features-map.sh`,
 `check-backlog.sh` in the worktree; one fails: `reset --keep <pre>`, names it and `run.sh <n>` (Loop 9 repairs) →
 `scripts/pr-step.sh push` (fails: `reset --keep <pre>`) → issue comment (run.sh's fixed prefix, `**synced**`, branch,
-shas, PR) → `[run] #<n> <card>: synced …; PR #<pr> is mergeable once CI on <sha> is green`. Git in the worktree runs
-with `GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE` unset. No `claude` binary, login or version is needed.
+shas, PR) → `[run] #<n> <card>: synced …; PR #<pr> is mergeable once CI on <sha> is green`. A TERM or INT between
+the merge and the push resets to `<pre>` in `on_signal` (review r1 #3), so the next `--sync` starts from the PR's head.
+Git in the worktree runs with `GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE` unset. No `claude` binary, login or version
+is needed. No `eligible.sh`: `--sync` acts only on a worktree and an open PR that an eligible run already made.
 
 Costs, for the lead to accept:
 
@@ -32,10 +34,14 @@ Costs, for the lead to accept:
   required checks hold the merge until green. No local lint, typecheck or tests (Loop 9 runs `mark-reviewed.sh`): a
   semantic clash between siblings shows only as red CI, then the lead runs `run.sh <n>`.
 - One command per other ready PR after each merge; nothing runs it by itself. Comments: one per sync on the issue.
-- `scripts/CLAUDE.md`'s `agent/run.sh` row does not name `--sync`: B1.98 (Doing) plans that file. The run.sh header,
-  the compose header and git-workflow.md do. The next card that plans `scripts/CLAUDE.md` adds it (as for B1.95).
-- The closing lane is `-partial`: "the time from a sibling's merge to the next PR being mergeable" exists only after
-  E7 batch 2 (sibling `mergedAt` → green CI on the synced head, from the issue comment and `gh pr checks`).
+- `scripts/CLAUDE.md`'s `agent/run.sh` row does not name `--sync`: B1.98 (Doing) plans that file, and its approved
+  plan adds only B1.95's behind check to that row (review r1 #1). The run.sh header, the compose header and
+  git-workflow.md name it. The carrier is B1.101 itself, as B1.95 did: its closing lane is `-partial`, pending (a) the
+  `--sync` mention in that row, added by the next card that plans `scripts/CLAUDE.md`, and (b) "the time from a
+  sibling's merge to the next PR being mergeable", which exists only after E7 batch 2 (sibling `mergedAt` → green CI
+  on the synced head, from the issue comment and `gh pr checks`). Done when both are in.
+- git-workflow.md then names two paths for a ready PR left BEHIND: a waiting session's Loop 9 round trip
+  (`dev-lead.md` Loop 9, unchanged) and, for a runner PR whose run has ended, `run.sh --sync <issue>`.
 
 No advice (tier quick, no section). Risk tier **high** (`scripts/agent/`, `.claude/`, `.devcontainer/`, D-28) → the
 lead's `approve`; the PR carries `config-change-approved` (D-19). Dev-lead writes `scripts/` (interactive, as B1.95).
@@ -44,7 +50,7 @@ lead's `approve`; the PR carries `config-change-approved` (D-19). Dev-lead write
 
 | File                                      | Change                                                                                                        | Why             |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------- | --------------- |
-| `scripts/agent/run.sh`                    | `sync_issue`, `wgit`, `--sync <issue>` in the case and `USAGE`; no claude lookup for `--sync`; header lines   | Acceptance 1    |
+| `scripts/agent/run.sh`                    | `sync_issue`, `wgit`, `--sync <issue>` in case, `USAGE`; no claude lookup for it; `on_signal` reset; header   | Acceptance 1    |
 | `scripts/agent/run-smoke.sh`              | R21 (clean union sync, then level), R22 (refusals leave the branch as it was); header R1–R22                  | Test line       |
 | `.devcontainer/runner/docker-compose.yml` | header: after each merge in a batch, `exec runner scripts/agent/run.sh --sync <issue>` per other ready PR     | Acceptance 1    |
 | `.claude/docs/git-workflow.md`            | "Batch review": a ready runner PR is brought in line by `run.sh --sync <issue>`, GitHub ignores `merge=union` | Acceptance 1, 2 |
@@ -64,6 +70,7 @@ lead's `approve`; the PR carries `config-change-approved` (D-19). Dev-lead write
 | R22 conflict (plain file) · guard fails (union keeps F1 twice)         | rc 1, branch, origin's branch, index as before, no MERGE_HEAD, no comment; names `plain.txt` / `check-`, and `scripts/agent/run.sh 7`                                      |
 | R22 no PR · draft · unpushed tip · tracked change · no worktree        | rc 1, nothing merged or pushed; `no open ready PR` (+ `run.sh 7`) · `origin/<branch>` · `uncommitted` (file kept) · `no worktree`                                          |
 | R22 live lock · no identity · checkout behind · argv `""`, `7 8`, `x`  | rc 1, nothing changed; `locked` (lock kept) · `no git identity` · `behind origin/main by 1 commit` · usage naming `--sync <issue>`                                         |
+| R22 TERM while a guard runs (after the merge, before the push)         | rc 143; branch, origin's branch, index as before, no MERGE_HEAD; lock gone; no comment                                                                                     |
 
 ## Verification
 
@@ -74,8 +81,9 @@ lead's `approve`; the PR carries `config-change-approved` (D-19). Dev-lead write
 - Green `chore(scripts): B1.101 run.sh --sync brings a ready runner PR level with origin/main`: "22 probes OK"
   (prototype: holds). Mutants (prototype): no trailer, no guards, no reset after a guard, no merge abort, draft
   accepted, no level check, no HEAD = origin check, no dirty check, no lock, `GIT_DIR` kept, no identity, no behind
-  check — each must fail R21 or R22.
-- `hook-smoke.sh` "749 probes OK" before and after; `pnpm test` unchanged; `pnpm lint && pnpm typecheck` exit 0;
+  check, no reset on TERM — 13 of 13 fail R21 or R22 only (prototype r2).
+- `hook-smoke.sh` "749 probes OK" before and after; `pnpm test` "Test Files 48 passed (48)", "Tests 298 passed (298)"
+  before and after; `pnpm lint && pnpm typecheck` exit 0;
   `next-task.sh --check B1.101` no overlap; `check-plan-scope.sh`, `check-backlog.sh` OK; CI green.
 
 ## Work breakdown
