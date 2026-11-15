@@ -13,9 +13,9 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | E4 Todos details    | [plan/E4-todos-details.md](plan/E4-todos-details.md)       | 3      | 0       | 1      | 4       |
 | E5 Todos keys       | [plan/E5-todos-keys.md](plan/E5-todos-keys.md)             | 6      | 0       | 0      | 6       |
 | E6 Todos cues       | [plan/E6-todos-cues.md](plan/E6-todos-cues.md)             | 6      | 0       | 0      | 6       |
-| E7 Todos hints      | [plan/E7-todos-hints.md](plan/E7-todos-hints.md)           | 4      | 0       | 2      | 6       |
+| E7 Todos hints      | [plan/E7-todos-hints.md](plan/E7-todos-hints.md)           | 5      | 0       | 1      | 6       |
 | E8 Todos polish two | [plan/E8-todos-polish-two.md](plan/E8-todos-polish-two.md) | 0      | 0       | 3      | 3       |
-| **Total**           |                                                            | **90** | **2**   | **40** | **132** |
+| **Total**           |                                                            | **91** | **2**   | **39** | **132** |
 
 ## Execution order
 
@@ -169,7 +169,7 @@ flowchart TD
   S122["122 · deleting a todo asks for confirmation<br/>~~B7.1~~"]
   S123["123 · Mark all complete says how many<br/>~~B7.2~~"]
   S124["124 · the due-date editor has a Today button<br/>~~B7.3~~"]
-  S125["125 · the search form says how many match<br/>B7.4"]
+  S125["125 · the search form says how many match<br/>~~B7.4~~"]
   S126["126 · the new-todo counter warns near the limit<br/>B7.5"]
   S127["127 · the due-date editor has a Clear due date button<br/>~~B7.6~~"]
   S124 --> S127
@@ -223,7 +223,6 @@ at most 3 cards Doing (B1.18).
 | 108  | B1.92  | A union merge's duplicate row reaches CI before any guard reads it                                        | —      | Open    | ~~B1.89~~                       | Lead  | S [estimate] |
 | 109  | B1.93  | Eight smokes remove the caller's directory when `mktemp -d` fails                                         | —      | Open    | —                               | Lead  | S [estimate] |
 | 110  | B1.94  | CI never runs table-merge-smoke, whose verdict follows the host's own git attributes                      | —      | Open    | ~~B1.89~~                       | Lead  | S [estimate] |
-| 125  | B7.4   | The search form says how many todos match                                                                 | —      | Open    | ~~D-37~~                        | Lead  | S [estimate] |
 | 126  | B7.5   | The new-todo counter warns near the limit                                                                 | —      | Open    | ~~D-37~~                        | Lead  | S [estimate] |
 | 128  | B1.100 | Each parallel run mutation-tests all of src/lib up to three times, whatever the card changed              | —      | Partial | —                               | Lead  | S [estimate] |
 | 129  | B1.101 | GitHub reports parallel runner PRs as conflicting on the union tables, and each needs a re-run            | —      | Partial | —                               | Lead  | S [estimate] |
