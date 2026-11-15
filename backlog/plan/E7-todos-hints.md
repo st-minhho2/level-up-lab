@@ -123,9 +123,7 @@ _F37 · section 39_
 ### B7.6 · The due-date editor has a "Clear due date" button
 
 _F38 · section 40_
-**Status: Open** — §15 already removes a date when the field is submitted empty (`spec/contracts/13-due-date.md:20`,
-REQ-15.3; AC-15.3 and AC-15.7). Removing one today means emptying the date field by hand, then pressing "Update due
-date". REQ-15.6 (line 23) and the §15 contract (line 76) list the edit form's children as one field and one button.
+**Status: Done** — 1ec402e (#324), 6 AC-40.n criteria green (red proven by verify-red.sh; AC-37.1 rewritten under D-38, green; unit 298 → 313; e2e 70 → 71), mutation 92.91 (lib, actions unchanged); unattended and no-rework 1/1 (D-29), one runner run and two `run.sh --sync` merges (c2d0a2a, ace62e5) after B7.4 and B7.5 merged (B1.101)
 
 - **Acceptance:**
   - In edit mode, a `type="button"` named "Clear due date" calls `setTodoDueDateAction(todoId, '')`. It closes the
