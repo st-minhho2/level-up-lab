@@ -70,7 +70,7 @@ afterEach(() => {
 });
 
 describe('<TodoDueDate> "Today" button (§37)', () => {
-  it('AC-37.1: shows 0 "Today" buttons before "Edit due date"; after it the form holds exactly 4 children in order: label "Due date", date input, button "Today" (type button, text "Today"), submit button "Update due date"', async () => {
+  it('AC-37.1: shows 0 "Today" buttons before "Edit due date"; after it the form holds exactly 5 children in order: label "Due date", date input, button "Today" (type button, text "Today"), button "Clear due date" (§40), submit button "Update due date"', async () => {
     const user = userEvent.setup();
     render(<TodoDueDate todoId="todo-9" dueDate="2026-11-05" />);
     const todayButtonsBefore = screen.queryAllByRole('button', { name: 'Today' }).length;
@@ -81,8 +81,8 @@ describe('<TodoDueDate> "Today" button (§37)', () => {
     const form = dueDateField().closest('form');
     expect(form).not.toBeNull();
     const children = Array.from(form?.children ?? []);
-    expect(children).toHaveLength(4);
-    const [label, input, today, update] = children;
+    expect(children).toHaveLength(5);
+    const [label, input, today, clear, update] = children;
     expect(label?.tagName).toBe('LABEL');
     expect(label?.textContent).toBe('Due date');
     expect(input?.tagName).toBe('INPUT');
@@ -91,6 +91,8 @@ describe('<TodoDueDate> "Today" button (§37)', () => {
     expect(today?.tagName).toBe('BUTTON');
     expect(today).toHaveAttribute('type', 'button');
     expect(today?.textContent).toBe('Today');
+    expect(clear).toBe(screen.getByRole('button', { name: 'Clear due date' }));
+    expect(clear?.tagName).toBe('BUTTON');
     expect(update).toBe(screen.getByRole('button', { name: 'Update due date' }));
     expect(update?.tagName).toBe('BUTTON');
     expect(update).toHaveAttribute('type', 'submit');
