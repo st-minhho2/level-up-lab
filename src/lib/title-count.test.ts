@@ -1,7 +1,7 @@
-// §18 the new-todo title counter (B3.2).
+// §18 the new-todo title counter (B3.2), §39 its near-limit warning (B7.5).
 import { describe, expect, it } from 'vitest';
-import { titleCharacterCount, titleCounterText } from './title-count';
-import { createTodoSchema } from './todo-schema';
+import { TITLE_WARNING_THRESHOLD, isTitleNearLimit, titleCharacterCount, titleCounterText } from './title-count';
+import { TITLE_MAX_LENGTH, createTodoSchema } from './todo-schema';
 
 function repeat(text: string, times: number): string {
   return text.repeat(times);
@@ -48,5 +48,27 @@ describe('titleCounterText', () => {
     expect(shown).toEqual(['0 / 200', '8 / 200', '1 / 200', '200 / 200', '201 / 200']);
     expect(judged).toEqual([false, true, true, false]);
     expect(counted).toEqual(judged);
+  });
+});
+
+describe('isTitleNearLimit', () => {
+  it('AC-39.1: returns false, false, true, false, true, true, true, true, true for the nine values (90 × U+1F600 counts 180), never throws, and TITLE_WARNING_THRESHOLD is 180, less than TITLE_MAX_LENGTH', () => {
+    const values: readonly string[] = [
+      '',
+      repeat('x', 179),
+      repeat('x', 180),
+      spaces(5) + repeat('x', 175),
+      spaces(5) + repeat('x', 180),
+      spaces(1) + repeat('x', 180) + spaces(1),
+      repeat('x', 200),
+      repeat('x', 201),
+      repeat('\u{1F600}', 90),
+    ];
+
+    const verdicts = values.map((value) => isTitleNearLimit(value));
+
+    expect(verdicts).toEqual([false, false, true, false, true, true, true, true, true]);
+    expect(TITLE_WARNING_THRESHOLD).toBe(180);
+    expect(TITLE_WARNING_THRESHOLD).toBeLessThan(TITLE_MAX_LENGTH);
   });
 });

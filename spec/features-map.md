@@ -42,5 +42,8 @@ moves or removes a feature updates its row in code-writer's own commit right aft
 | F34 | §36 | Count on the mark-all-complete button | `src/lib/complete-all-label.ts`, `src/components/complete-all-button.tsx`, `src/app/page.tsx` | `src/lib/complete-all-label.test.ts`, `src/components/complete-all-button-count.test.tsx`, `e2e/36-complete-all-count.spec.ts` | ✅ |
 | F33 | §35 | Confirm before deleting a todo      | `src/components/delete-todo-button.tsx`                                                                                                                                                 | `src/components/delete-todo-button.test.tsx`, `src/components/todo-item.test.tsx`, `e2e/19-delete.spec.ts`                                                                                                                   | ✅     |
 | F35 | §37 | "Today" button in the due-date editor | `src/components/todo-due-date.tsx` | `src/components/todo-due-date-today-button.test.tsx`, `e2e/37-due-date-today.spec.ts` | ✅ |
+| F38 | §40 | "Clear due date" button in the due-date editor | `src/components/todo-due-date.tsx` | `src/components/todo-due-date-clear.test.tsx`, `e2e/40-due-date-clear.spec.ts` | ✅ |
+| F37 | §39 | Near-limit warning on the new-todo counter | `src/lib/title-count.ts`, `src/components/todo-form.tsx` | `src/lib/title-count.test.ts`, `src/components/todo-form-warning.test.tsx`, `e2e/39-title-counter-warning.spec.ts` | ✅ |
+| F36 | §38 | Match count in the search form | `src/components/todo-search-form.tsx`, `src/app/page.tsx` | `src/components/todo-search-form.test.tsx`, `e2e/38-search-count.spec.ts` | ✅ |
 
 Receipt: verified against `0b2a6d5` (B1.11 merged).
