@@ -78,9 +78,7 @@ _F35 · section 37_
 ### B7.4 · The search form says how many todos match
 
 _F36 · section 38_
-**Status: Open** — `spec/contracts/14-search.md:75` (§16's Out of scope) lists "counts of matches", and its contract
-(lines 56–58) has no count prop. `23-search-shortcut.md:22` (REQ-25.6) and `25-escape-search.md:22` (REQ-27.6) say
-§16's markup does not change.
+**Status: Done** — 4e5a72d (#322), 7 AC-38.n criteria green (AC-38.3, AC-38.4, AC-38.7 pinned green first, the rest red proven by verify-red.sh; unit 298 → 302; e2e 70 → 73, AC-38.5–38.7), mutation 92.84 (lib, actions unchanged); unattended and no-rework 1/1 (D-29), one runner run, merged first in E7 batch 2 with no sync
 
 - **Acceptance:**
   - While a search is in effect and at least one todo is shown, the form shows "1 match" or "n matches". The count is

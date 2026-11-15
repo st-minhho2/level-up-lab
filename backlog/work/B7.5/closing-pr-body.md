@@ -10,7 +10,8 @@ Files:
   - mutation 92.91 (CI; `src/lib/title-count.ts` 100);
   - unattended and no-rework 1/1 (D-29), one runner run and one `run.sh --sync` merge (below).
 - `backlog/README.md`: Remaining row 126 removed; `~~B7.5~~` in node 126. No other Remaining row was blocked by
-  B7.5. Totals: E7 4/0/2, total 90/2/40 of 132.
+  B7.5. Totals: E7 5/0/1, total 91/2/39 of 132 (B7.4's closing #325 merged in: main's README, metrics and index
+  copies kept, this card's lines applied again).
 - `spec/technical-requirements.md`: §39 index row ✗ → ✅.
 - `docs/metrics.md`: B7.5 Mutation cell → 92.91 (title-count.ts 100) (the CI Stryker run on 8204a1d), Green cell
   from the feat commit c7ec922 to the merged sha 139c960.
