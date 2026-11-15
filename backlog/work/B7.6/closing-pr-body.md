@@ -12,8 +12,8 @@ Files:
   - mutation 92.91 (CI, `src/lib` and `src/actions` unchanged);
   - unattended and no-rework 1/1 (D-29), one runner run and two `run.sh --sync` merges (below).
 - `backlog/README.md`: Remaining row 127 removed; `~~B7.6~~` in node 127. No other Remaining row was blocked by
-  B7.6. Totals: E7 5/0/1, total 91/2/39 of 132 (B7.4's closing #325 merged in: main's README, metrics and index
-  copies kept, this card's lines applied again).
+  B7.6. Totals: E7 6/0/0, total 92/2/38 of 132 (B7.4's and B7.5's closings #325, #326 merged in: main's README,
+  metrics and index copies kept, this card's lines applied again). E7 is complete.
 - `spec/technical-requirements.md`: §40 index row ✗ → ✅.
 - `docs/metrics.md`: B7.6 Mutation cell "CI only" → 92.91 (the CI Stryker run on ace62e5), Green cell from the feat
   commit ab98c4c to the merged sha 1ec402e.

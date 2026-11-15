@@ -99,10 +99,7 @@ _F36 · section 38_
 ### B7.5 · The new-todo counter warns near the limit
 
 _F37 · section 39_
-**Status: Open** — `spec/contracts/16-title-counter.md:63` (§18's Out of scope) lists "a warning colour, a threshold
-… or any text announced at a threshold". REQ-18.1 (line 17) fixes the counter's text as `<used> / 200`.
-`e2e/18-title-counter.spec.ts:20-31` matches the counter with `/^\d+ \/ 200$/` and expects `aria-describedby` to be
-`new-todo-count` at 195 and 200 characters.
+**Status: Done** — 139c960 (#323), 7 AC-39.n criteria green (red proven by verify-red.sh; unit 298 → 304; e2e 70 → 71, AC-39.7), mutation 92.91 (title-count.ts 100); unattended and no-rework 1/1 (D-29), one runner run and one `run.sh --sync` merge (8204a1d) after B7.4 merged (B1.101)
 
 - **Acceptance:**
   - From 180 used characters a separate element (`id="new-todo-warning"`) shows a short warning text with a warning
