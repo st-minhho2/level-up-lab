@@ -54,7 +54,9 @@ Pending item (a) of the closing lane: no card plans `scripts/CLAUDE.md` now (B1.
 the row itself on `chore/B1.101-scripts-guide-row`, one `docs(scripts)` commit. The `agent/run.sh` row's first cell
 gains `\| --sync <issue>`; its Does cell gains "`--sync <issue>`: merges `origin/main` into the issue's ready PR
 branch in its worktree with this clone's attributes, runs the three table guards, pushes with `Agent-Run: sync`, no
-`claude` (B1.101)". No other file but this plan and the PR body; no behaviour change. Item (b), the time to mergeable,
+`claude` (B1.101)", and, from E7 batch 2 (`--sync` right after a merge refused twice: the clone was behind by the
+merge itself, B1.95), "fast-forward this clone to `origin/main` first". No other file but this plan and the PR body;
+no behaviour change. Item (b), the time to mergeable,
 is measured in E7 batch 2 (#322–#324) and lands in the Done closing lane, not here. Verification: `check-plan-scope.sh`
 OK, `hook-smoke.sh` "749 probes OK", `prettier --check scripts/CLAUDE.md`, CI green. Not re-reviewed (plan review cap
 2, as round 3); the lead approves.
@@ -110,4 +112,4 @@ OK, `hook-smoke.sh` "749 probes OK", `prettier --check scripts/CLAUDE.md`, CI gr
 | 3    | reviewer | diff review         | `docs(backlog): B1.101 review pass N`                                                  |
 | 4    | dev-lead | draft PR, label     | —                                                                                      |
 
-Plan review: changes requested, round 2 (1 reason, fixed in round 3, not re-reviewed: cap 2; round 4 not re-reviewed) · Plan approved by: lead, 2026-11-14 (rounds 1–3; round 4 waiting) · Rounds: 1
+Plan review: changes requested, round 2 (1 reason, fixed in round 3, not re-reviewed: cap 2; round 4 not re-reviewed) · Plan approved by: lead, 2026-11-14 (rounds 1–3); lead, 2026-11-15 (round 4) · Rounds: 1
