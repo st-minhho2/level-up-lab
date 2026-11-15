@@ -43,7 +43,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §36 | [contracts/34-complete-all-count.md](contracts/34-complete-all-count.md)       | Todos: the mark-all-complete button says how many it will mark         | ✅     |
 | §37 | [contracts/35-due-date-today.md](contracts/35-due-date-today.md)               | Todos: a "Today" button fills the due-date field                       | ✅     |
 | §38 | [contracts/36-search-count.md](contracts/36-search-count.md) | Todos: the search form says how many todos match | ✅ |
-| §39 | [contracts/37-title-counter-warning.md](contracts/37-title-counter-warning.md) | Todos: the new-todo counter warns near the 200-character limit | ✗ |
+| §39 | [contracts/37-title-counter-warning.md](contracts/37-title-counter-warning.md) | Todos: the new-todo counter warns near the 200-character limit | ✅ |
 | §40 | [contracts/38-due-date-clear.md](contracts/38-due-date-clear.md) | Todos: a "Clear due date" button removes the due date in one step | ✗ |
 | §41 | [contracts/39-edit-title-select.md](contracts/39-edit-title-select.md) | Todos: opening the title editor selects the whole title | ✗ |
 | §42 | [contracts/40-filter-hide-empty.md](contracts/40-filter-hide-empty.md) | Todos: the filter nav hides a link whose count is 0 | ✗ |
