@@ -186,16 +186,64 @@ docker push -d registry.example.com/img:1
 PLAIN
 probe 0 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh push' "$PWD")"   # the wrapper's push (B1.23) still runs
 
-echo "== settings.json permissions (B1.23)"
+echo "== guard-bash.sh: merging a pull request (B1.103)"
+while IFS= read -r c; do probe_msg 2 'agents never merge' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'MERGE'
+gh api -X PUT repos/o/r/pulls/7/merge
+gh api --method PUT repos/{owner}/{repo}/pulls/7/merge -f merge_method=squash
+gh api -XPUT repos/o/r/pulls/7/merge
+gh api --method=put /repos/o/r/pulls/7/merge
+gh api repos/o/r/pulls/7/merge -X PUT
+GH API -X PUT REPOS/O/R/PULLS/7/MERGE
+gh -R o/r api -X PUT repos/o/r/pulls/7/merge
+P=repos/o/r/pulls/7/merge; gh api -X PUT "$P"
+gh api repos/o/r/merges -f base=main -f head=feat/x
+gh api graphql -f query='mutation { mergePullRequest(input: {pullRequestId: "x"}) { clientMutationId } }'
+gh api graphql -f query='mutation { enablePullRequestAutoMerge(input: {pullRequestId: "x"}) { clientMutationId } }'
+gh api graphql -f query='mutation { mergeBranch(input: {repositoryId: "x", base: "main", head: "y"}) { clientMutationId } }'
+gh api graphql -f query='mutation { enqueuePullRequest(input: {pullRequestId: "x"}) { clientMutationId } }'
+Q='mutation { mergePullRequest(input: {pullRequestId: "x"}) { clientMutationId } }'; gh api graphql -f query="$Q"
+gh -R o/r pr merge 7 --squash
+gh --repo o/r pr merge 7
+GH_REPO=o/r gh pr merge 7
+gh pr merge 7 --auto --squash
+/opt/homebrew/bin/gh pr merge 7
+"gh" pr "merge" 7
+true && gh pr merge 7
+gh pr -R o/r merge 7
+gh pr --repo=o/r merge 7
+gh pr --repo o/r merge 7 --squash
+MERGE
+c="$(printf "gh api graphql -F query=@- <<'X'\nmutation {\n  mergePullRequest(input: {pullRequestId: \"x\"}) { clientMutationId }\n}\nX")"
+probe_msg 2 'agents never merge' guard-bash.sh "$(pr_cmd "$c" "$PWD")"   # the query in a heredoc of the same command
+while IFS= read -r c; do probe 0 guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'READS'
+gh api repos/o/r/pulls/7
+gh api repos/o/r/pulls/7 --jq .mergeable
+gh api repos/o/r/pulls/7/files
+gh api repos/o/r/pulls/7/reviews
+gh api graphql -f query='query { repository(owner: "o", name: "r") { pullRequest(number: 7) { mergeable mergeStateStatus } } }'
+gh pr view 7 --json mergeable,mergeStateStatus,mergedAt
+gh pr -R o/r view 7 --json mergeable
+gh pr checks 7
+gh pr list --state merged
+gh pr edit 7 --add-label config-change-approved
+git merge origin/main
+git merge --no-ff -m "Merge remote-tracking branch 'origin/main' into feat/x"
+git log --merges --oneline
+READS
+probe 0 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh ready 7' "$PWD")"   # the wrapper's own gh calls stay its own
+
+echo "== settings.json permissions (B1.23, B1.103)"
 n=$((n+1)); if node -e '
   const p = require("./.claude/settings.json").permissions;
   const deny = ["Read(./.env)", "Read(./.env.local)", "Read(./.env.development)", "Read(./.env.test)",
     "Read(./.env.production)", "Read(~/.ssh/**)", "Read(~/.aws/**)", "Read(~/.kube/**)", "Edit(./.env*)",
     "Bash(git commit --no-verify*)", "Bash(git commit * --no-verify*)", "Bash(git commit -n *)",
-    "Bash(git -c core.hooksPath=*)", "Bash(LEFTHOOK=0*)", "Bash(gh pr merge*)", "Bash(gh pr review*)"];
+    "Bash(git -c core.hooksPath=*)", "Bash(LEFTHOOK=0*)", "Bash(gh pr merge*)", "Bash(gh pr review*)",
+    "Bash(gh * pr merge*)", "Bash(gh *pulls/*/merge*)", "Bash(gh */merges*)", "Bash(gh *mergePullRequest*)",
+    "Bash(gh *enablePullRequestAutoMerge*)"];
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   process.exit(same(p.allow, ["Bash(scripts/pr-step.sh *)"]) && same(p.deny, deny) ? 0 : 1);'; then
-  echo "ok   allow is exactly the pr-step.sh wrapper; the 16 deny entries unchanged"
+  echo "ok   allow is exactly the pr-step.sh wrapper; the 21 deny entries unchanged"
 else echo "FAIL allow is not exactly [Bash(scripts/pr-step.sh *)] or deny changed"; fail=1; fi
 
 echo "== guard-read.sh"
