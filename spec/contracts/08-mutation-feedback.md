@@ -57,7 +57,8 @@ export function clearCompletedTodosAction(): Promise<ActionResult<{ deleted: num
 // ok:false result without one of those keys cannot occur.
 // src/components/clear-completed-button.tsx: ClearCompletedButton({ disabled }: { readonly disabled: boolean }): ReactNode
 // renders the button and, only after a failed result, <p role="alert"> with fieldErrors.form?.[0] as the button's next
-// sibling inside one wrapper element; a successful result clears it; the button is enabled again once pending ends.
+// sibling inside one wrapper element, and while it is shown it is the button's accessible description (§49); a successful
+// result clears it; the button is enabled again once pending ends.
 // src/components/todo-form.tsx: TodoForm(): ReactNode keeps its single <p id="new-todo-error" role="alert"> under the
 // text box and reads fieldErrors.title?.[0] ?? fieldErrors.form?.[0] (an ok:false result carries one of the two);
 // after a result with a `form` error the text box keeps the title the person typed, after ok:true it is empty, and the

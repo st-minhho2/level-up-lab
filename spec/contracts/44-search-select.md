@@ -70,7 +70,7 @@ need a selection set it with `setSelectionRange` on the field before the event u
 ## Out of scope
 
 Selecting the text on a click or Tab into the box, restoring or remembering the caret, selecting text in any other
-field ("New todo" §5, a title field §6, a due-date field §15), a visible hint for the shortcut, any key other than `/`,
+field ("New todo" §5, a title field §6, a due-date field §15), any key other than `/`,
 `selectionDirection`, scrolling the box into view beyond what `focus()` does, announcing the selection to assistive
 technology, changing Escape in the box (§27).
 

@@ -71,7 +71,7 @@ Zod schema, Prisma model, query, environment variable, prop or lib function. `sr
 ## Out of scope
 
 A confirmation before clearing, undo, hiding the button while no date is stored, a keyboard shortcut for clearing,
-restoring focus to "Edit due date" after the clear or after Escape, announcing the removal to assistive technology,
+restoring focus to "Edit due date" after the clear, announcing the removal to assistive technology,
 a "Clear" button outside edit mode, clearing from the list or in bulk, a "Cancel" button, any change to the server,
 the action, the schema or `src/lib`.
 

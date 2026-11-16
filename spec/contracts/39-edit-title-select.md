@@ -18,7 +18,7 @@ arrow key moves into it. Nothing else about editing changes.
 | REQ-41.1 | Event-driven      | WHEN a person activates the "Edit title" button of a row (§6 REQ-6.1) THE SYSTEM SHALL, with the title field shown, make that field `document.activeElement` and select all of its text: `selectionStart` equal to 0 and `selectionEnd` equal to the field's `value.length`, which is the stored title's `title.length` in UTF-16 code units (§6 REQ-6.1: the field holds the stored title).                                                                 |
 | REQ-41.2 | Event-driven      | WHEN a row enters edit mode again after leaving it, by Escape (§24 REQ-24.1) or by a successful save (§6 REQ-6.2), THE SYSTEM SHALL do as REQ-41.1 for the title then stored, so the selection never depends on an earlier edit's draft or caret.                                                                                                                                                                                                            |
 | REQ-41.3 | Unwanted behavior | IF a row that is already in edit mode stays in it after a rejected save (§6 REQ-6.4, REQ-6.5, REQ-6.6) or a failed save (§10 REQ-10.3), or re-renders for any other reason (a new `todo` prop, a save pending or settled, a message shown or removed, a key typed, a click in the field), THEN THE SYSTEM SHALL NOT focus a control or change a selection: the field keeps its draft, its focus state, `selectionStart` and `selectionEnd`.                  |
-| REQ-41.4 | Ubiquitous        | THE SYSTEM SHALL move focus and set a selection only on the switch from view mode into edit mode (REQ-41.1, REQ-41.2): a row that renders in view mode, a row that leaves edit mode, and a row other than the one whose "Edit title" was activated receive no focus and keep their selection.                                                                                                                                                                |
+| REQ-41.4 | Ubiquitous        | THE SYSTEM SHALL move focus and set a selection only on the switch from view mode into edit mode (REQ-41.1, REQ-41.2): a row that renders in view mode, a row that leaves edit mode by a save (a row that leaves it by Escape gets the focus of §48 REQ-48.1), and a row other than the one whose "Edit title" was activated receive no focus and keep their selection.                                                                                      |
 | REQ-41.5 | Ubiquitous        | THE SYSTEM SHALL change nothing but focus and selection: the field's value, label, `id` and attributes, the order and names of the row's controls, the row's text content (§6, AC-5.1), the Escape, Enter and Tab behavior of §6 and §24, the "/" shortcut's treatment of a title field (§25 REQ-25.3) and the request count (none on activation) are those of §6, §24 and §25; a key typed while all of the text is selected replaces it as in any browser. |
 
 Edits to other sections that this one makes (D-39): none. No requirement or criterion is lifted or edited.
@@ -31,8 +31,8 @@ The "`todo-item.tsx` unchanged" notes of the sections below limit each section's
   `26-escape-due-date.md:48-49`, `33-delete-confirm.md:55`, `35-due-date-today.md:62` and
   `38-due-date-clear.md:69`, all in `spec/contracts/`. The file numbers are not the section numbers (the contract of
   §24 is `22-escape-edit-title.md`), so the notes are named by file and line.
-- §24's Out of scope item "restoring focus to the 'Edit title' button" holds, and so does §6's "Cancelling an edit by
-  blur": §41 says where focus goes on entering edit mode, never where it goes on leaving it.
+- §6's "Cancelling an edit by blur" holds: §41 says where focus goes on entering edit mode, never where it goes on
+  leaving it; for Escape, §48 REQ-48.1 says where it goes.
 
 ## Acceptance criteria
 
@@ -49,7 +49,7 @@ The "`todo-item.tsx` unchanged" notes of the sections below limit each section's
 
 ```ts
 // src/components/todo-item.tsx (§7, §6, §24, §19, §20, §10, extended; no new component, props unchanged)
-export function TodoItem({ todo }: { readonly todo: Todo }): ReactNode; // as before, plus: when the row changes from view mode into edit mode (the click of "Edit title", onEdit), after the title <input> is in the document it receives focus and select(), once for that switch; a re-render in edit mode, a rejected or failed save, a changed todo prop, and the exit from edit mode do not call focus() or select() or set a selection range
+export function TodoItem({ todo }: { readonly todo: Todo }): ReactNode; // as before, plus: when the row changes from view mode into edit mode (the click of "Edit title", onEdit), after the title <input> is in the document it receives focus and select(), once for that switch; a re-render in edit mode, a rejected or failed save, a changed todo prop, and the exit from edit mode by a save do not call focus() or select() or set a selection range (an exit by Escape focuses the "Edit title" button, §48)
 ```
 
 The only file of `src/` this section changes is `src/components/todo-item.tsx`. No new export, Server Action, Zod
@@ -64,7 +64,7 @@ tests that set a selection do so with `setSelectionRange` on the field before th
 
 ## Out of scope
 
-Restoring focus to the "Edit title" button after Escape or a save (§24), moving focus anywhere on leaving edit mode,
+Restoring focus to the "Edit title" button after a save, moving focus anywhere on leaving edit mode by a save,
 selecting the title on a click into the field, focusing the field of a row other than the one activated, selecting
 text in the due-date field (§15), the new-todo box (§5) or the search box (§16), scrolling the row into view, a
 visible highlight style of our own, entering edit mode by double-click or by a key, `selectionDirection`, undo,

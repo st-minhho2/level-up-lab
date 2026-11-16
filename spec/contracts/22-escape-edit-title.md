@@ -46,8 +46,7 @@ The only file of `src/` this section changes is `src/components/todo-item.tsx`; 
 
 ## Out of scope
 
-Cancelling by blur or by clicking elsewhere, a "Cancel" button, a confirmation when the draft differs, restoring
-focus to the "Edit title" button, Escape in other fields (due date §15, search §16), Escape while no field is open,
+Cancelling by blur or by clicking elsewhere, a "Cancel" button, a confirmation when the draft differs, Escape in other fields (due date §15, search §16), Escape while no field is open,
 undo, announcing the cancellation to assistive technology.
 
 ## Unchanged behavior

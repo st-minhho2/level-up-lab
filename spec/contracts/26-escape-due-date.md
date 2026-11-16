@@ -51,7 +51,7 @@ The only file of `src/` this section changes is `src/components/todo-due-date.ts
 ## Out of scope
 
 Cancelling by blur or by clicking elsewhere (the half of §15's line that stays, D-32), a "Cancel" button, a
-confirmation when the draft differs, restoring focus to the "Edit due date" button, Escape in other fields (title §24,
+confirmation when the draft differs, Escape in other fields (title §24,
 search §27), Escape while no field is open, closing the browser's own date picker pop-up, undo, announcing the
 cancellation to assistive technology.
 
