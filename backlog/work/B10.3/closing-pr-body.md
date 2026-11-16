@@ -13,7 +13,7 @@ Files:
   - mutation n/a: no `src/lib` or `src/actions` change, so the run skipped local mutation (B1.100);
   - no-rework 1/1, unattended 1/1 (D-29).
 - `backlog/README.md`: Remaining row 140 removed; `~~B10.3~~` in node 140. No other Remaining row was blocked by B10.3.
-  Totals: E10 1/0/2, total 100/1/42 of 143.
+  Totals: E10 3/0/0, total 103/1/39 of 143.
 - `spec/technical-requirements.md`: §50 index row ✗ → ✅.
 - `docs/metrics.md`: B10.3 Mutation cell "CI only" → 92.91 (the CI Stryker run on 6358d02, `src/lib` and
   `src/actions` unchanged); Green cell "this feat commit" → the merged sha 1011c58, as the E8 and E9
