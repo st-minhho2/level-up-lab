@@ -79,3 +79,60 @@ Verdict: approved (ready for the lead's gate, not approved for build)
 
 Riskiest unfalsified: REQ-48.1's "in the commit that shows the row in view mode" against a `useEffect` (runs after
 commit, flushed in the same task for a discrete keydown); no criterion distinguishes it from `useLayoutEffect`.
+
+## Diff review (round 1)
+
+Scope: ui. HEAD `f007d3e`; red `958c6cd` (pin `e1b0d51`), feat `961b111`, map `f007d3e`. No merge commits on the branch.
+
+### Commands (last line each)
+
+| Command                             | Result                                                                                                  |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!`                                                            |
+| `pnpm typecheck`                    | `tsc --noEmit` clean                                                                                    |
+| `pnpm test`                         | `Tests  369 passed (369)` (58 files; plan: 366 → 369)                                                   |
+| `pnpm test:e2e`                     | `89 passed (4.5m)` (plan: 88 → 89; `48-escape-title-focus.spec.ts` AC-48.7 green)                       |
+| `scripts/mutation-gate.sh`          | `mutation: CI only, no src/lib or src/actions change`                                                   |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                               |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                       |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                      |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test`                                                   |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 53`                                                                            |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                                    |
+| `scripts/verify-red.sh B10.1`       | exit 0, `9 ran (3 new), 3 new failed, 0 new passed  OK (red on behavior)`; e2e skipped (needs a server) |
+| `git diff --stat main...HEAD`       | 9 files, 712 insertions, 2 deletions                                                                    |
+
+### Checklist
+
+| Check                                                             | Result                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-48.n has a test whose assertion matches its Then         | pass: AC-48.1–48.6 in `todo-item-escape-focus.test.tsx:89-276` (9 `it`s), AC-48.7 in `e2e/48-escape-title-focus.spec.ts:55`; each Then clause read against its `expect`s (activeElement, textbox/alert counts, values, call counts, focus-spy receivers via `mock.contexts`, POST array, URL, reload order)                                                                                                                                    |
+| no test weakened after the red commit                             | pass: `git log --first-parent --no-merges 958c6cd..HEAD -- '*.test.*' e2e/` empty; `--merges --remerge-diff` empty (0 lines)                                                                                                                                                                                                                                                                                                                   |
+| every changed file is in `plan.md`                                | pass: the 4 planned files plus paperwork (`advice.md`, `plan.md`, `pr-body.md`, `review.md`, `docs/metrics.md` row named in the plan)                                                                                                                                                                                                                                                                                                          |
+| interfaces match §48 Function contracts                           | pass: `TodoItem({ todo })` signature and props unchanged; button attributes (`type`, `disabled`, `aria-label`, `title`) unchanged, only `ref` added; no new export                                                                                                                                                                                                                                                                             |
+| Zod at action boundary · Prisma only in lib · raw SQL · migration | n/a: no action, lib, Prisma or migration change                                                                                                                                                                                                                                                                                                                                                                                                |
+| Server/Client boundary                                            | pass: change stays inside the existing `'use client'` component                                                                                                                                                                                                                                                                                                                                                                                |
+| no secret, no suppression                                         | pass (check-suppressions OK; diff read)                                                                                                                                                                                                                                                                                                                                                                                                        |
+| features map row moved                                            | pass: F46 §48 ✅ added in `docs(map)` commit `f007d3e`                                                                                                                                                                                                                                                                                                                                                                                         |
+| `Lead approves spec` box                                          | untouched, unticked (`46-escape-title-focus.md:5`)                                                                                                                                                                                                                                                                                                                                                                                             |
+| would a test fail if a changed line were reverted?                | probe on `git clone` in `$TMPDIR`: (m1) `if (escapedRef.current)` → `if (true)`: killed by AC-48.4(a), AC-48.4(b), AC-41.1; red commit already proves removing the focus call fails AC-48.1/48.2/48.6; (m2) drop `escapedRef.current = false`: survives (33/33); (m3) marker set on every keydown: killed by AC-48.4(a),(b); (m4) `escapedRef.current = pending` in the ignored branch (the "marker set while pending" trap): survives (33/33) |
+
+### Findings
+
+No blocking finding. The shipped code is correct on every input I traced: the marker is set only after the
+`pending` guard (`todo-item.tsx:56-59`) and cleared before the focus call (`:43-45`).
+
+Non-blocking (coverage of the criteria, not a test deviating from its Then): m2 and m4 survive because a successful
+save's `setEditing(false)` runs after the `await` inside `startTransition`, so its commit renders "Edit title" with
+`disabled={pending}` still true; `focus()` on a disabled button is a no-op, so `activeElement` stays `document.body`
+and AC-48.3(a) and AC-48.6, which assert only `activeElement`, pass. REQ-48.3 forbids the `focus()` call itself; a
+focus spy on the button in AC-48.3(a) and AC-48.6 (as AC-48.4 has) would kill both. The pin commit body's claim that
+AC-48.3 "guards the Escape marker against being set while a save … is pending" is therefore not true of the test as
+written. The behavior these mutants produce is not observable to a person today; it becomes so only if the button
+stops being disabled while a save is pending. Worth a follow-up card or a spec note, not a block.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the "marker set while pending" and "marker never cleared" traps are guarded only by the button
+being disabled at the save's exit commit (probes m2, m4 survive); a later change that enables "Edit title" during a
+save would pull focus back with every test green.
