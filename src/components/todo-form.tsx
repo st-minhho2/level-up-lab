@@ -2,7 +2,7 @@
 
 // §7 TodoForm; §10: after a `form` failure the box keeps the typed title; §18: the title counter under the box;
 // §29: Escape in the box empties it; §39: a near-limit warning after the counter, from the same draft;
-// §44: after a successful add, focus returns to the box.
+// §44: after a successful add, focus returns to the box; §47: unless focus moved elsewhere while the save was pending.
 import {
   useActionState,
   useLayoutEffect,
@@ -41,10 +41,16 @@ export function TodoForm(): ReactNode {
   // change of `state`: two ok results may be the same object, and each must focus the box once. REQ-44.2: the
   // first render and re-renders that do not settle a save leave pending unchanged, so focus is never touched;
   // REQ-44.3: a failed result calls no focus(). Declared after the draft sync, so the box is already empty.
+  // §47 REQ-47.1..47.3: focus moves only if the person left it on the form or nowhere; read here, at the commit that
+  // settles the result, so a move made and undone while pending counts as no move.
+  const addButton = useRef<HTMLButtonElement>(null);
   const wasPending = useRef(false);
   useLayoutEffect(() => {
     if (wasPending.current && !pending && state?.ok === true) {
-      box.current?.focus();
+      const active = document.activeElement;
+      if (active === null || active === document.body || active === box.current || active === addButton.current) {
+        box.current?.focus();
+      }
     }
     wasPending.current = pending;
   }, [pending, state]);
@@ -92,6 +98,7 @@ export function TodoForm(): ReactNode {
           className="flex-1 rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
         />
         <button
+          ref={addButton}
           type="submit"
           disabled={pending}
           className="rounded bg-zinc-900 px-4 py-2 text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
