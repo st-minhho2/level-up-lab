@@ -86,6 +86,70 @@ afterEach(() => {
 });
 
 describe('<TodoItem> Escape from the title editor focuses "Edit title" (§48)', () => {
+  it('AC-48.1: 0 textbox roles; the button named "Edit title" is document.activeElement and not disabled; the row\'s label reads "Buy mik"; updateTodoTitleAction called 0 times', async () => {
+    const user = userEvent.setup();
+    render(<TodoItem todo={openTodo('Buy mik')} />);
+    await user.click(editTitleButton());
+    await user.clear(titleField());
+    await user.type(titleField(), 'Buy milk');
+
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryAllByRole('textbox')).toHaveLength(0);
+    expect(document.activeElement).toBe(editTitleButton());
+    expect(editTitleButton()).toBeEnabled();
+    expect(screen.getByRole('listitem')).toHaveTextContent(/^Buy mik$/);
+    expect(actions.updateTodoTitleAction).toHaveBeenCalledTimes(0);
+  });
+
+  it('AC-48.2: 0 alert roles in the row; 0 textbox roles; the button named "Edit title" is document.activeElement; updateTodoTitleAction called once (the rejected save), not again', async () => {
+    actions.updateTodoTitleAction.mockResolvedValue({ ok: false, fieldErrors: { title: ['Title is required'] } });
+    const user = userEvent.setup();
+    render(<TodoItem todo={openTodo('Buy mik')} />);
+    const row = screen.getByRole('listitem');
+    await user.click(editTitleButton());
+    await user.clear(titleField());
+    await user.type(titleField(), '   ');
+    await user.keyboard('{Enter}');
+    await waitFor(() => expect(within(row).getByRole('alert').textContent).toBe('Title is required'));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled());
+    await user.clear(titleField());
+    await user.type(titleField(), 'Buy milk');
+
+    await user.keyboard('{Escape}');
+
+    expect(within(row).queryAllByRole('alert')).toHaveLength(0);
+    expect(screen.queryAllByRole('textbox')).toHaveLength(0);
+    expect(document.activeElement).toBe(editTitleButton());
+    expect(actions.updateTodoTitleAction).toHaveBeenCalledTimes(1);
+  });
+
+  it('AC-48.6: after clicking "Search todos" and a re-render with a new todo prop "Search todos" is document.activeElement; after "Edit title", Enter and an ok save document.activeElement is document.body, not the button; updateTodoTitleAction called once', async () => {
+    actions.updateTodoTitleAction.mockResolvedValue({ ok: true, data: openTodo('Buy mik') });
+    const user = userEvent.setup();
+    const { rerender } = render(withSearch(openTodo('Buy mik')));
+    await user.click(editTitleButton());
+    await user.clear(titleField());
+    await user.type(titleField(), 'Buy milk');
+    await user.keyboard('{Escape}');
+    // Precondition (AC-48.1): the Escape put focus on the button.
+    expect(document.activeElement).toBe(editTitleButton());
+
+    await user.click(searchBox());
+    rerender(withSearch(openTodo('Buy mik')));
+
+    expect(document.activeElement).toBe(searchBox());
+
+    await user.click(editTitleButton());
+    await user.keyboard('{Enter}');
+    await waitFor(() => expect(screen.queryAllByRole('textbox', { name: 'Edit title' })).toHaveLength(0));
+    await waitFor(() => expect(editTitleButton()).toBeEnabled());
+
+    expect(document.activeElement).toBe(document.body);
+    expect(document.activeElement).not.toBe(editTitleButton());
+    expect(actions.updateTodoTitleAction).toHaveBeenCalledTimes(1);
+  });
+
   it('AC-48.3: (a) with a save in flight the Escape keeps the field with "Buy milk" focused and 0 "Edit title" buttons; after the resolution 0 textbox roles, document.activeElement is document.body, updateTodoTitleAction called once', async () => {
     const save = deferred();
     actions.updateTodoTitleAction.mockReturnValue(save.promise);
