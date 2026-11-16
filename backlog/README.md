@@ -5,20 +5,20 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 ## Status summary
 
-| Epic                 | File                                                         | Done   | Partial | Open   | Total   |
-| -------------------- | ------------------------------------------------------------ | ------ | ------- | ------ | ------- |
-| E1 Todos             | [plan/E1-todos.md](plan/E1-todos.md)                         | 64     | 1       | 35     | 100     |
-| E2 Todos plus        | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)               | 5      | 0       | 0      | 5       |
-| E3 Todos polish      | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)           | 3      | 0       | 0      | 3       |
-| E4 Todos details     | [plan/E4-todos-details.md](plan/E4-todos-details.md)         | 3      | 0       | 1      | 4       |
-| E5 Todos keys        | [plan/E5-todos-keys.md](plan/E5-todos-keys.md)               | 6      | 0       | 0      | 6       |
-| E6 Todos cues        | [plan/E6-todos-cues.md](plan/E6-todos-cues.md)               | 6      | 0       | 0      | 6       |
-| E7 Todos hints       | [plan/E7-todos-hints.md](plan/E7-todos-hints.md)             | 6      | 0       | 0      | 6       |
-| E8 Todos polish two  | [plan/E8-todos-polish-two.md](plan/E8-todos-polish-two.md)   | 3      | 0       | 0      | 3       |
-| E9 Todos focus       | [plan/E9-todos-focus.md](plan/E9-todos-focus.md)             | 3      | 0       | 1      | 4       |
-| E10 Todos access     | [plan/E10-todos-access.md](plan/E10-todos-access.md)         | 0      | 0       | 3      | 3       |
-| E11 Todos access two | [plan/E11-todos-access-two.md](plan/E11-todos-access-two.md) | 0      | 0       | 3      | 3       |
-| **Total**            |                                                              | **99** | **1**   | **43** | **143** |
+| Epic                 | File                                                         | Done    | Partial | Open   | Total   |
+| -------------------- | ------------------------------------------------------------ | ------- | ------- | ------ | ------- |
+| E1 Todos             | [plan/E1-todos.md](plan/E1-todos.md)                         | 64      | 1       | 35     | 100     |
+| E2 Todos plus        | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)               | 5       | 0       | 0      | 5       |
+| E3 Todos polish      | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)           | 3       | 0       | 0      | 3       |
+| E4 Todos details     | [plan/E4-todos-details.md](plan/E4-todos-details.md)         | 3       | 0       | 1      | 4       |
+| E5 Todos keys        | [plan/E5-todos-keys.md](plan/E5-todos-keys.md)               | 6       | 0       | 0      | 6       |
+| E6 Todos cues        | [plan/E6-todos-cues.md](plan/E6-todos-cues.md)               | 6       | 0       | 0      | 6       |
+| E7 Todos hints       | [plan/E7-todos-hints.md](plan/E7-todos-hints.md)             | 6       | 0       | 0      | 6       |
+| E8 Todos polish two  | [plan/E8-todos-polish-two.md](plan/E8-todos-polish-two.md)   | 3       | 0       | 0      | 3       |
+| E9 Todos focus       | [plan/E9-todos-focus.md](plan/E9-todos-focus.md)             | 3       | 0       | 1      | 4       |
+| E10 Todos access     | [plan/E10-todos-access.md](plan/E10-todos-access.md)         | 1       | 0       | 2      | 3       |
+| E11 Todos access two | [plan/E11-todos-access-two.md](plan/E11-todos-access-two.md) | 0       | 0       | 3      | 3       |
+| **Total**            |                                                              | **100** | **1**   | **42** | **143** |
 
 ## Execution order
 
@@ -188,7 +188,7 @@ flowchart TD
   S136["136 · check-ac-coverage reads a ✗ section's titles<br/>B1.102"]
   S137["137 · a focus move during a pending add is kept<br/>B9.4"]
   S133 --> S137
-  S138["138 · Escape in the title editor focuses Edit title<br/>B10.1"]
+  S138["138 · Escape in the title editor focuses Edit title<br/>~~B10.1~~"]
   S139["139 · a failed clear describes Clear completed<br/>B10.2"]
   S140["140 · the search box shows Press / to search<br/>B10.3"]
   S141["141 · Escape in the due-date editor focuses Edit due date<br/>B11.1"]
@@ -243,12 +243,11 @@ at most 3 cards Doing (B1.18).
 | 128  | B1.100 | Each parallel run mutation-tests all of src/lib up to three times, whatever the card changed              | —      | Partial | —                               | Lead  | S [estimate] |
 | 136  | B1.102 | check-ac-coverage skips a ✗ section, so a feature PR's wrong title format fails only in its closing PR    | —      | Open    | —                               | Lead  | S [estimate] |
 | 137  | B9.4   | A focus move during a pending add is kept                                                                 | —      | Open    | ~~D-44~~                        | Lead  | S [estimate] |
-| 138  | B10.1  | Escape in the title editor puts focus on "Edit title"                                                     | —      | Open    | ~~D-45~~                        | Lead  | S [estimate] |
 | 139  | B10.2  | A failed clear's message describes "Clear completed"                                                      | —      | Open    | ~~D-45~~                        | Lead  | S [estimate] |
 | 140  | B10.3  | The search box shows "Press / to search"                                                                  | —      | Open    | ~~D-45~~                        | Lead  | S [estimate] |
-| 141  | B11.1  | Escape in the due-date editor puts focus on "Edit due date"                                               | —      | Open    | ~~D-45~~, B10.1                 | Lead  | S [estimate] |
-| 142  | B11.2  | A failed mark-all's message describes "Mark all complete"                                                 | —      | Open    | ~~D-45~~, B10.1                 | Lead  | S [estimate] |
-| 143  | B11.3  | A failed delete's message describes "Delete todo"                                                         | —      | Open    | ~~D-45~~, B10.1                 | Lead  | S [estimate] |
+| 141  | B11.1  | Escape in the due-date editor puts focus on "Edit due date"                                               | —      | Open    | ~~D-45~~, ~~B10.1~~             | Lead  | S [estimate] |
+| 142  | B11.2  | A failed mark-all's message describes "Mark all complete"                                                 | —      | Open    | ~~D-45~~, ~~B10.1~~             | Lead  | S [estimate] |
+| 143  | B11.3  | A failed delete's message describes "Delete todo"                                                         | —      | Open    | ~~D-45~~, ~~B10.1~~             | Lead  | S [estimate] |
 
 ## Waiting on human
 
