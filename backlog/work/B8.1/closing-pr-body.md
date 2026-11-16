@@ -30,6 +30,10 @@ Diff review: 1 pass (`work/B8.1/review.md`), verdict ready for PR. Riskiest unfa
 e2e AC-41.6 reads focus and selection once right after `toBeVisible()`, chromium only; Firefox and WebKit `select()`
 are not exercised.
 
-`check-backlog.sh`, `check-spec-sections.sh`, `check-features-map.sh` OK.
+The first CI run failed `check-ac-coverage.sh` ("§41 criteria=6 covered=4 MISSING: AC-41.3 AC-41.4"): three titles
+from #333 did not start with "AC-41.n:". #338 (31bbefa) fixed the titles; this branch merged `origin/main` after it.
+
+`check-ac-coverage.sh` (§41 6/6), `check-backlog.sh`, `check-spec-sections.sh`, `check-features-map.sh`,
+`check-plan-scope.sh` OK.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
