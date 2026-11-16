@@ -48,3 +48,44 @@ Verdict: changes requested
 Not a finding (recorded for the lead): `src/components` is outside mutation scope, so the `[editing]` list and the
 `if (editing)` guard are guarded only by AC-41.3–41.5 (stated in the plan's costs). The AC-41.4 pin is what catches a
 widened dependency list, so reason 1's fix must keep it, not drop it.
+
+## Plan review (round 2)
+
+Scope: ui. Reviewed `plan.md` at 1bf47cf (the only file it changes since be5aa89) against round 1's two reasons,
+`scripts/verify-red.sh` and §41 (`spec/contracts/39-edit-title-select.md`).
+
+| Check                                                                                  | Result                                                                                                                                                                          |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                         | pass: unchanged from round 1 (`todo-item.tsx`, `todo-item-select.test.tsx`, `e2e/41-edit-title-select.spec.ts`, F39 row)                                                        |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | pass: signature unchanged; internal ref + `useEffect([editing])`; no action, schema, Prisma, env                                                                                |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass: approach A                                                                                                                                                                |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass: 6 criteria, each Then is values, counts or `activeElement` identity                                                                                                       |
+| verification lists exact commands with expected numbers                                | pass (reason 2 fixed): rows per AC (1+1+2+2+1 = 7); 323 → 325 (pin) → 325 passed / 5 failed (red) → 330 (green), 51 files; e2e 33 → 34 files, AC-41.6 red on the active element |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | pass (reason 1 fixed): skeleton skipped with reason; 2a `test(todos): B8.1 pin AC-41.4 …` (no `(red)`), 2b `… (red)`, feat, `docs(map)`, review                                 |
+| the section has a `Lead approves spec` box, ticked only by a human (never by reviewer) | pass: `39-edit-title-select.md:5` `- [ ] Lead approves spec`, unticked; D-27 (`agent-ready` label) stated. Not ticked by me                                                     |
+| no settled D-n contradicted                                                            | pass: D-39 (nothing lifted, F39); `scripts/agent/tier.sh backlog/work/B8.1/plan.md` → `medium` (D-28), so D-27 applies                                                          |
+| `scripts/next-task.sh --check B8.1` says no overlap                                    | pass: `[next-task] B8.1: no overlap with any Doing or Review card`                                                                                                              |
+
+`scripts/ci/check-plan-scope.sh` → `OK: feat/B8.1-agent changes only paperwork`.
+
+Gate mechanics traced: `verify-red.sh` takes as base the parent of the first `(red)` commit, which is the pin commit,
+so AC-41.4 (a), (b) ran at the base and count as old; only the 5 rows added by the red commit are judged new. The
+plan's red exit 0 holds if those 5 fail.
+
+Probe (clone at `$TMPDIR/p2`, `node_modules` linked; the 7 rows written to the plan's Given/When/Then, AC-41.5 reaching
+its Given by the click alone, AC-41.4 focusing "Save" and pressing Enter a second time):
+
+- today's `todo-item.tsx`: `Tests  5 failed | 2 passed (7)`; AC-41.1, 41.2, 41.3 (a), (b) fail on
+  `expected <body> to be <input>`, AC-41.5 on `expected 'Buy mik' to be 'Z'`; both AC-41.4 rows pass. Matches the plan.
+- approach A applied: `vitest run src/components` → `Tests  168 passed (168)`, 20 files; full `vitest run` →
+  `Tests  330 passed (330)`, `Test Files  51 passed (51)`. Matches the plan's green totals; AC-41.5 green confirms
+  user-event types over a programmatic `select()`.
+- dependency list widened to `[editing, todo, error]`: AC-41.4 (a), (b) fail (2 failed, 5 passed). The pin catches it.
+
+Not run: the e2e red/green for AC-41.6 (needs the server; the plan records its red assertion).
+
+Verdict: approved (ready for the lead's gate, not approved for build)
+
+Costs the lead takes (from the plan, confirmed): one frame with the field unfocused (post-paint effect); `if (editing)`
+guard removal is not caught by any test (with `editing` false the ref is null, so behavior is identical); mutation
+does not cover `src/components`.
