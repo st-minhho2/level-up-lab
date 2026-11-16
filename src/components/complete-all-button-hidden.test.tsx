@@ -107,13 +107,16 @@ describe('<CompleteAllButton> hidden with nothing to mark (§43)', () => {
     const user = userEvent.setup();
     const { rerender } = render(<CompleteAllButton disabled={false} count={1} />);
     const button = screen.getByRole('button', { name: 'Mark all complete (1)' });
-    await user.click(button);
-    await waitFor(() => expect(button).toBeEnabled());
-    // The Given: the clicked button holds focus when it is removed, whatever the pending state did to focus meanwhile.
-    // The test's own call is cleared from the spy below; only calls by the component during the removal count.
-    button.focus();
+    // The click is split into press and release: the press is where user-event itself focuses the button, so the
+    // spy is cleared between the two and counts every focus() call from the click event on (handler, result, removal).
+    await user.pointer({ keys: '[MouseLeft>]', target: button });
     expect(document.activeElement).toBe(button);
     focusSpy.mockClear();
+    await user.pointer({ keys: '[/MouseLeft]', target: button });
+    await waitFor(() => expect(button).toBeEnabled());
+    expect(actions.completeAllTodosAction).toHaveBeenCalledTimes(1);
+    // The Given: the clicked button still holds focus when it is removed.
+    expect(document.activeElement).toBe(button);
 
     rerender(<CompleteAllButton disabled={true} count={0} />);
 
