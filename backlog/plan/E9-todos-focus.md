@@ -23,9 +23,7 @@ and tests each would break. They have these properties:
 ### B9.1 · After a successful add, focus is in the "New todo" box
 
 _F42 · section 44_
-**Status: Open** — §5 (`spec/contracts/03-todos.md`) and the sections that extend the new-todo form (§7, §10, §18,
-§29, §39) say nothing about focus after an add. `src/components/todo-form.tsx` never focuses the box: "Add" keeps the
-focus from the click and is then disabled while pending (`todo-form.tsx:83`), so focus falls to the page.
+**Status: Done** — 5d8ef18 (#346), 7 AC-44.n criteria green (AC-44.1, AC-44.4–44.6 red proven by verify-red.sh, 947055c; AC-44.7 red in 62a54cd, its Then corrected by D-42 in 8b79096; AC-44.2, AC-44.3 no-focus guards green at the base, 9e20190; AC-44.4 rewritten by D-41); unit 338 → 343; e2e 82 → 84, AC-44.6, AC-44.7; mutation n/a (no src/lib or src/actions change, B1.100); no-rework 1/1, unattended 0/1 (D-29): two runner stops for rulings D-41 (#345) and D-42 (#347); merged third in E9 (batch 4) after one sibling sync (1309733)
 
 - **Acceptance:**
   - When `createTodoAction` resolves `ok`, focus moves to the "New todo" box, which is empty.
@@ -42,9 +40,7 @@ focus from the click and is then disabled while pending (`todo-form.tsx:83`), so
 ### B9.2 · Opening the due-date editor puts focus in the date field
 
 _F43 · section 45_
-**Status: Open** — §15 (`spec/contracts/13-due-date.md`) and its siblings (§28, §37, §40) say nothing about focus when
-"Edit due date" opens the editor. `onEdit` only sets state (`src/components/todo-due-date.tsx:58-61`), and the focused
-button is removed, so focus falls to the page.
+**Status: Done** — 93e8ed1 (#344), 7 AC-45.n criteria green (AC-45.4 pinned green first, 0a93ba1; the rest red proven by verify-red.sh, f42f37d); unit 338 → 346; e2e 82 → 83, AC-45.7; mutation n/a (no src/lib or src/actions change, B1.100); unattended and no-rework 1/1 (D-29), one runner run, merged second in E9 (batch 4) after one sibling sync (c9d57d0)
 
 - **Acceptance:**
   - Activating "Edit due date" focuses the "Due date" field, which shows the current date.
