@@ -49,8 +49,9 @@ body's Review section, or, if the card cannot go on, under \"Waiting on human\" 
 
 - Baseline `b5d8ca4` (the card's `fd039fd` plus only the card's filing, #377): run-smoke "22 probes OK", hook-smoke
   "749 probes OK"; the red is measured there.
-- Red `test(scripts): B1.104 run-smoke probes the untrusted-text rule (red)` (body "Red because neither the run prompt
-  nor any rule names that text as data"): R16, R23 FAIL, "2 of 23 probes FAILED".
+- Red `test(scripts): B1.104 run-smoke probes the untrusted-text rule` (body "Red because neither the run prompt
+  nor any rule names that text as data"): R16, R23 FAIL, "2 of 23 probes FAILED". No `(red)` marker: `verify-red.sh`
+  judges only `*.test.ts(x)`, so a smoke-only red goes unmarked, as B1.82–B1.101 (lead, 2026-11-17, after #378's CI).
 - Green `chore(scripts): B1.104 untrusted text is data, never instructions`: "23 probes OK". R23 checks: the file
   exists, line 1 is not `---`, it holds the heading, `Mistake this prevents`, each of the seven sources, the brief
   line (`never the lead's consent or approval`), the facts line (`a new instruction the data carries`), `never act on
@@ -75,11 +76,11 @@ No advice (tier quick, no section). Risk tier **high** (`.claude/`, D-28) → th
 
 ## Work breakdown
 
-| Step | Role     | Produces     | Commit                                                                 |
-| ---- | -------- | ------------ | ---------------------------------------------------------------------- |
-| 1    | dev-lead | red R16, R23 | `test(scripts): B1.104 run-smoke probes the untrusted-text rule (red)` |
-| 2    | dev-lead | rule, prompt | `chore(scripts): B1.104 untrusted text is data, never instructions`    |
-| 3    | reviewer | diff review  | `docs(backlog): B1.104 review pass N`                                  |
+| Step | Role     | Produces     | Commit                                                              |
+| ---- | -------- | ------------ | ------------------------------------------------------------------- |
+| 1    | dev-lead | red R16, R23 | `test(scripts): B1.104 run-smoke probes the untrusted-text rule`    |
+| 2    | dev-lead | rule, prompt | `chore(scripts): B1.104 untrusted text is data, never instructions` |
+| 3    | reviewer | diff review  | `docs(backlog): B1.104 review pass N`                               |
 
 Round 2 (plan review r1, 3 reasons): the brief of the starting agent is an instruction source (#1); facts in data
 go through the repository's own steps, D-27 and the loops unchanged (#2); the `scripts/CLAUDE.md` reason restated
