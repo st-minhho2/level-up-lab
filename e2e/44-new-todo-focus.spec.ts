@@ -93,7 +93,7 @@ test.describe('§44 after a successful add, focus is in the "New todo" box', () 
     await expect(rows(page)).toHaveText(['Walk the dog', 'Buy milk']);
   });
 
-  test('AC-44.7: after 3 spaces and a click on "Add" exactly 1 alert reads Title is required, the rows stay [Buy milk] and the box is not focused; / then focuses "Search todos" and the box still holds 3 spaces', async ({
+  test('AC-44.7: exactly 1 alert reads Title is required, the list still reads [Buy milk], the box is not focused after the click, and the / press focuses "Search todos" (§25) and the "New todo" box\'s value is "" (§18 REQ-18.6)', async ({
     page,
   }) => {
     await seedInDisplayOrder([{ title: 'Buy milk' }]);
@@ -111,6 +111,6 @@ test.describe('§44 after a successful add, focus is in the "New todo" box', () 
     await page.keyboard.press('/');
 
     await expect(searchBox(page)).toBeFocused();
-    await expect(newTodoBox(page)).toHaveValue('   ');
+    await expect(newTodoBox(page)).toHaveValue('');
   });
 });
