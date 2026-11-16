@@ -1,8 +1,8 @@
 'use client';
 
 // §7 TodoItem, with the §6 edit mode, the §24 Escape that cancels it, the §19 delete button, the §20 creation date and
-// the §10 message of a failed toggle or save.
-import { useState, useTransition, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
+// the §10 message of a failed toggle or save; §41 focuses and selects the title on entering edit mode.
+import { useEffect, useRef, useState, useTransition, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { toggleTodoAction, updateTodoTitleAction } from '@/actions/todos';
 import { DeleteTodoButton } from '@/components/delete-todo-button';
 import { TodoDueDate } from '@/components/todo-due-date';
@@ -14,6 +14,7 @@ export function TodoItem({ todo }: { readonly todo: Todo }): ReactNode {
   const [error, setError] = useState<string | undefined>(undefined);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(todo.title);
+  const fieldRef = useRef<HTMLInputElement>(null);
   const checkboxId = `todo-${todo.id}`;
   const fieldId = `${checkboxId}-title`;
   const errorId = `${checkboxId}-error`;
@@ -25,6 +26,15 @@ export function TodoItem({ todo }: { readonly todo: Todo }): ReactNode {
       setError(result.ok ? undefined : (result.fieldErrors.id?.[0] ?? result.fieldErrors.form?.[0]));
     });
   }
+
+  // Keyed on `editing` alone: only the switch into edit mode moves focus and selection (REQ-41.4); a re-render while
+  // editing (draft, pending, error, a new todo prop) must leave the caret where the person put it (REQ-41.3).
+  useEffect(() => {
+    if (editing) {
+      fieldRef.current?.focus();
+      fieldRef.current?.select();
+    }
+  }, [editing]);
 
   function onEdit(): void {
     setDraft(todo.title);
@@ -73,6 +83,7 @@ export function TodoItem({ todo }: { readonly todo: Todo }): ReactNode {
             Edit title
           </label>
           <input
+            ref={fieldRef}
             id={fieldId}
             type="text"
             value={draft}
