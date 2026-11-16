@@ -3,8 +3,9 @@
 // §15 TodoDueDate: a todo's due-date text and its edit control, rendered inside the TodoItem row; §17 adds the
 // overdue marker after the date; §28 Escape in the field closes the editor without saving; §31 adds the due-today
 // marker after the overdue slot; §37 adds a "Today" button that fills the field; §40 adds a "Clear due date" button
-// that saves an empty date.
+// that saves an empty date; §45 focuses the date field on entering edit mode.
 import {
+  useEffect,
   useLayoutEffect,
   useRef,
   useState,
@@ -41,6 +42,7 @@ export function TodoDueDate({
   const [today, setToday] = useState<string | undefined>(undefined);
   const [completed, setCompleted] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const fieldRef = useRef<HTMLInputElement>(null);
   const fieldId = `todo-${todoId}-due-date`;
   const errorId = `${fieldId}-error`;
 
@@ -54,6 +56,14 @@ export function TodoDueDate({
   // knows the new state. The setters bail out when nothing changed, so it settles; a layout effect runs before
   // paint, so a tick never paints the marker beside a checked box.
   useLayoutEffect(syncOverdueInputs);
+
+  // Keyed on `editing` alone: only the switch into edit mode moves focus (REQ-45.4); a re-render while editing (draft,
+  // pending, error, a new dueDate, "Today") leaves focus where it is (REQ-45.3). No select(), unlike §41 (REQ-45.5).
+  useEffect(() => {
+    if (editing) {
+      fieldRef.current?.focus();
+    }
+  }, [editing]);
 
   function onEdit(): void {
     setDraft(dueDate ?? '');
@@ -111,6 +121,7 @@ export function TodoDueDate({
             Due date
           </label>
           <input
+            ref={fieldRef}
             id={fieldId}
             type="date"
             value={draft}

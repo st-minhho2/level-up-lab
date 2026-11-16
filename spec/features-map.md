@@ -49,5 +49,7 @@ moves or removes a feature updates its row in code-writer's own commit right aft
 | F39 | §41 | Title editor opens with the whole title selected | `src/components/todo-item.tsx` | `src/components/todo-item-select.test.tsx`, `e2e/41-edit-title-select.spec.ts` | ✅ |
 | F40 | §42 | Filter nav hides a link whose count is 0 | `src/components/todo-filter-nav.tsx` | `src/components/todo-filter-nav-hide-empty.test.tsx`, `src/components/todo-filter-nav-counts.test.tsx`, `e2e/42-filter-hide-empty.spec.ts` | ✅ |
 | F42 | §44 | After a successful add, focus is in the "New todo" box | `src/components/todo-form.tsx` | `src/components/todo-form-focus.test.tsx`, `e2e/44-new-todo-focus.spec.ts` | ✅ |
+| F43 | §45 | Due-date editor opens with focus in the date field | `src/components/todo-due-date.tsx` | `src/components/todo-due-date-focus.test.tsx`, `e2e/45-due-date-focus.spec.ts` | ✅ |
+| F44 | §46 | `/` shortcut selects the search text | `src/components/todo-search-form.tsx` | `src/components/todo-search-form-select.test.tsx`, `src/components/todo-search-form.test.tsx`, `e2e/46-search-select.spec.ts`, `e2e/25-search-shortcut.spec.ts` | ✅ |
 
 Receipt: verified against `0b2a6d5` (B1.11 merged).
