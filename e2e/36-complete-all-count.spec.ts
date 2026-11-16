@@ -17,6 +17,11 @@ function completeAllButton(page: Page, name: string): Locator {
   return page.getByRole('button', { name, exact: true });
 }
 
+// §43: "buttons whose name contains "Mark all complete"", with or without a count.
+function buttonsNamedMarkAll(page: Page): Locator {
+  return page.getByRole('button', { name: 'Mark all complete' });
+}
+
 // Rows are given in display order: the list is `createdAt desc` (§5 REQ-5.1), so index 0 gets the newest createdAt.
 async function seedInDisplayOrder(
   rows: readonly { readonly title: string; readonly completed?: boolean }[],
@@ -61,7 +66,7 @@ test.describe('§36 complete-all count', () => {
     }
   });
 
-  test('AC-36.6: "Mark all complete (2)" becomes "Mark all complete (3)" after unchecking C, "Mark all complete (2)" after checking C and after a reload, "Mark all complete" disabled after the click, with 0 document navigations during the first two steps', async ({
+  test('AC-36.6: "Mark all complete (2)" becomes "Mark all complete (3)" after unchecking C, "Mark all complete (2)" after checking C and after a reload, no "Mark all complete" button after the click, with 0 document navigations during the first two steps', async ({
     page,
   }) => {
     await seedInDisplayOrder([{ title: 'C', completed: true }, { title: 'B' }, { title: 'A' }]);
@@ -87,17 +92,15 @@ test.describe('§36 complete-all count', () => {
 
     await completeAllButton(page, 'Mark all complete (2)').click();
 
-    await expect(completeAllButton(page, 'Mark all complete')).toHaveCount(1);
-    await expect(completeAllButton(page, 'Mark all complete')).toBeDisabled();
+    await expect(buttonsNamedMarkAll(page)).toHaveCount(0);
   });
 
-  test('AC-36.7: with no stored todo 1 button is named exactly "Mark all complete", disabled, with "No todos yet" shown', async ({
+  test('AC-36.7: with no stored todo 0 buttons are named "Mark all complete", with "No todos yet" shown', async ({
     page,
   }) => {
     await page.goto('/');
 
     await expect(page.getByText('No todos yet', { exact: true })).toBeVisible();
-    await expect(completeAllButton(page, 'Mark all complete')).toHaveCount(1);
-    await expect(completeAllButton(page, 'Mark all complete')).toBeDisabled();
+    await expect(buttonsNamedMarkAll(page)).toHaveCount(0);
   });
 });
