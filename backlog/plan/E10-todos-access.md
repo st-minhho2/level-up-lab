@@ -40,7 +40,7 @@ _F47 · section 49_
 ### B10.3 · The search box shows "Press / to search"
 
 _F48 · section 50_
-**Status: Open** — §25 (`spec/contracts/23-search-shortcut.md:62`) and §46 list a visible hint for the `/` shortcut as out of scope; the box has no placeholder (`todo-search-form.tsx`).
+**Status: Done** — 1011c58 (#361), 7 AC-50.n criteria green (AC-50.1, AC-50.3–50.7 red in 71d2d8c, the unit ones proven by verify-red.sh on base b258594; AC-50.2 pinned green at the base, b258594); unit 360 → 366; e2e 88 → 89, AC-50.7; mutation n/a (no src/lib or src/actions change, B1.100); no-rework 1/1, unattended 1/1 (D-29); merged third in E10 after two syncs (84bf535, 6358d02)
 
 - **Acceptance:**
   - The box shows the placeholder `Press / to search`, in the server render too; its accessible name stays "Search todos".

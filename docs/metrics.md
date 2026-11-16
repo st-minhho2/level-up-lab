@@ -185,7 +185,7 @@ the mechanical 14-day bound: re-measure on 2026-11-30 with `change-failure-rate.
 | B9.2  | §45         | 7               | 7 (100 %) | 92.91 (lib, actions unchanged)    | 0              | f42f37d (pin 0a93ba1)                                | 93e8ed1          |
 | B9.3  | §46         | 6               | 6 (100 %) | 92.91 (lib, actions unchanged)    | 0              | d163d9a                                              | 66d6926          |
 | B9.4  | §47         | 6               | 6 (100 %) | 92.91 (lib, actions unchanged)    | 0              | 5c7dade (pin 5a9123b)                                | 40cd956          |
-| B10.3 | §50         | 7               | 7 (100 %) | CI only (lib, actions unchanged)  | 0              | 71d2d8c (pin b258594)                                | this feat commit |
+| B10.3 | §50         | 7               | 7 (100 %) | 92.91 (lib, actions unchanged)    | 0              | 71d2d8c (pin b258594)                                | 1011c58          |
 | B10.1 | §48         | 7               | 7 (100 %) | 92.91 (lib, actions unchanged)    | 0              | 958c6cd (pin e1b0d51)                                | 746ce48          |
 | B10.2 | §49         | 6               | 6 (100 %) | 92.91 (lib, actions unchanged)    | 0              | 4153c19 (pin 3e05a63)                                | 40710a4          |
 | B11.3 | §53         | 6               | 6 (100 %) | CI only (lib, actions unchanged)  | 0              | b8ad386                                              | this feat commit |
