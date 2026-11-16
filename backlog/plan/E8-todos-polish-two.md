@@ -23,9 +23,7 @@ and tests each would break. They have these properties:
 ### B8.1 · Opening the title editor selects the whole title
 
 _F39 · section 41_
-**Status: Open** — §6 (`spec/contracts/04-edit-title.md`) and §24 say nothing about focus or selection when "Edit
-title" opens the editor. REQ-6.1 (line 16) only says the field shows the current title. Every existing test clears the
-field before typing (`src/components/todo-item.test.tsx`) or uses Playwright's `fill()`, so none depends on the caret.
+**Status: Done** — 47608b3 (#333), 6 AC-41.n criteria green (AC-41.4 pinned green first, 2dad5fd; the rest red proven by verify-red.sh, 87f33ae; unit 323 → 330; e2e 75 → 76, AC-41.6), mutation n/a (no src/lib or src/actions change, B1.100); unattended and no-rework 1/1 (D-29), one runner run, merged second in E8 batch 3 after one origin/main merge in the run (f592c28)
 
 - **Acceptance:**
   - Activating "Edit title" focuses the text field with the whole current title selected (`selectionStart` 0,
