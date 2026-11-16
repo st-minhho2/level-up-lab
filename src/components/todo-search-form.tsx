@@ -1,8 +1,8 @@
 'use client';
 
-// §16 TodoSearchForm, extended by §21 (a "Clear search" link), §25 (the `/` key focuses the box) and §27 (Escape in
-// the box clears it) and §38 (the match count): a native GET form; 'use client' only for the refs and keydown handlers
-// of §25 and §27.
+// §16 TodoSearchForm, extended by §21 (a "Clear search" link), §25 (the `/` key focuses the box), §27 (Escape in
+// the box clears it), §38 (the match count) and §46 (the `/` key also selects the box's text): a native GET form;
+// 'use client' only for the refs and keydown handlers of §25 and §27.
 import Link from 'next/link';
 import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { CLEAR_SEARCH_LABEL, clearSearchHref, isSearchInEffect } from '@/lib/clear-search';
@@ -53,7 +53,9 @@ export function TodoSearchForm({
         })
       ) {
         event.preventDefault();
+        // REQ-46.1, REQ-46.2: select the whole text the box holds now, so typing replaces it.
         searchBoxRef.current?.focus();
+        searchBoxRef.current?.select();
       }
     }
     document.addEventListener('keydown', onKeyDown);
