@@ -77,15 +77,29 @@ Plan review: approved, round 1 · Plan approved by: reviewer (D-27, tier medium,
 
 ## Map delta
 
-pending
+F40 · §42 · added, ✅ — `TodoFilterNav` in `src/components/todo-filter-nav.tsx` leaves out a link at count 0 unless it is the selected filter; evidence: `pnpm test` → 327 passed (51 files), `pnpm test:e2e` → 78 passed (`docs(map)` abd617e).
 
 ## Review
 
-pending
+`/review-loop`: passes 1/3, 0 findings, verdict ready for PR. Plan review: approved, round 1.
+
+| Pass | #   | Finding (file:line)                                                          | Source   | Kind       | Disposition      | Justification                                                                                                   |
+| ---- | --- | ---------------------------------------------------------------------------- | -------- | ---------- | ---------------- | --------------------------------------------------------------------------------------------------------------- |
+| 1    | 1   | pin commit 0fad3d5 (AC-42.2 green by design) not a Work breakdown step       | dev-lead | procedure  | no change needed | plan's Verification says AC-42.2 may pass on today's code; precedes red, planned file only, B7.4 precedent      |
+| 1    | 2   | `docs/metrics.md` row Green cell reads "this feat commit"                    | reviewer | paperwork  | out of scope     | the squash sha is set by the closing PR (as B7.6 `1ec402e`)                                                     |
+| 1    | 3   | `spec/contracts/20-all-done.md:75` quotes the old AC-12.7 title              | reviewer | spec drift | out of scope     | a `docs(spec)` change needs a D-n; follow-up via `/spec-trace` or a new card; no CI check reads proof titles    |
+| 1    | 4   | `src/components/todo-form-warning.test.tsx` AC-39.4/39.5 time out under load | dev-lead | flaky test | out of scope     | file untouched by this diff; 327/327 without sibling e2e load; fails 2/327 while sibling runners run Playwright |
+
+Commands (reviewer): lint exit 0 · typecheck exit 0 · "Tests 327 passed (327)" · "78 passed (3.5m)" · "mutation: CI only, no src/lib or src/actions change" · check-suppressions, check-config-change, check-feat-commits, check-ac-coverage, check-spec-sections, check-features-map, check-plan-scope, check-layers OK · `scripts/verify-red.sh B8.2` "RESULT: red for the right reason".
+
+Line-revert probes (reviewer, on a clone): drop `|| link.filter === selected` → 4 unit tests fail; `!== 0` → `> 1` → 1 fails; `counts === undefined ? []` → 3 fail; `!== 0 && link.filter !== selected` → 6 fail.
+
+Riskiest unfalsified: the e2e red of AC-42.5–42.7, AC-12.7, AC-30.6, AC-30.7 on pre-feat code was traced, not rerun (`verify-red.sh` skips e2e; the test-writer's run recorded 6 e2e failures on 84979d2).
 
 ## Evidence
 
-- AC met: pending
+- AC met: 7/7 (AC-42.1–AC-42.7; AC-12.7, AC-30.3, AC-30.6, AC-30.7 rewritten under D-39, green)
+- mutation: CI only, no src/lib or src/actions change
 - tier: medium
 - plan deviations: none
 - trace: n/a
