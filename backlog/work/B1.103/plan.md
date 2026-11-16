@@ -22,10 +22,13 @@ Costs, for the lead to accept (review r1 #2; stated in the hook header and `hook
   This card's own commits, PR title and closing evidence follow them.
 - Out of reach of a text check: a script file the agent wrote and then runs (`bash "$TMPDIR/m.sh"`), a GraphQL query
   read from a file an earlier command wrote (`-F query=@q.graphql`), a word quoted in pieces, an alias, a command
-  built at run time, `curl` with a token. The ruleset's approval count (D-9) and the runner's `gh` token scope would
+  built at run time (`$(which gh) pr merge 7`), `curl` with a token. The ruleset's approval count (D-9) and the runner's `gh` token scope would
   close these outside the hook; both stay the lead's ruling (card).
 - The deny entries' wildcard matching is `[unverified]` live (Claude Code reads `settings.json` at launch, so this
   session cannot try them); hook-smoke pins their text only.
+- Review r2 notes, unchanged by this card: `gh pr merge 7 --disable-auto` is blocked too (turning auto-merge off is
+  safe; the lead does it); `gh pr -R o/r close 7 --delete-branch` still passes `GH_BRANCH_DELETE` (B1.24's `close`
+  half has the same flag gap), a follow-up card for the lead to file.
 
 No advice (tier quick, no section). Risk tier **high** (`.claude/`, hooks) → the lead's `approve`; the PR carries
 `config-change-approved` (D-19). Dev-lead writes the hook and `scripts/` (interactive, as B1.24 and B1.101).
@@ -36,7 +39,7 @@ No advice (tier quick, no section). Risk tier **high** (`.claude/`, hooks) → t
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ------------ |
 | `.claude/hooks/guard-bash.sh`  | `GH_ANY_API`, `GH_MERGE_API`, `GH_PR_MERGE`, `MERGE_MSG`; whole-command and segment checks                              | Acceptance 1 |
 | `.claude/settings.json`        | deny `gh * pr merge*`, `gh *pulls/*/merge*`, `gh */merges*`, `gh *mergePullRequest*`, `gh *enablePullRequestAutoMerge*` | Acceptance 3 |
-| `scripts/hook-smoke.sh`        | section "merging a pull request (B1.103)": 25 blocked, 14 allowed; settings probe 21 entries                            | Test line    |
+| `scripts/hook-smoke.sh`        | section "merging a pull request (B1.103)": 25 blocked, 14 allowed; settings probe 21 entries, its message               | Test line    |
 | `.claude/docs/hooks.md`        | guard-bash row: the merge rule, false positives with workarounds, out of reach; deny line                               | Acceptance 5 |
 | `.claude/docs/git-workflow.md` | "Needs a human": merging through `gh api` next to `gh pr merge`                                                         | Acceptance 5 |
 | `scripts/CLAUDE.md`            | `hook-smoke.sh` row names the merge probes                                                                              | Acceptance 5 |
@@ -63,7 +66,7 @@ No advice (tier quick, no section). Risk tier **high** (`.claude/`, hooks) → t
 - Green `chore(hooks): B1.103 guard-bash blocks merging a pull request through gh`: "hook-smoke: 788 probes OK"
   (749 + 39), `/bin/bash` 3.2 and bash 5. Mutants (prototype): no whole-command check, first segment only,
   case-sensitive, no `pr merge` check, no quotes after `gh`, no flags between `pr` and `merge`, `pulls/<n>/merge`,
-  `/merges` or each of the four mutation names dropped — 11 of 11 fail a merge probe.
+  `/merges` or each of the four mutation names dropped — 12 of 12 fail a merge probe (review r2: 12 of 12).
 - `pnpm lint && pnpm typecheck` exit 0; `pnpm test` 298 before and after (no `src/`); mutation: CI only, no
   src/lib or src/actions change; `next-task.sh --check B1.103` no overlap; `check-plan-scope.sh`, `check-backlog.sh`
   OK; CI green.
@@ -77,4 +80,4 @@ No advice (tier quick, no section). Risk tier **high** (`.claude/`, hooks) → t
 | 3    | reviewer | diff review                   | `docs(backlog): B1.103 review pass N`                                      |
 | 4    | dev-lead | draft PR, label               | —                                                                          |
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: · Rounds: 1
