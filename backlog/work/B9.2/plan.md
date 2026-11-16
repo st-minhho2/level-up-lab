@@ -58,4 +58,4 @@ or `src/actions` change (B1.100) · `pnpm build` ok · `scripts/ci/check-feature
 Costs the lead takes: focus is not restored on leaving edit mode (§28, §37 Out of scope kept); under React StrictMode in
 `next dev` the effect runs twice (same element), the e2e reads only the final active element.
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: approved, round 1 · Plan approved by: · Rounds: 1
