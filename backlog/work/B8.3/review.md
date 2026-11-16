@@ -70,3 +70,78 @@ Non-blocking: the plan's footer still reads `Rounds: 1`; `e2e/38-search-count.sp
 list (covered by the full `pnpm test:e2e` run).
 
 Verdict: approved (ready for the lead's gate, not approved for build)
+
+## Diff review (round 1)
+
+Diff read at `ddcf943` (red `be1e940`, feat `360114b`). Scope: ui.
+
+### Command results (run by the reviewer)
+
+| Command                             | Last line                                                                                  |
+| ----------------------------------- | ------------------------------------------------------------------------------------------ |
+| `pnpm lint`                         | `✖ 1 problem (0 errors, 1 warning)` (pre-existing, `todo-form.tsx:33`, not in this diff)   |
+| `pnpm typecheck`                    | `tsc --noEmit` clean                                                                       |
+| `pnpm test`                         | `Tests  327 passed (327)` (51 files), as the plan said: 323 → 327, 50 → 51                 |
+| `pnpm test:e2e`                     | `78 passed (2.4m)`, as the plan said: 75 → 78                                              |
+| `scripts/mutation-gate.sh`          | `mutation: CI only, no src/lib or src/actions change`                                      |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                  |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                          |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                         |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test`                                      |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 43`                                                               |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                       |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B8.3-agent stays inside the approved plan of B8.3 (D-27 approval)`               |
+| `scripts/verify-red.sh B8.3`        | `RESULT: red for the right reason` (5 new unit tests red on behavior; e2e skipped, server) |
+| `git diff --stat main...HEAD`       | `13 files changed, 743 insertions(+), 23 deletions(-)`                                     |
+
+### Checklist
+
+| Check                                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every AC-43.n has a test matching its Then  | pass for AC-43.1–43.3, 43.5–43.7; AC-43.4 asserts the focus spy over a narrower window than its Then (finding 1, non-blocking). The six §14/§36 rewrites carry §43's titles verbatim                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| no test weakened after the red commit       | pass. `git log --first-parent --no-merges be1e940..HEAD -- '*.test.*' e2e/` → `b06a5be`, `5eff2d5`, both `test(...)` commits with bodies; `--merges --remerge-diff` → empty. `b06a5be` adds AC-43.2 only (31 insertions, 0 deletions) and is green at the base because REQ-43.2 restates §14; it could not sit in the `(red)` commit, so its place is the defect of the plan's breakdown (which listed AC-43.2 as red), not of the tests. `5eff2d5` narrows one locator per `advice.md` addendum (line 157–170): the page-wide count could never be 0 because of `<next-route-announcer>`; `toHaveCount(0)` is kept and the scope still contains the component's wrapper. Neither loosens an assertion |
+| every changed file is in `plan.md`          | pass: the 8 rows plus paperwork `docs/metrics.md` and `backlog/work/B8.3/*`; `check-plan-scope.sh` OK                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| interfaces match §43 Function contracts     | pass: export name, props and return type unchanged; `null` when `disabled`; no ref, effect, timer, `focus()` or `tabindex` (`complete-all-button.tsx:16–22`); private `CompleteAllButtonShown` not exported                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Zod at action boundary / Prisma only in lib | n/a: no action, lib, schema or query change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| no raw SQL, migration                       | n/a                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| no secret, no suppression                   | pass (`check-suppressions.sh`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Server/Client boundary, accessible names    | pass: still `'use client'`; button name from `completeAllLabel(count ?? 0)` unchanged; `page.tsx` untouched                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| features map row moved                      | pass: F41 §43 ✅ in `ddcf943`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| revert probes on a clone (`$TMPDIR/c838`)   | (a) failure state kept across hide (`CompleteAllButtonShown` always mounted, `if (hidden) return null` after the hooks) → AC-43.3 fails; (b) `useEffect(() => () => document.body.focus(), [])` (focus on removal) → AC-43.4 fails; (c) `document.body.focus()` after the result in `onCompleteAll` → all 10 tests of the three unit files pass (finding 1); (d) `disabled={disabled \|\| pending}` restored → equivalent mutant (`disabled` is always false inside the shown branch)                                                                                                                                                                                                                  |
+
+Answers to the lead's three questions:
+
+- Post-red test commits: acceptable. `b06a5be` adds a guard that cannot be red (REQ-43.2 already holds); `5eff2d5` fixes
+  an assertion that could never pass, under a recorded advice, without loosening it. Both are `test(...)` commits with
+  a "why" body; `check-feat-commits.sh` and `verify-red.sh` are unaffected. Process note for the PR body: the plan's
+  Verification listed AC-43.2 as red; it was green at the base.
+- AC-43.4: not vacuous for the removal window. Probe (b) shows a `focus()` during the removal fails it, and with the
+  test's own `button.focus()` deleted the test still passes (`user.click` already leaves focus on the button in
+  jsdom), so the Given holds without it. The gap is the window: finding 1.
+- Metrics Green cell `feat(todos) B8.3`: non-blocking paperwork (exempt). The feat commit cannot quote its own sha;
+  the closing PR should replace it with `360114b` (or the squash sha), as every other row has a sha.
+
+### Findings
+
+```
+[1] KIND: coverage
+    WHERE: src/components/complete-all-button-hidden.test.tsx:104-123 (spy cleared at 116)
+    DEFECT: AC-43.4's Then says the focus spy is called 0 times after the click, but the test clears the spy after
+            the click has resolved, so focus() calls between the click and the re-render are not counted.
+    TRIGGER: add `document.body.focus();` after `setError(...)` in `onCompleteAll` (complete-all-button.tsx:33);
+             probe (c) on $TMPDIR/c838: `npx vitest run src/components/complete-all-button` → 10 passed.
+    WRONG BEHAVIOUR: a component that calls focus() on a result (which REQ-43.5 forbids: "calls focus() on nothing")
+            passes the unit suite; e2e AC-43.5 catches it only when the focus target becomes document.activeElement.
+    CONFIDENCE: confirmed (I ran it)
+```
+
+Non-blocking: the shipped component has no `focus()` call (read at `complete-all-button.tsx:1–56`), every mutant
+that moves `document.activeElement` is caught by AC-43.5 in e2e, and the removal window itself is guarded (probe b).
+A hardening `test(todos): B8.3 review pass 1 -- …` that drops the redundant `button.focus()` and clears the spy
+before the click would close it; the lead may take it now or leave it.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the AC-43.6 alert scope `body > :not(next-route-announcer)` relies on the app rendering the
+component under a body child other than the announcer; no e2e state produces the §10 alert, so I could not show this
+locator counting a real failure message in the browser.
