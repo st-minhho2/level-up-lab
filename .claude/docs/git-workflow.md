@@ -23,7 +23,8 @@ worktree's top level. Everything the project scripts do.
 
 ## Needs a human (and the hooks say so)
 
-`git push --force` in any spelling, pushes to `main`, `gh pr merge|review`, the `hotfix` label, any change under
+`git push --force` in any spelling, pushes to `main`, `gh pr merge|review`, a merge through `gh api` (REST or GraphQL,
+B1.103), the `hotfix` label, any change under
 `.github/`, `.claude/hooks`, `.claude/settings.json`, `.claude/agents`, `.claude/skills`, `.claude/rules`,
 `.claude/docs`, `scripts/ci/`, `lefthook.yml`, `stryker.config.mjs`, `vitest.config.mts`, `playwright.config.ts`,
 `tsconfig*.json`, `eslint.config.mjs` (label `config-change-approved` on the PR: the agent adds it when the lead's
