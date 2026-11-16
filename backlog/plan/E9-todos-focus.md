@@ -34,7 +34,7 @@ focus from the click and is then disabled while pending (`todo-form.tsx:83`), so
   - The card's `docs(spec)` commit states once that the sibling sections' "`todo-form.tsx` unchanged" notes do not
     apply (D-40).
   - Mounts in `src/components/todo-form.tsx` only; contract `spec/contracts/42-new-todo-focus.md` (section 44).
-- **Tier:** full · **Depends on:** D-40 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** full · **Depends on:** ~~D-40~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B9.1/`
 
 ### B9.2 · Opening the due-date editor puts focus in the date field
@@ -52,7 +52,7 @@ button is removed, so focus falls to the page.
   - The card's `docs(spec)` commit adds one clause to §40's contract (`38-due-date-clear.md:64`) and states that the
     sibling sections' "`todo-due-date.tsx` unchanged" notes do not apply (D-40).
   - Mounts in `src/components/todo-due-date.tsx` only; contract `spec/contracts/43-due-date-focus.md` (section 45).
-- **Tier:** full · **Depends on:** D-40 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** full · **Depends on:** ~~D-40~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B9.2/`
 
 ### B9.3 · The `/` shortcut also selects the text already in the search box
@@ -71,5 +71,5 @@ focus" (REQ-25.5, line 21). It lists "selecting the box's text on focus" in its 
   - No existing test is rewritten: AC-25.2, AC-25.3 and AC-25.5 check only the focused element, the value and
     `defaultPrevented`, and every e2e `/` press happens on an empty box.
   - Mounts in `src/components/todo-search-form.tsx` only; contract `spec/contracts/44-search-select.md` (section 46).
-- **Tier:** full · **Depends on:** D-40 · **Owner:** Lead · **Size:** S [estimate]
+- **Tier:** full · **Depends on:** ~~D-40~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B9.3/`

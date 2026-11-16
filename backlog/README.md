@@ -231,12 +231,11 @@ at most 3 cards Doing (B1.18).
 | 130  | B8.1   | Opening the title editor selects the whole title                                                          | —      | Open    | ~~D-39~~                        | Lead  | S [estimate] |
 | 131  | B8.2   | The filter nav hides a link whose count is 0, except the current filter                                   | —      | Open    | ~~D-39~~                        | Lead  | S [estimate] |
 | 132  | B8.3   | "Mark all complete" is hidden when there is nothing to mark                                               | —      | Open    | ~~D-39~~                        | Lead  | S [estimate] |
-| 133  | B9.1   | After a successful add, focus is in the "New todo" box                                                    | —      | Open    | D-40                            | Lead  | S [estimate] |
-| 134  | B9.2   | Opening the due-date editor puts focus in the date field                                                  | —      | Open    | D-40                            | Lead  | S [estimate] |
-| 135  | B9.3   | The `/` shortcut also selects the text already in the search box                                          | —      | Open    | D-40                            | Lead  | S [estimate] |
+| 133  | B9.1   | After a successful add, focus is in the "New todo" box                                                    | —      | Open    | ~~D-40~~                        | Lead  | S [estimate] |
+| 134  | B9.2   | Opening the due-date editor puts focus in the date field                                                  | —      | Open    | ~~D-40~~                        | Lead  | S [estimate] |
+| 135  | B9.3   | The `/` shortcut also selects the text already in the search box                                          | —      | Open    | ~~D-40~~                        | Lead  | S [estimate] |
 
 ## Waiting on human
 
-| ID   | What                                                                                                                                        | Blocks    |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| D-40 | E9 batch rule, spec first: sections 44–46, contract files, components, the lines each card lifts or edits (`work/B9.1/decision-request.md`) | B9.1–B9.3 |
+| ID  | What | Blocks |
+| --- | ---- | ------ |
