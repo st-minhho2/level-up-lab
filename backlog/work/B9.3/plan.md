@@ -60,4 +60,4 @@ CI only, no `src/lib` or `src/actions` change (B1.100) · `pnpm build` ok · `sc
 Costs the lead takes: a `/` now discards the old query on the first typed key (intended, §46); click and Tab still do
 not select (out of scope).
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: approved, round 1 · Plan approved by: · Rounds: 1
