@@ -49,7 +49,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §42 | [contracts/40-filter-hide-empty.md](contracts/40-filter-hide-empty.md) | Todos: the filter nav hides a link whose count is 0 | ✅ |
 | §43 | [contracts/41-complete-all-hidden.md](contracts/41-complete-all-hidden.md) | Todos: "Mark all complete" is not shown when there is nothing to mark | ✅ |
 | §44 | [contracts/42-new-todo-focus.md](contracts/42-new-todo-focus.md) | Todos: after a successful add, focus is in the "New todo" box | ✗ |
-| §45 | [contracts/43-due-date-focus.md](contracts/43-due-date-focus.md) | Todos: opening the due-date editor puts focus in the date field | ✗ |
+| §45 | [contracts/43-due-date-focus.md](contracts/43-due-date-focus.md) | Todos: opening the due-date editor puts focus in the date field | ✅ |
 | §46 | [contracts/44-search-select.md](contracts/44-search-select.md) | Todos: the `/` shortcut also selects the text already in the search box | ✗ |
 
 Reading order: §1 → §2 → the section your backlog card names → [features-map.md](features-map.md).

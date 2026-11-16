@@ -42,9 +42,7 @@ focus from the click and is then disabled while pending (`todo-form.tsx:83`), so
 ### B9.2 · Opening the due-date editor puts focus in the date field
 
 _F43 · section 45_
-**Status: Open** — §15 (`spec/contracts/13-due-date.md`) and its siblings (§28, §37, §40) say nothing about focus when
-"Edit due date" opens the editor. `onEdit` only sets state (`src/components/todo-due-date.tsx:58-61`), and the focused
-button is removed, so focus falls to the page.
+**Status: Done** — 93e8ed1 (#344), 7 AC-45.n criteria green (AC-45.4 pinned green first, 0a93ba1; the rest red proven by verify-red.sh, f42f37d); unit 338 → 346; e2e 82 → 83, AC-45.7; mutation n/a (no src/lib or src/actions change, B1.100); unattended and no-rework 1/1 (D-29), one runner run, merged second in E9 (batch 4) after one sibling sync (c9d57d0)
 
 - **Acceptance:**
   - Activating "Edit due date" focuses the "Due date" field, which shows the current date.
