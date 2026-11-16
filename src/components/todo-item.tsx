@@ -1,7 +1,8 @@
 'use client';
 
 // §7 TodoItem, with the §6 edit mode, the §24 Escape that cancels it, the §19 delete button, the §20 creation date and
-// the §10 message of a failed toggle or save; §41 focuses and selects the title on entering edit mode.
+// the §10 message of a failed toggle or save; §41 focuses and selects the title on entering edit mode; §48 returns focus
+// to "Edit title" after that Escape.
 import { useEffect, useRef, useState, useTransition, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { toggleTodoAction, updateTodoTitleAction } from '@/actions/todos';
 import { DeleteTodoButton } from '@/components/delete-todo-button';
@@ -15,6 +16,9 @@ export function TodoItem({ todo }: { readonly todo: Todo }): ReactNode {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(todo.title);
   const fieldRef = useRef<HTMLInputElement>(null);
+  const editButtonRef = useRef<HTMLButtonElement>(null);
+  // Set only by an Escape that leaves edit mode and consumed once, so a save or re-render never moves focus (REQ-48.4).
+  const escapedRef = useRef(false);
   const checkboxId = `todo-${todo.id}`;
   const fieldId = `${checkboxId}-title`;
   const errorId = `${checkboxId}-error`;
@@ -28,11 +32,17 @@ export function TodoItem({ todo }: { readonly todo: Todo }): ReactNode {
   }
 
   // Keyed on `editing` alone: only the switch into edit mode moves focus and selection (REQ-41.4); a re-render while
-  // editing (draft, pending, error, a new todo prop) must leave the caret where the person put it (REQ-41.3).
+  // editing (draft, pending, error, a new todo prop) must leave the caret where the person put it (REQ-41.3). Leaving
+  // edit mode focuses "Edit title" only after an Escape (REQ-48.1); a save leaves focus where it is (REQ-48.3).
   useEffect(() => {
     if (editing) {
       fieldRef.current?.focus();
       fieldRef.current?.select();
+      return;
+    }
+    if (escapedRef.current) {
+      escapedRef.current = false;
+      editButtonRef.current?.focus();
     }
   }, [editing]);
 
@@ -46,6 +56,7 @@ export function TodoItem({ todo }: { readonly todo: Todo }): ReactNode {
     if (event.key !== 'Escape' || pending) {
       return;
     }
+    escapedRef.current = true;
     setEditing(false);
     setDraft(todo.title);
     setError(undefined);
@@ -108,6 +119,7 @@ export function TodoItem({ todo }: { readonly todo: Todo }): ReactNode {
           </label>
           {/* Icon only: the row's idle text must stay exactly the title (AC-5.1 compares whole-row text). */}
           <button
+            ref={editButtonRef}
             type="button"
             onClick={onEdit}
             disabled={pending}
