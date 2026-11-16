@@ -1,0 +1,123 @@
+# §51 Todos: Escape closes the due-date editor and returns focus to its button
+
+Tier: full
+
+- [ ] Lead approves spec
+
+## Intent
+
+A person who leaves the due-date editor with Escape, because they opened it by mistake or changed their mind, wants to
+carry on from the row they were on. Today the editor closes and focus falls to the page, so the next Tab starts from
+the top of the document. After this section Escape puts the cursor back on the row's "Edit due date" button, the
+control that opened the editor, so Enter opens it again and Tab moves on from that row. A save or a clear, and Escape
+while a save is pending, move no focus.
+
+## Requirements (EARS)
+
+| ID       | Pattern           | Requirement                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| -------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| REQ-51.1 | Event-driven      | WHEN Escape leaves edit mode (§28 REQ-28.1; pressed in the "Due date" field, on "Today" (§37 REQ-37.4) or on "Clear due date" (§40 REQ-40.6)) THE SYSTEM SHALL make the row's button "Edit due date" (§15 REQ-15.6) `document.activeElement`, whichever of the three controls had focus.                                                                                                                                                                                                          |
+| REQ-51.2 | State-driven      | WHILE a save of that todo's due date is in flight THE SYSTEM SHALL move no focus on Escape: Escape is ignored as §28 REQ-28.5, §37 REQ-37.5 and §40 REQ-40.5 say, the field stays and the key is not cancelled.                                                                                                                                                                                                                                                                                   |
+| REQ-51.3 | Unwanted behavior | IF edit mode ends through a successful save (§15 REQ-15.6) or a successful "Clear due date" (§40 REQ-40.3), including a save that was in flight when Escape was pressed (REQ-51.2), THEN THE SYSTEM SHALL NOT call `focus()` on any control: `document.activeElement` is not made the "Edit due date" button, and an element the person focused while the save was pending keeps focus.                                                                                                           |
+| REQ-51.4 | Unwanted behavior | IF a key other than Escape is pressed in the field, on "Today" or on "Clear due date", or Escape with Ctrl, Meta, Alt or Shift, or Escape on `document.body`, on the "Update due date" button or in any other box (§28 REQ-28.6, REQ-28.7), THEN THE SYSTEM SHALL NOT move focus: whatever had focus keeps it and edit mode stays.                                                                                                                                                                |
+| REQ-51.5 | Ubiquitous        | THE SYSTEM SHALL move focus to the "Edit due date" button once for each Escape that leaves edit mode and at no other time: a render in view mode, a new `dueDate` prop, a row other than the one whose editor was closed and the next entry into edit mode (§45 REQ-45.1, which focuses the date field again) are unaffected, and the button is not selected or scrolled.                                                                                                                         |
+| REQ-51.6 | Ubiquitous        | THE SYSTEM SHALL change nothing but focus: the text shown (`Due <date>`, the §17 and §31 markers), the removal of the message (§28 REQ-28.4), the discard of the draft (§28 REQ-28.3), the absence of a save (§28 REQ-28.2), `preventDefault` (§28 REQ-28.1), the button's `aria-label`, `title`, `type`, `disabled` state and markup, the five controls of the form while editing (§37 AC-37.1), the entry focus of §45 and the request count are those of §15, §17, §28, §31, §37, §40 and §45. |
+
+Edits to other sections that this one makes, all listed here; the file numbers are not the section numbers, so each
+is named by file and line as they were before this commit:
+
+- `43-due-date-focus.md:21` (§45 REQ-45.4): the clause "a row that leaves edit mode (focus is not restored to "Edit
+  due date", §28, §37)" now says a row that leaves edit mode by a save or a clear receives no focus, and one that leaves
+  it by Escape gets the focus §51 says.
+- `43-due-date-focus.md:46` (§45 AC-45.3 (a)) and `:48` (AC-45.5): "`document.activeElement` is `document.body`" after
+  the Escape reads "is the button "Edit due date"".
+- `43-due-date-focus.md:36-38`, the note about `26-escape-due-date.md:54` and `35-due-date-today.md:66`, now says those
+  two Out of scope items are lifted for Escape by §51 and hold for a save and for "Today".
+- Lifted: `26-escape-due-date.md:54` ("restoring focus to the "Edit due date" button"), `35-due-date-today.md:67`
+  ("restoring focus to "Edit due date" after Escape (§28)"), the "after Escape" half of `38-due-date-clear.md:74`
+  ("restoring focus to "Edit due date" after the clear or after Escape": "after the clear" stays) and of
+  `43-due-date-focus.md:75` ("Restoring focus to the "Edit due date" button after Escape or a save": "a save" stays).
+- No other line of any contract changes, and no other requirement or criterion is lifted.
+
+Two existing tests contradict the edited lines and are rewritten by this card's red commit, as the only test edits
+(each swaps `document.body` for the button "Edit due date" in one assertion and keeps every other assertion):
+
+- `src/components/todo-due-date-focus.test.tsx:79`, "AC-45.3: (a) after the Escape document.activeElement is body; …",
+  whose body expects `document.body` at `:86`.
+- `src/components/todo-due-date-focus.test.tsx:110`, "AC-45.5: HTMLInputElement focus() is called 0 times after the
+  render, …", whose body expects `document.body` at `:133`. Its `HTMLInputElement.prototype.focus` spy still counts 1
+  call in all, because the button's `focus()` is not the input's.
+
+The "`todo-due-date.tsx` unchanged" and "the only file this section changes" notes of the sections below limit each
+section's own change; they do not apply to §51, whose component is `todo-due-date.tsx`:
+
+- `17-delete.md:59` (§19), `21-overdue-count.md:63`, `35-due-date-today.md:60` (§37) and `38-due-date-clear.md:67`
+  (§40), the four that `43-due-date-focus.md:31` already named; and `26-escape-due-date.md:48` (§28).
+- `43-due-date-focus.md:55` and `:65` (§45's own "extended; props unchanged" line and "the only file this section
+  changes"): §51 changes the same file and adds no prop, so they stay true.
+- §45's function contract line (`43-due-date-focus.md:63`) now says the exit from edit mode "by a save or a clear"
+  calls no `focus()` and names §51 for an exit by Escape.
+
+## Acceptance criteria
+
+| ID      | Covers                       | Given                                                                                                                                                                                                                                                                                                                                | When                                                                                                                                                                                                 | Then (measurable)                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AC-51.1 | REQ-51.1, REQ-51.5, REQ-51.6 | `<TodoDueDate todoId="todo-9" dueDate="2026-11-05">` in edit mode (the field is `document.activeElement`, §45), the field's value replaced by `2026-12-01`; `HTMLButtonElement.prototype.focus` spied; `setTodoDueDateAction` mocked at `@/actions/todos`                                                                            | the person presses Escape in the field (`userEvent.keyboard('{Escape}')`); the component is re-rendered with `dueDate="2026-11-06"`; the person presses Enter                                        | after the Escape 0 elements are labelled "Due date" and the button named "Edit due date" (1 of it) is `document.activeElement`, with exactly 1 `focus()` call whose receiver is that button between the Escape and the re-render, still 1 after the re-render and `document.activeElement` still that button; after Enter the field is `document.activeElement` with value `2026-11-06`; `setTodoDueDateAction` called 0 times                      |
+| AC-51.2 | REQ-51.1, REQ-51.6           | `<TodoDueDate todoId="todo-9" dueDate="2026-11-05">` in edit mode, the field set to `2026-12-01`, a save earlier rejected with `{ dueDate: ['Due date must be a valid date'] }` so the wrapper shows that alert; (a) focus then moved to "Today"; (b) instead to "Clear due date" (the rejected save started from "Update due date") | the person presses Escape (a cancelable keydown) on the focused control; then clicks "Edit due date"                                                                                                 | after the Escape, in (a) and (b), 0 elements labelled "Due date", 0 elements with role `alert`, `Due 2026-11-05` exactly once, `defaultPrevented` `true`, the button named "Edit due date" (1 of it) is `document.activeElement`; `setTodoDueDateAction` called exactly once (the rejected save); after the click the field is `document.activeElement` with value `2026-11-05`                                                                     |
+| AC-51.3 | REQ-51.2, REQ-51.3           | `<TodoDueDate todoId="todo-9" dueDate="2026-11-05">` in edit mode, the field set to `2026-12-01`, "Update due date" clicked, its action promise not yet resolved; `HTMLButtonElement.prototype.focus` spied                                                                                                                          | the person presses Escape (a cancelable keydown) in the field; then the promise resolves `{ ok: true, data: { …, dueDate: '2026-12-01' } }`                                                          | after the Escape the field is still present and holds `2026-12-01`, `defaultPrevented` is `false`, 0 `focus()` calls have a button named "Edit due date" as receiver (it is not rendered); after the resolution 0 elements labelled "Due date", 1 button "Edit due date" that is not `document.activeElement`, 0 `focus()` calls with it as receiver; `setTodoDueDateAction` called once                                                            |
+| AC-51.4 | REQ-51.3                     | `<TodoDueDate todoId="todo-9" dueDate="2026-11-05">` in edit mode beside a text input named "Search todos"; `HTMLButtonElement.prototype.focus` spied; (a) the field set to `2026-12-01`, "Update due date" clicked; (b) "Clear due date" clicked; the action's promise is not yet resolved                                          | in (a) and (b) the person focuses "Search todos" and types `milk` while the save is pending; then the promise resolves `ok`                                                                          | after the resolution, in (a) and (b), 0 elements labelled "Due date", 1 button "Edit due date", "Search todos" is `document.activeElement` with value `milk`, 0 `focus()` calls have that button as receiver; `setTodoDueDateAction` called once, with `("todo-9", "2026-12-01")` in (a) and `("todo-9", "")` in (b)                                                                                                                                |
+| AC-51.5 | REQ-51.4, REQ-51.6           | `<TodoDueDate todoId="todo-9" dueDate="2026-11-05">` in edit mode, the field holding `2026-12-01` and focused, next to a text box named "New todo"; no save in flight; `HTMLButtonElement.prototype.focus` spied                                                                                                                     | the person presses Ctrl+Escape, Meta+Escape, Alt+Escape, Shift+Escape and ArrowLeft in the field; Escape on `document.body`, on the button "Update due date" and in "New todo" (cancelable keydowns) | each time the field is still present with value `2026-12-01`, `defaultPrevented` is `false`, the action is not called, `document.activeElement` is what it was before the press, and the form still holds the 5 children of AC-37.1 in order; 0 buttons named "Edit due date" exist and 0 `focus()` calls were made during the presses                                                                                                              |
+| AC-51.6 | REQ-51.1, REQ-51.5, REQ-51.6 | `<TodoDueDate todoId="todo-9" dueDate="2026-11-05">` rendered in an `li` beside a second `<TodoDueDate todoId="todo-8" dueDate="2026-11-09">`, both in view mode; `HTMLInputElement.prototype.focus`, `HTMLInputElement.prototype.select` and `HTMLInputElement.prototype.setSelectionRange` spied                                   | the person clicks "Edit due date" of todo-9's wrapper; then presses Escape in its field                                                                                                              | after the Escape todo-9's button "Edit due date" is `document.activeElement` and the one `Edit due date` button of todo-8's wrapper is not; todo-8's wrapper still shows `Due 2026-11-09` and 0 elements labelled "Due date"; the `HTMLInputElement` `focus` spy was called exactly 1 time in all (the entry of §45), `select` and `setSelectionRange` 0 times; `setTodoDueDateAction` called 0 times                                               |
+| AC-51.7 | REQ-51.1, REQ-51.3, REQ-51.5 | stored todos C (open), B (open, due `2026-11-05`), A (open), the browser on `/` (client hydrated), C above B above A                                                                                                                                                                                                                 | the person clicks the "Edit due date" button of B's row; presses Escape; reads in the page `document.activeElement`; presses Enter; reads it again; presses Escape; reloads                          | after the first Escape 0 fields labelled "Due date", B reads `Due 2026-11-05` and the active element is the button "Edit due date" of B's row; after Enter the active element is the input labelled "Due date" in B's row with value `2026-11-05`; after the second Escape the active element is B's "Edit due date" again; 0 requests to `/` with method POST were made throughout; after the reload the list reads `[C, B, A]` and B is unchecked |
+
+## Function contracts
+
+```ts
+// src/components/todo-due-date.tsx (§15, §17, §28, §31, §37, §40, §45, extended; no new component, props unchanged)
+export function TodoDueDate({
+  todoId,
+  dueDate,
+}: {
+  readonly todoId: string;
+  readonly dueDate: string | undefined;
+}): ReactNode; // as §45, plus: when onDueDateKeyDown takes its Escape branch (Escape, no Ctrl/Meta/Alt/Shift, not pending → preventDefault, leave edit mode, draft ← dueDate ?? '', clear the message) the "Edit due date" <button> receives focus() once, after the commit in which edit mode has ended and that button is in the document; no other path calls focus() on it: not onSave, not onClear, not a result of a save, not a re-render, not a new dueDate prop, not the click of "Edit due date" (which still focuses the date <input> once, §45); the focus() is not made while pending (the Escape is ignored then), and no select() or setSelectionRange is called
+```
+
+The only file of `src/` this section changes is `src/components/todo-due-date.tsx`. No new export, Server Action, Zod
+schema, Prisma model, query, environment variable, prop or lib function. `src/app/page.tsx`, `src/actions/todos.ts`,
+`src/components/todo-item.tsx` and `src/lib/*` keep their contracts.
+
+How the criteria observe it: jsdom supports `focus()` and `document.activeElement` on a `button` and an `input`, so
+AC-51.1 to AC-51.6 are component tests with Testing Library in
+`src/components/todo-due-date-escape-focus.test.tsx` (`setTodoDueDateAction` mocked with `vi.hoisted` at
+`@/actions/todos`, as `todo-due-date-focus.test.tsx` does). A spy on `HTMLButtonElement.prototype.focus` is read through
+`mock.contexts`, the receivers of its calls, because `userEvent.click` also calls `focus()` on the button it clicks: a
+count is taken for the receiver "Edit due date" only. AC-51.7 is a Playwright test in
+`e2e/49-escape-due-date-focus.spec.ts` that reads `document.activeElement` with `page.evaluate`, as
+`e2e/45-due-date-focus.spec.ts` does. The sections are numbered by feature order and the contract files by file order,
+so §51 lives in `49-escape-due-date-focus.md`.
+
+## Out of scope
+
+Moving focus after a save or a clear (§45 keeps its absence), keeping focus where it was when a save succeeds,
+restoring focus to the button after Tab or a click that leaves the field (blur is not Escape, §28), Escape while no
+editor is open, selecting the button's text, scrolling the row into view, a focus style of our own, a keyboard
+shortcut for the editor, announcing the focus to assistive technology, the title editor's Escape (§24; its focus is
+a separate section), any change to the server, the action, the schema or `src/lib`.
+
+## Unchanged behavior
+
+| Behavior                                                    | Proof                                                                                                                                                                                                                                                                                                      |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Escape in the field closes the editor without saving        | `src/components/todo-due-date.test.tsx` :: "AC-28.1: Escape in the field holding 2026-12-01 leaves 0 "Due date" fields, "Due 2026-11-05" exactly once, 1 button "Edit due date", defaultPrevented true and the action called 0 times"                                                                      |
+| Escape while a save is in flight is ignored                 | `src/components/todo-due-date.test.tsx` :: "AC-28.4: Escape while the save is in flight keeps the field holding 2026-12-01 with defaultPrevented false; after the save resolves ok 0 "Due date" fields and the action called exactly once"                                                                 |
+| Other keys and other targets leave the editor open          | `src/components/todo-due-date.test.tsx` :: "AC-28.6: Escape on $name keeps the field with value 2026-12-01, defaultPrevented false and the action not called"                                                                                                                                              |
+| Escape on "Today" after a rejected save                     | `src/components/todo-due-date-today-button.test.tsx` :: "AC-37.4: Escape on the focused "Today" after a rejected save leaves 0 "Due date" fields, 0 alerts, "Due 2026-11-05" exactly once, 1 "Edit due date", defaultPrevented true and the action called exactly once; the next edit opens on 2026-11-05" |
+| Escape on "Today" while pending                             | `src/components/todo-due-date-today-button.test.tsx` :: "AC-37.5: (a) while the save of 2026-12-01 is in flight "Today" is disabled and Escape on it keeps the field holding 2026-12-01 with defaultPrevented false; after it resolves ok 0 "Due date" fields and the action called once"                  |
+| Escape on "Clear due date" after a rejected save            | `src/components/todo-due-date-clear.test.tsx` :: "AC-40.5: (a) Escape on the focused "Clear due date" after a rejected save leaves 0 "Due date" fields, 0 alerts, "Due 2026-11-05" exactly once, 1 "Edit due date", defaultPrevented true and the action called exactly once"                              |
+| Escape on "Clear due date" while pending                    | `src/components/todo-due-date-clear.test.tsx` :: "AC-40.5: (b) Escape on "Clear due date" while a save is in flight keeps the field holding 2026-12-01 with defaultPrevented false"                                                                                                                        |
+| Entering edit mode focuses the date field                   | `src/components/todo-due-date-focus.test.tsx` :: "AC-45.1: after the render document.activeElement is body with 0 "Due date" fields; after "Edit due date" the field is document.activeElement with value 2026-11-05; setTodoDueDateAction called 0 times"                                                 |
+| A rejected save keeps focus where it was                    | `src/components/todo-due-date-focus.test.tsx` :: "AC-45.4: $name, the field is still present with value 2026-12-01, exactly 1 alert with the action's message, and after the result and the re-render document.activeElement is "Update due date", not the field; setTodoDueDateAction called once"        |
+| Another row's editor is untouched                           | `src/components/todo-due-date-focus.test.tsx` :: "AC-45.6: todo-9's field is document.activeElement while todo-8's wrapper still shows "Due 2026-11-09", 1 "Edit due date" and 0 "Due date" fields; Enter calls setTodoDueDateAction once with (todo-9, 2026-11-05)"                                       |
+| Escape discards the draft and makes no request in a browser | `e2e/28-escape-due-date.spec.ts` :: "AC-28.7: 0 "Due date" fields after the Escape; B's row reads Due 2026-11-05 before and after the reload; 0 POST requests to / between the Escape and the reload; the list reads [C, B, A] and B is still checked"                                                     |
+| Opening the editor focuses the field in a browser           | `e2e/45-due-date-focus.spec.ts` :: "AC-45.7: after the click B's "Due date" input is the active element with value 2026-11-05 and 0 POSTs, A and C show 0 "Due date" fields; after Escape 0 fields, B reads Due 2026-11-05, still 0 POSTs; after the reload the list reads [C, B, A] and B is unchecked"   |
