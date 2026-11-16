@@ -153,3 +153,20 @@ Must not:    Use an effect or ref to clear the message.
 Doc drift:   none
 Escalate:    none
 ```
+
+## Addendum: AC-43.6 "0 `alert` roles" and the route announcer
+
+```
+Question:    Does AC-43.6's "0 `alert` roles" mean the component's failure message, so test-writer narrows e2e/43-complete-all-hidden.spec.ts:118?
+Class:       P2 spec silent (the spec does not say which alerts count; read literally it is unsatisfiable)
+Sources:     spec/contracts/41-complete-all-hidden.md:65 "after the uncheck 1 button named exactly \"Mark all complete (1)\", enabled, and 0 `alert` roles"
+             spec/contracts/41-complete-all-hidden.md:121 "A failed mark-all still shows the §10 alert and recovers"
+             node_modules/next/dist/client/components/app-router-announcer.js:26 "announcer.role = 'alert';"
+             e2e/19-delete.spec.ts:185 "await expect(rowOf(page, 'B').getByRole('alert')).toHaveCount(0);"
+Conflict:    AC-43.6 read page-wide says 0 alerts / Next injects 1 role=alert (next-route-announcer, shadow root, appended on hydration) into every hydrated page, which Playwright's role engine pierces. Verified in the file above. Page-wide, the AC can never pass.
+Verdict:     The criterion is about the component's own §10 failure message (REQ-43.4 is the absence of a stale failure after the uncheck; §10 is the only alert the feature owns). A reading that no Next app can satisfy is not the contract, and the spec's own §43 and §36 tests count alerts inside the component. Precedent: e2e/19-delete.spec.ts:185 scopes the query. Authority order puts the spec first, and the spec is not contradicted: no spec change, no D-n. The fix is to the locator only, in test-writer's `test(todos): B8.3 ...` commit (tests are never weakened: the scoped query still fails if the component renders its alert).
+Next action: test-writer scopes line 118 to the component's container, never to a locator that could miss the component's alert, and never removes the assertion: the scope must contain the button's parent (for example the element holding the button), or exclude the announcer with `page.locator('body > :not(next-route-announcer)').getByRole('alert')`. Commit as test(todos): B8.3 AC-43.6 scope alert query past the route announcer; it is green at the base like b06a5be, so verify-red.sh evidence is unchanged for the red tests. code-writer then re-runs.
+Must not:    Delete the alert assertion, use `.first()` or `toHaveCount(1)`, or edit the e2e in the feat(...) commit.
+Doc drift:   none (optional: add one clause to §43 AC-43.6 "alert roles inside the page content, excluding the framework route announcer" via docs(spec) under a D-n; not needed).
+Escalate:    none
+```
