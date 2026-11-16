@@ -15,7 +15,7 @@ changes.
 ### B11.1 · Escape in the due-date editor puts focus on "Edit due date"
 
 _F49 · section 51_
-**Status: Open** — §28 (`spec/contracts/26-escape-due-date.md`) closes the editor on Escape and §45 REQ-45.4 restores no focus, so focus falls to the page (`todo-due-date.tsx`).
+**Status: Done** — d1d9598 (#367), 7 AC-51.n criteria green (AC-51.1, AC-51.2, AC-51.6, AC-51.7 red in d053c8b, the unit ones proven by verify-red.sh on base 218f7b0; AC-51.3–51.5 pinned green at the base, 218f7b0; AC-45.3, AC-45.5 follow §45 as #355 rewrote it; review pass 1 added two rows in afe12a2); unit 381 → 391; e2e 90 → 91, AC-51.7; mutation n/a (no src/lib or src/actions change, B1.100); no-rework 1/1, unattended 1/1 (D-29); merged first in E11, no sync
 
 - **Acceptance:**
   - When Escape closes the editor (from the field, "Today" or "Clear due date"), "Edit due date" is `document.activeElement`.

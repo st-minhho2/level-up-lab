@@ -55,7 +55,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §48 | [contracts/46-escape-title-focus.md](contracts/46-escape-title-focus.md) | Todos: Escape in the title editor puts focus on "Edit title" | ✗ |
 | §49 | [contracts/47-clear-completed-description.md](contracts/47-clear-completed-description.md) | Todos: a failed clear's message describes "Clear completed" | ✗ |
 | §50 | [contracts/48-search-hint.md](contracts/48-search-hint.md) | Todos: the search box shows "Press / to search" | ✗ |
-| §51 | [contracts/49-escape-due-date-focus.md](contracts/49-escape-due-date-focus.md) | Todos: Escape in the due-date editor puts focus on "Edit due date" | ✗ |
+| §51 | [contracts/49-escape-due-date-focus.md](contracts/49-escape-due-date-focus.md) | Todos: Escape in the due-date editor puts focus on "Edit due date" | ✅ |
 | §52 | [contracts/50-complete-all-description.md](contracts/50-complete-all-description.md) | Todos: a failed mark-all's message describes "Mark all complete" | ✗ |
 | §53 | [contracts/51-delete-description.md](contracts/51-delete-description.md) | Todos: a failed delete's message describes "Delete todo" | ✗ |
 
