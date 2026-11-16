@@ -18,7 +18,7 @@ title, due date or query ever loses a slash. Nothing stored and nothing in the a
 | REQ-25.2 | Event-driven      | WHEN REQ-25.1 moves focus THE SYSTEM SHALL cancel the key's default action (`preventDefault`), so that the character `/` is not typed into the box and the browser's own use of the key does not start.                                                                                                                                                                                                                                                             |
 | REQ-25.3 | Unwanted behavior | IF the focused element is an `input` of a text-like type (any `type` but checkbox, radio, button, submit, reset, image, file, range or color, compared case-insensitively; a missing `type` counts as text-like), a `textarea`, a `select` or an element whose `isContentEditable` is true (the search box itself, the "New todo" box §5, a title field §6, a due-date field §15 included) THEN THE SYSTEM SHALL leave the key alone: focus stays and `/` is typed. |
 | REQ-25.4 | Unwanted behavior | IF the Ctrl, Meta or Alt modifier is held with `/` THEN THE SYSTEM SHALL leave the key alone: no focus move, no `preventDefault`.                                                                                                                                                                                                                                                                                                                                   |
-| REQ-25.5 | Ubiquitous        | THE SYSTEM SHALL change nothing but focus by the shortcut: the text already in the box, the address, the list, the counts (§13, §21) and every stored todo stay as they are, and no request is made.                                                                                                                                                                                                                                                                |
+| REQ-25.5 | Ubiquitous        | THE SYSTEM SHALL change nothing but focus and the box's selection (§46) by the shortcut: the text already in the box, the address, the list, the counts (§13, §21) and every stored todo stay as they are, and no request is made.                                                                                                                                                                                                                                  |
 | REQ-25.6 | Ubiquitous        | THE SYSTEM SHALL listen only while the search form is shown, and SHALL NOT change the markup, labels, names and links of §16 and §21 (the shortcut adds no visible text).                                                                                                                                                                                                                                                                                           |
 
 "Text-entry element" has one definition, REQ-25.3. A button, a link, a checkbox or a radio button with focus is not one,
@@ -50,7 +50,7 @@ export interface ShortcutEvent {
 }
 export function isSearchShortcut(event: ShortcutEvent): boolean; // key === SEARCH_SHORTCUT_KEY, no ctrlKey, metaKey or altKey, and target is null or not (tagName INPUT with type missing or not in checkbox, radio, button, submit, reset, image, file, range, color (case-insensitive), TEXTAREA or SELECT, tagName case-insensitive, or isContentEditable === true); never throws
 // src/components/todo-search-form.tsx (§16, §21, extended by §25; gains 'use client': an effect and a ref)
-export function TodoSearchForm({ filter, query }: { readonly filter: TodoFilter; readonly query: string }): ReactNode; // signature and markup unchanged; while mounted, one keydown listener on document: when isSearchShortcut(event) → event.preventDefault() and the box's ref .focus(); the listener is removed on unmount
+export function TodoSearchForm({ filter, query }: { readonly filter: TodoFilter; readonly query: string }): ReactNode; // signature and markup unchanged; while mounted, one keydown listener on document: when isSearchShortcut(event) → event.preventDefault() and the box's ref .focus() then .select() (§46); the listener is removed on unmount
 ```
 
 `src/app/page.tsx`, `src/lib/todo-search.ts`, `src/lib/clear-search.ts`, `src/actions/todos.ts` and every other
@@ -59,10 +59,10 @@ or environment variable is added. The input keeps the `key` of §16, so the ref 
 
 ## Out of scope
 
-Any key other than `/` (Escape in the box is §27), a visible hint or tooltip for the shortcut, selecting the box's
-text on focus, a shortcut for another control, a configurable key, a shortcut while a dialog or another page is
-shown, `Shift`-sensitive behavior beyond REQ-25.4, IME composition handling, scrolling the box into view beyond what
-`focus()` does, announcing the focus move to assistive technology, a listener on any element but `document`.
+Any key other than `/` (Escape in the box is §27), a visible hint or tooltip for the shortcut, a shortcut for another
+control, a configurable key, a shortcut while a dialog or another page is shown, `Shift`-sensitive behavior beyond
+REQ-25.4, IME composition handling, scrolling the box into view beyond what `focus()` does, announcing the focus move to
+assistive technology, a listener on any element but `document`.
 
 ## Unchanged behavior
 
