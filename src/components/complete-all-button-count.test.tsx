@@ -38,11 +38,11 @@ describe('<CompleteAllButton> count (§36)', () => {
     expect(screen.queryAllByRole('alert')).toHaveLength(0);
   });
 
-  it('AC-36.3: renders 1 button named exactly "Mark all complete" each time, disabled with count 0 and enabled with no count', () => {
+  it('AC-36.3: renders nothing with disabled true and count 0, and exactly 1 enabled button named "Mark all complete" with disabled false and no count', () => {
     const first = render(<CompleteAllButton disabled={true} count={0} />);
 
-    expect(screen.getAllByRole('button')).toHaveLength(1);
-    expect(screen.getByRole('button', { name: 'Mark all complete' })).toBeDisabled();
+    expect(screen.queryAllByRole('button')).toHaveLength(0);
+    expect(first.container.childNodes).toHaveLength(0);
 
     first.unmount();
     render(<CompleteAllButton disabled={false} />);

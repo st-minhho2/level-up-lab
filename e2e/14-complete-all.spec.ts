@@ -34,7 +34,8 @@ async function openHydrated(page: Page, path: string): Promise<void> {
   await page.waitForLoadState('networkidle');
 }
 
-// "The list reads [C, B, A] (3 rows, same order), all 3 checkboxes checked, and the button is disabled".
+// "The list reads [C, B, A] (3 rows, same order), all 3 checkboxes checked, and 0 buttons whose name contains
+// "Mark all complete"" (§43).
 async function expectAllCompleteInOrder(page: Page): Promise<void> {
   await expect(page.getByRole('listitem')).toHaveCount(3);
   await expect(page.getByRole('listitem')).toHaveText(['C', 'B', 'A']);
@@ -42,21 +43,19 @@ async function expectAllCompleteInOrder(page: Page): Promise<void> {
   await expect(page.getByRole('checkbox', { name: 'C', exact: true })).toBeChecked();
   await expect(page.getByRole('checkbox', { name: 'B', exact: true })).toBeChecked();
   await expect(page.getByRole('checkbox', { name: 'A', exact: true })).toBeChecked();
-  await expect(markAllButton(page)).toHaveCount(1);
-  await expect(markAllButton(page)).toBeDisabled();
+  await expect(markAllButton(page)).toHaveCount(0);
 }
 
 // §14 mark all complete (B2.3).
 test.describe('§14 mark all complete', () => {
-  test('AC-14.6: with no stored todo, / shows exactly 1 button "Mark all complete", disabled', async ({ page }) => {
+  test('AC-14.6: with no stored todo, / shows 0 buttons named "Mark all complete"', async ({ page }) => {
     await page.goto('/');
 
     await expect(page.getByRole('listitem')).toHaveCount(0);
-    await expect(markAllButton(page)).toHaveCount(1);
-    await expect(markAllButton(page)).toBeDisabled();
+    await expect(markAllButton(page)).toHaveCount(0);
   });
 
-  test('AC-14.6: C (open), B (done), A (open): the button is enabled, and after the click and after a reload the list reads [C, B, A], all 3 checked, the button disabled', async ({
+  test('AC-14.6: C (open), B (done), A (open): the button is enabled, and after the click and after a reload the list reads [C, B, A], all 3 checked, 0 buttons named "Mark all complete"', async ({
     page,
   }) => {
     await seedInDisplayOrder([{ title: 'C' }, { title: 'B', completed: true }, { title: 'A' }]);
