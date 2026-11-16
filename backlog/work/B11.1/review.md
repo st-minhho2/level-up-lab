@@ -102,3 +102,50 @@ Verdict: back to test-writer
 
 Riskiest unfalsified: AC-51.7 relies on Playwright's `Enter` on the focused button reaching React's click handler in
 dev mode; it passed once here (2.0s), not repeated for flakiness.
+
+## Diff review (round 2)
+
+Scope: ui. Diff `main...HEAD` at `afe12a2` (10 files, +829 −5). Since round 1: `c7dccab` (this file) and `afe12a2`
+(`test(todos): B11.1 review pass 1 -- …`, +54 lines in `todo-due-date-escape-focus.test.tsx`, 0 removed lines). The
+feat commit `28d7d05` and `src/components/todo-due-date.tsx` are unchanged.
+
+### Command results (last line of each, run by the reviewer)
+
+| Command                             | Result                                                                                |
+| ----------------------------------- | ------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | All matched files use Prettier code style!                                            |
+| `pnpm typecheck`                    | `tsc --noEmit`, no output (clean)                                                     |
+| `pnpm test`                         | Tests 391 passed (391) (389 + the 2 `it.each` rows of `afe12a2`)                      |
+| `pnpm test:e2e`                     | 91 passed (2.8m); AC-51.7 passed (1.4s)                                               |
+| `scripts/mutation-gate.sh`          | mutation: CI only, no src/lib or src/actions change                                   |
+| `scripts/ci/check-suppressions.sh`  | [check-suppressions] OK: no new suppressions                                          |
+| `scripts/ci/check-config-change.sh` | [check-config-change] OK: no protected config changed                                 |
+| `scripts/ci/check-feat-commits.sh`  | [check-feat-commits] OK: no feat commit touches tests                                 |
+| `scripts/ci/check-ac-coverage.sh`   | [check-ac-coverage] OK: every criterion of a shipped section has a test               |
+| `scripts/ci/check-spec-sections.sh` | [check-spec-sections] OK: sections cited: 1 … 53                                      |
+| `scripts/ci/check-features-map.sh`  | [check-features-map] OK                                                               |
+| `scripts/verify-red.sh B11.1`       | RESULT: red for the right reason (escape-focus 4 new failed, focus 2 new failed)      |
+| `git log --no-merges d053c8b..HEAD` | `afe12a2` only: the hardening commit, `test(...)` subject, additions only (explained) |
+| `git log --merges --remerge-diff`   | empty; the branch has no merge commit                                                 |
+
+### Checklist
+
+| Check                                                 | Result                                                                                                                                                                                                             |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every AC-51.n has a test whose assertion matches Then | pass (unchanged from round 1); `afe12a2` adds two `AC-51.3:` rows exercising REQ-51.3/51.5 after an earlier Escape                                                                                                 |
+| no test weakened after the red commit                 | pass: the only test commit after `d053c8b` is `afe12a2`, a `test(...)` commit with 0 removed lines                                                                                                                 |
+| every changed file is in `plan.md`                    | pass: five planned files plus exempt paperwork; `afe12a2` touches a planned test file                                                                                                                              |
+| interfaces match §51's function contract              | pass (unchanged)                                                                                                                                                                                                   |
+| Zod / Prisma / raw SQL / migration                    | n/a                                                                                                                                                                                                                |
+| no secret, no suppression                             | pass                                                                                                                                                                                                               |
+| features map row moved                                | pass: F49 §51 ✅; `Lead approves spec` box untouched                                                                                                                                                               |
+| would a test fail if one changed line were reverted?  | pass. Probes on a clone under `$TMPDIR`: reset `escapedRef.current = false;` deleted → 2 failed (both `afe12a2` rows, "expected 1 to be +0"), finding 1 closed; `if (escapedRef.current)` → `if (true)` → 6 failed |
+
+### Findings
+
+None. Round 1 finding 1 is closed by `afe12a2` (confirmed by the probe above).
+
+Verdict: ready for PR
+
+Riskiest unfalsified: AC-51.7's `Enter` on the focused "Edit due date" reaching React's click handler in dev mode;
+it has now passed in two separate full runs (2.0s, 1.4s), not run under repeat-each for flakiness.
