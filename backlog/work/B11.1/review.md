@@ -34,3 +34,71 @@ Verdict: approved (ready for the lead's gate, not approved for build)
 
 Riskiest unfalsified: the passive `[editing]` effect runs before the AC-51.1/51.2 assertions only if React flushes it
 synchronously after a discrete keydown, as it does for §48 on main; not run here (plan mode).
+
+## Diff review (round 1)
+
+Scope: ui. Diff `main...HEAD` at `025490c` (10 files, +707 −5). Pin `218f7b0`, red `d053c8b`, feat `28d7d05`, map `025490c`.
+
+### Command results (last line of each, run by the reviewer)
+
+| Command                             | Result                                                                                   |
+| ----------------------------------- | ---------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | All matched files use Prettier code style!                                               |
+| `pnpm typecheck`                    | `tsc --noEmit`, no output (clean)                                                        |
+| `pnpm test`                         | Tests 389 passed (389) (plan: 389)                                                       |
+| `pnpm test:e2e`                     | 91 passed (4.2m) (plan: 91; AC-51.7 passed)                                              |
+| `scripts/mutation-gate.sh`          | mutation: CI only, no src/lib or src/actions change                                      |
+| `scripts/ci/check-suppressions.sh`  | [check-suppressions] OK: no new suppressions                                             |
+| `scripts/ci/check-config-change.sh` | [check-config-change] OK: no protected config changed                                    |
+| `scripts/ci/check-feat-commits.sh`  | [check-feat-commits] OK: no feat commit touches tests                                    |
+| `scripts/ci/check-ac-coverage.sh`   | [check-ac-coverage] OK: every criterion of a shipped section has a test                  |
+| `scripts/ci/check-spec-sections.sh` | [check-spec-sections] OK: sections cited: 1 … 53                                         |
+| `scripts/ci/check-features-map.sh`  | [check-features-map] OK                                                                  |
+| `scripts/verify-red.sh B11.1`       | RESULT: red for the right reason (exit 0; escape-focus 4 new failed, focus 2 new failed) |
+| `git log … d053c8b..HEAD -- tests`  | empty (no-merges and remerge-diff); the branch has no merge commit                       |
+
+### Checklist
+
+| Check                                                 | Result                                                                                                                                                                                                                                                                                   |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-51.n has a test whose assertion matches Then | pass: AC-51.1–51.6 in `todo-due-date-escape-focus.test.tsx` (receiver-filtered `mock.contexts` counts as §51 says), AC-51.7 in `e2e/51-escape-due-date-focus.spec.ts`; AC-45.3 (a), AC-45.5 rewritten exactly as §51 lists (one assertion and the title words each)                      |
+| no test weakened after the red commit                 | pass: both `git log` checks empty                                                                                                                                                                                                                                                        |
+| every changed file is in `plan.md`                    | pass: five planned files plus exempt paperwork (`docs/metrics.md`, `work/B11.1/*`)                                                                                                                                                                                                       |
+| interfaces match §51's function contract              | pass: props and signature unchanged; `focus()` only from the effect after Escape; marker set after the `modified \|\| pending` guard                                                                                                                                                     |
+| Zod / Prisma / raw SQL / migration                    | n/a: no action, lib, schema or migration change                                                                                                                                                                                                                                          |
+| no secret, no suppression                             | pass (`check-suppressions` OK; diff read)                                                                                                                                                                                                                                                |
+| features map row moved                                | pass: F49 §51 ✅; `Lead approves spec` box in `49-escape-due-date-focus.md:5` untouched                                                                                                                                                                                                  |
+| would a test fail if one changed line were reverted?  | **fail for one line** (finding 1). Probed on copies under `$TMPDIR`: marker set before the guard → AC-51.3 fails (killed); reset `escapedRef.current = false` deleted → all 389 unit tests pass (survives); `return;` after the field focus deleted is equivalent while the reset exists |
+
+### Findings
+
+```
+[1] KIND: coverage
+    WHERE: src/components/todo-due-date.tsx:74
+    DEFECT: deleting the one-shot reset `escapedRef.current = false;` fails no unit or e2e test, although
+            without it a later successful save or clear moves focus to "Edit due date".
+    TRIGGER: on the probe copy with line 74 deleted: open the editor, Escape, click "Edit due date", submit
+             2026-12-01 (action resolves ok), focus "Search todos" while pending; after the result "Edit due date"
+             receives focus() and becomes document.activeElement. A probe test of exactly this fails on the mutant
+             and passes on 28d7d05; `pnpm exec vitest run` on the mutant: Tests 389 passed (389).
+    WRONG BEHAVIOUR: REQ-51.3 / REQ-51.5 ("once for each Escape that leaves edit mode and at no other time";
+             a save calls no focus()) would break with the whole suite green. advice.md "Mutation hot spots"
+             says AC-51.1's re-render and AC-51.5 kill this mutant; they do not (a re-render does not change
+             `editing`, so the effect does not run, and no test exits by a save after an Escape). Components are
+             outside Stryker's scope, so CI's mutation job will not catch it either. The shipped code is correct.
+    CONFIDENCE: confirmed (I ran it)
+```
+
+Fix belongs to test-writer: one hardening `it` (title prefixed `AC-51.5:` or `AC-51.3:`) in
+`todo-due-date-escape-focus.test.tsx` doing Escape → "Edit due date" → a successful save (and, in a second row of an
+`it.each`, a successful "Clear due date") and asserting 0 `focus()` calls with the new "Edit due date" as receiver and
+the focused element unchanged, committed as `test(todos): B11.1 review pass 1 -- …`. No `src/` change is needed.
+
+Non-blocking: AC-51.5 dispatches the Escapes on "Update due date" and "New todo" without focusing those targets first,
+so "focus unchanged" there only asserts the field kept focus; the handler is per element, so dispatch target is what
+matters and a form-level handler mutant would still fail on the field-still-present assertion.
+
+Verdict: back to test-writer
+
+Riskiest unfalsified: AC-51.7 relies on Playwright's `Enter` on the focused button reaching React's click handler in
+dev mode; it passed once here (2.0s), not repeated for flakiness.
