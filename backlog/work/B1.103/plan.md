@@ -80,4 +80,4 @@ No advice (tier quick, no section). Risk tier **high** (`.claude/`, hooks) → t
 | 3    | reviewer | diff review                   | `docs(backlog): B1.103 review pass N`                                      |
 | 4    | dev-lead | draft PR, label               | —                                                                          |
 
-Plan review: approved, round 2 · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: lead, 2026-11-16 · Rounds: 1
