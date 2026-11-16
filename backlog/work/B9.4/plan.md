@@ -53,4 +53,4 @@ a focused element the save removes reads as body, so the box is focused (Q3); AC
 edited row: if the editor loses focus on that re-render it is a `todo-item.tsx` defect, reported, §47 not widened (Q6);
 jsdom may keep a disabled "Add" as active element, which is in the allowed set; AC-47.3(c) blurs explicitly.
 
-Plan review: approved, round 1 · Plan approved by: · Rounds: 1
+Plan review: approved, round 1 · Plan approved by: reviewer (D-27, tier medium, issue #353) · Rounds: 1
