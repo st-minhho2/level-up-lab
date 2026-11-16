@@ -45,5 +45,6 @@ moves or removes a feature updates its row in code-writer's own commit right aft
 | F38 | §40 | "Clear due date" button in the due-date editor | `src/components/todo-due-date.tsx` | `src/components/todo-due-date-clear.test.tsx`, `e2e/40-due-date-clear.spec.ts` | ✅ |
 | F37 | §39 | Near-limit warning on the new-todo counter | `src/lib/title-count.ts`, `src/components/todo-form.tsx` | `src/lib/title-count.test.ts`, `src/components/todo-form-warning.test.tsx`, `e2e/39-title-counter-warning.spec.ts` | ✅ |
 | F36 | §38 | Match count in the search form | `src/components/todo-search-form.tsx`, `src/app/page.tsx` | `src/components/todo-search-form.test.tsx`, `e2e/38-search-count.spec.ts` | ✅ |
+| F40 | §42 | Filter nav hides a link whose count is 0 | `src/components/todo-filter-nav.tsx` | `src/components/todo-filter-nav-hide-empty.test.tsx`, `src/components/todo-filter-nav-counts.test.tsx`, `e2e/42-filter-hide-empty.spec.ts` | ✅ |
 
 Receipt: verified against `0b2a6d5` (B1.11 merged).
