@@ -57,4 +57,4 @@ AC-48.3 to 48.5 are pins, green before the code (the marker's traps, advice "Mut
 `useEffect` like §41's: React flushes it in the same task for a keydown, and no criterion tells it from
 `useLayoutEffect` (review round 1, riskiest unfalsified).
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: · Rounds: 1
