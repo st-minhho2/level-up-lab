@@ -35,28 +35,32 @@ export function TodoSearchForm({
 
 ## Verification
 
-Baseline: `pnpm exec vitest list` 360 tests; `pnpm test:e2e --list` 88 tests in 40 files. Red
-(`test(todos): B10.3 … (red)`, no skeleton: the box has no `placeholder`, so AC-50.1, 50.3, 50.4, 50.5, 50.6 and the e2e
-fail on the attribute reading null; AC-50.2 guards the accessible name and text and may already be green, named in the
-commit body): `scripts/verify-red.sh B10.3` exit 0. Green: `pnpm lint && pnpm typecheck` clean · `pnpm test` 360 → 366
-(6 new `it`s), with `todo-search-form.test.tsx` (AC-16.5, 21.4, 25.2, 27.2, 38.3) and `todo-search-form-select.test.tsx`
+Baseline: `pnpm exec vitest list` 360 tests; `pnpm test:e2e --list` 88 tests in 40 files. Pin (B4.3, B9.4 way):
+AC-50.2 guards the accessible name and text, green before the change (reviewer's probe), so it lands alone in
+`test(todos): B10.3 pin AC-50.2 …` (no `(red)`), `pnpm test` 360 → 361 green. Red (`test(todos): B10.3 … (red)`, no
+skeleton: the box has no `placeholder`, so AC-50.1, 50.3, 50.4, 50.5, 50.6 and the e2e fail on the attribute reading
+null): `scripts/verify-red.sh B10.3` exit 0, 5 new failing. Green: `pnpm lint && pnpm typecheck` clean · `pnpm test`
+361 → 366 (6 new `it`s in total), with `todo-search-form.test.tsx` (AC-16.5, 21.4, 25.2, 27.2, 38.3) and `todo-search-form-select.test.tsx`
 (AC-46.3) green · `pnpm test:e2e` 88 → 89 (`e2e/50-search-hint.spec.ts`), with e2e 16, 21, 25, 27, 38, 46 green ·
 mutation: CI only, no `src/lib` or `src/actions` change (B1.100) · `pnpm build` ok · `scripts/ci/check-features-map.sh` OK.
 
 ## Work breakdown
 
-| Step | Role / skill    | Produces                            | Commit                          |
-| ---- | --------------- | ----------------------------------- | ------------------------------- |
-| 1    | none            | no skeleton (no new export)         | —                               |
-| 2    | test-writer     | component + e2e files               | `test(todos): B10.3 … (red)`    |
-| 3    | code-writer     | the `placeholder` attribute, header | `feat(todos): B10.3 …`          |
-| 4    | code-writer     | F48 row ✅                          | `docs(map): F48 … [B10.3]`      |
-| 5    | reviewer (diff) | `review.md` diff section            | `docs(backlog): B10.3 review …` |
+| Step | Role / skill    | Produces                            | Commit                             |
+| ---- | --------------- | ----------------------------------- | ---------------------------------- |
+| 1    | none            | no skeleton (no new export)         | —                                  |
+| 2a   | test-writer     | AC-50.2 alone, green                | `test(todos): B10.3 pin AC-50.2 …` |
+| 2b   | test-writer     | AC-50.1, 50.3–50.6 + e2e file       | `test(todos): B10.3 … (red)`       |
+| 3    | code-writer     | the `placeholder` attribute, header | `feat(todos): B10.3 …`             |
+| 4    | code-writer     | F48 row ✅                          | `docs(map): F48 … [B10.3]`         |
+| 5    | reviewer (diff) | `review.md` diff section            | `docs(backlog): B10.3 review …`    |
 
 Costs the lead takes: `spec/contracts/23-search-shortcut.md:26` ("The hint "press / to search" is not shown.")
 contradicts REQ-50.1 and is not in §50's edit list; the advisor ruled §50 governs and the run must not edit §25 (D-45),
-so the lead lands a `docs(spec)` fix to that line (advice.md, last block). jsdom has no `:placeholder-shown`, so
-REQ-50.5 is proved only by AC-50.7 (analysis Q1). If `react-dom/server` fails under jsdom, AC-50.4 moves to a second
-file with `// @vitest-environment node`, criterion unchanged (Q2; that file would be a Files change, re-planned).
+so the lead lands a `docs(spec)` fix to that line (advice.md, last block). The build does not wait for it (advice
+verdict: "It does not stop the build"; no test asserts the line); the run cannot land it (D-45), so it stays on the
+PR's "Waiting on you" list, to land before or with the closing PR. jsdom has no `:placeholder-shown`, so REQ-50.5 is
+proved only by AC-50.7 (analysis Q1). AC-50.4 stays in the one jsdom file (`renderToStaticMarkup` loads there,
+reviewer's probe).
 
 Plan review: <pending> · Plan approved by: · Rounds: 1
