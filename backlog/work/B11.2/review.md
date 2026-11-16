@@ -32,3 +32,58 @@ into two `it`s, the expected `pnpm test` count becomes 388, not 387. The diff re
 AC-52.n title is present.
 
 Verdict: approved (ready for the lead's gate under D-27; tier medium, so the reviewer's approval stands in for it)
+
+## Diff review (round 1)
+
+SCOPE: ui (`src/components/complete-all-button.tsx`, `src/components/complete-all-button-description.test.tsx`)
+
+### Command results (last line of each, run by the reviewer on 278a159)
+
+| Command                             | Last line                                                                     |
+| ----------------------------------- | ----------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!` (exit 0)                         |
+| `pnpm typecheck`                    | `> tsc --noEmit` (exit 0)                                                     |
+| `pnpm test`                         | `Tests  387 passed (387)` (61 files; plan said 381 → 387)                     |
+| `pnpm test:e2e`                     | `90 passed (4.2m)` (plan said 90 → 90)                                        |
+| `scripts/mutation-gate.sh`          | `mutation: CI only, no src/lib or src/actions change`                         |
+| `scripts/ci/check-suppressions.sh`  | `[check-suppressions] OK: no new suppressions`                                |
+| `scripts/ci/check-config-change.sh` | `[check-config-change] OK: no protected config changed`                       |
+| `scripts/ci/check-feat-commits.sh`  | `[check-feat-commits] OK: no feat commit touches tests`                       |
+| `scripts/ci/check-ac-coverage.sh`   | `[check-ac-coverage] OK: every criterion of a shipped section has a test`     |
+| `scripts/ci/check-spec-sections.sh` | `[check-spec-sections] OK: sections cited: 1 … 53`                            |
+| `scripts/ci/check-features-map.sh`  | `[check-features-map] OK`                                                     |
+| `scripts/verify-red.sh B11.2`       | `RESULT: red for the right reason` (6 ran, 3 new, 3 new failed, 0 new passed) |
+| `git diff --stat main...HEAD`       | `8 files changed, 526 insertions(+), 3 deletions(-)`                          |
+
+### Checklist
+
+| Check                                                       | Result                                                                                                                                                                                      |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-52.n has a test whose assertion matches its Then   | pass: AC-52.1–52.6 each read against the full Then column; every count, exact text, `hasAttribute`, `toHaveAccessibleDescription`, next-sibling and call-count clause is asserted           |
+| no test weakened after the red commit                       | pass: `git log --first-parent --no-merges 10fc315..HEAD -- '*.test.*' e2e/` empty; `--merges --remerge-diff` empty (no merges)                                                              |
+| every changed file is in `plan.md`                          | pass: component, test file, `spec/features-map.md` in Files; `docs/metrics.md` and `backlog/work/B11.2/*` are the plan's stated paperwork                                                   |
+| interfaces match §52 Function contracts                     | pass: signature and props unchanged; `useId()` in `CompleteAllButtonShown`; `<p id={messageId} role="alert">`; `aria-describedby` only while `error !== undefined`; no ref, focus, tabindex |
+| Zod at every action boundary / Prisma only in lib / raw SQL | n/a: no action, lib or Prisma change                                                                                                                                                        |
+| migration reversible and indexed                            | n/a: no migration                                                                                                                                                                           |
+| no secret, no suppression                                   | pass: check-suppressions OK; no secret in diff                                                                                                                                              |
+| features map row moved                                      | pass: F50 §52 ✅ added in `docs(map)` commit 278a159                                                                                                                                        |
+| would a test fail if a changed line were reverted (probes)  | pass, on a clone under `$TMPDIR`: see below                                                                                                                                                 |
+
+Probes (on `git clone` copies, `pnpm exec vitest run src/components/complete-all-button-description.test.tsx`):
+
+1. `aria-describedby={messageId}` unconditionally: 5 failed (AC-52.2, 52.3, 52.4, 52.5, 52.6).
+2. `setError(undefined)` at the start of a retry (forbidden by REQ-52.4): 1 failed (AC-52.4).
+3. `id={messageId}` removed from the alert: 3 failed (AC-52.1, 52.3, 52.4).
+4. `const messageId = "complete-all-error"` (a hard-coded id, forbidden by REQ-52.1): 6 passed. No criterion's Then
+   measures the id's source, and the page renders one `CompleteAllButton`, so no observable behavior differs; the
+   code under review does use `useId` (line 28). Not a finding against this diff; named below as the riskiest spot.
+
+### Findings
+
+None blocking.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: REQ-52.1's "generated with React's `useId` (no hard-coded id)" has no test that tells the two
+apart (probe 4 passes with a literal id); it holds today only by reading line 28, so a later refactor to a literal
+would pass the suite.
