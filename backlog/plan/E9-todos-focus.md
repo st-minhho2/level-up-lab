@@ -74,3 +74,20 @@ _F44 · section 46_
 - **Test:** `src/components/todo-search-form-select.test.tsx::AC-46.1: on (all, milk) with body focused, / makes "Search todos" the active element with value milk, selectionStart 0, selectionEnd 4, defaultPrevented true and 0 requests` — red because: the component calls `.focus()` but never `.select()`, so the selection does not span 0..4
 - **Tier:** full · **Depends on:** ~~D-40~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B9.3/`
+
+### B9.4 · A focus move during a pending add is kept
+
+_F45 · section 47_
+**Status: Open** — defect D1 of the first D-43 sweep (2026-11-16): `src/components/todo-form.tsx` focuses the "New todo"
+box on every successful result, even when the person moved focus elsewhere while the save was pending, so typed text
+splits between two fields (type `Fresh`, click "Add", press `/`, type `milk`: "Search todos" holds `m`, the box `ilk`).
+
+- **Acceptance:**
+  - On a successful result the box is focused only if the active element is the box, the "Add" button, or none.
+  - A focus move made during the pending save is kept, and nothing typed elsewhere is split.
+  - The feature PR is titled `fix(todos): B9.4 …`: it repairs B9.1 and counts in E9's change failure rate (D-44).
+  - Mounts in `src/components/todo-form.tsx` only; contract `spec/contracts/45-new-todo-focus-pending.md` (section 47).
+- **Spec:** §47 — unchanged (contract `spec/contracts/45-new-todo-focus-pending.md`, written before the label under D-44; edits REQ-44.1, REQ-44.4 and §44's contract line to point to §47; lifts nothing)
+- **Test:** `src/components/todo-form-focus-pending.test.tsx::AC-47.1: with focus moved to "Search todos" during the pending save and typed milk there, after the result "Search todos" is the active element with value milk, the box value is "", its focus has 0 calls, the counter reads 0 / 200, 0 alerts and createTodoAction was called once with title Fresh` — red because: `TodoForm` calls `box.current?.focus()` on every ok result without reading `document.activeElement`, so the box, not "Search todos", is active and the `focus` spy has 1 call
+- **Tier:** full · **Depends on:** ~~D-44~~ · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B9.4/`
