@@ -1,6 +1,7 @@
 'use client';
 
-// §14 CompleteAllButton; §10 the message of a failed mark-all, directly after the button; §36 the optional count.
+// §14 CompleteAllButton; §10 the message of a failed mark-all, directly after the button; §36 the optional count;
+// §43 nothing is rendered while no stored todo is open.
 import { useState, useTransition, type ReactNode } from 'react';
 import { completeAllTodosAction } from '@/actions/complete-all';
 import { completeAllLabel } from '@/lib/complete-all-label';
@@ -12,6 +13,15 @@ export function CompleteAllButton({
   readonly disabled: boolean;
   readonly count?: number;
 }): ReactNode {
+  // §43 REQ-43.1: no element at all. Unmounting the shown button also drops its failure message, so it cannot come
+  // back when the button reappears (REQ-43.4); focus is left to the browser (REQ-43.5).
+  if (disabled) {
+    return null;
+  }
+  return <CompleteAllButtonShown count={count} />;
+}
+
+function CompleteAllButtonShown({ count }: { readonly count?: number }): ReactNode {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | undefined>(undefined);
 
@@ -30,7 +40,7 @@ export function CompleteAllButton({
       <button
         type="button"
         onClick={onCompleteAll}
-        disabled={disabled || pending}
+        disabled={pending}
         className="rounded border border-zinc-300 px-3 py-1 text-sm text-zinc-700 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300"
       >
         {/* §36 REQ-36.6: without a count the label is §14's plain text. */}
