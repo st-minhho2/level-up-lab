@@ -43,3 +43,36 @@ Non-blocking, for the lead:
 - The Q2 fallback in the plan's Costs is moot (probe above). The planned Files list stands.
 
 Verdict: changes requested
+
+## Plan review (round 2)
+
+Scope: ui. Read: `99d1fd8` (plan round 2, `plan.md` only, +19 −15), §50 (`48-search-hint.md`), `scripts/verify-red.sh`
+header and `verify_feat`, `backlog/work/B4.3/plan.md:26,41,55` (pin precedent).
+
+| Check                                                                             | Result                                                                                                                                                                                                                                                                                                                                   |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                    | pass: unchanged from round 1; the four files are those §50:88-99 names, F48 row                                                                                                                                                                                                                                                          |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib    | pass: signature pasted as §50:77-85, one literal attribute, no export, action or Prisma                                                                                                                                                                                                                                                  |
+| plan follows `advice.md`'s recommendation or states the deviation                 | pass: approach A; the §25:26 conflict carried as the advice states ("It does not stop the build")                                                                                                                                                                                                                                        |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number         | pass: 7, exact strings, counts and booleans                                                                                                                                                                                                                                                                                              |
+| verification lists exact commands with expected numbers                           | pass: pin 360 → 361 green; red `verify-red.sh B10.3` exit 0 with 5 new failing; green 361 → 366; e2e 88 → 89; mutation "CI only". Traced: `verify-red.sh` takes the parent of the first `(red)` commit as base, which is the pin commit, so AC-50.2 runs at base in the same file and is not counted as new; the 5 new tests are all red |
+| work breakdown has skeleton → red → green → map → review with convention subjects | pass: skeleton skipped with a reason (no new export, as B9.4); 2a pin `test(todos): B10.3 pin AC-50.2 …` without `(red)` as B4.3:55; 2b red; feat; `docs(map)`; review                                                                                                                                                                   |
+| the section has a `Lead approves spec` box, ticked only by a human                | pass: `48-search-hint.md:5` `- [ ] Lead approves spec`, unticked; not touched by me                                                                                                                                                                                                                                                      |
+| no settled D-n contradicted                                                       | pass: the run edits no contract (D-45); the `23-search-shortcut.md:26` fix is the lead's, named as a cost                                                                                                                                                                                                                                |
+| `scripts/next-task.sh --check B10.3` says no overlap                              | pass: "[next-task] B10.3: no overlap with any Doing or Review card" (exit 0)                                                                                                                                                                                                                                                             |
+
+Round 1 reason 1: resolved (pin step 2a, counts fixed, no `placeholder` assertion added to AC-50.2). Round 1
+non-blocking items: the plan now states the build does not wait for the §25:26 fix and keeps it on "Waiting on you";
+the Q2 fallback is dropped.
+
+Costs the lead takes on approval (all stated in the plan):
+
+- `spec/contracts/23-search-shortcut.md:26` still reads "The hint "press / to search" is not shown." and contradicts
+  REQ-50.1 until the lead lands a `docs(spec)` fix; the card's PR will merge with the two contracts disagreeing unless
+  that fix lands first.
+- REQ-50.5 (`:placeholder-shown`) is proved only by the e2e AC-50.7, which `verify-red.sh` skips (needs a server); its
+  red is not machine-checked before the feat commit.
+
+Non-blocking: the plan's footer still reads `Rounds: 1`; the dev-lead updates it with the verdict.
+
+Verdict: approved (ready for the lead's gate, not approved for build)
