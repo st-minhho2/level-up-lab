@@ -12,7 +12,7 @@ Files:
   - mutation n/a: no `src/lib` or `src/actions` change, so the run skipped local mutation (B1.100);
   - unattended and no-rework 1/1 (D-29), one runner run.
 - `backlog/README.md`: Remaining row 132 removed; `~~B8.3~~` in node 132. No other Remaining row was blocked by
-  B8.3. Totals: E8 1/0/2, total 94/1/37 of 132.
+  B8.3. Totals: E8 3/0/0, total 96/1/38 of 135 (after E9 filing #331 and the B8.1, B8.2 closings #335, #336).
 - `spec/technical-requirements.md`: §43 index row ✗ → ✅.
 - `docs/metrics.md`: B8.3 Mutation cell "CI only" → 92.91 (the CI Stryker run on 082e030, `src/lib` and `src/actions`
   unchanged), Green cell "feat(todos) B8.3" → the merged sha 50d2458, as the E7 closings did.

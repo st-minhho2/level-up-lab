@@ -14,8 +14,9 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | E5 Todos keys       | [plan/E5-todos-keys.md](plan/E5-todos-keys.md)             | 6      | 0       | 0      | 6       |
 | E6 Todos cues       | [plan/E6-todos-cues.md](plan/E6-todos-cues.md)             | 6      | 0       | 0      | 6       |
 | E7 Todos hints      | [plan/E7-todos-hints.md](plan/E7-todos-hints.md)           | 6      | 0       | 0      | 6       |
-| E8 Todos polish two | [plan/E8-todos-polish-two.md](plan/E8-todos-polish-two.md) | 1      | 0       | 2      | 3       |
-| **Total**           |                                                            | **94** | **1**   | **37** | **132** |
+| E8 Todos polish two | [plan/E8-todos-polish-two.md](plan/E8-todos-polish-two.md) | 3      | 0       | 0      | 3       |
+| E9 Todos focus      | [plan/E9-todos-focus.md](plan/E9-todos-focus.md)           | 0      | 0       | 3      | 3       |
+| **Total**           |                                                            | **96** | **1**   | **38** | **135** |
 
 ## Execution order
 
@@ -176,9 +177,12 @@ flowchart TD
   S128["128 · local mutation runs only when src/lib or src/actions changed<br/>B1.100"]
   S129["129 · ready runner PRs stay mergeable after a sibling merges<br/>~~B1.101~~"]
   S105 --> S129
-  S130["130 · opening the title editor selects the title<br/>B8.1"]
-  S131["131 · filter links with no todos are hidden<br/>B8.2"]
+  S130["130 · opening the title editor selects the title<br/>~~B8.1~~"]
+  S131["131 · filter links with no todos are hidden<br/>~~B8.2~~"]
   S132["132 · Mark all complete hidden when idle<br/>~~B8.3~~"]
+  S133["133 · focus in New todo after an add<br/>B9.1"]
+  S134["134 · focus in the date field when the editor opens<br/>B9.2"]
+  S135["135 · the / shortcut selects the search text<br/>B9.3"]
 ```
 
 ## Remaining
@@ -224,8 +228,9 @@ at most 3 cards Doing (B1.18).
 | 109  | B1.93  | Eight smokes remove the caller's directory when `mktemp -d` fails                                         | —      | Open    | —                               | Lead  | S [estimate] |
 | 110  | B1.94  | CI never runs table-merge-smoke, whose verdict follows the host's own git attributes                      | —      | Open    | ~~B1.89~~                       | Lead  | S [estimate] |
 | 128  | B1.100 | Each parallel run mutation-tests all of src/lib up to three times, whatever the card changed              | —      | Partial | —                               | Lead  | S [estimate] |
-| 130  | B8.1   | Opening the title editor selects the whole title                                                          | —      | Open    | ~~D-39~~                        | Lead  | S [estimate] |
-| 131  | B8.2   | The filter nav hides a link whose count is 0, except the current filter                                   | —      | Open    | ~~D-39~~                        | Lead  | S [estimate] |
+| 133  | B9.1   | After a successful add, focus is in the "New todo" box                                                    | —      | Open    | ~~D-40~~                        | Lead  | S [estimate] |
+| 134  | B9.2   | Opening the due-date editor puts focus in the date field                                                  | —      | Open    | ~~D-40~~                        | Lead  | S [estimate] |
+| 135  | B9.3   | The `/` shortcut also selects the text already in the search box                                          | —      | Open    | ~~D-40~~                        | Lead  | S [estimate] |
 
 ## Waiting on human
 

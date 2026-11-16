@@ -23,9 +23,7 @@ and tests each would break. They have these properties:
 ### B8.1 · Opening the title editor selects the whole title
 
 _F39 · section 41_
-**Status: Open** — §6 (`spec/contracts/04-edit-title.md`) and §24 say nothing about focus or selection when "Edit
-title" opens the editor. REQ-6.1 (line 16) only says the field shows the current title. Every existing test clears the
-field before typing (`src/components/todo-item.test.tsx`) or uses Playwright's `fill()`, so none depends on the caret.
+**Status: Done** — 47608b3 (#333), 6 AC-41.n criteria green (AC-41.4 pinned green first, 2dad5fd; the rest red proven by verify-red.sh, 87f33ae; unit 323 → 330; e2e 75 → 76, AC-41.6), mutation n/a (no src/lib or src/actions change, B1.100); unattended and no-rework 1/1 (D-29), one runner run, merged second in E8 batch 3 after one origin/main merge in the run (f592c28)
 
 - **Acceptance:**
   - Activating "Edit title" focuses the text field with the whole current title selected (`selectionStart` 0,
@@ -44,9 +42,7 @@ field before typing (`src/components/todo-item.test.tsx`) or uses Playwright's `
 ### B8.2 · The filter nav hides a link whose count is 0, except the current filter
 
 _F40 · section 42_
-**Status: Open** — `spec/contracts/10-filter.md:17` (REQ-12.1) shows all three links "in every state (empty list
-included)". §30 (`28-filter-counts.md`) puts a count next to each one, lists "hiding a zero count" in its Out of scope
-(line 64), and expects "(0), (0), (0)" in AC-30.3, AC-30.6 and AC-30.7.
+**Status: Done** — d14be53 (#330), 7 AC-42.n criteria green (AC-42.2 pinned green first, 0fad3d5; the rest red proven by verify-red.sh, 84979d2) and AC-12.7, AC-30.3, AC-30.6, AC-30.7 rewritten under D-39; unit 323 → 327; e2e 75 → 78, AC-42.5–42.7; mutation n/a (no src/lib or src/actions change, B1.100); unattended and no-rework 1/1 (D-29), one runner run, merged first in E8 batch 3 with no sync
 
 - **Acceptance:**
   - When `counts` is given, a filter link and its count are not rendered when that filter's count is 0 and it is not

@@ -59,4 +59,23 @@ Mode runs the effect twice at the switch, before any typing: harmless. `src/comp
 the `[editing]` list and the `if (editing)` guard are guarded by AC-41.3–41.5 only. The spec's "Lead approves spec"
 box stays unticked: the issue's `agent-ready` label is the spec approval (D-27), as for §38–§40.
 
-Plan review: approved, round 2 (round 1: 2 reasons, pin commit, exact counts, applied 1bf47cf) · Plan approved by: reviewer (D-27, tier medium, issue #316) · Rounds: 1
+## Round 3 — AC titles follow-up (after #333 merged as 47608b3)
+
+Closing PR #335 flips §41 ✗ → ✅; its guards job then failed: `check-ac-coverage.sh` reported "§41 criteria=6
+covered=4 MISSING: AC-41.3 AC-41.4", because three titles in `todo-item-select.test.tsx` do not start with "AC-41.n:"
+(testing.md). The guard skipped §41 while it was ✗, so #333 passed. Branch `test/B8.1-ac-titles`, one `test(todos)`
+commit, titles only; the lead chose this route in the session (2026-11-16).
+
+## Files
+
+| File                                       | Change                                                                                                                         | Why (AC-n) |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | ---------- |
+| `src/components/todo-item-select.test.tsx` | Change: `AC-41.3 (a):` → `AC-41.3: (a)`, same for (b), `AC-41.4 $name:` → `AC-41.4: $name,`; no assertion, setup or row change | 41.3, 41.4 |
+
+Interfaces touched: none (test titles only).
+
+Verification: `pnpm vitest run src/components/todo-item-select.test.tsx` → 7 passed · `pnpm test` → 338 passed ·
+`check-ac-coverage.sh` with §41 flipped ✅ on a copy → "§41 criteria=6 covered=6" (4 with the old titles) ·
+`pnpm lint`, `pnpm typecheck` clean · `check-plan-scope.sh` OK. After merge, #335 merges main and its guards go green.
+
+Plan review: approved, round 2 (round 1: 2 reasons, pin commit, exact counts, applied 1bf47cf); round 3 (AC titles follow-up) approved in session · Plan approved by: lead, 2026-11-16 (round 3; rounds 1–2: reviewer, D-27, tier medium, issue #316) · Rounds: 1
