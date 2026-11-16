@@ -128,12 +128,13 @@ test.describe('§12 filter the list', () => {
     await expect(page).toHaveURL(addressIs('/?filter=active'));
   });
 
-  test('AC-12.7: an empty view keeps the three filter links, shows no list items and reads "No todos yet", "No completed todos" or "No active todos"', async ({
+  test('AC-12.7: an empty view shows the "Filter todos" navigation with exactly the link Completed when nothing is stored, else All, Active, Completed, shows no list items and reads "No todos yet", "No completed todos" or "No active todos"', async ({
     page,
   }) => {
     await page.goto('/?filter=completed');
 
-    await expectFilterLinksVisible(page);
+    await expect(filterNav(page)).toBeVisible();
+    await expect(filterNav(page).getByRole('link')).toHaveText(['Completed']);
     await expect(page.getByRole('listitem')).toHaveCount(0);
     await expect(page.getByText('No todos yet', { exact: true })).toBeVisible();
 
