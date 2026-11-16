@@ -55,17 +55,34 @@ Plan review: approved, round 2 · Plan approved by: reviewer (D-27, tier medium,
 
 ## Map delta
 
-pending
+F42 (§44) added as ✅ in `docs(map)` b177e55 (`src/components/todo-form.tsx`, `src/components/todo-form-focus.test.tsx`,
+`e2e/44-new-todo-focus.spec.ts`). The §44 index row stays ✗ until the closing PR.
 
 ## Review
 
-pending
+`backlog/work/B9.1/review.md`, diff review: 2 passes, verdict **ready for PR** at round 2.
+
+| Pass | #   | Finding (file:line)                                                                                                       | Kind     | Disposition                                                                                                                                         |
+| ---- | --- | ------------------------------------------------------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | 1   | `todo-form-focus.test.tsx:155-170`: REQ-44.4's second `focus()` untested (focus-once and approach B mutants passed 39/39) | coverage | fix now: 68929a4 adds a `focus` spy before the second Enter, `toHaveBeenCalledTimes(1)`; round 2 probes: both mutants and a focus-twice mutant fail |
+| 2    | —   | none                                                                                                                      | —        | —                                                                                                                                                   |
+
+Gates (round 2, reviewer and dev-lead): lint 0 errors (1 pre-existing warning, draft-sync effect), typecheck clean,
+`pnpm test` 343/343, `pnpm test:e2e` 84/84, mutation CI only (no `src/lib`/`src/actions` change), plan-scope OK,
+feat-commits OK, ac-coverage OK. Riskiest unfalsified: AC-44.6's second add in Chromium does not tell a missing
+second `focus()` apart, since the box already holds focus before Enter; the unit spy covers the call.
+
+Test commits after the first red, all before the feat commit except the review-pass one: 9e20190 (AC-44.2, 44.3
+no-focus guards, green at base), 8b79096 (AC-44.7 Then `''`, D-42, #347), b5669ab (AC-44.4/44.5 reset user-event's
+tracked value after React's `form.reset()`, advisor ruling in `advice.md`; no assertion changed), 68929a4 (review pass 1).
 
 ## Evidence
 
-- AC met: pending/7
+- AC met: 7/7
 - tier: medium
-- plan deviations: none
+- plan deviations: the layout effect's deps are `[pending, state]`, not the plan's `[pending]` (exhaustive-deps
+  lint). No behavior change: `wasPending` is false after the settle, so a `state`-only re-run cannot focus; the
+  reviewer counted exactly 1 `focus()` per settled result.
 - trace: n/a
 
 ## Checklist
