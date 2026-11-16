@@ -65,4 +65,4 @@ spots"); the two §45 tests change assertions (spec-named, D-45), the only test 
 §45 and §48, flushed in the same task for a keydown; the `HTMLButtonElement.prototype.focus` spy also sees
 `userEvent.click` calls, so counts filter by receiver (§51 says so).
 
-Plan review: approved, round 1 · Plan approved by: · Rounds: 1
+Plan review: approved, round 1 · Plan approved by: reviewer (D-27, tier medium, issue #362) · Rounds: 1
