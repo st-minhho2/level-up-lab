@@ -1,7 +1,8 @@
 'use client';
 
-// §9 ClearCompletedButton; §10 the message of a failed clear, directly after the button; §32 the optional count.
-import { useState, useTransition, type ReactNode } from 'react';
+// §9 ClearCompletedButton; §10 the message of a failed clear, directly after the button; §32 the optional count;
+// §49 the message is the button's accessible description while shown.
+import { useId, useState, useTransition, type ReactNode } from 'react';
 import { clearCompletedTodosAction } from '@/actions/todos';
 import { clearCompletedLabel } from '@/lib/clear-completed-label';
 
@@ -14,6 +15,8 @@ export function ClearCompletedButton({
 }): ReactNode {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | undefined>(undefined);
+  // useId, not a fixed id, so two instances in one document never share it (REQ-49.5).
+  const messageId = useId();
 
   // The deleted count has no UI (§9 out of scope); the only result the button reads is the §10 `form` error, which
   // the next successful attempt clears (REQ-10.5).
@@ -31,13 +34,14 @@ export function ClearCompletedButton({
         type="button"
         onClick={onClear}
         disabled={disabled || pending}
+        aria-describedby={error !== undefined ? messageId : undefined}
         className="rounded border border-zinc-300 px-3 py-1 text-sm text-zinc-700 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300"
       >
         {/* §32 REQ-32.6: without a count the label stays §9's "Clear completed". */}
         {clearCompletedLabel(completedCount ?? 0)}
       </button>
       {error !== undefined && (
-        <p role="alert" className="text-sm text-red-600">
+        <p id={messageId} role="alert" className="text-sm text-red-600">
           {error}
         </p>
       )}
