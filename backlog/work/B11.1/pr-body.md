@@ -46,15 +46,33 @@ Plan review: approved, round 1 · Plan approved by: reviewer (D-27, tier medium,
 
 ## Map delta
 
-pending
+F49 · §51 · (new) → ✅ — `TodoDueDate` focuses "Edit due date" once after an Escape that leaves edit mode (one-shot
+`escapedRef` consumed in the `[editing]` effect), in `src/components/todo-due-date.tsx`; evidence: `pnpm test` → 391
+passed, `pnpm test:e2e` → 91 passed (`docs(map)` 025490c).
 
 ## Review
 
-pending
+`/review-loop`: passes 2/3, verdict ready for PR (plan review: approved round 1, 0 findings).
+
+| Pass | #   | Finding                                                                                                    | Source   | Kind     | Disposition | Justification                                                                                                                             |
+| ---- | --- | ---------------------------------------------------------------------------------------------------------- | -------- | -------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | 1   | deleting the one-shot reset `escapedRef.current = false` (`todo-due-date.tsx:74`) failed no test (389/389) | reviewer | coverage | fix now     | afe12a2 `test(todos): B11.1 review pass 1 -- …`: `AC-51.3` `it.each` (a) save, (b) clear after an earlier Escape; both fail on the mutant |
+| 2    | —   | none                                                                                                       | —        | —        | —           | —                                                                                                                                         |
+
+Commands (reviewer, pass 2): lint clean · typecheck clean · `Tests 391 passed (391)` · `91 passed (2.8m)` ·
+`mutation: CI only, no src/lib or src/actions change` · check-suppressions, check-config-change, check-feat-commits,
+check-ac-coverage, check-spec-sections, check-features-map OK · `scripts/verify-red.sh B11.1`: red for the right reason
+(6 new failed, 0 new passed; base 218f7b0, the pin commit).
+
+Probes (one line changed on a copy): reset deleted → the two pass-1 rows fail ("expected 1 to be +0"); `if (true)` for
+the marker check → 6 tests fail; marker set before the pending guard → AC-51.3 fails.
+
+Riskiest unfalsified: AC-51.7 relies on Playwright's Enter on the focused "Edit due date" reaching React's click handler
+in dev mode; passed in two full runs (2.0 s, 1.4 s), not run with `--repeat-each`.
 
 ## Evidence
 
-- AC met: pending
+- AC met: 7/7
 - tier: medium
 - plan deviations: none
 - trace: n/a
