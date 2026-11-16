@@ -97,7 +97,9 @@ Costs the lead accepts with this plan (all confirmed on the green-r2 hook; none 
 
 Verdict: approved (ready for the lead's `approve`; tier high)
 
-Riskiest unfalsified: as in round 1, the deny entries' wildcard matching cannot be tried in this session. Second:
-the hook's run time on a long, many-segment command. The base hook already takes over 3 minutes on a 106 KB command
-of 3000 `gh pr … view` lines (pre-existing: one `tr` per segment), and the green-r2 hook adds one regex per segment
-and two whole-command regexes. I did not measure the difference.
+Riskiest unfalsified: as in round 1, the deny entries' wildcard matching cannot be tried in this session.
+
+Run time, measured after the report was sent. On a 106 KB command of 3000 `gh pr … view` lines, the base hook took
+238 s and the green-r2 hook 241 s (one run each, bash 3.2; the time is the base hook's, with one `tr` per segment).
+On a single segment with 300 flag pairs between `pr` and `view`, both took under 1 s. So the new regexes add no
+measurable time.
