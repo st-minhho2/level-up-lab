@@ -84,3 +84,85 @@ any e2e suite against approach A. The diff review must see it green.
 Verdict: approved (ready for the lead's gate. It does not approve the build.)
 
 Rounds: 2
+
+## Diff review (round 1)
+
+Reviewed at `b177e55`. Scope: ui (`src/components/todo-form.tsx`, `src/components/todo-form-focus.test.tsx`,
+`e2e/44-new-todo-focus.spec.ts`, `spec/features-map.md`).
+
+### Command results (run by the reviewer)
+
+| Command                             | Last line                                                                                         |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!` (exit 0)                                             |
+| `pnpm typecheck`                    | `tsc --noEmit` clean                                                                              |
+| `pnpm test`                         | `Tests  343 passed (343)` (54 files; plan said 338 → 343)                                         |
+| `pnpm test:e2e`                     | `84 passed (2.1m)` (plan said 82 → 84; `25-search-shortcut`, `29-escape-new-todo`, `05-todos` in) |
+| `scripts/mutation-gate.sh`          | `mutation: CI only, no src/lib or src/actions change`                                             |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                         |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                                 |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                                |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test`                                             |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 46`                                                                      |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                              |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B9.1-agent stays inside the approved plan of B9.1 (D-27 approval)`                      |
+| `scripts/verify-red.sh B9.1`        | `RESULT: red for the right reason` (3 new failed in `todo-form-focus.test.tsx`; e2e skipped)      |
+| `git diff --stat main...HEAD`       | `8 files changed, 729 insertions(+), 1 deletion(-)`                                               |
+
+### Checklist
+
+| Check                                                     | Result                                                                                                                                                                                                                                                                                                                                    |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-44.n has a test whose assertion matches its Then | pass for AC-44.1–44.3 and AC-44.5–44.7; AC-44.4 matches its Then literally but cannot fail on its second half, see finding [1]                                                                                                                                                                                                            |
+| no test weakened after the red commit                     | pass. After `947055c`: `62a54cd` (red), `9e20190` (adds AC-44.2, 44.3, green at base, explained), `8b79096` (AC-44.7 `'   '` → `''`, the D-42 Then, now in the merged §44), `b5669ab` (2 lines `newTodoBox().value = ''`, no assertion changed). Merges after red touching tests: none (`--remerge-diff` empty)                           |
+| b5669ab keeps AC-44.4 / AC-44.5 proving focus             | pass (probe 3): with `main`'s `todo-form.tsx` and the current tests, AC-44.1, 44.4, 44.5 fail, 2 pass. The setter moves no focus, so `user.keyboard('Walk')` still lands on `document.body` without the component's `focus()`. The real browser needs no reset: AC-44.6 types `Walk the dog` after the add and the row reads exactly that |
+| every changed file is in `plan.md`                        | pass (4 files + exempt paperwork; `check-plan-scope.sh` OK)                                                                                                                                                                                                                                                                               |
+| interfaces match §44 Function contracts                   | pass: `TodoForm(): ReactNode` unchanged, no new export or prop. Deviation from the plan: deps `[pending, state]`, not `[pending]` (exhaustive-deps). Traced: `wasPending` is false after the settle commit, so a re-run on `state` alone cannot focus; probe 2 counts exactly 1 `focus()` per settled result, so no double focus          |
+| Zod at action boundary / Prisma only in lib / no raw SQL  | n/a (no action, lib or prisma change)                                                                                                                                                                                                                                                                                                     |
+| migration                                                 | n/a                                                                                                                                                                                                                                                                                                                                       |
+| no secret, no suppression                                 | pass                                                                                                                                                                                                                                                                                                                                      |
+| features map row moved                                    | pass: F42 §44 ✅ in `docs(map)` `b177e55`                                                                                                                                                                                                                                                                                                 |
+| reverting a changed line fails a test                     | pass for the `focus()` line (probe 3). The `wasPending.current &&` guard is an equivalent mutant (the effect re-runs only when `pending` or `state` changes, and `!pending` already rules out the pending commit)                                                                                                                         |
+| Server/Client boundary, accessible names                  | pass: still `'use client'`, "New todo" / "Add" unchanged, AC-44.5 asserts the name, `maxlength`, `aria-describedby`                                                                                                                                                                                                                       |
+
+### Probes (copy at `$TMPDIR/probe1`)
+
+1. Mutant "focus only on the first successful result" (a `data-f` flag on the box blocks every later `focus()`):
+   `pnpm vitest run src/components/todo-form` → `Tests  39 passed (39)`.
+2. The rejected approach B (`if (state?.ok === true) focus()`, deps `[state]`, no `pending` edge):
+   `Tests  39 passed (39)`. I added a probe test: the AC-44.4 flow, with a `focus` spy installed after `Walk the dog`
+   is typed and before Enter, and `toHaveBeenCalledTimes(1)` after the second same-object result. Against the
+   branch's code: `1 passed`. Against approach B: `expected "patchedFocus" to be called 1 times, but got 0 times`.
+3. `main`'s `todo-form.tsx` with the current `todo-form-focus.test.tsx`: `3 failed | 2 passed (5)` (AC-44.1, 44.4,
+   44.5 fail).
+
+### Findings
+
+```
+[1] KIND: coverage
+    WHERE: src/components/todo-form-focus.test.tsx:155-170 (AC-44.4 second half); e2e/44-new-todo-focus.spec.ts:83-88 (AC-44.6 second add)
+    DEFECT: no test can fail when the second successful result does not call focus(): in AC-44.4 the user's click on the box, and in AC-44.6 the first add's focus, already puts focus on the box before Enter, and the box keeps it while the save is pending.
+    TRIGGER: two ok results in a row, the second one the same object (mockResolvedValue(savedResult('Buy milk'))), with the component changed to focus only once (probe 1) or to approach B, deps [state] (probe 2).
+    WRONG BEHAVIOUR: REQ-44.4 ("two successful results in a row focus the box twice") and the Function contract ("receives focus() once" for each new ok result) are broken, and all 39 todo-form tests still pass. The plan's reason for choosing approach A over B (B misses a repeated same-reference result) is not tested at all.
+    CONFIDENCE: confirmed (unit tests: probes 1 and 2 run). For AC-44.6 the result is traced, not run: Enter in the focused box keeps focus there.
+```
+
+Fix (test-writer, `test(todos): B9.1 review pass 1 -- …`, no `src/` change): in AC-44.4, install
+`vi.spyOn(newTodoBox(), 'focus')` after `Walk the dog` is typed and before `{Enter}`, then assert
+`toHaveBeenCalledTimes(1)` after the second result settles. This is the same spy pattern AC-44.3 uses and the count
+the Function contract states. It leaves AC-44.4's When and Then unchanged. Probe 2 shows the assertion passes on this
+branch and fails on approach B and on the focus-once mutant.
+
+Concerns raised by dev-lead:
+
+- (1) `b5669ab` weakens no assertion. It adds two setter lines, and AC-44.4/44.5 still fail without the component's
+  `focus()` (probe 3).
+- (2) Deps `[pending, state]` cause no double focus (traced and counted, probe 2). This is a plan wording deviation
+  with no change in behavior, and the plan should be updated to name it.
+- (3) `8b79096` copies the D-42 Then verbatim (title and the `''` assertion).
+
+Verdict: back to test-writer
+
+Riskiest unfalsified: AC-44.6's second add, in a real browser. Nothing shows whether a server re-render after
+`revalidatePath('/')` could blur the box and need the second `focus()`. Once [1] is fixed, the unit spy covers
+`focus()` being called, but not that call in the browser.
