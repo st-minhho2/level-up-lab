@@ -89,3 +89,73 @@ Verdict: approved (ready for the lead's gate, not approved for build)
 Costs the lead takes (from the plan, confirmed): one frame with the field unfocused (post-paint effect); `if (editing)`
 guard removal is not caught by any test (with `editing` false the ref is null, so behavior is identical); mutation
 does not cover `src/components`.
+
+## Diff review (round 1)
+
+Scope: ui. Reviewed `main...1fad778` (feat d57a711, red 87f33ae, pin 2dad5fd, map 3c479bd, metrics 1fad778).
+
+### Command results (last line of each, run by the reviewer)
+
+| Command                                   | Last line                                                                                   |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `pnpm lint`                               | `All matched files use Prettier code style!` (exit 0)                                       |
+| `pnpm typecheck`                          | `tsc --noEmit` clean                                                                        |
+| `pnpm test`                               | `Tests  330 passed (330)`, `Test Files  51 passed (51)` (matches plan 325 → 330)            |
+| `pnpm test:e2e`                           | `76 passed (3.3m)`                                                                          |
+| `scripts/mutation-gate.sh`                | `mutation: CI only, no src/lib or src/actions change`                                       |
+| `scripts/ci/check-suppressions.sh`        | `OK: no new suppressions`                                                                   |
+| `scripts/ci/check-config-change.sh`       | `OK: no protected config changed`                                                           |
+| `scripts/ci/check-feat-commits.sh`        | `OK: no feat commit touches tests`                                                          |
+| `scripts/ci/check-ac-coverage.sh`         | `OK: every criterion of a shipped section has a test`                                       |
+| `scripts/ci/check-spec-sections.sh`       | `OK: sections cited: 1 … 43`                                                                |
+| `scripts/ci/check-features-map.sh`        | `OK`                                                                                        |
+| `scripts/ci/check-plan-scope.sh`          | `OK: feat/B8.1-agent stays inside the approved plan of B8.1 (D-27 approval)`                |
+| `scripts/verify-red.sh B8.1`              | `RESULT: red for the right reason` (7 ran, 5 new failed; e2e skipped, needs a server)       |
+| `git diff --stat main...HEAD`             | 9 files, 660 insertions, 2 deletions; `src/` only `src/components/todo-item.tsx` (+13 / -2) |
+| `pnpm test:e2e e2e/41-… --repeat-each=40` | `40 passed (2.6m)`                                                                          |
+
+### Checklist
+
+| Check                                                 | Result                                                                                                                                                                                                                                                                                   |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-41.n has a test whose assertion matches Then | pass: AC-41.1–41.5 in `todo-item-select.test.tsx` (7 rows), AC-41.6 in `e2e/41-edit-title-select.spec.ts`; each Then's numbers (0/7, 0/7 on `Café 😀`, 0/7 and 0/8, 2/4 kept + focus on Save + 1 call, Z/1, Za/2, ArrowLeft 1, row text, 0 POSTs, `[Z, Walk the dog]`) asserted verbatim |
+| no test weakened after the red commit                 | pass: `git log --first-parent --no-merges 87f33ae..HEAD -- '*.test.*' e2e/` empty; `--merges --remerge-diff` empty (no merges)                                                                                                                                                           |
+| every changed file in `plan.md`                       | pass: the four planned files; `docs/metrics.md` and `backlog/work/B8.1/*` are paperwork named in the plan; `check-plan-scope.sh` OK                                                                                                                                                      |
+| interfaces match §41 Function contracts               | pass: `TodoItem({ todo }: { readonly todo: Todo }): ReactNode` unchanged; no new export, prop, action, schema, model                                                                                                                                                                     |
+| Zod at action boundary / Prisma only in lib / raw SQL | n/a: no action, lib or Prisma change                                                                                                                                                                                                                                                     |
+| migration                                             | n/a: none                                                                                                                                                                                                                                                                                |
+| no secret, no suppression                             | pass: `check-suppressions.sh` OK; diff read, nothing secret                                                                                                                                                                                                                              |
+| Server/Client boundary, accessible names, row text    | pass: file already `'use client'`; label "Edit title", `id`, attributes unchanged (only `ref` added); AC-41.5 and AC-41.6 pin row text                                                                                                                                                   |
+| features map row moved                                | pass: F39 §41 ✅ added in 3c479bd; `check-features-map.sh` OK                                                                                                                                                                                                                            |
+| would a test fail if one changed line were reverted?  | pass except an equivalent mutant, see probe                                                                                                                                                                                                                                              |
+
+Probe (`$TMPDIR/probe`, a `cp -r` copy; `vitest run todo-item-select.test.tsx todo-item.test.tsx`, 24 tests):
+
+| Mutant of `todo-item.tsx:30-37`, `:86`                             | Result                                                                                    |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| deps `[]`                                                          | 5 failed                                                                                  |
+| no dependency list                                                 | 8 failed                                                                                  |
+| deps `[editing, draft]`                                            | 8 failed                                                                                  |
+| deps `[editing, todo]` / `[editing, error]` / `[editing, pending]` | 2 failed each (AC-41.4)                                                                   |
+| `focus()` removed / `select()` removed / `ref={fieldRef}` removed  | 5 failed each                                                                             |
+| `if (!editing)`                                                    | 5 failed                                                                                  |
+| `if (true)`                                                        | 24 passed: equivalent (ref is null whenever `editing` is false; the field is not mounted) |
+
+### Findings
+
+None blocking.
+
+Observation outside this card (not a finding against its diff): `src/components/todo-form-warning.test.tsx` AC-39.4
+timed out at 5061 ms in 1 of 4 full `pnpm test` runs on this branch (the dev-lead saw 2 of 4). On the probe with
+main's `todo-item.tsx` and without `todo-item-select.test.tsx`, 6 of 6 full runs passed (323). AC-39.4's own duration
+is 2381–3324 ms on both trees, so it sits close to the 5000 ms default and fails on load spikes; this card's diff does
+not touch `todo-form.tsx` or its test and `todo-form` does not import `todo-item`. The added file plausibly adds
+contention; it does not change AC-39.4's behavior. Fix belongs in a filed card (that test's typing cost or timeout),
+not here; CI may need a rerun if it trips.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: AC-41.6 reads focus and selection once right after `toBeVisible()`; it would race only if the
+`useEffect` ran after that read. React 19.1 flushes passive effects of a discrete (click) update synchronously at the
+end of the commit, and the test passed 40/40 repeated plus 1/1 in the full run, chromium only; Firefox and WebKit
+`select()` behavior is not exercised.
