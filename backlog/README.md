@@ -15,7 +15,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | E6 Todos cues       | [plan/E6-todos-cues.md](plan/E6-todos-cues.md)             | 6      | 0       | 0      | 6       |
 | E7 Todos hints      | [plan/E7-todos-hints.md](plan/E7-todos-hints.md)           | 6      | 0       | 0      | 6       |
 | E8 Todos polish two | [plan/E8-todos-polish-two.md](plan/E8-todos-polish-two.md) | 0      | 0       | 3      | 3       |
-| **Total**           |                                                            | **93** | **1**   | **38** | **132** |
+| E9 Todos focus      | [plan/E9-todos-focus.md](plan/E9-todos-focus.md)           | 0      | 0       | 3      | 3       |
+| **Total**           |                                                            | **93** | **1**   | **41** | **135** |
 
 ## Execution order
 
@@ -179,6 +180,9 @@ flowchart TD
   S130["130 · opening the title editor selects the title<br/>B8.1"]
   S131["131 · filter links with no todos are hidden<br/>B8.2"]
   S132["132 · Mark all complete hidden when idle<br/>B8.3"]
+  S133["133 · focus in New todo after an add<br/>B9.1"]
+  S134["134 · focus in the date field when the editor opens<br/>B9.2"]
+  S135["135 · the / shortcut selects the search text<br/>B9.3"]
 ```
 
 ## Remaining
@@ -227,8 +231,12 @@ at most 3 cards Doing (B1.18).
 | 130  | B8.1   | Opening the title editor selects the whole title                                                          | —      | Open    | ~~D-39~~                        | Lead  | S [estimate] |
 | 131  | B8.2   | The filter nav hides a link whose count is 0, except the current filter                                   | —      | Open    | ~~D-39~~                        | Lead  | S [estimate] |
 | 132  | B8.3   | "Mark all complete" is hidden when there is nothing to mark                                               | —      | Open    | ~~D-39~~                        | Lead  | S [estimate] |
+| 133  | B9.1   | After a successful add, focus is in the "New todo" box                                                    | —      | Open    | D-40                            | Lead  | S [estimate] |
+| 134  | B9.2   | Opening the due-date editor puts focus in the date field                                                  | —      | Open    | D-40                            | Lead  | S [estimate] |
+| 135  | B9.3   | The `/` shortcut also selects the text already in the search box                                          | —      | Open    | D-40                            | Lead  | S [estimate] |
 
 ## Waiting on human
 
-| ID  | What | Blocks |
-| --- | ---- | ------ |
+| ID   | What                                                                                                                                        | Blocks    |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| D-40 | E9 batch rule, spec first: sections 44–46, contract files, components, the lines each card lifts or edits (`work/B9.1/decision-request.md`) | B9.1–B9.3 |
