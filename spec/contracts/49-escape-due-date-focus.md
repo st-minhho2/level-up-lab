@@ -40,7 +40,7 @@ is named by file and line as they were before this commit:
 - No other line of any contract changes, and no other requirement or criterion is lifted.
 
 Two existing tests contradict the edited lines and are rewritten by this card's red commit, as the only test edits
-(each swaps `document.body` for the button "Edit due date" in one assertion and keeps every other assertion):
+(each swaps `document.body` for the button "Edit due date" in one assertion, and the words "is body" in its title become "is the button "Edit due date"", keeping every other assertion and word):
 
 - `src/components/todo-due-date-focus.test.tsx:79`, "AC-45.3: (a) after the Escape document.activeElement is body; …",
   whose body expects `document.body` at `:86`.
