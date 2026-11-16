@@ -39,15 +39,35 @@ Plan review: approved, round 2 · Plan approved by: reviewer (D-27, tier medium,
 
 ## Map delta
 
-pending
+F46 · §48 · (new) → ✅ — `TodoItem` focuses "Edit title" once after an Escape that leaves edit mode (one-shot
+`escapedRef` consumed in the `[editing]` effect), in `src/components/todo-item.tsx`; evidence: `pnpm test` → 369
+passed, `pnpm test:e2e` → 89 passed (`docs(map)` f007d3e).
 
 ## Review
 
-pending
+`/review-loop`: passes 1/3, verdict ready for PR, 0 findings (plan review: approved round 2, 1 finding fixed in round 1:
+pin commit for AC-48.3 to AC-48.5 so `verify-red.sh` exits 0).
+
+| Pass | #   | Finding | Source | Kind | Disposition | Justification |
+| ---- | --- | ------- | ------ | ---- | ----------- | ------------- |
+| 1    | —   | none    | —      | —    | —           | —             |
+
+Commands (reviewer): lint 0 errors · typecheck clean · `Tests 369 passed (369)` · `89 passed (4.5m)` ·
+`mutation: CI only, no src/lib or src/actions change` · check-suppressions, check-config-change, check-feat-commits,
+check-ac-coverage, check-spec-sections, check-features-map OK · `scripts/verify-red.sh B10.1`: red for the right reason
+(3 new failed, 0 new passed; base e1b0d51, the pin commit).
+
+Probes (one line changed on a copy): `if (escapedRef.current)` → `if (true)` and "marker set on every keydown" are
+killed by AC-48.4(a)/(b); dropping the focus call is killed by AC-48.1/48.2/48.6 (red commit). Two survive (33/33):
+the marker never cleared, and the marker set while a save is pending, because "Edit title" is still `disabled` at a
+successful save's exit commit, so `focus()` is a no-op. Not observable today.
+
+Riskiest unfalsified: those two traps are guarded only by `disabled={pending}`; a focus spy on the button in
+AC-48.3(a) and AC-48.6 (as AC-48.4 has) would kill both. Candidate follow-up card, not a block.
 
 ## Evidence
 
-- AC met: pending
+- AC met: 7/7
 - tier: medium
 - plan deviations: none
 - trace: n/a
