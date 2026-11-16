@@ -1420,7 +1420,7 @@ _tooling · no §_
 ### B1.101 · GitHub reports parallel runner PRs as conflicting on the union tables, and each needs a re-run
 
 _tooling · no §_
-**Status: Partial** — merged 872fe7b (#315), run-smoke R21-R22 (red e21f041: 2 of 22 FAILED; green 803ef8c + review pass 1 1dae919: 22 probes OK, bash 3.2), hook-smoke 749, vitest 298, e2e 70, mutation 92.84 (no src/); `run.sh --sync <issue>` merges origin/main into a ready runner PR's branch in its worktree with the repo's attributes, guards, pushes `Agent-Run: sync`; B1.89 and B1.96 status lines carry the measured GitHub behaviour; plan review 2 rounds (round 3 approved by the lead), diff review 2 passes; pending: the `--sync` mention in scripts/CLAUDE.md's agent/run.sh row, and the time from a sibling's merge to the next runner PR being mergeable, measured in E7 batch 2
+**Status: Done** — 872fe7b (#315), run-smoke R21-R22 (red e21f041: 2 of 22 FAILED; green 803ef8c + review pass 1 1dae919: 22 probes OK, bash 3.2), hook-smoke 749, vitest 298, e2e 70, mutation 92.84 (no src/); scripts/CLAUDE.md row df1d495 (#328); E7 batch 2: GitHub showed both remaining runner PRs DIRTY after each sibling merge though a local merge was clean, run.sh --sync merged origin/main in 7-9 s (remerge-diff empty), next PR mergeable 272 s after a sibling merge (the rest CI); the runner clone must be fast-forwarded first
 
 - **Spec:** none — tooling (the runner, `scripts/agent/run.sh` or `dev-lead.md` Loop 9, `scripts/CLAUDE.md`); no
   `src/` change, no section
