@@ -15,8 +15,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | E6 Todos cues       | [plan/E6-todos-cues.md](plan/E6-todos-cues.md)             | 6      | 0       | 0      | 6       |
 | E7 Todos hints      | [plan/E7-todos-hints.md](plan/E7-todos-hints.md)           | 6      | 0       | 0      | 6       |
 | E8 Todos polish two | [plan/E8-todos-polish-two.md](plan/E8-todos-polish-two.md) | 3      | 0       | 0      | 3       |
-| E9 Todos focus      | [plan/E9-todos-focus.md](plan/E9-todos-focus.md)           | 0      | 0       | 3      | 3       |
-| **Total**           |                                                            | **96** | **1**   | **39** | **136** |
+| E9 Todos focus      | [plan/E9-todos-focus.md](plan/E9-todos-focus.md)           | 1      | 0       | 2      | 3       |
+| **Total**           |                                                            | **97** | **1**   | **38** | **136** |
 
 ## Execution order
 
@@ -182,7 +182,7 @@ flowchart TD
   S132["132 · Mark all complete hidden when idle<br/>~~B8.3~~"]
   S133["133 · focus in New todo after an add<br/>B9.1"]
   S134["134 · focus in the date field when the editor opens<br/>B9.2"]
-  S135["135 · the / shortcut selects the search text<br/>B9.3"]
+  S135["135 · the / shortcut selects the search text<br/>~~B9.3~~"]
   S136["136 · check-ac-coverage reads a ✗ section's titles<br/>B1.102"]
 ```
 
@@ -231,7 +231,6 @@ at most 3 cards Doing (B1.18).
 | 128  | B1.100 | Each parallel run mutation-tests all of src/lib up to three times, whatever the card changed              | —      | Partial | —                               | Lead  | S [estimate] |
 | 133  | B9.1   | After a successful add, focus is in the "New todo" box                                                    | —      | Open    | ~~D-40~~                        | Lead  | S [estimate] |
 | 134  | B9.2   | Opening the due-date editor puts focus in the date field                                                  | —      | Open    | ~~D-40~~                        | Lead  | S [estimate] |
-| 135  | B9.3   | The `/` shortcut also selects the text already in the search box                                          | —      | Open    | ~~D-40~~                        | Lead  | S [estimate] |
 | 136  | B1.102 | check-ac-coverage skips a ✗ section, so a feature PR's wrong title format fails only in its closing PR    | —      | Open    | —                               | Lead  | S [estimate] |
 
 ## Waiting on human
