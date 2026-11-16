@@ -59,4 +59,4 @@ Costs the lead takes: a keyboard user's focused link can vanish on a count chang
 tests change text under D-39, in the red commit only. Another e2e that clicks a link at count 0, if the red run finds
 one, stops the build for a re-plan (analysis found none in 16, 21, 25).
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: approved, round 1 · Plan approved by: · Rounds: 1
