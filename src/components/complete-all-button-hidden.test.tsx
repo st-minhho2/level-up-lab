@@ -20,6 +20,15 @@ function saveFailed(): CompleteAllResult {
   return { ok: false, fieldErrors: { form: ['Could not save, try again'] } };
 }
 
+// A promise the test settles by hand, so the button can be observed while the action is still pending.
+function deferred(): { promise: Promise<CompleteAllResult>; resolve: (value: CompleteAllResult) => void } {
+  let resolve: (value: CompleteAllResult) => void = () => undefined;
+  const promise = new Promise<CompleteAllResult>((settle) => {
+    resolve = settle;
+  });
+  return { promise, resolve };
+}
+
 // "Renders no element, no wrapper, no text and no failure message" (REQ-43.1), measured on the render container.
 function expectRendersNothing(container: HTMLElement): void {
   expect(container.childNodes).toHaveLength(0);
@@ -47,6 +56,28 @@ describe('<CompleteAllButton> hidden with nothing to mark (§43)', () => {
 
     expectRendersNothing(zeroCount.container);
     expect(actions.completeAllTodosAction).toHaveBeenCalledTimes(0);
+  });
+
+  // REQ-43.2 restates §14's pending behavior, which already holds; this guards it against the §43 change.
+  it('AC-43.2: while pending exactly 1 button named "Mark all complete (2)", disabled; after a successful result with the props unchanged the same single button is still there, named "Mark all complete (2)", enabled again', async () => {
+    const action = deferred();
+    actions.completeAllTodosAction.mockReturnValue(action.promise);
+    const user = userEvent.setup();
+    render(<CompleteAllButton disabled={false} count={2} />);
+    const button = screen.getByRole('button', { name: 'Mark all complete (2)' });
+
+    await user.click(button);
+
+    await waitFor(() => expect(button).toBeDisabled());
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Mark all complete (2)' })).toBe(button);
+
+    action.resolve(completed(2));
+
+    await waitFor(() => expect(button).toBeEnabled());
+    expect(button.isConnected).toBe(true);
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Mark all complete (2)' })).toBe(button);
   });
 
   it('AC-43.3: a failure alert is gone once rendered with disabled true (0 child nodes, 0 button, 0 alert roles) and does not come back with the button: exactly 1 enabled "Mark all complete (1)" and 0 alert roles', async () => {
