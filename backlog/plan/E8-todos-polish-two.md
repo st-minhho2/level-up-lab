@@ -66,9 +66,7 @@ included)". §30 (`28-filter-counts.md`) puts a count next to each one, lists "h
 ### B8.3 · "Mark all complete" is hidden when there is nothing to mark
 
 _F41 · section 43_
-**Status: Open** — `spec/contracts/12-complete-all.md:21` (REQ-14.5) shows the button disabled when no todo is open
-and says "it is never hidden". §36 (`34-complete-all-count.md`) keeps it disabled (REQ-36.2) and lists "hiding the
-button at 0" in its Out of scope (line 64).
+**Status: Done** — 50d2458 (#332), 7 AC-43.n criteria green (red proven by verify-red.sh, be1e940; AC-43.2 pinned green at the base, b06a5be) and AC-14.4 (a), AC-14.6, AC-36.3, AC-36.6, AC-36.7 rewritten under D-39; unit 323 → 327; e2e 75 → 78, AC-43.5–43.7; mutation n/a (no src/lib or src/actions change, B1.100); unattended and no-rework 1/1 (D-29), one runner run, merged third in E8 batch 3 after two origin/main merges in the run (8e28758, 082e030)
 
 - **Acceptance:**
   - With no open todo, `CompleteAllButton` renders nothing. While a mark-all is pending, it stays disabled as today.

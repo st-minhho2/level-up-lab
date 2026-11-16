@@ -14,8 +14,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | E5 Todos keys       | [plan/E5-todos-keys.md](plan/E5-todos-keys.md)             | 6      | 0       | 0      | 6       |
 | E6 Todos cues       | [plan/E6-todos-cues.md](plan/E6-todos-cues.md)             | 6      | 0       | 0      | 6       |
 | E7 Todos hints      | [plan/E7-todos-hints.md](plan/E7-todos-hints.md)           | 6      | 0       | 0      | 6       |
-| E8 Todos polish two | [plan/E8-todos-polish-two.md](plan/E8-todos-polish-two.md) | 0      | 0       | 3      | 3       |
-| **Total**           |                                                            | **93** | **1**   | **38** | **132** |
+| E8 Todos polish two | [plan/E8-todos-polish-two.md](plan/E8-todos-polish-two.md) | 1      | 0       | 2      | 3       |
+| **Total**           |                                                            | **94** | **1**   | **37** | **132** |
 
 ## Execution order
 
@@ -178,7 +178,7 @@ flowchart TD
   S105 --> S129
   S130["130 · opening the title editor selects the title<br/>B8.1"]
   S131["131 · filter links with no todos are hidden<br/>B8.2"]
-  S132["132 · Mark all complete hidden when idle<br/>B8.3"]
+  S132["132 · Mark all complete hidden when idle<br/>~~B8.3~~"]
 ```
 
 ## Remaining
@@ -226,7 +226,6 @@ at most 3 cards Doing (B1.18).
 | 128  | B1.100 | Each parallel run mutation-tests all of src/lib up to three times, whatever the card changed              | —      | Partial | —                               | Lead  | S [estimate] |
 | 130  | B8.1   | Opening the title editor selects the whole title                                                          | —      | Open    | ~~D-39~~                        | Lead  | S [estimate] |
 | 131  | B8.2   | The filter nav hides a link whose count is 0, except the current filter                                   | —      | Open    | ~~D-39~~                        | Lead  | S [estimate] |
-| 132  | B8.3   | "Mark all complete" is hidden when there is nothing to mark                                               | —      | Open    | ~~D-39~~                        | Lead  | S [estimate] |
 
 ## Waiting on human
 
