@@ -235,6 +235,60 @@ describe('<TodoDueDate> Escape puts focus on "Edit due date" (§51)', () => {
     },
   );
 
+  // The Escape's marker is one-shot (REQ-51.5): a later save or clear that ends a new edit moves no focus (REQ-51.3).
+  it.each<{
+    readonly name: string;
+    readonly finish: (user: ReturnType<typeof userEvent.setup>) => Promise<void>;
+    readonly sent: readonly [string, string];
+  }>([
+    {
+      name: '(a) "Update due date" with 2026-12-01',
+      finish: async (user) => {
+        fireEvent.change(dueDateField(), { target: { value: '2026-12-01' } });
+        await user.click(button('Update due date'));
+      },
+      sent: ['todo-9', '2026-12-01'],
+    },
+    {
+      name: '(b) "Clear due date"',
+      finish: async (user) => {
+        await user.click(button('Clear due date'));
+      },
+      sent: ['todo-9', ''],
+    },
+  ])(
+    'AC-51.3: after an Escape, a new entry and $name resolved ok, 0 "Due date" fields, 1 "Edit due date" that is not document.activeElement and 0 focus() calls on it, "Search todos" is document.activeElement with value milk; setTodoDueDateAction called once with the sent value',
+    async ({ finish, sent }) => {
+      const save = deferred<ActionResult<Todo>>();
+      actions.setTodoDueDateAction.mockReturnValue(save.promise);
+      const focusSpy = vi.spyOn(HTMLButtonElement.prototype, 'focus');
+      const user = userEvent.setup();
+      render(besideBoxes());
+      await openEditorWithDraft(user);
+      await user.keyboard('{Escape}');
+      expect(document.activeElement).toBe(button('Edit due date'));
+      await user.click(button('Edit due date'));
+      await finish(user);
+      await waitFor(() => expect(button('Update due date')).toBeDisabled());
+      const search = screen.getByRole('textbox', { name: 'Search todos' });
+      await user.click(search);
+      await user.type(search, 'milk');
+
+      await act(async () => {
+        save.resolve(saved(sent[1] === '' ? undefined : sent[1]));
+        await save.promise;
+      });
+      await waitFor(() => expect(screen.queryAllByLabelText('Due date')).toHaveLength(0));
+
+      expect(screen.getAllByRole('button', { name: 'Edit due date' })).toHaveLength(1);
+      expect(document.activeElement).not.toBe(button('Edit due date'));
+      expect(focusCallsOn(focusSpy, button('Edit due date'))).toBe(0);
+      expect(document.activeElement).toBe(search);
+      expect(search).toHaveValue('milk');
+      expect(actions.setTodoDueDateAction.mock.calls).toEqual([sent]);
+    },
+  );
+
   it('AC-51.5: for Ctrl+, Meta+, Alt+, Shift+Escape and ArrowLeft in the field and Escape on body, "Update due date" and "New todo" the field still holds 2026-12-01, defaultPrevented false, the action not called, focus unchanged and the 5 form children of AC-37.1 in order; 0 "Edit due date" buttons and 0 focus() calls', async () => {
     const focusSpy = vi.spyOn(HTMLButtonElement.prototype, 'focus');
     const user = userEvent.setup();
