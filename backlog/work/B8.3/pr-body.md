@@ -76,18 +76,31 @@ Plan review: approved, round 2 · Plan approved by: reviewer (D-27, tier medium,
 
 ## Map delta
 
-pending
+F41 · §43 · (new) → ✅ — `CompleteAllButton` returns `null` when `disabled`, in `src/components/complete-all-button.tsx`
+(`docs(map)` ddcf943); evidence: `pnpm test` 331 passed (52 files, after merging origin/main with B8.2), `pnpm test:e2e` 81 passed.
 
 ## Review
 
-pending
+`/review-loop`: passes 2/3, verdict ready for PR on both (full tables in `backlog/work/B8.3/review.md`, "Diff review").
+
+| Pass | #   | Finding (file:line)                                                                                 | Source   | Kind     | Disposition | Justification                                                                                                                      |
+| ---- | --- | --------------------------------------------------------------------------------------------------- | -------- | -------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | 1   | `complete-all-button-hidden.test.tsx:116`: AC-43.4 focus spy cleared after the click, not before it | reviewer | coverage | fix now     | 91140c7 `test(todos): B8.3 review pass 1 -- …`; pass 2 probes (c), (e) now fail AC-43.4 (`patchedFocus` called 1 time), 0 loosened |
+
+Process notes the reviewer judged acceptable: `b06a5be` adds AC-43.2 in its own test commit without `(red)`, because
+REQ-43.2 restates §14 and the test passes at the base (the plan's Verification listed it as red); `5eff2d5` scopes
+AC-43.6's alert count past Next's `<next-route-announcer>` (role alert on every hydrated page), as `/advise` ruled
+(`advice.md` addendum), still `toHaveCount(0)`.
+
+Riskiest unfalsified: the AC-43.6 scope `body > :not(next-route-announcer)` has never counted a real §10 failure message
+in the browser; a `focus()` during the press (pointerdown) is outside AC-43.4's window by construction.
 
 ## Evidence
 
-- AC met: pending
+- AC met: 7/7
 - tier: medium
-- plan deviations: pending
-- trace: pending
+- plan deviations: none
+- trace: n/a
 
 ## Checklist
 
