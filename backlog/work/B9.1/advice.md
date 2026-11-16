@@ -133,3 +133,31 @@ Options:
 | 3 | No edit; test-writer reads the When as "clicks Add with a non-empty box" | none | high: silently differs from the spec text, fails the spec-is-contract invariant | no |
 Recommended: option 1, flips if the lead wants the click on the real button kept as the proof (then option 2 with a separate Tab-based criterion, which makes 8 ACs and needs a new section, spec/CLAUDE.md limit of 7).
 Affects: §44 AC-44.4 (REQ-44.4 coverage), `src/components/todo-form-focus.test.tsx` AC-44.4 case, `backlog/work/B9.1/plan.md` (the "AC-44.4 same-ref case" line), review.md reason 1, card B9.1.
+
+Question: AC-44.7 requires the box to hold 3 spaces after a `title` error, but `todo-form.tsx:28` empties it; what governs, and can the run act under D-40/D-41?
+Class: P4 two sections collide (§44 REQ-44.3 and AC-44.7 against §18 REQ-18.6 and §10 REQ-10.6), with P3 inside §44 (REQ-44.5 and AC-44.3(b)) and a P6 ruling on who may repair it
+Sources: spec/contracts/42-new-todo-focus.md:21 "THE SYSTEM SHALL NOT focus the box: no `focus()` call is made on it and the box keeps its value (§10)"
+Sources: spec/contracts/42-new-todo-focus.md:48 "the box is not focused after the click, and the `/` press focuses "Search todos" (§25) and the "New todo" box's value is still 3 spaces"
+Sources: spec/contracts/42-new-todo-focus.md:23 "THE SYSTEM SHALL change nothing but focus: the box's value"
+Sources: spec/contracts/16-title-counter.md:22 "emptied after a success, emptied after a `title` error of §5, or refilled with the typed title after a `form` failure of §10"
+Sources: spec/contracts/08-mutation-feedback.md:22 "IF creating a todo fails as in REQ-10.1 THEN THE SYSTEM SHALL show the message under the "New todo" text box, keep the typed title in the box"
+Sources: backlog/00-decisions.md:65 "B9.1 lifts and edits nothing and states that the sibling sections' "`todo-form.tsx` unchanged" notes do not apply"
+Sources: backlog/00-decisions.md:66 "REQ-44.1 to REQ-44.5 and every other criterion are unchanged; B9.1 still lifts nothing else."
+Conflict: §44 REQ-44.3 and AC-44.7 (a title error keeps the value) / §18 REQ-18.6 (a title error empties the box) and §10 REQ-10.6 (only a `form` failure keeps the title; "(§10)" in REQ-44.3 points there); REQ-44.5 says §44 changes nothing but focus, and AC-44.3(b) asserts no value on a title error.
+Verdict: The code is right and §44 is the outlier. Authority 3 puts §10 and §18 (live, tested: AC-18.4, AC-10.5) above a §44 criterion that would change their behavior, and §44 line 25 declares "Edits to other sections that this one makes: none". Under rule 1, spec-fidelity, and invariant 2 the run may neither edit `todo-form.tsx` to keep the draft after a title error (that is a behavior change beyond focus, REQ-44.5, and would break §18 REQ-18.6) nor loosen or rewrite AC-44.7 or the red e2e. D-40 says B9.1 "lifts and edits nothing", and D-41 names only AC-44.4. No D-n covers AC-44.7 or the REQ-44.3 clause, so spec/CLAUDE.md allows no `docs(spec)` commit. The run cannot reach green (e2e AC-44.7 stays red) and needs a D-n.
+Next action: stop at this gate and escalate; do not start the `feat` commit. ACs 44.1 to 44.6 are unaffected.
+Must not: change `kept` in todo-form.tsx to keep the draft after a title error; edit AC-44.7's Then or the e2e to `''`; reword REQ-44.3 inside the run.
+Doc drift: spec/contracts/42-new-todo-focus.md REQ-44.3 and AC-44.7 (a `docs(spec): §44 ...` commit after the D-n, before any further test or code); no 00-decisions.md rewrite, the new D-n supersedes. e2e/44-new-todo-focus.spec.ts AC-44.7 follows the spec in a test commit.
+Escalate: human
+
+Decision request
+Context: After 3 spaces and "Add" the real action returns a `title` error; §18 REQ-18.6 and the code empty the box (React's form reset), while §44 REQ-44.3 and AC-44.7 say the box keeps its value. D-40 forbids §44 from editing other sections and D-41 touched only AC-44.4.
+The red e2e fails only on `toHaveValue('   ')` received `''`; the focus, alert, rows and `/` clauses already pass.
+Intent of §44 is focus only (REQ-44.5), so the keep-value claim looks like a slip copied from the §10 case.
+Options:
+| Option | Behavior | Cost | Risk | Reversible |
+| 1 (recommended) | New D-n lets `docs(spec): §44` fix REQ-44.3 ("keeps its value (§10)" becomes "a `form` failure keeps its value (§10); a `title` error empties it (§18 REQ-18.6)") and AC-44.7's Then (box value is `''`, or drop the value clause; `/` still focuses "Search todos"); the e2e follows in a test commit | one spec commit, one e2e edit, no src change | low: matches shipped behavior and §10/§18 tests | yes |
+| 2 | D-n makes a title error keep the typed value: §44 REQ-44.3 stands, `kept` in todo-form.tsx changes, and §18 REQ-18.6 and §10 get edits | spec edits to §18, §10 and REQ-44.5, rewrite of AC-18.4 and others, `src/` change beyond focus, new full-tier work | high: reverses a shipped rule, breaks `todo-form.test.tsx` cases, wider than B9.1's one-component scope | partly |
+| 3 | Drop AC-44.7's value clause only, leave REQ-44.3 as is | one spec commit | medium: REQ-44.3 stays self-contradicting with §18 | yes |
+Recommended: option 1, flips if the lead wants a title error to keep the draft as a product choice (then option 2 as its own section, not B9.1).
+Affects: §44 REQ-44.3, AC-44.7, `e2e/44-new-todo-focus.spec.ts` AC-44.7 (red commit 62a54cd), `backlog/work/B9.1/plan.md` (AC-44.7 line), card B9.1; §18 REQ-18.6 and §10 REQ-10.6 under option 2.
