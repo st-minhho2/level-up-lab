@@ -121,3 +121,19 @@ Must not:    edit any older contract to remove the notes, or add the attribute f
 Doc drift:   §25 and §46 Out of scope lifts (D-45) must land as `docs(spec)` before the test commit if not yet on main.
 Escalate:    none
 ```
+
+```
+Question:    Does spec/contracts/23-search-shortcut.md:26 ("The hint "press / to search" is not shown.") block B10.3, and does a shipped test assert it?
+Class:       P4 two sections collide (unnamed by §50's Edits list)
+Sources:     spec/contracts/23-search-shortcut.md:26 "The hint "press / to search" is not shown."
+             spec/contracts/48-search-hint.md:19 "the `placeholder` attribute with exactly the text `Press / to search`"
+             spec/contracts/48-search-hint.md:32 "Two lifts, nothing else of any contract is edited:"
+             spec/contracts/48-search-hint.md:48 "limit what _that section's own change_ adds."
+             backlog/00-decisions.md:70 "a contradiction is fixed in the `docs(spec)` PR, not by the run"
+Conflict:    §25:26 says, in the present tense, the hint is not shown (not scoped to §25's change, unlike REQ-25.6's "the shortcut adds no visible text") / §50 REQ-50.1 requires the visible placeholder `Press / to search`, and its "stay as written" list does not name line 26
+Verdict:     The line cannot be read as §25's own-change note: it is unconditional, and no sentence of §50 says it relates to it. That is a real spec-vs-spec contradiction, left by §50's incomplete edit list (spec/CLAUDE.md: a section states the current rule only). It does not stop the build. D-45 (authority 2) assigns B10.3 the hint and approves §50 with its two lifts, and §50 is the newer and more specific contract, so REQ-50.1 governs the behavior. The run must not edit §25: D-45 reserves contract fixes to the docs(spec) PR. No test asserts the line: a search of src/ and e2e/ for "hint", "press /" and "placeholder" finds only todo-form.tsx "What needs doing?" and an unrelated helper in e2e/43-complete-all-hidden.spec.ts; none concerns the search box.
+Next action: proceed with plan and tests on §50; list in the plan, under Doc drift, one lead-owned docs(spec) fix to §25:26 (drop the sentence, or "The hint is §50's") landing before the test commit, alongside the two named lifts.
+Must not:    edit 23-search-shortcut.md from the run, or treat the line as proof that the placeholder must stay absent, or weaken REQ-50.1 to dodge it.
+Doc drift:   spec/contracts/23-search-shortcut.md:26 must change in the lead's docs(spec) commit with the §25 and §46 Out of scope lifts; §50's "Edits to other sections" list should name it (it says "Two lifts, nothing else").
+Escalate:    none
+```
