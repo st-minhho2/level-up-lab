@@ -1,6 +1,6 @@
 # level-up-lab
 
-![playbook level](https://img.shields.io/badge/AI--Driven%20Development-L7-2C5F2D) ![spec-driven + TDD](https://img.shields.io/badge/spec--driven-TDD-1E2761) ![agent](https://img.shields.io/badge/agent-Claude%20Code-36454F)
+![playbook level](https://img.shields.io/badge/AI--Driven%20Development-L8-2C5F2D) ![spec-driven + TDD](https://img.shields.io/badge/spec--driven-TDD-1E2761) ![agent](https://img.shields.io/badge/agent-Claude%20Code-36454F)
 
 A small Next.js 15 full-stack app (todos in PostgreSQL) used as a personal lab for SupremeTech's AI-Driven
 Development practice: numbered spec contract, backlog cards, red-first tests, independent review, one human gate
