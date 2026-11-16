@@ -11,7 +11,7 @@ No new export, so no skeleton (as B7.3, B7.6). No migration, dependency, env key
 | File                                       | Change                                                                       | Why (AC-n) |
 | ------------------------------------------ | ---------------------------------------------------------------------------- | ---------- |
 | `src/components/todo-item.tsx`             | Change: ref on the title `<input>`, `useEffect([editing])`; header names §41 | 41.1–41.5  |
-| `src/components/todo-item-select.test.tsx` | Add (red): AC-41.1–41.5, `@/actions/todos` mocked via `vi.hoisted`           | 41.1–41.5  |
+| `src/components/todo-item-select.test.tsx` | Add: AC-41.4 pinned green first, then AC-41.1–41.3, 41.5 (red); `vi.hoisted` | 41.1–41.5  |
 | `e2e/41-edit-title-select.spec.ts`         | Add (red): AC-41.6, seed [B `Buy mik`, A `Walk the dog`], POST count         | 41.6       |
 | `spec/features-map.md`                     | Add the F39 row (§41), ✅, in code-writer's `docs(map)` commit               | map        |
 
@@ -29,24 +29,30 @@ export function TodoItem({ todo }: { readonly todo: Todo }): ReactNode;
 
 ## Verification
 
-Baseline: `pnpm test` 323 passed (50 files); `pnpm test:e2e` 33 spec files. Red (`test(todos): B8.1 … (red)`, no
-skeleton: red is the field opening unfocused with the caret at the end, assertions): `scripts/verify-red.sh B8.1`
-exit 0; AC-41.1–41.4 each red (AC-41.5 may pass before green, its first step depends on AC-41.1's selection: recorded
-in the body); `pnpm test:e2e e2e/41-edit-title-select.spec.ts` → 1 fails on `activeElement`/selection, recorded.
-Green: `pnpm lint && pnpm typecheck` clean · `pnpm test` 323 → 323 + N passed (51 files; N = the red commit's new
-`it`/`it.each` cases), every AC-6.n, AC-10.n, AC-24.n, AC-25.n in `todo-item*.test.tsx` green · `pnpm test:e2e` +1 file
-green, `e2e/06-*`, `e2e/24-*` green · mutation: CI only, no src/lib or src/actions change (B1.100; ≥ 70 holds) ·
-`pnpm build` ok · `scripts/ci/check-features-map.sh`, `scripts/ci/check-plan-scope.sh` OK.
+Baseline: `pnpm test` 323 passed (50 files); `pnpm test:e2e` 33 spec files. Rows: AC-41.1 1, AC-41.2 1, AC-41.3 2
+(`it.each` (a) Escape, (b) save), AC-41.4 2 (`it.each` (a) rejected, (b) `saveFailed()`), AC-41.5 1 = 7.
+Pin (`test(todos): B8.1 pin AC-41.4 …`, new file): AC-41.4 (a), (b) hold on today's code (it never moves focus or
+selection) and each asserts its own Then: 323 → 325 passed (51 files). Red (`test(todos): B8.1 … (red)`, no skeleton):
+`scripts/verify-red.sh B8.1` exit 0; 5 new rows fail on assertions, never an import: AC-41.1, AC-41.2, AC-41.3 (a),
+(b) on `document.activeElement` (body, not the field); AC-41.5 reaches its Given only by the click on "Edit title"
+(no test-set focus or selection) and types with `user.keyboard`, so it fails on the value (`Buy mik`, not `Z`). 325
+passed, 5 failed. `pnpm test:e2e e2e/41-edit-title-select.spec.ts` → AC-41.6 fails on the active element after the
+click (body, not the row's field), recorded in the body. A different count is stated in the red commit.
+Green: `pnpm lint && pnpm typecheck` clean · `pnpm test` 325 → 330 passed (51 files), every AC-6.n, AC-10.n, AC-24.n,
+AC-25.n in `todo-item*.test.tsx` green · `pnpm test:e2e` 33 → 34 files green, `e2e/06-*`, `e2e/24-*` green ·
+mutation: CI only, no src/lib or src/actions change (B1.100; ≥ 70 holds) · `pnpm build` ok ·
+`scripts/ci/check-features-map.sh`, `scripts/ci/check-plan-scope.sh` OK.
 
 ## Work breakdown
 
-| Step | Role / skill    | Produces                                | Commit                         |
-| ---- | --------------- | --------------------------------------- | ------------------------------ |
-| 1    | none            | no skeleton (no new function or export) | —                              |
-| 2    | test-writer     | AC-41.1–41.5 `it`s, e2e AC-41.6         | `test(todos): B8.1 … (red)`    |
-| 3    | code-writer     | ref + `useEffect([editing])`            | `feat(todos): B8.1 …`          |
-| 4    | code-writer     | F39 row ✅                              | `docs(map): F39 … [B8.1]`      |
-| 5    | reviewer (diff) | `review.md` diff section                | `docs(backlog): B8.1 review …` |
+| Step | Role / skill    | Produces                                | Commit                            |
+| ---- | --------------- | --------------------------------------- | --------------------------------- |
+| 1    | none            | no skeleton (no new function or export) | —                                 |
+| 2a   | test-writer     | AC-41.4 (a), (b), green on today's code | `test(todos): B8.1 pin AC-41.4 …` |
+| 2b   | test-writer     | AC-41.1–41.3, 41.5, e2e AC-41.6         | `test(todos): B8.1 … (red)`       |
+| 3    | code-writer     | ref + `useEffect([editing])`            | `feat(todos): B8.1 …`             |
+| 4    | code-writer     | F39 row ✅                              | `docs(map): F39 … [B8.1]`         |
+| 5    | reviewer (diff) | `review.md` diff section                | `docs(backlog): B8.1 review …`    |
 
 Costs the lead takes: a post-paint effect, so one frame shows the field unfocused (advice A cons). React dev Strict
 Mode runs the effect twice at the switch, before any typing: harmless. `src/components` is outside mutation scope, so
