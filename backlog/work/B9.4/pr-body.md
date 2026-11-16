@@ -42,15 +42,34 @@ Plan review: approved, round 1 · Plan approved by: reviewer (D-27, tier medium,
 
 ## Map delta
 
-pending
+F45 · §47 · (new) → ✅ — `TodoForm` focuses the box only when `document.activeElement` is the box, "Add", body or
+null at the settling commit, in `src/components/todo-form.tsx`; evidence: `pnpm test` → 360 passed, `pnpm test:e2e` →
+88 passed (`docs(map)` 9c2f403).
 
 ## Review
 
-pending
+`/review-loop`: passes 1/3, verdict ready for PR, 0 findings (plan review: approved round 1, 0 findings).
+
+| Pass | #   | Finding | Source | Kind | Disposition | Justification |
+| ---- | --- | ------- | ------ | ---- | ----------- | ------------- |
+| 1    | —   | none    | —      | —    | —           | —             |
+
+Commands (reviewer): lint exit 0 · typecheck exit 0 · `Tests 360 passed (360)` · `88 passed (2.4m)` ·
+`mutation: CI only, no src/lib or src/actions change` · check-suppressions, check-config-change, check-feat-commits,
+check-ac-coverage, check-spec-sections, check-features-map OK · `scripts/verify-red.sh B9.4`: red for the right reason
+(3 new failed, 0 new passed; base 5a9123b).
+
+Probes (one line reverted on a copy): dropping the "Add", body or box clause, or `ref={addButton}`, turns at least one
+AC-44/AC-47 test red; dropping `active === null` leaves 43/43 green (equivalent mutant: a rendered document always has
+a body; REQ-47.1 names `null`, so it stays). Commit shape: AC-47.3 (green on the old code by design) sits in its own
+`test(todos): B9.4 pin …` commit (5a9123b) ahead of the red commit, as B9.2 did.
+
+Riskiest unfalsified: AC-47.3(c) reaches `document.body` in jsdom only through a `document.activeElement` getter spy
+(jsdom keeps the disabled "Add" focused); in a real browser the body branch is covered indirectly by AC-44.6/AC-47.5.
 
 ## Evidence
 
-- AC met: pending/6
+- AC met: 6/6
 - tier: medium
 - plan deviations: none
 - trace: n/a
