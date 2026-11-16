@@ -1,4 +1,4 @@
-import { act, createEvent, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, createEvent, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
@@ -90,6 +90,72 @@ afterEach(() => {
 });
 
 describe('<TodoDueDate> Escape puts focus on "Edit due date" (§51)', () => {
+  it('AC-51.1: after the Escape 0 "Due date" fields and the one "Edit due date" is document.activeElement with exactly 1 focus() call on it, still 1 and still active after the re-render; after Enter the field is document.activeElement with value 2026-11-06; setTodoDueDateAction called 0 times', async () => {
+    const focusSpy = vi.spyOn(HTMLButtonElement.prototype, 'focus');
+    const user = userEvent.setup();
+    const { rerender } = render(<TodoDueDate todoId="todo-9" dueDate="2026-11-05" />);
+    await openEditorWithDraft(user);
+    expect(document.activeElement).toBe(dueDateField());
+
+    await user.keyboard('{Escape}');
+    const editButtonsAfterEscape = screen.getAllByRole('button', { name: 'Edit due date' });
+    const activeAfterEscape = document.activeElement;
+    const callsAfterEscape = focusCallsOn(focusSpy, button('Edit due date'));
+    rerender(<TodoDueDate todoId="todo-9" dueDate="2026-11-06" />);
+    const callsAfterRerender = focusCallsOn(focusSpy, button('Edit due date'));
+    const activeAfterRerender = document.activeElement;
+
+    expect(screen.queryAllByLabelText('Due date')).toHaveLength(0);
+    expect(editButtonsAfterEscape).toHaveLength(1);
+    expect(activeAfterEscape).toBe(editButtonsAfterEscape[0]);
+    expect(callsAfterEscape).toBe(1);
+    expect(callsAfterRerender).toBe(1);
+    expect(activeAfterRerender).toBe(button('Edit due date'));
+
+    await user.keyboard('{Enter}');
+
+    expect(document.activeElement).toBe(dueDateField());
+    expect(dueDateField()).toHaveValue('2026-11-06');
+    expect(actions.setTodoDueDateAction).toHaveBeenCalledTimes(0);
+  });
+
+  it.each<{ readonly name: string; readonly control: string }>([
+    { name: '(a) on "Today"', control: 'Today' },
+    { name: '(b) on "Clear due date"', control: 'Clear due date' },
+  ])(
+    'AC-51.2: $name after a rejected save, 0 "Due date" fields, 0 alerts, "Due 2026-11-05" exactly once, defaultPrevented true and the one "Edit due date" is document.activeElement; setTodoDueDateAction called once; after "Edit due date" the field is document.activeElement with value 2026-11-05',
+    async ({ control }) => {
+      actions.setTodoDueDateAction.mockResolvedValue({
+        ok: false,
+        fieldErrors: { dueDate: ['Due date must be a valid date'] },
+      });
+      const user = userEvent.setup();
+      render(<TodoDueDate todoId="todo-9" dueDate="2026-11-05" />);
+      await openEditorWithDraft(user);
+      await user.click(button('Update due date'));
+      await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('Due date must be a valid date'));
+      await waitFor(() => expect(button('Update due date')).toBeEnabled());
+      const target = button(control);
+      act(() => target.focus());
+      expect(document.activeElement).toBe(target);
+
+      const escape = pressKey(target, { key: 'Escape' });
+
+      expect(screen.queryAllByLabelText('Due date')).toHaveLength(0);
+      expect(screen.queryAllByRole('alert')).toHaveLength(0);
+      expect(screen.getAllByText('Due 2026-11-05')).toHaveLength(1);
+      expect(escape.defaultPrevented).toBe(true);
+      expect(screen.getAllByRole('button', { name: 'Edit due date' })).toHaveLength(1);
+      expect(document.activeElement).toBe(button('Edit due date'));
+      expect(actions.setTodoDueDateAction).toHaveBeenCalledTimes(1);
+
+      await user.click(button('Edit due date'));
+
+      expect(document.activeElement).toBe(dueDateField());
+      expect(dueDateField()).toHaveValue('2026-11-05');
+    },
+  );
+
   it('AC-51.3: after the Escape the field still holds 2026-12-01, defaultPrevented false and 0 focus() calls on "Edit due date"; after the save resolves 0 "Due date" fields, 1 "Edit due date" that is not document.activeElement and 0 focus() calls on it; setTodoDueDateAction called once', async () => {
     const save = deferred<ActionResult<Todo>>();
     actions.setTodoDueDateAction.mockReturnValue(save.promise);
@@ -209,5 +275,40 @@ describe('<TodoDueDate> Escape puts focus on "Edit due date" (§51)', () => {
 
     expect(screen.queryAllByRole('button', { name: 'Edit due date' })).toHaveLength(0);
     expect(focusSpy.mock.calls.length - callsBeforePresses).toBe(0);
+  });
+
+  it('AC-51.6: after the Escape todo-9\'s "Edit due date" is document.activeElement and todo-8\'s is not; todo-8 still shows "Due 2026-11-09" and 0 "Due date" fields; input focus() called 1 time in all, select() and setSelectionRange() 0 times; setTodoDueDateAction called 0 times', async () => {
+    const inputFocusSpy = vi.spyOn(HTMLInputElement.prototype, 'focus');
+    const selectSpy = vi.spyOn(HTMLInputElement.prototype, 'select');
+    const selectionRangeSpy = vi.spyOn(HTMLInputElement.prototype, 'setSelectionRange');
+    const user = userEvent.setup();
+    render(
+      <ul>
+        <li>
+          <TodoDueDate todoId="todo-9" dueDate="2026-11-05" />
+        </li>
+        <li>
+          <TodoDueDate todoId="todo-8" dueDate="2026-11-09" />
+        </li>
+      </ul>,
+    );
+    const [rowNine, rowEight] = screen.getAllByRole('listitem');
+    if (rowNine === undefined || rowEight === undefined) {
+      throw new Error('expected two rows');
+    }
+    await user.click(within(rowNine).getByRole('button', { name: 'Edit due date' }));
+
+    await user.keyboard('{Escape}');
+
+    expect(within(rowEight).getAllByText('Due 2026-11-09')).toHaveLength(1);
+    expect(within(rowEight).queryAllByLabelText('Due date')).toHaveLength(0);
+    expect(inputFocusSpy).toHaveBeenCalledTimes(1);
+    expect(selectSpy).toHaveBeenCalledTimes(0);
+    expect(selectionRangeSpy).toHaveBeenCalledTimes(0);
+    expect(actions.setTodoDueDateAction).toHaveBeenCalledTimes(0);
+    const rowEightButtons = within(rowEight).getAllByRole('button', { name: 'Edit due date' });
+    expect(rowEightButtons).toHaveLength(1);
+    expect(document.activeElement).not.toBe(rowEightButtons[0]);
+    expect(document.activeElement).toBe(within(rowNine).getByRole('button', { name: 'Edit due date' }));
   });
 });
