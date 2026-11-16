@@ -53,5 +53,6 @@ moves or removes a feature updates its row in code-writer's own commit right aft
 | F44 | §46 | `/` shortcut selects the search text | `src/components/todo-search-form.tsx` | `src/components/todo-search-form-select.test.tsx`, `src/components/todo-search-form.test.tsx`, `e2e/46-search-select.spec.ts`, `e2e/25-search-shortcut.spec.ts` | ✅ |
 | F45 | §47 | A focus move during a pending add is kept | `src/components/todo-form.tsx` | `src/components/todo-form-focus-pending.test.tsx`, `e2e/47-new-todo-focus-pending.spec.ts` | ✅ |
 | F48 | §50 | The search box shows the `/` hint ("Press / to search") | `src/components/todo-search-form.tsx` | `src/components/todo-search-form-hint.test.tsx`, `e2e/50-search-hint.spec.ts` | ✅ |
+| F47 | §49 | A failed clear's message is the description of "Clear completed" | `src/components/clear-completed-button.tsx` | `src/components/clear-completed-button-description.test.tsx`, `src/components/clear-completed-button.test.tsx` | ✅ |
 
 Receipt: verified against `0b2a6d5` (B1.11 merged).
