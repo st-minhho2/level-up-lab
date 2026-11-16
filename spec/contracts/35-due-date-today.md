@@ -64,7 +64,7 @@ Zod schema, Prisma model, query, environment variable, prop or lib function; `to
 ## Out of scope
 
 A button that clears the date (a later section), buttons for tomorrow or next week, a calendar pop-up of our own,
-saving on the click, moving focus after the click, restoring focus to "Edit due date" after Escape (§28), a keyboard
+saving on the click, moving focus after the click, a keyboard
 shortcut for "Today", announcing the filled day to assistive technology, a "Today" control outside edit mode, a
 timer that re-reads the day while the editor stays open, the server's or a stored time zone, undo.
 
