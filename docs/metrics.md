@@ -147,6 +147,6 @@ as in batch 3. CFR is the 14-day mechanical bound; re-measure on 2026-11-16 for 
 | B7.6  | §40         | 6               | 6 (100 %) | 92.91 (lib, actions unchanged)    | 0              | 17301e0                                              | 1ec402e          |
 | B7.5  | §39         | 7               | 7 (100 %) | 92.91 (title-count.ts 100)        | 0              | eaa2ae9                                              | 139c960          |
 | B7.4  | §38         | 7               | 7 (100 %) | 92.84 (lib, actions unchanged)    | 0              | 8a8376e (pin 7488f47)                                | 4e5a72d          |
-| B8.1  | §41         | 6               | 6 (100 %) | CI only (lib, actions unchanged)  | 0              | 87f33ae (pin 2dad5fd)                                | this feat commit |
+| B8.1  | §41         | 6               | 6 (100 %) | CI only (lib, actions unchanged)  | 0              | 87f33ae (pin 2dad5fd)                                | d57a711          |
 
 A value below target for two consecutive measurements opens a row in `docs/mistake-log.md` and a fix in `.claude/`.
