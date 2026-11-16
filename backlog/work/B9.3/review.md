@@ -34,3 +34,53 @@ Other things checked, no finding:
 - The plan is 63 lines, in line with B7.6 (60), B8.2 (62) and B8.3 (66).
 
 Verdict: approved (ready for the lead's gate; not approval to build).
+
+## Diff review (round 1)
+
+Scope: ui. Reviewed at `4076684`. Commits: `d163d9a` test (red) → `89d50cc` feat → `4076684` docs(map).
+
+### Command results (last line each)
+
+| Command                       | Result                                                                                                                                                                                                                                                                                                                                                       |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm lint`                   | `All matched files use Prettier code style!` (exit 0)                                                                                                                                                                                                                                                                                                        |
+| `pnpm typecheck`              | `tsc --noEmit` clean                                                                                                                                                                                                                                                                                                                                         |
+| `pnpm test` (3 runs)          | run 2: `Tests 343 passed (343)`. Runs 1 and 3: `Tests 2 failed / 341 passed (343)`. Run 3's failures were AC-39.4 and AC-39.5 in `todo-form-warning.test.tsx`, both `Test timed out in 5000ms`. That is the load flake the plan's baseline records; no `todo-search-form*` test failed. `vitest run src/components/todo-search-form`: `Tests 21 passed (21)` |
+| `pnpm test:e2e`               | `83 passed (4.1m)` (AC-46.6 green, 1.7s)                                                                                                                                                                                                                                                                                                                     |
+| `scripts/mutation-gate.sh`    | `mutation: CI only, no src/lib or src/actions change`                                                                                                                                                                                                                                                                                                        |
+| `check-suppressions.sh`       | `OK: no new suppressions`                                                                                                                                                                                                                                                                                                                                    |
+| `check-config-change.sh`      | `OK: no protected config changed`                                                                                                                                                                                                                                                                                                                            |
+| `check-feat-commits.sh`       | `OK: no feat commit touches tests`                                                                                                                                                                                                                                                                                                                           |
+| `check-ac-coverage.sh`        | `OK: every criterion of a shipped section has a test`                                                                                                                                                                                                                                                                                                        |
+| `check-spec-sections.sh`      | `OK: sections cited: 1 … 46`                                                                                                                                                                                                                                                                                                                                 |
+| `check-features-map.sh`       | `OK`                                                                                                                                                                                                                                                                                                                                                         |
+| `check-plan-scope.sh`         | `OK: feat/B9.3-agent stays inside the approved plan of B9.3 (D-27 approval)`                                                                                                                                                                                                                                                                                 |
+| `scripts/verify-red.sh B9.3`  | `5 ran (5 new), 5 new failed, 0 new passed OK (red on behavior)` / `RESULT: red for the right reason` (e2e skipped by the script, needs a server)                                                                                                                                                                                                            |
+| `git diff --stat main...HEAD` | 9 files, +645 −3: `src/components/todo-search-form.tsx` (+5 −3), the 2 new test files, `spec/features-map.md`, `docs/metrics.md`, and 4 `backlog/work/B9.3/` files                                                                                                                                                                                           |
+
+Counts match the plan: 338 → 343 unit tests, 53 → 54 files; 82 → 83 e2e tests.
+
+### Checklist
+
+- AC-46.1 to AC-46.6 each have a test whose title starts with the id. Every assertion matches its Then: `selectionStart`/`selectionEnd`
+  values, `activeElement`, `defaultPrevented`, fetch/submit counts, `innerHTML` equality, `select` spy 0/1 calls,
+  `invocationCallOrder` focus < select, and the e2e address `/?q=milk` → `/?q=mom` with rows `[Call mom]`. AC-46.4 adds a positive control
+  (a plain `/` gives 1 `select` call), so it was red on the red commit too.
+- No test was weakened: `git log --first-parent --no-merges d163d9a..HEAD -- '*.test.*' e2e/` and the `--merges --remerge-diff` form are both empty.
+- Every changed file is in `plan.md`. `docs/metrics.md` is the paperwork the plan names as exempt.
+- The interface matches §46's Function contracts: the signature, props and markup are unchanged, and the call order is `.focus()` then `.select()`, only inside
+  the `isSearchShortcut` branch.
+- No action, Zod, Prisma, raw SQL, migration, secret or suppression is involved. The features map has F44 ✅ in code-writer's `docs(map)` commit.
+- Revert probes, run on a `git clone` under `$TMPDIR`:
+  - Deleting `searchBoxRef.current?.select();` makes all 5 component tests fail (`Tests 5 failed | 16 passed (21)`).
+  - Moving `select()` before `focus()` makes AC-46.5 fail (`1 failed | 4 passed`).
+  - So every changed line is pinned by a test.
+
+### Findings
+
+None blocking.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the e2e suite runs only chromium. `select()` on an `<input type="search">` after a keydown was not proven
+in WebKit or Firefox. The stale `src/components/CLAUDE.md` line on `todo-search-form.tsx` stays out of scope, as the plan says.
