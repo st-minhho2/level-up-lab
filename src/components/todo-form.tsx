@@ -1,7 +1,8 @@
 'use client';
 
 // §7 TodoForm; §10: after a `form` failure the box keeps the typed title; §18: the title counter under the box;
-// §29: Escape in the box empties it; §39: a near-limit warning after the counter, from the same draft.
+// §29: Escape in the box empties it; §39: a near-limit warning after the counter, from the same draft;
+// §44: after a successful add, focus returns to the box.
 import {
   useActionState,
   useLayoutEffect,
@@ -35,6 +36,18 @@ export function TodoForm(): ReactNode {
       setDraft(box.current.value);
     }
   });
+
+  // §44 REQ-44.1, REQ-44.4: focus follows each settled save, read from pending falling true → false, not from a
+  // change of `state`: two ok results may be the same object, and each must focus the box once. REQ-44.2: the
+  // first render and re-renders that do not settle a save leave pending unchanged, so focus is never touched;
+  // REQ-44.3: a failed result calls no focus(). Declared after the draft sync, so the box is already empty.
+  const wasPending = useRef(false);
+  useLayoutEffect(() => {
+    if (wasPending.current && !pending && state?.ok === true) {
+      box.current?.focus();
+    }
+    wasPending.current = pending;
+  }, [pending, state]);
 
   return (
     <form
