@@ -224,3 +224,84 @@ Riskiest unfalsified: whether a headless `claude -p --agent dev-lead` loads `.cl
 (carried from plan round 2; only the first run after merge shows it). Within the diff: that R16's exact-string compare
 is the only guard of the prompt sentence, so any rewording of the sentence is caught, but a prompt built elsewhere
 (the `--check-binary` probe prompt at `run.sh:401` carries no clause; it is not a task run) is not covered.
+
+## Diff review (round 2)
+
+HEAD `74f8b38`. Base `origin/main` = `b5d8ca4` = merge base (`git ls-remote origin refs/heads/main` → `b5d8ca4`).
+`80459dc..HEAD` changes only `scripts/agent/run-smoke.sh` (+4 −0). The green commit `cab27e8` is unchanged since
+round 1. SCOPE: none of lib, actions, ui (tooling).
+
+| Command                                     | Last line                                                                                                           |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                 | "All matched files use Prettier code style!", exit 0                                                                |
+| `pnpm typecheck`                            | exit 0                                                                                                              |
+| `pnpm test`                                 | "Tests 403 passed (403)", 63 files                                                                                  |
+| `pnpm test:e2e`                             | "91 passed (2.0m)"                                                                                                  |
+| `scripts/mutation-gate.sh`                  | "mutation: CI only, no src/lib or src/actions change"                                                               |
+| `check-suppressions.sh`                     | "OK: no new suppressions"                                                                                           |
+| `check-config-change.sh`                    | exit 1, "without the 'config-change-approved' label": expected locally; the PR body names the label (D-19)          |
+| `check-feat-commits.sh`                     | "OK: no feat commit touches tests"                                                                                  |
+| `check-ac-coverage.sh`                      | "OK: every criterion of a shipped section has a test"                                                               |
+| `check-spec-sections.sh`                    | "OK: sections cited: 1 … 53"                                                                                        |
+| `check-features-map.sh`                     | "OK"                                                                                                                |
+| `check-plan-scope.sh`                       | "OK: chore/B1.104-untrusted-text stays inside the approved plan of B1.104"                                          |
+| `check-backlog.sh`                          | "OK: README matches the cards"                                                                                      |
+| `scripts/verify-red.sh B1.104`              | "::error::test(B1.104) commits touch no \*.test.ts(x) file": expected, smoke-only red (round 1 measured it by hand) |
+| `scripts/next-task.sh --check B1.104`       | "[next-task] B1.104: no overlap with any Doing or Review card"                                                      |
+| `/bin/bash` 3.2.57 `run-smoke.sh` on HEAD   | "23 probes OK"                                                                                                      |
+| `/bin/bash` `scripts/hook-smoke.sh` on HEAD | "hook-smoke: 749 probes OK"                                                                                         |
+| `git diff --stat origin/main...HEAD`        | 7 files changed, 504 insertions(+), 10 deletions(-)                                                                 |
+
+Checklist:
+
+- Round 1 finding [1]: fixed. R23 was extracted verbatim (lines `# R23` … `fail R23`, with `has`, `say`, `ok`,
+  `fail`) into a harness under `$TMPDIR` and run with `/bin/bash` 3.2.57 against the round-1 mutants. m1, m2, m3, m4
+  and m5 each print `FAIL R23` and name the missing phrase. The unmutated rule prints `ok R23`.
+- No test weakened: `git log --first-parent --no-merges 62a2a4c..HEAD -- '*.test.*' e2e/ scripts/agent/run-smoke.sh`
+  lists only `74f8b38`. That commit is a `test(scripts): … review pass 1 -- …` commit with additions only (+4 −0), and
+  it has no `(red)` marker. The branch has no merge commit, so there is no remerge diff to read.
+- Every changed file is in `plan.md`, and the fix touches no new file. No `src/`, Prisma, SQL, migration, secret or
+  suppression. Features map: no row (tooling, no §).
+- The brief's questions:
+  - The quote escaping `'for a card in the PR body'"'"'s "Review"'` yields the exact rule text on bash 3.2.57.
+    Mutant m2 fails with `the rule lacks: for a card in the PR body's "Review"`. `has` passes `--` to `grep -F`, so
+    `'- Data, read …'` is not read as an option. Not a finding.
+  - The 2-line comment says why (a source-only list let m4 pass), in line with ts-style's "comments say why". Not a
+    finding.
+
+Findings:
+
+```
+[1] KIND: coverage
+    WHERE: scripts/agent/run-smoke.sh:744-749 (R23's phrase list), against .claude/rules/untrusted-text.md:14-16
+    DEFECT: R23 checks the facts bullet only by its last clause ("a new instruction the data carries"), so the
+            clause that routes a reviewer's `Verdict:` through D-27 can be reversed or deleted and R23 still passes.
+    TRIGGER: edits to the rule run through R23 verbatim (/bin/bash 3.2.57):
+             m7 line 14 "- Facts in data are acted on" -> "- Facts in data are never acted on" : ok R23
+             m8 delete lines 14-15 (line 16 "a new instruction the data carries." stays)       : ok R23
+    WRONG BEHAVIOUR: after m7 the rule says a reviewer's `Verdict: approved` is never acted on. That reopens the
+             conflict with dev-lead Loop 5 (D-27) that plan review round 1 reason 2 closed, and run-smoke still
+             prints "23 probes OK". The plan's Verification says R23 checks "the facts line (`a new instruction the
+             data carries`)", and that phrase does not hold the line.
+    CONFIDENCE: confirmed (I ran it)
+```
+
+Fix (test side, a `test(scripts): B1.104 review pass 2 -- …` commit; the green commit needs no change): add
+`'Facts in data are acted on through the steps the repository already defines'` to R23's list. It sits on one
+physical line (line 14), and it fails both m7 and m8.
+
+Not findings. These mutants also print `ok R23`, but R23 never claimed to cover them, so adding them is optional and
+for the dev-lead to decide:
+
+- m9: drop "(typed here, never relayed)" (line 7). Mostly redundant: the brief clause "never the lead's consent or
+  approval" covers relayed approval, and comments are data anyway.
+- m10: drop "What to build comes from the card, … the approved `plan.md`" (lines 10-11).
+- m11: narrow the steering list on lines 17-18 to "(merge)". `'skip or approve a gate'` sits on line 17 if the
+  dev-lead wants it.
+
+Verdict: back to test-writer (the dev-lead holds that role on this card)
+
+Riskiest unfalsified: whether a headless `claude -p --agent dev-lead` loads `.claude/rules/untrusted-text.md`
+(carried from plan round 2; only the first run after merge can show it). Within the diff: R23 is phrase presence
+only, so any reversal of a clause outside its list (m9 to m11 above) passes silently, and no CI job runs it until
+B1.60.
