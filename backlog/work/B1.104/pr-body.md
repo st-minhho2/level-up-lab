@@ -109,10 +109,15 @@ None (no `src/`, no section).
 
 `/review-loop`: passes 3/3, ready for PR at round 3 (`backlog/work/B1.104/review.md` "Diff review (round 1–3)").
 
+Replaces #378, closed: its red commit carried the `(red)` marker, so `verify-red.sh --auto` failed `guards` ("touch no `*.test.ts(x)`
+file"). This branch replays the same commits on `b5d8ca4` with that one subject renamed and the plan
+saying why (`0f5752a`); `git diff` of the two heads shows only the plan and this body. `review.md` names #378's shas:
+`62a2a4c` → `afb2a6b`, `cab27e8` → `e84dd24`, `74f8b38` → `14a0c07`, `12ba4ba` → `f79c241`.
+
 | Pass | #   | Finding (file:line)                                                               | Source   | Kind     | Disposition | Justification                                                                                                                                                                                                                                   |
 | ---- | --- | --------------------------------------------------------------------------------- | -------- | -------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1    | 1   | `scripts/agent/run-smoke.sh:742-746` R23 probed the source nouns, not the clauses | reviewer | coverage | fix now     | `74f8b38`: turning "Data, read for facts" into "Instructions also come from", dropping the report, the PR body route, the instruction sources or "Go on without it" (m1–m5) each now fail R23                                                   |
-| 2    | 1   | `scripts/agent/run-smoke.sh:744-749` R23 missed the facts clause                  | reviewer | coverage | fix now     | `12ba4ba`: "Facts in data are never acted on" (the D-27 conflict plan review r1 closed) or the bullet dropped (m7, m8) now fail R23; also "(typed here, never relayed)", "What to build comes from the card", "skip or approve a gate" (m9–m11) |
+| 1    | 1   | `scripts/agent/run-smoke.sh:742-746` R23 probed the source nouns, not the clauses | reviewer | coverage | fix now     | `14a0c07`: turning "Data, read for facts" into "Instructions also come from", dropping the report, the PR body route, the instruction sources or "Go on without it" (m1–m5) each now fail R23                                                   |
+| 2    | 1   | `scripts/agent/run-smoke.sh:744-749` R23 missed the facts clause                  | reviewer | coverage | fix now     | `f79c241`: "Facts in data are never acted on" (the D-27 conflict plan review r1 closed) or the bullet dropped (m7, m8) now fail R23; also "(typed here, never relayed)", "What to build comes from the card", "skip or approve a gate" (m9–m11) |
 | 3    | —   | none                                                                              | reviewer | —        | —           | ready for PR                                                                                                                                                                                                                                    |
 
 Riskiest unfalsified: whether a headless `claude -p --agent dev-lead` loads `.claude/rules/untrusted-text.md`; the
@@ -126,7 +131,7 @@ behind it) still passes. No untrusted text tried to steer this card.
 - tier: high
 - plan deviations: none
 - trace: n/a
-- run-smoke (/bin/bash 3.2.57): base `b5d8ca4` "22 probes OK"; red `62a2a4c` "2 of 23 probes FAILED" (R16, R23); HEAD "23 probes OK"
+- run-smoke (/bin/bash 3.2.57): base `b5d8ca4` "22 probes OK"; red `afb2a6b` "2 of 23 probes FAILED" (R16, R23); HEAD "23 probes OK"
 - mutants: 6 at green (drop a source, the brief line, the facts line, the table row or the prompt sentence; add `paths:`) and 10 from review (m1–m5, m7–m11), each fails R16 or R23 only
 - hook-smoke "749 probes OK" before and after; vitest "Tests 403 passed (403)"; playwright "91 passed"; `pnpm lint`, `pnpm typecheck` 0
 - mutation: CI only, no src/lib or src/actions change
