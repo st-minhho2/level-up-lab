@@ -51,6 +51,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §44 | [contracts/42-new-todo-focus.md](contracts/42-new-todo-focus.md) | Todos: after a successful add, focus is in the "New todo" box | ✅ |
 | §45 | [contracts/43-due-date-focus.md](contracts/43-due-date-focus.md) | Todos: opening the due-date editor puts focus in the date field | ✅ |
 | §46 | [contracts/44-search-select.md](contracts/44-search-select.md) | Todos: the `/` shortcut also selects the text already in the search box | ✅ |
+| §47 | [contracts/45-new-todo-focus-pending.md](contracts/45-new-todo-focus-pending.md) | Todos: a focus move during a pending add is kept | ✗ |
 
 Reading order: §1 → §2 → the section your backlog card names → [features-map.md](features-map.md).
 
