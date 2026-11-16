@@ -76,14 +76,14 @@ describe('<TodoDueDate> focuses the date field on entering edit mode (§45)', ()
     expect(actions.setTodoDueDateAction).toHaveBeenCalledTimes(0);
   });
 
-  it('AC-45.3: (a) after the Escape document.activeElement is body; after "Edit due date" again the field holds 2026-11-05 and is document.activeElement', async () => {
+  it('AC-45.3: (a) after the Escape document.activeElement is the button "Edit due date"; after "Edit due date" again the field holds 2026-11-05 and is document.activeElement', async () => {
     const user = userEvent.setup();
     render(<TodoDueDate todoId="todo-9" dueDate="2026-11-05" />);
     await user.click(button('Edit due date'));
     fireEvent.change(dueDateField(), { target: { value: '2026-12-01' } });
     fireEvent.keyDown(dueDateField(), { key: 'Escape' });
 
-    expect(document.activeElement).toBe(document.body);
+    expect(document.activeElement).toBe(button('Edit due date'));
 
     await user.click(button('Edit due date'));
 
@@ -107,7 +107,7 @@ describe('<TodoDueDate> focuses the date field on entering edit mode (§45)', ()
     expect(document.activeElement).toBe(dueDateField());
   });
 
-  it('AC-45.5: HTMLInputElement focus() is called 0 times after the render, exactly 1 after "Edit due date", still 1 after "Today" and the re-render; after Escape 0 "Due date" fields, document.activeElement is body and 1 call in all; the field\'s attributes and the 5 form children in order are those of §37', async () => {
+  it('AC-45.5: HTMLInputElement focus() is called 0 times after the render, exactly 1 after "Edit due date", still 1 after "Today" and the re-render; after Escape 0 "Due date" fields, document.activeElement is the button "Edit due date" and 1 call in all; the field\'s attributes and the 5 form children in order are those of §37', async () => {
     const focusSpy = vi.spyOn(HTMLInputElement.prototype, 'focus');
     const user = userEvent.setup();
     const { rerender } = render(<TodoDueDate todoId="todo-9" dueDate="2026-11-05" />);
@@ -130,7 +130,7 @@ describe('<TodoDueDate> focuses the date field on entering edit mode (§45)', ()
     expect(callsAfterToday).toBe(1);
     expect(callsAfterRerender).toBe(1);
     expect(screen.queryAllByLabelText('Due date')).toHaveLength(0);
-    expect(document.activeElement).toBe(document.body);
+    expect(document.activeElement).toBe(button('Edit due date'));
     expect(focusSpy).toHaveBeenCalledTimes(1);
     expect(fieldAttributes).toEqual(['aria-invalid', 'class', 'id', 'type', 'value']);
     expect(field.id).toBe('todo-todo-9-due-date');
