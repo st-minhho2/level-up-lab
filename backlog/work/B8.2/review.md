@@ -30,3 +30,66 @@ Probed: other e2e that follow a filter link (`16-search` :104, :197, :211, :227;
 hidden link. No other unit test renders `TodoFilterNav` (grep: only the two existing nav test files and `page.tsx`).
 
 Verdict: approved (ready for the lead's gate; medium tier under D-27/D-28)
+
+## Diff review (round 1)
+
+Diff `main...abd617e` (12 files, +590 −12). Scope: ui. Commits: 0fad3d5 pin, 84979d2 red, 4ed5d8e feat, abd617e map.
+
+### Commands (last line of each, run by the reviewer)
+
+| Command                             | Last line                                                                                                      |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | "All matched files use Prettier code style!" (exit 0)                                                          |
+| `pnpm typecheck`                    | `tsc --noEmit`, exit 0, no output                                                                              |
+| `pnpm test`                         | "Tests 327 passed (327)", Test Files 51 passed (51) (plan: ≥ 327 / 51)                                         |
+| `pnpm test:e2e`                     | "78 passed (3.5m)" (plan: 75 → 78)                                                                             |
+| `scripts/mutation-gate.sh`          | "mutation: CI only, no src/lib or src/actions change"                                                          |
+| `scripts/ci/check-suppressions.sh`  | "OK: no new suppressions"                                                                                      |
+| `scripts/ci/check-config-change.sh` | "OK: no protected config changed"                                                                              |
+| `scripts/ci/check-feat-commits.sh`  | "OK: no feat commit touches tests"                                                                             |
+| `scripts/ci/check-ac-coverage.sh`   | "OK: every criterion of a shipped section has a test"                                                          |
+| `scripts/ci/check-spec-sections.sh` | "OK: sections cited: 1 … 43"                                                                                   |
+| `scripts/ci/check-features-map.sh`  | "OK"                                                                                                           |
+| `scripts/ci/check-plan-scope.sh`    | "OK: feat/B8.2-agent stays inside the approved plan of B8.2 (D-27 approval)"                                   |
+| `scripts/ci/check-layers.sh`        | "no dependency violations found" (exit 0)                                                                      |
+| `scripts/verify-red.sh B8.2`        | "RESULT: red for the right reason" (exit 0; unit: 1 + 3 new failed, 0 new passed; e2e skipped, needs a server) |
+| `git diff --stat main...HEAD`       | "12 files changed, 590 insertions(+), 12 deletions(-)"                                                         |
+
+### Checklist
+
+| Check                                                    | Result                                                                                                                                                                                                                                                                                                     |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-§.n has a test whose assertion matches its Then | pass: AC-42.1–42.4 in `todo-filter-nav-hide-empty.test.tsx` (names, hrefs, `aria-current`, following `SPAN` text, span count, text content, 0 `[hidden], [aria-hidden]`); AC-42.5–42.7 in `e2e/42-…`; rewritten AC-12.7, AC-30.3, AC-30.6, AC-30.7 match `10-filter.md:42`, `28-filter-counts.md:32,35,36` |
+| no test weakened after the red commit                    | pass: `git log --first-parent --no-merges 84979d2..HEAD -- '*.test.*' e2e/` empty; no merge commits on the branch; the pin 0fad3d5 is not modified by 84979d2 (0 removed lines in that file)                                                                                                               |
+| every changed file is in `plan.md`                       | pass: the six code/test files and the map are in Files; `docs/metrics.md` and `backlog/work/B8.2/*` are the plan's declared paperwork; `check-plan-scope.sh` OK                                                                                                                                            |
+| interfaces match the section's contracts                 | pass: `TodoFilterNav` signature unchanged, no `'use client'`, no new export or prop; only `src/` file is `todo-filter-nav.tsx` as §42 requires                                                                                                                                                             |
+| Zod at action boundary / Prisma only in lib / raw SQL    | n/a: no action, lib or Prisma change                                                                                                                                                                                                                                                                       |
+| migration                                                | n/a                                                                                                                                                                                                                                                                                                        |
+| no secret, no suppression                                | pass (check-suppressions OK; diff read in full)                                                                                                                                                                                                                                                            |
+| features map row moved                                   | pass: F40 §42 ✅ added in `docs(map)` abd617e                                                                                                                                                                                                                                                              |
+| would a test fail if one changed line were reverted      | pass, probed on a clone in `$TMPDIR` (unit nav tests, 8): drop `\|\| link.filter === selected` → 4 fail; `!== 0` → `> 1` → 1 fails (AC-42.4); `counts === undefined ? []` → 3 fail; `!== 0 && link.filter !== selected` → 6 fail                                                                           |
+
+### Findings
+
+None blocking.
+
+Notes on the points the dev-lead raised (no TRIGGER that breaks §42, so none is a finding):
+
+1. Pin commit 0fad3d5 (AC-42.2 green by design) is not a Work breakdown step. The plan's Verification already says
+   AC-42.2 "may pass on today's code"; the pin precedes the red commit, touches only a planned file, and follows the
+   B7.4 precedent ("pin 7488f47" in `docs/metrics.md`). Plan deviation in procedure only; state it in the PR body.
+2. `docs/metrics.md` in the feat commit: declared paperwork in the plan, and `check-feat-commits.sh` passes. The row's
+   Green cell reads "this feat commit", which is not a sha and will not match the squash sha; earlier rows (B7.6
+   `1ec402e`) carry the squash sha, set when the card closes. Fix in the closing PR.
+3. `spec/contracts/20-all-done.md:75` (§22 Unchanged behavior) still quotes the old AC-12.7 title, which no longer
+   exists after 84979d2, and its sentence "keeps the three filter links" is no longer true for an empty store. Spec
+   drift outside this card's lane (a `docs(spec)` change needs a D-n); file it via `/spec-trace` or a card. No CI
+   check reads these proof titles. Grep found no other stale quote of the four renamed titles.
+4. `src/components/todo-form-warning.test.tsx` timeouts under machine load: untouched by this diff; my `pnpm test` run
+   was 327/327. Not attributable to B8.2.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the e2e red of AC-42.5–42.7, AC-12.7, AC-30.6, AC-30.7 on pre-feat code; `verify-red.sh`
+skipped e2e and I did not rerun them against 84979d2 (red claimed in the commit body only; traced: pre-feat code
+renders all three links, so each `toHaveText` link list would fail).
