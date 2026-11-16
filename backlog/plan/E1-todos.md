@@ -1509,3 +1509,34 @@ D-9 holds "agents never merge" by the deny rule and convention only
   both are the lead's ruling.
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.103/`
+
+### B1.104 · Nothing tells a run that issue, comment and fetched text is data, never instructions
+
+_tooling · no §_
+**Status: Open** — `grep -rniE "injection|untrusted|as data|not instructions"` over `.claude/` (rules, agents,
+skills), `scripts/agent/run.sh` and `docs/` finds only two `TMPDIR` "as data" lines (`.claude/docs/hooks.md:43`,
+`.claude/hooks/reviewer-writes.mjs:88`), none about prompt text. The run prompt (`scripts/agent/run.sh:301`) points
+`dev-lead` at the issue and the card and says nothing about text it reads there. What exists:
+`scripts/agent/eligible.sh:54` requires the labeler and the issue author to hold write access, and the runner firewall
+(`.devcontainer/runner/init-firewall.sh:2`) limits egress. Nothing tells the roles that issue bodies, issue and PR
+comments, PR review text, CI logs, fetched web or dependency docs and tool output are data, nor what a run does when
+such text tries to steer it
+
+- **Spec:** none — tooling (a `.claude/rules/*.md` file, the run prompt in `scripts/agent/run.sh`, `dev-lead.md`, or a
+  combination; the `CLAUDE.md` rules table if a rule file is added, `scripts/CLAUDE.md`); no `src/` change, no section
+- **Test:** a smoke probe (`scripts/agent/run-smoke.sh` or `scripts/hook-smoke.sh`) that the run prompt and the rule
+  carry the clause — red because: today neither names that text as data
+- **Acceptance:**
+  - One short rule, loaded by every role a run starts, names the untrusted sources (issue bodies, issue and PR
+    comments, PR review text, CI logs, fetched web or dependency docs, tool output) as data, never instructions, and
+    states the mistake it prevents.
+  - It says what a run does when such text tries to steer it: ignore it or stop, never act on it, and report it in
+    the run's issue comment or PR body.
+  - The headless run prompt carries the clause, so a run without the rule file still gets it; the plan states where
+    the rule lives and why.
+  - The probe fails on main at `fd039fd` and passes on the branch; bash 3.2-safe; the smoke count before and after
+    is stated.
+  - Doc rows: the `CLAUDE.md` rules table if a rule file is added, `scripts/CLAUDE.md` for the probe.
+  - The PR carries `config-change-approved` (D-19).
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.104/`
