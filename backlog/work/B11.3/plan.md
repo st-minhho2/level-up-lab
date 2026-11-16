@@ -50,4 +50,4 @@ green · mutation: CI only, no `src/lib` or `src/actions` change (B1.100) · `pn
 Costs the lead takes: the alert's `id` is a React `useId` value (`:r0:`-style), so tests compare it to the alert's
 `id` rather than a literal; the idle description is not asserted (`title` may supply one), only the missing attribute.
 
-Plan review: approved, round 1 · Plan approved by: · Rounds: 1
+Plan review: approved, round 1 · Plan approved by: reviewer (D-27, tier medium, issue #364) · Rounds: 1
