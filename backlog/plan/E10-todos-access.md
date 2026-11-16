@@ -13,7 +13,7 @@ as it is ready, and a sweep after the cards close. No card changes `src/app/page
 ### B10.1 · Escape in the title editor puts focus on "Edit title"
 
 _F46 · section 48_
-**Status: Open** — §24 (`spec/contracts/22-escape-edit-title.md`) closes the editor on Escape and §41 REQ-41.4 gives the row no focus on leaving edit mode, so focus falls to the page (`todo-item.tsx`).
+**Status: Done** — 746ce48 (#360), 7 AC-48.n criteria green (AC-48.1, AC-48.2, AC-48.6, AC-48.7 red in 958c6cd, the unit ones proven by verify-red.sh on base e1b0d51; AC-48.3–48.5 pinned green at the base, e1b0d51); unit 360 → 369; e2e 88 → 89, AC-48.7; mutation n/a (no src/lib or src/actions change, B1.100); no-rework 1/1, unattended 1/1 (D-29); merged second in E10 after one sync (4114f8b)
 
 - **Acceptance:**
   - When Escape closes the title editor, the row's "Edit title" button is `document.activeElement`.
