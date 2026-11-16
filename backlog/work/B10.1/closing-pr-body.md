@@ -13,7 +13,7 @@ Files:
   - mutation n/a: no `src/lib` or `src/actions` change, so the run skipped local mutation (B1.100);
   - no-rework 1/1, unattended 1/1 (D-29).
 - `backlog/README.md`: Remaining row 138 removed; `~~B10.1~~` in node 138. `~~B10.1~~` in the Blocked by of rows 141–143 (B11.1, B11.2, B11.3).
-  Totals: E10 1/0/2, total 100/1/42 of 143.
+  Totals: E10 1/0/2, total 101/1/41 of 143.
 - `spec/technical-requirements.md`: §48 index row ✗ → ✅.
 - `docs/metrics.md`: B10.1 Mutation cell already 92.91 (CI Stryker on 4114f8b); Green cell "this feat commit" → the merged sha 746ce48, as the E8 and E9
   closings did.
