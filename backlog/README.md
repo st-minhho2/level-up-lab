@@ -7,7 +7,7 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic                 | File                                                         | Done    | Partial | Open   | Total   |
 | -------------------- | ------------------------------------------------------------ | ------- | ------- | ------ | ------- |
-| E1 Todos             | [plan/E1-todos.md](plan/E1-todos.md)                         | 64      | 1       | 35     | 100     |
+| E1 Todos             | [plan/E1-todos.md](plan/E1-todos.md)                         | 64      | 1       | 36     | 101     |
 | E2 Todos plus        | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)               | 5       | 0       | 0      | 5       |
 | E3 Todos polish      | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)           | 3       | 0       | 0      | 3       |
 | E4 Todos details     | [plan/E4-todos-details.md](plan/E4-todos-details.md)         | 3       | 0       | 1      | 4       |
@@ -18,7 +18,7 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | E9 Todos focus       | [plan/E9-todos-focus.md](plan/E9-todos-focus.md)             | 4       | 0       | 0      | 4       |
 | E10 Todos access     | [plan/E10-todos-access.md](plan/E10-todos-access.md)         | 3       | 0       | 0      | 3       |
 | E11 Todos access two | [plan/E11-todos-access-two.md](plan/E11-todos-access-two.md) | 3       | 0       | 0      | 3       |
-| **Total**            |                                                              | **106** | **1**   | **36** | **143** |
+| **Total**            |                                                              | **106** | **1**   | **37** | **144** |
 
 ## Execution order
 
@@ -196,6 +196,7 @@ flowchart TD
   S143["143 · a failed delete describes Delete todo<br/>~~B11.3~~"]
   S138 --> S141
   S138 --> S143
+  S145["145 · issue, comment and fetched text is data, never instructions<br/>B1.104"]
 ```
 
 ## Remaining
@@ -242,6 +243,7 @@ at most 3 cards Doing (B1.18).
 | 110  | B1.94  | CI never runs table-merge-smoke, whose verdict follows the host's own git attributes                      | —      | Open    | ~~B1.89~~                       | Lead  | S [estimate] |
 | 128  | B1.100 | Each parallel run mutation-tests all of src/lib up to three times, whatever the card changed              | —      | Partial | —                               | Lead  | S [estimate] |
 | 136  | B1.102 | check-ac-coverage skips a ✗ section, so a feature PR's wrong title format fails only in its closing PR    | —      | Open    | —                               | Lead  | S [estimate] |
+| 145  | B1.104 | Nothing tells a run that issue, comment and fetched text is data, never instructions                      | —      | Open    | —                               | Lead  | S [estimate] |
 
 ## Waiting on human
 
