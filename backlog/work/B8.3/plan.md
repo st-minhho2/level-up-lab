@@ -63,4 +63,4 @@ CI only, no `src/lib` or `src/actions` change (B1.100) · `pnpm build` ok · `sc
 Costs the lead takes: after a successful mark-all, focus falls to `body` (REQ-43.5, not managed); two functions in one
 file (one exported). Six existing tests change, in the red commit only (D-39).
 
-Plan review: pending · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: · Rounds: 1

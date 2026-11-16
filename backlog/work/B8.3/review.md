@@ -42,3 +42,31 @@ Verdict: changes requested
    place). Without them the diff review cannot tell a merged or dropped case from the plan (same reason as B7.6
    round 1). While there, the e2e list names 16, 22, 30 and 09 but not `e2e/38-search-count.spec.ts`, which also finds
    the button; "all green" covers it, so this is optional.
+
+## Plan review (round 2)
+
+Plan read at `8e62808`. `git diff db8f746 8e62808 -- backlog/work/B8.3/plan.md` touches only the Verification
+paragraph. `git diff --stat main...HEAD` → only `backlog/work/B8.3/{advice,plan,review}.md`. Risk tier:
+`scripts/agent/tier.sh backlog/work/B8.3/plan.md` → `medium`.
+
+| Check                                                                                           | Result                                                                                                                                                                                                                                      |
+| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                                  | pass: Files table unchanged since round 1; matches §43's one-file statement (`41-complete-all-hidden.md:85`) and its "Tests the red step rewrites" table (lines 91–100)                                                                     |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib                  | pass: unchanged since round 1                                                                                                                                                                                                               |
+| plan follows `advice.md`'s recommendation or states the deviation                               | pass: approach A; the optional `src/components/CLAUDE.md` row dropped with its reason                                                                                                                                                       |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number                       | pass: AC-43.1 to AC-43.7, counts, exact names, `document.activeElement`, spy counts                                                                                                                                                         |
+| verification lists exact commands with expected numbers                                         | pass (round-1 reason 1 resolved): `pnpm test` 323 → 327, 50 → 51 files, with AC-43.1 as one `it` matching the card's single `Test:` title; e2e baseline 75 tests / 33 files, target 75 → 78, 33 → 34 files (one test each for AC-43.5–43.7) |
+| work breakdown has skeleton → red → green → map → review with convention subjects               | pass: unchanged since round 1                                                                                                                                                                                                               |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by the reviewer | pass: `- [ ] Lead approves spec` at `41-complete-all-hidden.md:5`, unticked, not touched                                                                                                                                                    |
+| no settled D-n contradicted                                                                     | pass: D-39 as in round 1                                                                                                                                                                                                                    |
+| `scripts/next-task.sh --check B8.3` says no overlap                                             | pass: `[next-task] B8.3: no overlap with any Doing or Review card`                                                                                                                                                                          |
+
+Costs the lead takes (restated so the approval sees them): after a successful mark-all, focus falls to `body` and is
+not managed (REQ-43.5); the disabled-at-0 button is dropped (the card's purpose); six existing tests (AC-14.4 (a),
+AC-36.3, AC-14.6 (a), (b), AC-36.6, AC-36.7) are rewritten in the red commit only, titles verbatim from §43; two
+functions in one file, one exported. No role is blocked.
+
+Non-blocking: the plan's footer still reads `Rounds: 1`; `e2e/38-search-count.spec.ts` is still not named in the e2e
+list (covered by the full `pnpm test:e2e` run).
+
+Verdict: approved (ready for the lead's gate, not approved for build)
