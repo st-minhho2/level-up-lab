@@ -15,7 +15,7 @@ changes.
 ### B11.1 · Escape in the due-date editor puts focus on "Edit due date"
 
 _F49 · section 51_
-**Status: Open** — §28 (`spec/contracts/26-escape-due-date.md`) closes the editor on Escape and §45 REQ-45.4 restores no focus, so focus falls to the page (`todo-due-date.tsx`).
+**Status: Done** — d1d9598 (#367), 7 AC-51.n criteria green (AC-51.1, AC-51.2, AC-51.6, AC-51.7 red in d053c8b, the unit ones proven by verify-red.sh on base 218f7b0; AC-51.3–51.5 pinned green at the base, 218f7b0; AC-45.3, AC-45.5 follow §45 as #355 rewrote it; review pass 1 added two rows in afe12a2); unit 381 → 391; e2e 90 → 91, AC-51.7; mutation n/a (no src/lib or src/actions change, B1.100); no-rework 1/1, unattended 1/1 (D-29); merged first in E11, no sync
 
 - **Acceptance:**
   - When Escape closes the editor (from the field, "Today" or "Clear due date"), "Edit due date" is `document.activeElement`.
@@ -29,7 +29,7 @@ _F49 · section 51_
 ### B11.2 · A failed mark-all's message describes "Mark all complete"
 
 _F50 · section 52_
-**Status: Open** — §10 shows a failed mark-all's message as an alert next to the button (`complete-all-button.tsx`), but the button carries no `aria-describedby`.
+**Status: Done** — a230acc (#365), 6 AC-52.n criteria green (AC-52.1, AC-52.3, AC-52.4 red in 10fc315, proven by verify-red.sh on base bb238ba; AC-52.2, AC-52.5, AC-52.6 pinned green at the base, bb238ba); unit 381 → 387; e2e 90 → 90; mutation n/a (no src/lib or src/actions change, B1.100); no-rework 1/1, unattended 1/1 (D-29); merged second in E11 after one sync (76218ab)
 
 - **Acceptance:**
   - While the message shows it is the button's accessible description; the next success removes both; a button that reappears (§43) has none.
