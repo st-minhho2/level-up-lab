@@ -59,4 +59,4 @@ change (B1.100) · `pnpm build` ok · `scripts/ci/check-features-map.sh` OK.
 Costs the lead takes: the alert's `id` is a React `useId` value, so tests compare it to the alert's `id` rather than a
 literal; jsdom keeps the description on a disabled (pending) button (AC-52.4), as browsers do.
 
-Plan review: approved, round 1 · Plan approved by: · Rounds: 1
+Plan review: approved, round 1 · Plan approved by: reviewer (D-27, tier medium, issue #363) · Rounds: 1
