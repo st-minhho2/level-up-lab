@@ -1437,3 +1437,41 @@ _tooling · no §_
   - The PR carries `config-change-approved` (D-19).
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.101/`
+
+### B1.102 · check-ac-coverage skips a ✗ section, so a feature PR's wrong title format fails only in its closing PR
+
+_tooling · no §_
+**Status: Open** — `scripts/ci/check-ac-coverage.sh:20` skips every section whose index row is not ✅ or ◐ ("no tests
+expected yet"), and a feature PR runs while its row is still ✗ (the closing PR flips it). B8.1's feature PR #333
+shipped `AC-41.3 (a):`, `AC-41.3 (b):` and `AC-41.4 $name:` in `src/components/todo-item-select.test.tsx`; its guards
+and its reviewer passed, and closing PR #335's guards job failed with `§41 criteria=6 covered=4 MISSING: AC-41.3
+AC-41.4`, fixed by the title-only PR #338
+
+- **Spec:** none — tooling (CI guard for invariant 2 and `.claude/rules/testing.md`, possibly `reviewer.md` or
+  `dev-lead.md`); no `src/` change, no section
+- **Test:** a `scripts/hook-smoke.sh` probe next to A1–A10 (B1.86): a tree whose section row is ✗ and whose tests
+  title a criterion `AC-n.m (a):` — red because: the guard exits 0 with "no tests expected yet"
+- **Acceptance:**
+  - A test title that misses the `AC-§.n:` prefix fails before the closing PR: in the feature PR's CI, or in a check
+    the `reviewer` and `dev-lead` run on the card branch. The plan picks the way (open question below).
+  - A ✗ section with no `AC-§.n` test at all still passes, so cards not started stay green; ✅ and ◐ sections keep
+    their verdicts, and the guard's output on main before and after is stated.
+  - On main at `d922d82` (B8.1 merged, #338 not yet) the chosen check fails and names AC-41.3 and AC-41.4; with
+    #338 merged it passes. #338 lands before this card's PR, or that PR's own guards fail on main.
+  - bash 3.2-safe; the hook-smoke count before and after is stated.
+  - The PR carries `config-change-approved` (D-19).
+- **Open question:** which way?
+  - (a) the guard also checks a ✗ section that already has at least one `AC-§.n` test title, read from the files;
+  - (b) the guard checks a ✗ section when the branch is a card branch (`feat/B<e>.<n>-*`) whose card names it;
+  - (c) `check-ac-coverage.sh --section §n` treats that section as ✅, and the `reviewer`'s diff review and
+    `dev-lead`'s green gate run it for the card's section;
+  - (d) the guard flags any title that starts with `AC-n.m` but not `AC-n.m:`, whatever the section's status.
+
+  **Proposed:** (a) plus (d). Both run in CI with no branch-name or prompt dependency, so a headless run and a
+  person's PR get the same verdict. (a) catches a missing criterion once the section's first test lands; (d) catches
+  B8.1's exact shape even when the other titles are right. Risk for (a): a section split over several cards (◐
+  later) fails while only the first card's tests exist; the plan states how such a section is told apart (its
+  `Spec:` line or ◐ status), or drops (a) for (c).
+
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.102/`
