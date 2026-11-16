@@ -78,3 +78,71 @@ Costs the lead takes on approval:
    gate's scope, so whether the conditional's mutants are killed is checked by review only.
 4. Paperwork, non-blocking: the plan's closing line still says `Rounds: 1`, and at 62 lines it runs past the ≈ 40-line
    one-screen guide (B9.4's approved plan was 56).
+
+## Diff review (round 1)
+
+SCOPE: ui. HEAD 1780b7e (pin 3e05a63 → red 4153c19 → feat 1ce8afa → map 1780b7e).
+
+### Command results (last line each)
+
+| Command                             | Last line                                                                                         |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | All matched files use Prettier code style!                                                        |
+| `pnpm typecheck`                    | `tsc --noEmit`, exit 0, no output                                                                 |
+| `pnpm test`                         | Tests 366 passed (366) (plan: 360 → 366)                                                          |
+| `pnpm test:e2e`                     | 88 passed (4.7m) (plan: 88 → 88)                                                                  |
+| `scripts/mutation-gate.sh`          | mutation: CI only, no src/lib or src/actions change                                               |
+| `scripts/ci/check-suppressions.sh`  | [check-suppressions] OK: no new suppressions                                                      |
+| `scripts/ci/check-config-change.sh` | [check-config-change] OK: no protected config changed                                             |
+| `scripts/ci/check-feat-commits.sh`  | [check-feat-commits] OK: no feat commit touches tests                                             |
+| `scripts/ci/check-ac-coverage.sh`   | [check-ac-coverage] OK: every criterion of a shipped section has a test                           |
+| `scripts/ci/check-spec-sections.sh` | [check-spec-sections] OK: sections cited: 1 … 53                                                  |
+| `scripts/ci/check-features-map.sh`  | [check-features-map] OK                                                                           |
+| `scripts/verify-red.sh B10.2`       | 6 ran (4 new), 4 new failed, 0 new passed OK (red on behavior) · RESULT: red for the right reason |
+| `git diff --stat main...HEAD`       | 8 files changed, 514 insertions(+), 3 deletions(-)                                                |
+
+### Checklist
+
+| Check                                                                      | Result                                                                                                                                                                                                                                                     |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-49.n has a test whose assertion matches its Then                  | pass: AC-49.1–49.6, one `it` each, titles start with the id; each Then's counts, exact text, attribute absence / id equality and call arguments are asserted (AC-49.6 "all ids distinct" via `Set` size)                                                   |
+| no test weakened after the red commit                                      | pass: `git log --first-parent --no-merges 4153c19..HEAD -- '*.test.*' e2e/` empty; no merge commits (remerge-diff empty). Red commit's only deletion in the pinned file is the `vitest` import line (adds `afterEach`); AC-49.2 / AC-49.5 bodies unchanged |
+| every changed file is in `plan.md`                                         | pass: component, test file, `features-map.md` F47; `docs/metrics.md` row and `backlog/work/B10.2/*` are the plan's stated paperwork                                                                                                                        |
+| interfaces match the section's contracts                                   | pass: signature unchanged; `useId()`, `id={messageId}` on the alert, `aria-describedby={error !== undefined ? messageId : undefined}`, word for word as §49 Function contracts; §10 clause already on main (`08-mutation-feedback.md:60`)                  |
+| Zod at every action boundary · Prisma only in lib · no raw SQL · migration | n/a: no action, lib, Prisma or migration change                                                                                                                                                                                                            |
+| no secret, no suppression                                                  | pass (check-suppressions OK; diff read)                                                                                                                                                                                                                    |
+| features map row moved                                                     | pass: F47 §49 ✅ in `docs(map)` commit 1780b7e                                                                                                                                                                                                             |
+| would a test fail if one changed line were reverted?                       | pass for each line: probe on a clone under `$TMPDIR`. `aria-describedby={messageId}` (unconditional) → 5 failed; `id` dropped from the alert → 4 failed; the `useId` line reverted alone does not compile. Two non-revert mutants survive, below           |
+
+### Findings
+
+```
+[1] KIND: coverage
+    WHERE: src/components/clear-completed-button-description.test.tsx:178 (AC-49.6); src/components/clear-completed-button.tsx:19
+    DEFECT: no test distinguishes `useId()` from a fixed id, so REQ-49.5 ("two instances never share it") is unobserved.
+    TRIGGER: replace `const messageId = useId();` with `const messageId = 'clear-completed-message';` on the probe copy
+    WRONG BEHAVIOUR: 14/14 component tests still pass; two failing instances in one document would share an id and each
+             button would be described by the first message. Root cause is the AC: AC-49.6's When clicks only one
+             button, so only one element carries an id and "all ids distinct" is vacuous. The test matches its Then.
+    CONFIDENCE: confirmed (ran it)
+
+[2] KIND: coverage
+    WHERE: src/components/clear-completed-button.tsx:37; no AC reads the first pending
+    DEFECT: REQ-49.2's "while the first clear is pending" clause (no `aria-describedby`) is not asserted by any test.
+    TRIGGER: change the condition to `pending || error !== undefined ? messageId : undefined` on the probe copy
+    WRONG BEHAVIOUR: 14/14 pass; during the first pending the button would carry an `aria-describedby` pointing at
+             an element that does not exist. AC-49.2 and AC-49.5 wait for `toBeDisabled()` but their Thens assert only
+             after the result, so the tests match the ACs.
+    CONFIDENCE: confirmed (ran it)
+```
+
+Both are gaps in the approved criteria, not defects in the shipped code: traced, `error` starts `undefined` and is
+set only inside the transition from a result, and `messageId` is `useId()`, so the code meets REQ-49.2 and REQ-49.5 as
+written. Neither blocks this PR. Closing them needs a §49 criterion change (AC-49.6 clicks both buttons; AC-49.5 reads
+the button while pending). That goes to the lead through `/spec-trace`. A test-only patch would assert beyond the Thens.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the REQ-49.3 "in the same commit" atomicity, meaning the alert and the attribute come off in one
+React commit. Both depend on the one `error` state, so no intermediate frame can split them. No test reads a frame
+between the two, so that claim comes from reading the code, not from a test.
