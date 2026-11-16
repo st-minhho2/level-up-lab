@@ -115,7 +115,9 @@ test.describe('§43 complete-all hidden', () => {
     await expect(anyMarkAllButton(page)).toHaveCount(1);
     await expect(markAllButtonNamed(page, 'Mark all complete (1)')).toHaveCount(1);
     await expect(markAllButtonNamed(page, 'Mark all complete (1)')).toBeEnabled();
-    await expect(page.getByRole('alert')).toHaveCount(0);
+    // Every body child except Next's <next-route-announcer> (role=alert in a shadow root on every hydrated page),
+    // so the component's §10 alert is still counted wherever it renders (advice.md, AC-43.6 addendum).
+    await expect(page.locator('body > :not(next-route-announcer)').getByRole('alert')).toHaveCount(0);
     expect(navigations()).toBe(0);
 
     await page.reload();
