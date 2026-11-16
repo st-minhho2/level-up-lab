@@ -159,3 +159,79 @@ Riskiest unfalsified: AC-41.6 reads focus and selection once right after `toBeVi
 `useEffect` ran after that read. React 19.1 flushes passive effects of a discrete (click) update synchronously at the
 end of the commit, and the test passed 40/40 repeated plus 1/1 in the full run, chromium only; Firefox and WebKit
 `select()` behavior is not exercised.
+
+## Diff review — AC titles follow-up (rounds 1–2)
+
+Scope: ui (`src/components/todo-item-select.test.tsx`, titles only). Branch `test/B8.1-ac-titles` on origin/main
+d922d82. Why: closing PR #335 flips §41 ✗ → ✅ and `check-ac-coverage.sh` then reports AC-41.3 and AC-41.4 uncovered,
+because three titles did not start with "AC-41.n:".
+
+### Round 1 (commit a8c5f09, test commit alone on d922d82)
+
+Recorded after the fact: the path guard blocked writing it to a separate `review-ac-titles.md`, so the round-1
+report went to the dev-lead only. Suites: `pnpm test` 338 passed, `pnpm test:e2e` 82 passed. Diff: 3 title strings
+in one file, no assertion, setup or table row changed.
+
+```
+[1] KIND: plan-mismatch
+    WHERE: backlog/work/B8.1/plan.md (no row for the branch's change at its approval commit)
+    DEFECT: the branch changed a non-paperwork file with no approval commit for it on the branch.
+    TRIGGER: scripts/ci/check-plan-scope.sh on test/B8.1-ac-titles at a8c5f09
+    WRONG BEHAVIOUR: check-plan-scope exit 1 (plan-files exit 3, no "docs(backlog): B8.1 plan … approved" commit
+    on the branch's first parent), so the guards job would fail the PR.
+    CONFIDENCE: confirmed
+```
+
+Verdict (round 1): back to code-writer (plan paperwork, not code).
+
+### Round 2 (fbdcb61 plan round 3 approved, then 646cd64 = the re-applied test commit)
+
+Commands, last line each:
+
+| Command                                                           | Result                                                                    |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `pnpm lint`                                                       | All matched files use Prettier code style! (exit 0)                       |
+| `pnpm typecheck`                                                  | `tsc --noEmit`, exit 0                                                    |
+| `pnpm test`                                                       | Tests 338 passed (338), 53 files                                          |
+| `pnpm vitest run src/components/todo-item-select.test.tsx`        | Tests 7 passed (7)                                                        |
+| `pnpm test:e2e`                                                   | not re-run: no `src/` or `e2e/` byte differs from round 1 (82 passed)     |
+| `scripts/mutation-gate.sh`                                        | mutation: CI only, no src/lib or src/actions change                       |
+| `scripts/ci/plan-files.sh B8.1`                                   | exit 0; lists `src/components/todo-item-select.test.tsx` (twice: 2 Files) |
+| `scripts/ci/check-plan-scope.sh`                                  | OK: test/B8.1-ac-titles stays inside the approved plan of B8.1            |
+| `check-suppressions`, `check-config-change`, `check-feat-commits` | OK each                                                                   |
+| `check-ac-coverage`, `check-spec-sections`, `check-features-map`  | OK each (§41 still ✗ on this branch, so skipped)                          |
+| `check-backlog`, `check-layers`                                   | OK, exit 0                                                                |
+| `scripts/verify-red.sh B8.1`                                      | not applicable: no `(red)` commit on this branch; titles only             |
+| `git diff --stat origin/main...HEAD`                              | plan.md +20 −1, todo-item-select.test.tsx +3 −3                           |
+
+Checklist:
+
+- 646cd64 vs a8c5f09: `diff <(git show --format= a8c5f09) <(git show --format= 646cd64)` empty; the tree diff
+  `git diff a8c5f09 646cd64` touches only `backlog/work/B8.1/plan.md`. Nothing else changed.
+- Plan accuracy: round 3's Files row names the one file and the three exact title rewrites; the diff is exactly
+  those three lines. Interfaces: none. Its verification numbers reproduce (7, 338, coverage 6/6, scope OK).
+- Approval commit: `docs(backlog): B8.1 plan round 3 approved` matches plan-files' subject regex; its field is
+  `lead, 2026-11-16 (round 3; rounds 1–2: reviewer, D-27, tier medium, issue #316)`. Non-runner path holds in CI too:
+  issue #316 is CLOSED, so check-plan-scope finds no open agent-ready issue naming B8.1 and does not pass `--run`
+  (which would refuse a non-reviewer field); the branch is not `…/B8.1-agent`.
+- Other readers of the field / Files: `scripts/metrics/wait-time.sh` (d27 test: the field no longer starts
+  `reviewer (D-27,`, so fbdcb61 counts as a lead wait, which is true; it reads only a Done PR's first-parent head),
+  `scripts/metrics/plan-deviations.sh` (runs plan-files on a Done PR's head; non-runner branch → lead field
+  accepted), `scripts/agent/tier.sh` (union of both Files tables → medium, same as before), `feature-map.sh` (tier
+  only), `next-task.sh --check` (`--any`, Files only), `.claude/hooks/plan-scope.sh` (same plan-files call). None
+  breaks on the rewritten line.
+- Tests not weakened: only title strings change; `AC-41.3:` / `AC-41.4:` now prefix all three.
+- Probe (git clones under `$TMPDIR`, §41 flipped to ✅ in `spec/technical-requirements.md`): at 646cd64
+  "§41 criteria=6 covered=6", OK; at d922d82 "§41 criteria=6 covered=4 MISSING: AC-41.3 AC-41.4", exit 1. The change
+  is what makes #335's guards pass.
+
+Findings: none blocking. Round-1 [1] closed (plan-files exit 0, check-plan-scope OK).
+
+Observation (not a finding): `plan.md` is now 81 lines, beyond the ≈40-line one-screen rule; round 3 itself is 19
+lines and stands as its own section, so the one-screen limit is met for what the lead approved.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: CI's check-plan-scope decides the runner path from open agent-ready issues at run time; if
+issue #316 were reopened with its label before the PR's guards run, `--run` would refuse the `lead, …` field (exit 5).
+Today #316 is CLOSED and the local run took the lead path.
