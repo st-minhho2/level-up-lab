@@ -78,15 +78,29 @@ Plan review: approved, round 1 · Plan approved by: reviewer (D-27, tier medium,
 
 ## Map delta
 
-pending
+F44 · §46 · (new) → ✅ — `TodoSearchForm` calls `.select()` after `.focus()` in the §25 shortcut branch, in
+`src/components/todo-search-form.tsx` (`docs(map)` 4076684); evidence: `pnpm test` 343 passed (54 files), `pnpm test:e2e`
+83 passed (37 files).
 
 ## Review
 
-pending
+`/review-loop`: passes 1/3, verdict ready for PR (full tables in `backlog/work/B9.3/review.md`, "Diff review (round 1)").
+
+| Pass | #   | Finding (file:line) | Source   | Kind | Disposition | Justification |
+| ---- | --- | ------------------- | -------- | ---- | ----------- | ------------- |
+| 1    | —   | none                | reviewer | —    | —           | 0 findings    |
+
+Revert probes (clone under `$TMPDIR`): deleting `select()` fails all 5 component tests; `select()` before `focus()` fails
+AC-46.5. AC-46.4 carries a positive control (a plain `/` gives 1 `select` call) so it was red on the red commit; the
+reviewer accepted it. Unit-suite note: runs 1 and 3 of 3 had 2 unrelated 5000 ms timeouts (`todo-form-warning.test.tsx`
+AC-39.4, AC-39.5), the load flake also seen on main's baseline; no `todo-search-form*` test failed.
+
+Riskiest unfalsified: e2e runs only chromium; `select()` on `type="search"` after the `/` keydown is unproven in WebKit
+and Firefox.
 
 ## Evidence
 
-- AC met: pending
+- AC met: 6/6
 - tier: medium
 - plan deviations: none
 - trace: n/a
