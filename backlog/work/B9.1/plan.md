@@ -52,7 +52,8 @@ only, no `src/lib` or `src/actions` change (B1.100) · `pnpm build` ok · `scrip
 Costs the lead takes: an action that throws (not reachable through `createTodoAction`, which returns `ActionResult`)
 would leave the prior ok `state` and focus the box; e2e flows that add then press `/` now type `/` into the box (§25);
 any submit that resolves ok, including a click on "Add" with an empty box, sends focus back to the box, so REQ-44.4's
-"focus moved elsewhere stays there" holds only for moves that do not submit. Blocked: AC-44.4 as written cannot
-hold (review round 1, reason 1); waiting on the lead's D-41 before the red commit.
+"focus moved elsewhere stays there" holds only for moves that do not submit. AC-44.4 follows D-41 (merged
+`docs(spec): §44`, #345): Tab from the box to "Add" (no submit, 1 call, "Add" focused), then click the box, type
+`Walk the dog`, Enter (2 calls, box focused, `''`); the test-writer copies that When literally, one `it`.
 
 Plan review: pending · Plan approved by: · Rounds: 1
