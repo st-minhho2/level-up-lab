@@ -1475,3 +1475,37 @@ AC-41.4`, fixed by the title-only PR #338
 
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.102/`
+
+### B1.103 · An agent can still merge a pull request through `gh api`, past the `gh pr merge` deny rule
+
+_tooling · no §_
+**Status: Open** — `.claude/settings.json:20` denies only `Bash(gh pr merge*)`; `.claude/hooks/guard-bash.sh:67-68`
+blocks `gh api` only on `git/refs` with a DELETE/PATCH method or `force=true`, and on `deleteRef`, `updateRef` or a
+branch rename (`:53-54`); `:55` blocks `gh pr merge` only with `-d` or `--delete-branch`. The `main` ruleset requires 0
+approvals (D-9) and has no bypass actors, so in a session and in the runner container (`bypassPermissions`) these
+pass: `gh api -X PUT repos/{owner}/{repo}/pulls/N/merge` (also `--method PUT`, `-XPUT`), `gh api graphql` with
+`mergePullRequest` or `enablePullRequestAutoMerge`, `gh api` against `/merges`, and `gh` with a global flag before
+`pr merge` (`gh -R owner/repo pr merge N`), which the deny rule's prefix does not match. No agent has merged so far;
+D-9 holds "agents never merge" by the deny rule and convention only
+
+- **Spec:** none — tooling (`.claude/hooks/guard-bash.sh`, possibly `.claude/settings.json` deny entries,
+  `scripts/CLAUDE.md`, `.claude/docs/hooks.md`); no `src/` change, no section
+- **Test:** a `scripts/hook-smoke.sh` probe per merge form (REST PUT `pulls/N/merge` in each method spelling,
+  `/merges`, GraphQL `mergePullRequest` and `enablePullRequestAutoMerge`, `gh -R … pr merge`) — red because:
+  `guard-bash.sh` exits 0 on each today
+- **Acceptance:**
+  - `guard-bash.sh` blocks every merge form above, any case, with global `gh` flags before `api` or `pr`; the
+    message says agents never merge.
+  - Ordinary reads still pass, each with a probe: `gh api repos/{owner}/{repo}/pulls/N`, `gh api graphql` with a
+    query that names no merge mutation, `gh pr view N`, `gh pr checks N`, and the `gh` calls the PR wrapper and the
+    runner make.
+  - `settings.json` gains deny entries where they add a layer (the plan says which, or why none).
+  - The hook-smoke count before and after is stated; bash 3.2-safe.
+  - `.claude/docs/hooks.md` and `scripts/CLAUDE.md` rows name the new rule and what stays out of reach (`curl` on
+    the GitHub API, a command built at run time).
+  - The PR carries `config-change-approved` (D-19).
+- **Out of scope, for the lead:** raising the ruleset's required approvals (D-9 keeps 0 while one account owns every
+  PR) and narrowing the runner's `gh` token so it cannot merge at all. Either closes the gap outside the text check;
+  both are the lead's ruling.
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.103/`
