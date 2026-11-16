@@ -23,9 +23,7 @@ and tests each would break. They have these properties:
 ### B9.1 · After a successful add, focus is in the "New todo" box
 
 _F42 · section 44_
-**Status: Open** — §5 (`spec/contracts/03-todos.md`) and the sections that extend the new-todo form (§7, §10, §18,
-§29, §39) say nothing about focus after an add. `src/components/todo-form.tsx` never focuses the box: "Add" keeps the
-focus from the click and is then disabled while pending (`todo-form.tsx:83`), so focus falls to the page.
+**Status: Done** — 5d8ef18 (#346), 7 AC-44.n criteria green (AC-44.1, AC-44.4–44.6 red proven by verify-red.sh, 947055c; AC-44.7 red in 62a54cd, its Then corrected by D-42 in 8b79096; AC-44.2, AC-44.3 no-focus guards green at the base, 9e20190; AC-44.4 rewritten by D-41); unit 338 → 343; e2e 82 → 84, AC-44.6, AC-44.7; mutation n/a (no src/lib or src/actions change, B1.100); no-rework 1/1, unattended 0/1 (D-29): two runner stops for rulings D-41 (#345) and D-42 (#347); merged third in E9 (batch 4) after one sibling sync (1309733)
 
 - **Acceptance:**
   - When `createTodoAction` resolves `ok`, focus moves to the "New todo" box, which is empty.
