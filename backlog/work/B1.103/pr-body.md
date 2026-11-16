@@ -1,5 +1,9 @@
 ## Item
 
+Supersedes #379 (closed unmerged, its branch `chore/B1.103-merge-guard` left as is): that branch's hook-smoke-only
+probe commit carried the `(red)` marker, so CI `guards` (`verify-red.sh --auto`) failed; the lead chose a re-cut over a
+force push. This branch replays every commit from `origin/main` with that one subject reworded.
+
 B1.103 — An agent can still merge a pull request through `gh api`, past the `gh pr merge` deny rule (tooling, no
 spec section)
 
@@ -60,10 +64,12 @@ No advice (tier quick, no section). Risk tier **high** (`.claude/`, hooks) → t
 Interfaces: `guard-bash.sh` (PreToolUse Bash) exits 2 with `MERGE_MSG` on a merge form, 0 otherwise as today;
 `.claude/settings.json` `permissions.deny` 16 → 21 entries, `allow` unchanged.
 
-Verification: red `test(hooks): B1.103 hook-smoke probes gh merge calls (red)` (26 FAIL); green
-`chore(hooks): B1.103 guard-bash blocks merging a pull request through gh` ("hook-smoke: 788 probes OK", bash 3.2 and
-5; 12 of 12 prototype mutants fail a merge probe); `pnpm lint && pnpm typecheck` exit 0; `pnpm test` 298 before and
-after; mutation: CI only, no src/lib or src/actions change; `check-plan-scope.sh`, `check-backlog.sh` OK; CI green.
+Verification as run: red `test(hooks): B1.103 hook-smoke probes gh merge calls` 082f517 (26 FAIL: 25 merge probes and
+the settings probe; 762 ok); green `chore(hooks): B1.103 guard-bash blocks merging a pull request through gh` e21416f
+("hook-smoke: 788 probes OK"); review pass 1 probes ad6a542 ("hook-smoke: 790 probes OK", `/bin/bash` 3.2; bash 5 in
+CI `test`); 12 of 12 prototype mutants fail a merge probe; `pnpm lint && pnpm typecheck` exit 0; `pnpm test` "Tests
+403 passed (403)" before and after (the plan's 298 was a stale count); `pnpm test:e2e` "91 passed"; mutation: CI only,
+no src/lib or src/actions change; `check-plan-scope.sh`, `check-backlog.sh` OK; CI on this branch: see checks.
 
 Work breakdown: 1 dev-lead red probes → 2 dev-lead rule, deny entries, docs → 3 reviewer diff review → 4 dev-lead
 draft PR, label.
@@ -74,13 +80,22 @@ None (no `src/`, no section).
 
 ## Review
 
-pending
+`/review-loop`: 2 passes of 3 (`backlog/work/B1.103/review.md` "Diff review" rounds 1–2).
+
+| Pass | #   | Finding                                                                                  | Kind     | Disposition | Justification                                                                                    |
+| ---- | --- | ---------------------------------------------------------------------------------------- | -------- | ----------- | ------------------------------------------------------------------------------------------------ |
+| 1    | 1   | probe commit `test(hooks): … (red)` touches no `*.test.ts`: CI `verify-red --auto` fails | pipeline | fix now     | re-cut branch (lead's choice, no force push), subject without `(red)` as B1.84/B1.100/B1.101     |
+| 1    | 2   | no probe pins `GH_ANY_API`'s quote tolerance (`"gh" api`, `gh "api"`)                    | test gap | fix now     | ad6a542 adds both; a mutant without the quote classes lets exactly those 2 through, green blocks |
+
+Round 2: 0 findings, ready for PR. Riskiest unfalsified: how Claude Code matches the five deny wildcards (an empty `*`,
+compound commands) cannot be tried inside a session; the hook is the tested layer. The repeat of B1.62's mistake is
+logged (`docs/mistake-log.md`, Seen 2: a written rule or pre-push check is owed, a follow-up for the lead).
 
 ## Evidence
 
-- AC met: pending
+- AC met: 6/6 (Acceptance clauses: merge forms blocked, reads pass, deny entries, count and bash 3.2, doc rows, label)
 - tier: high
-- plan deviations: none
+- plan deviations: none (the probe commit's subject drops the `(red)` marker of plan.md's Work breakdown; review pass 1 added a probe commit; `docs/mistake-log.md` is paperwork)
 - trace: n/a
 
 ## Checklist
