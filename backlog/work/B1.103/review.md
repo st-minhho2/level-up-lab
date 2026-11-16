@@ -103,3 +103,114 @@ Run time, measured after the report was sent. On a 106 KB command of 3000 `gh pr
 238 s and the green-r2 hook 241 s (one run each, bash 3.2; the time is the base hook's, with one `tr` per segment).
 On a single segment with 300 flag pairs between `pr` and `view`, both took under 1 s. So the new regexes add no
 measurable time.
+
+## Diff review (round 1)
+
+Head `a573bb4` (red `a9e8c2c`, green `a573bb4`), against `origin/main` `b5d8ca4`. Evidence: the gates below run in
+the worktree; probes on copies under `$TMPDIR/b1103d/` (the base hook from `origin/main`, the green hook, 15 mutants
+of the green hook), with hook-smoke's own B1.103 section (lines 189–233) cut out into a harness, `/bin/bash` 3.2.
+PR #379 (draft, label `config-change-approved`) CI run `43905008482` on `a573bb4` was read with `gh run view`.
+
+### Commands
+
+| Command                                     | Last line                                                                                                                   |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint` / `pnpm typecheck`              | exit 0 / exit 0                                                                                                             |
+| `pnpm test`                                 | `Tests  403 passed (403)` (63 files)                                                                                        |
+| `pnpm test:e2e`                             | `91 passed (2.2m)`                                                                                                          |
+| `scripts/mutation-gate.sh`                  | `mutation: CI only, no src/lib or src/actions change`                                                                       |
+| `scripts/hook-smoke.sh` (`/bin/bash` 3.2)   | `hook-smoke: 788 probes OK`; CI's bash 5 (`test` job of run 43905008482): `hook-smoke: 788 probes OK`                       |
+| `scripts/ci/check-suppressions.sh`          | `[check-suppressions] OK: no new suppressions`                                                                              |
+| `scripts/ci/check-config-change.sh`         | exit 1, lists the 4 protected files: expected locally, the PR carries `config-change-approved` (CI reads it)                |
+| `scripts/ci/check-feat-commits.sh`          | `[check-feat-commits] OK: no feat commit touches tests`                                                                     |
+| `scripts/ci/check-ac-coverage.sh`           | `[check-ac-coverage] OK: every criterion of a shipped section has a test`                                                   |
+| `scripts/ci/check-spec-sections.sh`         | `[check-spec-sections] OK: sections cited: 1 … 53`                                                                          |
+| `scripts/ci/check-features-map.sh`          | `[check-features-map] OK`                                                                                                   |
+| `scripts/verify-red.sh B1.103` and `--auto` | exit 1, `::error::test(B1.103) commits touch no *.test.ts(x) file`: finding 1                                               |
+| `scripts/ci/check-plan-scope.sh`            | `OK: chore/B1.103-merge-guard stays inside the approved plan of B1.103`                                                     |
+| `scripts/ci/check-backlog.sh`               | `OK: README matches the cards`                                                                                              |
+| `scripts/next-task.sh --check B1.103`       | `[next-task] B1.103: no overlap with any Doing or Review card`                                                              |
+| `git diff --stat origin/main...HEAD`        | 9 files, 372 insertions, 17 deletions (the plan's 6 files + `work/B1.103/{plan,pr-body,review}.md`)                         |
+| CI run 43905008482 (`a573bb4`)              | `guards` failure at "test(...) commits are red for the right reason"; lint, typecheck, test, e2e, mutation, semgrep success |
+
+Red, measured on the harness: the B1.103 section against the `origin/main` hook gives 25 FAIL, all `want 2`, and the
+14 reads plus the wrapper probe pass; against the green hook 0 merge FAIL. (One extra FAIL on both, `pr-step.sh
+ready 7`, is the harness's: the hook copy sits outside the checkout, so rule 5's same-wrapper check refuses; in the
+real smoke it passes.)
+
+### Checklist
+
+- Acceptance (card, no §): 1 blocked forms, any case, global flags, message: probes 189–215 + heredoc probe; 2 reads:
+  probes 218–231 and the wrapper; 3 deny entries: settings probe, 21 entries; 4 count 749 → 788, bash 3.2 here and 5
+  in CI; 5 `hooks.md` and `scripts/CLAUDE.md` rows (out of reach: `curl`, built at run time); 6 label on #379. Met.
+- No test weakened after the red commit: `git log --first-parent --no-merges a9e8c2c..HEAD -- scripts/hook-smoke.sh
+'*.test.*' e2e/` is empty; no merge commit on the branch.
+- Every changed file is in `plan.md`'s Files table (`check-plan-scope.sh` agrees); interfaces as planned (exit 2 +
+  `MERGE_MSG`; deny 16 → 21, `allow` unchanged).
+- No TypeScript, no `src/`, no Prisma, no migration, no suppression, no secret; no features map row (no §).
+- `hooks.md` (caller's question 1): `git diff -w` shows 4 lines changed: the table separator, the guard-bash cell
+  (merge rule appended) and the deny line (2 lines). Every other row changed in padding only.
+- Revert probes (15 mutants of the green hook, merge-section FAIL count): no whole-command check 15, no segment check
+  10, no flags between `pr` and `merge` 3, no `pulls/<n>/merge` 8, no `/merges` 1, no `mergePullRequest` 3, no
+  `enablePullRequestAutoMerge` 1, no `mergeBranch` 1, no `enqueuePullRequest` 1, no quotes in `GH_PR_MERGE` 1,
+  case-sensitive 7, other message 25, whole check on the first line only 7; **no quotes in `GH_ANY_API` 0**
+  (finding 2); `merge${E}` → `merge` 0 (it only widens, harmless).
+- 50 extra commands through the green hook: `xargs`, `eval`, `bash -c`, `$( )`, `gh alias set pm 'pr merge'`, a
+  piped GraphQL query, a full URL, tabs, `--admin`, `--match-head-commit` all exit 2; `merge-upstream`,
+  `update-branch`, compare and branch reads, GraphQL `autoMergeRequest` / `mergeQueueEntry` /
+  `viewerCanEnableAutoMerge`, branch names holding `merge`, `gh pr edit --title "merge guard"` all exit 0.
+
+### Findings
+
+```
+[1] KIND: plan-mismatch
+    WHERE: commit a9e8c2c subject (plan.md "Verification" and "Work breakdown" step 1 prescribe it)
+    DEFECT: the hook-smoke-only red commit carries the `(red)` marker, so CI's `verify-red.sh --auto` picks B1.103,
+            finds no *.test.ts(x) file in it and exits 1.
+    TRIGGER: PR #379 at a573bb4: CI run 43905008482, job `guards`, step "test(...) commits are red for the right
+             reason": `##[error]test(B1.103) commits touch no *.test.ts(x) file`, exit 1; same locally with
+             `scripts/verify-red.sh --auto`.
+    WRONG BEHAVIOUR: a required CI check is red on the PR, and pr-body.md's "CI green" is false. The smoke-only
+            cards before it (B1.82, B1.88, B1.95, B1.101) dropped the marker and said so in the red body, because
+            verify-red judges only vitest. The commit is pushed, so rewording it needs a force push, which an agent
+            never does. Ways out, the lead's choice: the lead rewords and force-pushes; or dev-lead re-cuts the
+            branch (new name, the same commits with the red subject `test(hooks): B1.103 hook-smoke probes gh merge
+            calls` and its "Red because" body kept), opens a new PR and closes #379. My plan reviews (rounds 1 and 2)
+            passed this subject and missed it.
+    CONFIDENCE: confirmed (CI log read; verify-red run here)
+```
+
+```
+[2] KIND: coverage
+    WHERE: .claude/hooks/guard-bash.sh:66 (`GH_ANY_API`), scripts/hook-smoke.sh:189-215
+    DEFECT: the quote tolerance in `GH_ANY_API` (`gh["']?` … `["']?api["']?`) is pinned by no probe; reverting it to
+            the `GH_API` form fails 0 of the 39 merge probes.
+    TRIGGER: `"gh" api -X PUT repos/o/r/pulls/7/merge` and `gh 'api' graphql -f query='mutation {
+             mergePullRequest(…) … }'`: exit 2 on the green hook, exit 0 on that mutant (and on the base hook).
+    WRONG BEHAVIOUR: correct today, but a later edit can drop it silently while the hook header and hooks.md still
+            claim quotes are covered; the shell strips the quotes, so the command merges. One blocked probe per
+            quote position closes it (a `test(hooks): B1.103 review pass 1 -- …` commit, no `(red)` marker).
+    CONFIDENCE: confirmed (mutant run)
+```
+
+### Notes (no finding)
+
+- Caller's question 2, the deny wildcards: `gh *pulls/*/merge*` lets `*` span spaces, so it is wider than the hook's
+  `pulls/[^[:space:]]*/merge`: `gh api repos/o/r/pulls/7/files --jq '… startswith("src/merge")'` passes the hook and
+  would be denied. No command in the workflow has that shape: `pr-step.sh`'s and `run.sh`'s own `gh` calls are not
+  agent commands, branch names (`<type>/B<e>.<n>-<slug>`) cannot hold `/merges` or `pulls/`, and `gh pr view`,
+  `checks`, `edit`, `ready` do not match. Still `[unverified]` live, as the plan says.
+- Caller's question 3, `pnpm test` "298": the plan's number is stale (main has 403); the claim that matters, the same
+  count before and after with no `src/` change, holds (403 = 403). Not a plan deviation; pr-body.md's Verification
+  should say 403 when it is next touched, with "CI green" corrected under finding 1.
+- Out of reach, measured and in the stated "built at run time" class: part of the path or name in a variable or
+  substitution (`M=merge; gh api -X PUT repos/o/r/pulls/7/$M`, `S=merge; gh pr $S 7`, `gh pr "$(echo merge)" 7`,
+  `merge${X}PullRequest`) and `pulls/7%2Fmerge` exit 0. The header's "a path or query held in a variable … counts"
+  holds only for a whole path; hooks.md could say "a whole path".
+- B1.104's branch (`62a2a4c`, `test(scripts): … (red)`, run-smoke only) has the same subject shape as finding 1.
+
+Verdict: back to test-writer (dev-lead wrote the probes: finding 1 needs the lead's choice before anything else;
+finding 2 is one test commit)
+
+Riskiest unfalsified: the five deny entries' wildcard matching in Claude Code (an empty `*` in `gh * pr merge*`,
+and whether compound commands are split before a deny matches) cannot be tried in a session.
