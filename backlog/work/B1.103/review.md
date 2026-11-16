@@ -4,8 +4,8 @@
 
 Plan at `2ffbaf8`. Evidence: the prototype (base, red, green) cloned to `$TMPDIR/b1103probe`; its `guard-bash.sh` run
 on 40 extra commands (`$TMPDIR/b1103cases*.txt`); `gh` 2.103.2 on this machine for argument routing (`--help` only,
-nothing merged). Base hook-smoke on `2ffbaf8`: started, not finished when this round was written, so the plan's 749 is
-`[unverified]` here. The prototype's full smoke in the clone had 0 guard-bash FAILs (its other FAILs came from the
+nothing merged). Base hook-smoke on `2ffbaf8`: `hook-smoke: 749 probes OK` (finished after the report was sent; it matches the
+plan's 749); the smoke left no file in the worktree. The prototype's full smoke in the clone had 0 guard-bash FAILs (its other FAILs came from the
 clone having no `node_modules`: js-yaml, Prettier).
 
 | Check                                                                                  | pass / fail: reason                                                                                                                                                          |
@@ -49,3 +49,55 @@ merge"` does not widen the false positives) and in the probe table, with its mut
 Riskiest unfalsified: the five deny entries' wildcard matching (`gh * pr merge*` with an empty `*`, and whether
 compound commands are split before matching) cannot be tried in a session; the plan marks it `[unverified]`, and the
 hook carries the tested layer.
+
+## Plan review (round 2)
+
+Plan at `86fc824`. Evidence: the prototype's `green-r2` cloned to `$TMPDIR/b1103r2b`. The plan's merge section of
+hook-smoke (lines 189–233, 39 probes) was cut out into a small harness and run with `/bin/bash` 3.2:
+`probes=39 fail=0` on the green-r2 hook; `25 FAIL`, all on the blocked side, and the 14 reads ok on the base hook
+(`bd03a3d`, = `36d0e2e`). Twelve mutants of the green-r2 hook (the plan's list) each fail at least 1 probe. 30 extra
+commands were run through the green-r2 hook (`$TMPDIR/b1103r2-cases.txt`). bash 5 is not installed here, so the
+plan's bash 5 line is `[unverified]` until CI runs it.
+
+| Check                                                                                  | pass / fail: reason                                                                                                                                                                                                                                                                                                                                          |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every file in the plan belongs to the section's features (map)                         | pass: tooling, no §; `scripts/ci/plan-files.sh --any B1.103 HEAD` lists the 7 rows (6 files + `backlog/work/B1.103/*`), each named by the card or describing the rule                                                                                                                                                                                        |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | pass: n/a, no TypeScript; hook interface (exit 2 + `MERGE_MSG`) and deny count 16 → 21 stated (`settings.json` holds 16 today)                                                                                                                                                                                                                               |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass: no advice, stated (tier quick, no section)                                                                                                                                                                                                                                                                                                             |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass: 6 acceptance lines. Round 1 #1 is fixed: `gh pr -R o/r merge 7`, `gh pr --repo=o/r merge 7`, `gh pr --repo "o/r" merge 7`, `gh pr -R o/r --squash merge 7` exit 2. The reads acceptance covers the runner's allowed `gh pr edit/checks/view *` (`run.sh:46`); the wrapper's and `run.sh`'s own `gh_` calls run inside scripts that the hook never sees |
+| verification lists exact commands with expected numbers                                | pass: red 26 FAIL (25 + settings probe) confirmed for the 25; green 788 = 749 + 39 (the 749 was confirmed in round 1, the 39 here); the mutant count is off by one (note 1)                                                                                                                                                                                  |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | pass: red `test(hooks): … (red)` with a "Red because" body, green `chore(hooks): …`, review, PR; no skeleton or map row (no §), as B1.24 and B1.101; `git commit -F` for every message                                                                                                                                                                       |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by you | pass: n/a, no section; `scripts/agent/tier.sh` on the plan prints `high`, so the lead's `approve` gates the build                                                                                                                                                                                                                                            |
+| no settled D-n contradicted                                                            | pass: D-9 ("Agents still never merge (`gh pr merge` denied in settings; … by convention …)") gets a tested layer and is not changed; D-19 label named                                                                                                                                                                                                        |
+| `scripts/next-task.sh --check B1.103` on the committed plan says no overlap            | pass: `[next-task] B1.103: no overlap with any Doing or Review card`                                                                                                                                                                                                                                                                                         |
+
+Round 1 #2 is fixed. The costs now say "naming", list the commit, PR title, card-status evidence and search cases
+with workarounds, and put the script-file bypass first under out of reach. No agent, skill or doc command an agent
+runs names a merge form today: only `git-workflow.md:26` and `hooks.md:19` mention `gh pr merge`, both as prose.
+
+Costs the lead accepts with this plan (all confirmed on the green-r2 hook; none blocks):
+
+1. **Mutant count.** The plan lists 12 mutants (6 named + `pulls/<n>/merge` + `/merges` + 4 mutation names) but says
+   "11 of 11", and round 1's "10 of 10" was off by one the same way. I ran the 12: each fails at least 1 probe.
+   The green commit's evidence should say 12 of 12.
+2. **`gh pr merge 7 --disable-auto` is blocked** (exit 2), though turning auto-merge off is the safe direction.
+   GraphQL `disablePullRequestAutoMerge` and `dequeuePullRequest` pass (exit 0). Worth one word in `hooks.md`'s
+   false positives.
+3. **The gh binary named through a substitution passes** (exit 0): `$(which gh) pr merge 7`,
+   `` `which gh` pr merge 7 ``, and `"$(command -v gh)" api -X PUT repos/o/r/pulls/7/merge`. `${W}gh` must be
+   followed by a quote or a space, and here a `)` or backtick follows. This falls inside the stated "a command built
+   at run time". Naming `$(which gh)` as the example in `hooks.md` would keep a reader from taking it for a covered
+   prefix.
+4. **Outside this card, a follow-up card for the lead:** `gh pr -R o/r close 7 --delete-branch` and
+   `gh pr --repo=o/r close 7 --delete-branch` exit 0. This is round 1 #1's adjacency in `GH_BRANCH_DELETE`'s
+   `close` half (B1.24), and it deletes a remote branch. The plan's sentence claims only the `merge … -d` half,
+   which is accurate: the merge rule catches it first.
+5. The settings probe's `ok` text in `hook-smoke.sh:198` ("the 16 deny entries unchanged") changes along with its
+   21-entry list.
+
+Verdict: approved (ready for the lead's `approve`; tier high)
+
+Riskiest unfalsified: as in round 1, the deny entries' wildcard matching cannot be tried in this session. Second:
+the hook's run time on a long, many-segment command. The base hook already takes over 3 minutes on a 106 KB command
+of 3000 `gh pr … view` lines (pre-existing: one `tr` per segment), and the green-r2 hook adds one regex per segment
+and two whole-command regexes. I did not measure the difference.
