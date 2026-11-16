@@ -59,7 +59,7 @@ or environment variable is added. The input keeps the `key` of §16, so the ref 
 
 ## Out of scope
 
-Any key other than `/` (Escape in the box is §27), a visible hint or tooltip for the shortcut, a shortcut for another
+Any key other than `/` (Escape in the box is §27), a tooltip for the shortcut, a shortcut for another
 control, a configurable key, a shortcut while a dialog or another page is shown, `Shift`-sensitive behavior beyond
 REQ-25.4, IME composition handling, scrolling the box into view beyond what `focus()` does, announcing the focus move to
 assistive technology, a listener on any element but `document`.
