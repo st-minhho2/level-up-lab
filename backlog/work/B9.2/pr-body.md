@@ -51,20 +51,36 @@ exit 0. Green: `pnpm lint && pnpm typecheck` clean · `pnpm test` 338 → 344+ (
 
 Plan review: approved, round 1 · Plan approved by: reviewer (D-27, tier medium, issue #340) · Rounds: 1
 
+Work breakdown note: one test commit more than planned. AC-45.4 passes before any code (the plan said it may), and
+`verify-red.sh` fails a red commit holding a passing test, so it landed alone first as a pin (`0a93ba1`, as B8.1's
+AC-41.4 pin), then the red commit `f42f37d`. Files and interfaces unchanged.
+
 ## Map delta
 
-pending
+F43 · §45 · (new) → ✅ — `TodoDueDate` focuses the date field on entering edit mode, `src/components/todo-due-date.tsx`;
+evidence: `pnpm test` → 346 passed (54 files), `pnpm test:e2e` → 83 passed (`ce17db4`).
 
 ## Review
 
-pending
+`/review-loop`: passes 1/3, verdict ready for PR, 0 findings (confirmed 0, plausible 0), no dispositions needed.
+
+- Gates run by the reviewer: lint, typecheck, `pnpm test` 346/346, `pnpm test:e2e` 83/83, `verify-red.sh B9.2` exit 0,
+  `check-suppressions`, `check-config-change`, `check-feat-commits`, `check-ac-coverage`, `check-spec-sections`,
+  `check-features-map`, `check-plan-scope` all OK.
+- Revert probes: effect without deps → 3 fail (AC-45.5, AC-45.4 (a)(b)); deps `[editing, dueDate]` → AC-45.5 fails;
+  no `focus()` → 6 fail (the red commit).
+- Riskiest unfalsified: REQ-45.5 "the field's text is not selected" has no criterion that measures it; a `select()`
+  added after `focus()` keeps all 61 due-date unit tests green. A spec-coverage gap, not a defect in this diff.
+
+Unit count 338 → 346, not 344: AC-45.3 and AC-45.4 are two `it`s each (accepted in plan review round 1, note 2).
 
 ## Evidence
 
-- AC met: pending/7
+- AC met: 7/7
 - tier: medium
 - plan deviations: none
 - trace: n/a
+- mutation: CI only, no src/lib or src/actions change
 
 ## Checklist
 
