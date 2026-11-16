@@ -27,7 +27,7 @@ _F46 · section 48_
 ### B10.2 · A failed clear's message describes "Clear completed"
 
 _F47 · section 49_
-**Status: Open** — §10 shows a failed clear's message as an alert next to the button (`clear-completed-button.tsx:23`), but the button carries no `aria-describedby`.
+**Status: Done** — 40710a4 (#359), 6 AC-49.n criteria green (AC-49.1, AC-49.3, AC-49.4, AC-49.6 red in 4153c19, proven by verify-red.sh on base 3e05a63; AC-49.2, AC-49.5 pinned green at the base, 3e05a63); unit 360 → 366; e2e 88 → 88; mutation n/a (no src/lib or src/actions change, B1.100); no-rework 1/1, unattended 1/1 (D-29); merged first in E10, no sync
 
 - **Acceptance:**
   - While the message shows it is the button's accessible description; the next success removes both; a pending retry keeps both.
