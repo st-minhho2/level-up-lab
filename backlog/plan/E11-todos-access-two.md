@@ -42,7 +42,7 @@ _F50 · section 52_
 ### B11.3 · A failed delete's message describes "Delete todo"
 
 _F51 · section 53_
-**Status: Open** — §19 and §35 show a failed delete's message as an alert next to the icon button (`delete-todo-button.tsx`), but the button carries no `aria-describedby`; REQ-35.5 forbids `aria-*` for the confirmation.
+**Status: Done** — a0b1e00 (#366), 6 AC-53.n criteria green (AC-53.1–53.6 red in b8ad386, proven by verify-red.sh on base c81df92); unit 381 → 387; e2e 90 → 90; mutation n/a (no src/lib or src/actions change, B1.100); no-rework 1/1, unattended 1/1 (D-29); merged third in E11 after one sync (f65437b)
 
 - **Acceptance:**
   - While the message shows it is the button's accessible description; the name stays "Delete todo"; a cancelled confirmation keeps it.
