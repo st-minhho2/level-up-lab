@@ -13,7 +13,7 @@ The card leaves the place of the rule to the plan (a `.claude/rules/*.md` file, 
 Files:
 
 - `backlog/plan/E1-todos.md`: card B1.104 (quick, no dependency).
-- `backlog/README.md`: totals (E1 64/1/36/101, total 106/1/37/144), node S145, Remaining row 145 (step 144 left to B1.103, filed in parallel).
+- `backlog/README.md`: totals (E1 64/1/37/102, total 106/1/38/145, after B1.103's filing #376), node S145, Remaining row 145.
 - `backlog/work/B1.104/filing-pr-body.md`: this body.
 
 `scripts/ci/check-backlog.sh` → OK.
