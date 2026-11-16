@@ -38,17 +38,37 @@ Plan review: approved, round 2 · Plan approved by: reviewer (D-27, tier medium,
 
 ## Map delta
 
-pending
+F48 · §50 · (new) → ✅ — `TodoSearchForm`'s box carries the literal `placeholder="Press / to search"` in the
+server-rendered markup, in `src/components/todo-search-form.tsx`; evidence: `pnpm test` → 366 passed, `pnpm test:e2e`
+→ 89 passed (`docs(map)` 11455b8).
 
 ## Review
 
-pending
+`/review-loop`: passes 1/3, verdict ready for PR, 0 findings (plan review: approved round 2; round 1 asked to pin
+AC-50.2, green on the old code, in its own commit).
+
+| Pass | #   | Finding | Source | Kind | Disposition | Justification |
+| ---- | --- | ------- | ------ | ---- | ----------- | ------------- |
+| 1    | —   | none    | —      | —    | —           | —             |
+
+Commands (reviewer): lint exit 0 · typecheck exit 0 · `Tests 366 passed (366)` · `89 passed (3.3m)` ·
+`mutation: CI only, no src/lib or src/actions change` · check-suppressions, check-config-change, check-feat-commits,
+check-ac-coverage, check-spec-sections, check-features-map OK · `scripts/verify-red.sh B10.3`: red for the right reason
+(5 new failed, 0 new passed; base b258594, the AC-50.2 pin).
+
+Probes (on a copy): removing Escape's `preventDefault` fails AC-50.5; removing `select()` fails AC-50.6; dropping the
+placeholder under a search fails AC-50.3–50.6; setting it from an effect instead of the markup fails AC-50.4.
+
+Riskiest unfalsified: AC-50.7 (e2e) was never observed red against the pre-feat tree beyond its first assertion
+(verify-red skips e2e). Open for the lead: `spec/contracts/23-search-shortcut.md:26` ("The hint "press / to search"
+is not shown.") contradicts REQ-50.1; the advisor ruled §50 governs and D-45 keeps the fix out of the run, so it needs
+a lead `docs(spec)` change.
 
 ## Evidence
 
-- AC met: pending
+- AC met: 7/7
 - tier: medium
-- plan deviations: pending
+- plan deviations: none
 - trace: n/a
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
