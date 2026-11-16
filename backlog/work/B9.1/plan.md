@@ -50,6 +50,9 @@ only, no `src/lib` or `src/actions` change (B1.100) · `pnpm build` ok · `scrip
 | 5    | reviewer (diff) | `review.md` diff section                | `docs(backlog): B9.1 review …` |
 
 Costs the lead takes: an action that throws (not reachable through `createTodoAction`, which returns `ActionResult`)
-would leave the prior ok `state` and focus the box; e2e flows that add then press `/` now type `/` into the box (§25).
+would leave the prior ok `state` and focus the box; e2e flows that add then press `/` now type `/` into the box (§25);
+any submit that resolves ok, including a click on "Add" with an empty box, sends focus back to the box, so REQ-44.4's
+"focus moved elsewhere stays there" holds only for moves that do not submit. Blocked: AC-44.4 as written cannot
+hold (review round 1, reason 1); waiting on the lead's D-41 before the red commit.
 
 Plan review: pending · Plan approved by: · Rounds: 1

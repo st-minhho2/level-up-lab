@@ -108,3 +108,28 @@ Next action: test-writer includes a same-reference double success in AC-44.4.
 Must not: choose the mechanism by what makes one test pass.
 Doc drift: none
 Escalate: none
+
+Question: AC-44.4's When clicks "Add" with the box empty, yet its Given resolves ok both times; what governs, and may this agent-ready run edit AC-44.4 in a `docs(spec): §44` commit?
+Class: P3 section contradicts itself (AC-44.4 Then vs REQ-44.1 and AC-44.4's own Given/When), with a P6 ruling on who may repair it
+Sources: spec/contracts/42-new-todo-focus.md:19 "make the "New todo" box `document.activeElement`, whichever control had focus before (the "Add" button, the box, or none)"
+Sources: spec/contracts/42-new-todo-focus.md:45 "after the click on "Add" `document.activeElement` is that button and stays it until the second result"
+Sources: backlog/00-decisions.md:65 "B9.1 lifts and edits nothing and states that the sibling sections' "`todo-form.tsx` unchanged" notes do not apply"
+Sources: backlog/00-decisions.md:52 "the lead's `agent-ready` label on a GitHub issue is the spec approval for that issue's card"
+Sources: spec/CLAUDE.md:3 "Never edit a section to match the code; code and spec disagree → report the divergence (`/spec-trace`) and let the human decide."
+Conflict: REQ-44.1 (an ok result focuses the box whichever control had focus) and AC-44.4's Given (ok both times) / When (click "Add", box empty, submits) / Then (button stays focused, 2 calls) cannot all hold; the reviewer probe (afterClick=2, focusAfterClick=box) confirms the AC, not the REQ, is the odd one out.
+Verdict: The requirement governs behavior and the AC must be read against it (authority 3, same file, so P3). But repairing the AC is a change to an approved section's criterion, and nothing in this run authorizes it: D-40 scopes B9.1 to "lifts and edits nothing"; D-27's label approved the spec as filed, not a rewritten one; the section's approval box is unticked and D-7 makes spec approval a human act; spec/CLAUDE.md allows a `docs(spec)` change only inside an approved D-n naming it, and no D-n names AC-44.4. The headless run therefore may not edit AC-44.4, and may not pick a reading (for example, a mock that rejects the second call, or a test that deviates from the When) on its own. Stop at the plan gate for this card.
+Next action: escalate to the human with the Decision request below; do not write the red test for AC-44.4 until a D-n lands (the other ACs, 44.1 to 44.3, 44.5 to 44.7, are unaffected and may be planned as-is).
+Must not: edit AC-44.4, write a test that quietly changes its When (Tab, click outside) or its Then (box focused after the click), or weaken the Then to pass.
+Doc drift: spec/contracts/42-new-todo-focus.md AC-44.4 (a `docs(spec): §44 …` commit, after the D-n, before the skeleton and the red test); no D-40 rewrite (00-decisions.md is never rewritten, the new D-n supersedes).
+Escalate: human
+
+Decision request
+Context: AC-44.4's When clicks "Add" with the box empty, which submits (title error, ok: false under real validation; ok: true under the mock), so the Then "button stays focused, 2 calls" is unreachable under REQ-44.1. The intent of AC-44.4 is REQ-44.4: two successes in a row focus the box twice, and focus moved elsewhere in between stays there.
+The run is agent-ready (D-27/D-40, spec first); D-40 says B9.1 edits nothing, so only the lead can authorize an edit.
+Options:
+| Option | Behavior | Cost | Risk | Reversible |
+| 1 (recommended) | New D-n lets `docs(spec): §44` rewrite AC-44.4's When to move focus off the box without a submit, e.g. "the person adds `Buy milk`; presses Tab so focus leaves the box (it is on "Add" or the page); then types `Walk the dog` in the box and presses Enter", Then: after the first result the box is focused; after the Tab focus is not the box and stays so until the second result; after the second the box is focused, value `''`, 2 calls | one spec commit, label stays | low: REQ unchanged, only the AC's When/Then | yes |
+| 2 | D-n keeps the click on "Add" but makes the Then match REQ-44.1: after the click the box is focused again (a third focus) and calls = 2 | one spec commit | medium: AC no longer shows "focus elsewhere stays" (REQ-44.4 second clause uncovered) | yes |
+| 3 | No edit; test-writer reads the When as "clicks Add with a non-empty box" | none | high: silently differs from the spec text, fails the spec-is-contract invariant | no |
+Recommended: option 1, flips if the lead wants the click on the real button kept as the proof (then option 2 with a separate Tab-based criterion, which makes 8 ACs and needs a new section, spec/CLAUDE.md limit of 7).
+Affects: §44 AC-44.4 (REQ-44.4 coverage), `src/components/todo-form-focus.test.tsx` AC-44.4 case, `backlog/work/B9.1/plan.md` (the "AC-44.4 same-ref case" line), review.md reason 1, card B9.1.
