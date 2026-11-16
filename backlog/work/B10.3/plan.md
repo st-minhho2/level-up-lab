@@ -63,4 +63,4 @@ PR's "Waiting on you" list, to land before or with the closing PR. jsdom has no 
 proved only by AC-50.7 (analysis Q1). AC-50.4 stays in the one jsdom file (`renderToStaticMarkup` loads there,
 reviewer's probe).
 
-Plan review: approved, round 2 · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: reviewer (D-27, tier medium, issue #358) · Rounds: 1
