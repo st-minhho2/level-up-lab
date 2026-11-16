@@ -69,15 +69,30 @@ Plan review: approved, round 1 · Plan approved by: reviewer (D-27, tier medium,
 
 ## Map delta
 
-pending
+F50 · §52 · (new) → ✅ — `CompleteAllButton` in `src/components/complete-all-button.tsx`; evidence: `pnpm test` → 387 passed (6 new AC-52.n), `docs(map)` 278a159.
 
 ## Review
 
-pending
+`/review-loop`: passes 1/3, verdict ready for PR, 0 findings (confirmed 0, plausible 0); full section in
+`backlog/work/B11.2/review.md` "Diff review (round 1)".
+
+| Command                         | Last line                                                                     |
+| ------------------------------- | ----------------------------------------------------------------------------- |
+| `pnpm lint` / `pnpm typecheck`  | exit 0 / exit 0                                                               |
+| `pnpm test`                     | `Tests  387 passed (387)` (381 → 387)                                         |
+| `pnpm test:e2e`                 | `90 passed (4.2m)` (90 → 90)                                                  |
+| `scripts/verify-red.sh B11.2`   | `RESULT: red for the right reason` (6 ran, 3 new, 3 new failed, 0 new passed) |
+| `scripts/ci/check-*` (6 guards) | all OK                                                                        |
+
+Probes on a copy: unconditional `aria-describedby` → 5 failed; clearing the error at retry start → 1 failed; `id`
+removed → 3 failed; a hard-coded id → 6 passed.
+
+Riskiest unfalsified: REQ-52.1's "generated with React's `useId` (no hard-coded id)" has no test that tells the two
+apart (probe 4); it holds today by reading line 28 of the component.
 
 ## Evidence
 
-- AC met: pending
+- AC met: 6/6
 - tier: medium
 - plan deviations: none
 - trace: n/a
