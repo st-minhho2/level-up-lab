@@ -40,15 +40,37 @@ Plan review: approved, round 1 · Plan approved by: reviewer (D-27, tier medium,
 
 ## Map delta
 
-pending
+F51 · §53 · (new) → ✅ — `DeleteTodoButton` gives the failure alert a `useId` id and points the button's
+`aria-describedby` at it while the message shows, in `src/components/delete-todo-button.tsx`; evidence: `pnpm test` →
+387 passed, `pnpm test:e2e` → 90 passed (`docs(map)` 48bb0ad).
 
 ## Review
 
-pending
+`/review-loop`: passes 1/3, verdict ready for PR, 0 findings (plan review: approved round 1).
+
+| Pass | #   | Finding | Source | Kind | Disposition | Justification |
+| ---- | --- | ------- | ------ | ---- | ----------- | ------------- |
+| 1    | —   | none    | —      | —    | —           | —             |
+
+Commands (reviewer, at 48bb0ad): lint exit 0 · typecheck exit 0 · `Tests 387 passed (387)` · `90 passed (4.3m)` ·
+`mutation: CI only, no src/lib or src/actions change` · check-suppressions, check-config-change, check-feat-commits,
+check-ac-coverage, check-spec-sections, check-features-map OK · `scripts/verify-red.sh B11.3`: red for the right reason
+(6 new failed, 0 new passed; base c81df92). `pnpm build` exit 0 (dev-lead).
+
+Probes (one line changed on a copy): `aria-describedby` removed → 6/6 fail; `aria-describedby` set unconditionally →
+AC-53.1, AC-53.2 fail; id built as `todo-${todoId}-error` → AC-53.5, AC-53.6 fail.
+
+Riskiest unfalsified: REQ-53.2's "independent of the todo's id": AC-53.5 compares the id only with the four named
+§10/§15 ids and the other button's id, so an id such as `delete-${todoId}-error` would pass all six criteria. The
+shipped `useId()` meets the requirement; closing the gap needs a §53 criterion change (§8), not a test here.
+
+Note: the dev-lead's first green-gate `pnpm test` run had 1 failure in the untouched
+`src/components/todo-form-warning.test.tsx` (AC-39.4, §39). The file then passed 3/3 alone and the suite passed 2/2
+(387/387), so it looks like a timing flake under load.
 
 ## Evidence
 
-- AC met: pending
+- AC met: 6/6
 - tier: medium
 - plan deviations: none
 - trace: n/a
