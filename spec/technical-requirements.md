@@ -57,7 +57,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §50 | [contracts/48-search-hint.md](contracts/48-search-hint.md) | Todos: the search box shows "Press / to search" | ✅ |
 | §51 | [contracts/49-escape-due-date-focus.md](contracts/49-escape-due-date-focus.md) | Todos: Escape in the due-date editor puts focus on "Edit due date" | ✅ |
 | §52 | [contracts/50-complete-all-description.md](contracts/50-complete-all-description.md) | Todos: a failed mark-all's message describes "Mark all complete" | ✅ |
-| §53 | [contracts/51-delete-description.md](contracts/51-delete-description.md) | Todos: a failed delete's message describes "Delete todo" | ✗ |
+| §53 | [contracts/51-delete-description.md](contracts/51-delete-description.md) | Todos: a failed delete's message describes "Delete todo" | ✅ |
 
 Reading order: §1 → §2 → the section your backlog card names → [features-map.md](features-map.md).
 

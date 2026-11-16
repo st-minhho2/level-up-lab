@@ -17,8 +17,8 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | E8 Todos polish two  | [plan/E8-todos-polish-two.md](plan/E8-todos-polish-two.md)   | 3       | 0       | 0      | 3       |
 | E9 Todos focus       | [plan/E9-todos-focus.md](plan/E9-todos-focus.md)             | 4       | 0       | 0      | 4       |
 | E10 Todos access     | [plan/E10-todos-access.md](plan/E10-todos-access.md)         | 3       | 0       | 0      | 3       |
-| E11 Todos access two | [plan/E11-todos-access-two.md](plan/E11-todos-access-two.md) | 2       | 0       | 1      | 3       |
-| **Total**            |                                                              | **105** | **1**   | **37** | **143** |
+| E11 Todos access two | [plan/E11-todos-access-two.md](plan/E11-todos-access-two.md) | 3       | 0       | 0      | 3       |
+| **Total**            |                                                              | **106** | **1**   | **36** | **143** |
 
 ## Execution order
 
@@ -193,7 +193,7 @@ flowchart TD
   S140["140 · the search box shows Press / to search<br/>~~B10.3~~"]
   S141["141 · Escape in the due-date editor focuses Edit due date<br/>~~B11.1~~"]
   S142["142 · a failed mark-all describes Mark all complete<br/>~~B11.2~~"]
-  S143["143 · a failed delete describes Delete todo<br/>B11.3"]
+  S143["143 · a failed delete describes Delete todo<br/>~~B11.3~~"]
   S138 --> S141
   S138 --> S143
 ```
@@ -242,7 +242,6 @@ at most 3 cards Doing (B1.18).
 | 110  | B1.94  | CI never runs table-merge-smoke, whose verdict follows the host's own git attributes                      | —      | Open    | ~~B1.89~~                       | Lead  | S [estimate] |
 | 128  | B1.100 | Each parallel run mutation-tests all of src/lib up to three times, whatever the card changed              | —      | Partial | —                               | Lead  | S [estimate] |
 | 136  | B1.102 | check-ac-coverage skips a ✗ section, so a feature PR's wrong title format fails only in its closing PR    | —      | Open    | —                               | Lead  | S [estimate] |
-| 143  | B11.3  | A failed delete's message describes "Delete todo"                                                         | —      | Open    | ~~D-45~~, ~~B10.1~~             | Lead  | S [estimate] |
 
 ## Waiting on human
 
