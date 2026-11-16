@@ -214,3 +214,79 @@ finding 2 is one test commit)
 
 Riskiest unfalsified: the five deny entries' wildcard matching in Claude Code (an empty `*` in `gh * pr merge*`,
 and whether compound commands are split before a deny matches) cannot be tried in a session.
+
+## Diff review (round 2)
+
+Head `1c50a6b` on `chore/B1.103-merge-guard-v2`, cut from `origin/main` `b5d8ca4` (merge base = `b5d8ca4`, no merge
+commit). Evidence: the gates below run in the worktree; probes on copies under `$TMPDIR/b1103p2/` (the green hook, the
+`origin/main` hook, one mutant with `GH_ANY_API="$GH_API"`), with hook-smoke's B1.103 `MERGE` block (26 lines) cut out
+by `sed` into a harness, `/bin/bash` 3.2.
+
+### Commands
+
+| Command                                    | Last line                                                                                                                   |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint` / `pnpm typecheck`             | exit 0 / exit 0                                                                                                             |
+| `pnpm test`                                | `Tests  403 passed (403)` (63 files)                                                                                        |
+| `pnpm test:e2e`                            | `91 passed (2.0m)`                                                                                                          |
+| `scripts/mutation-gate.sh`                 | `mutation: CI only, no src/lib or src/actions change`                                                                       |
+| `scripts/hook-smoke.sh` (`/bin/bash` 3.2)  | `hook-smoke: 790 probes OK` (788 + the 2 pass-1 probes); bash 5 not installed here, CI runs it                              |
+| `scripts/ci/check-suppressions.sh`         | `[check-suppressions] OK: no new suppressions`                                                                              |
+| `scripts/ci/check-config-change.sh`        | exit 1, lists `hooks.md`, `guard-bash.sh`, `settings.json`: expected locally, the new PR needs the label (D-19)             |
+| `scripts/ci/check-feat-commits.sh`         | `[check-feat-commits] OK: no feat commit touches tests`                                                                     |
+| `scripts/ci/check-ac-coverage.sh`          | `[check-ac-coverage] OK: every criterion of a shipped section has a test`                                                   |
+| `scripts/ci/check-spec-sections.sh`        | `[check-spec-sections] OK: sections cited: 1 … 53`                                                                          |
+| `scripts/ci/check-features-map.sh`         | `[check-features-map] OK`                                                                                                   |
+| `scripts/verify-red.sh --auto` (CI's form) | `[verify-red] no test(...): B<e>.<n> … (red) commit in range; nothing to verify`                                            |
+| `scripts/verify-red.sh B1.103`             | exit 1, `no 'test(<pkg>): B1.103 … (red)' commit`: expected for a smoke-only card (B1.84, B1.100, B1.101); CI runs `--auto` |
+| `scripts/ci/check-plan-scope.sh`           | `OK: chore/B1.103-merge-guard-v2 stays inside the approved plan of B1.103` (`docs/mistake-log.md` is paperwork)             |
+| `scripts/ci/check-backlog.sh`              | `OK: README matches the cards`                                                                                              |
+| `scripts/next-task.sh --check B1.103`      | `[next-task] B1.103: no overlap with any Doing or Review card`                                                              |
+| `git diff --stat origin/main...HEAD`       | 10 files, 518 insertions, 50 deletions (round 1's 9 + `docs/mistake-log.md`)                                                |
+
+### Round 1 findings
+
+- **[1] red marker: closed.** `git range-diff origin/main..chore/B1.103-merge-guard origin/main..HEAD`: commits 1–8,
+  10 and 11 are `=` (identical patches); commit 9 differs only in its message (subject without `(red)`, body adds "No
+  (red) marker … as B1.84, B1.100, B1.101"); 12 and 13 are new. `git diff chore/B1.103-merge-guard HEAD` touches only
+  B1.104's filing files (from `origin/main`), `docs/mistake-log.md` and the 2 probe lines. No force push: the old
+  branch is untouched.
+- **[2] quote tolerance of `GH_ANY_API`: closed.** The 26 `MERGE` lines: green hook 26 × exit 2; mutant
+  `GH_ANY_API="$GH_API"` 24 × exit 2 and **2 × exit 0**, exactly `"gh" api -X PUT …/pulls/7/merge` and
+  `gh "api" -X PUT …/pulls/7/merge`; `origin/main` hook 26 × exit 0. The `gh "api"` probe pins both quote classes
+  around `api`, `"gh"` the one after `gh`.
+
+### Checklist
+
+- Acceptance (card, no §): unchanged from round 1, met; count now 790.
+- No test weakened after the red commit: `git log --first-parent --no-merges 082f517..HEAD -- scripts/hook-smoke.sh
+'*.test.*' e2e/` lists only `ad6a542`, which adds 2 lines and removes none; no merge commit on the branch, so no
+  remerge-diff to read.
+- Every changed file is in the plan or paperwork (`check-plan-scope.sh`); `1c50a6b` is the B1.62 mistake-log row
+  (Seen 1 → 2, this case appended) plus prettier re-padding of the table (`git diff -w` shows the separator and that
+  row only).
+- No TypeScript, `src/`, Prisma, migration, suppression or secret; no features map row (no §).
+- 31 extra commands through the green hook. Exit 2: `env`, `command`, `nohup`, `time`, `sudo`, `GH_HOST=…` prefixes;
+  `( … )`, `{ …; }`; tabs; `gh pr \`⏎`merge 7` and `gh \`⏎`pr merge 7`; `-R=o/r` and `--repo "o/r"` between `pr` and
+  `merge`; bare `gh pr merge`; the API path single- or double-quoted, with `?x=1`, with `--input`, `--silent`;
+  `mergePullRequest` without spaces; `--raw-field` with `enablePullRequestAutoMerge`. Exit 0: `pr view/checkout/
+diff/comment/edit/create/list` with `merge` in a title, body, search or `--json` field, `pr -R o/r view`,
+  `repo view --json mergeCommitAllowed`, `branches/merge-x`, `pulls?state=closed`, `git log -- merge.txt`.
+
+### Findings
+
+None blocking.
+
+### Before opening the PR (paperwork, dev-lead; no re-review needed)
+
+`backlog/work/B1.103/pr-body.md` (last touched `4fd4535`, before the build) still says, at lines 63–66: red subject
+`… gh merge calls (red)` (no such commit on this branch), `788 probes` (now 790), `pnpm test` `298` (403 before and
+after), "CI green" (not yet run on this branch), and "plan deviations: none". The PR body should state the deviation
+from `plan.md`'s Work breakdown (red subject without the marker, as B1.84/B1.100/B1.101, finding 1 of round 1), the
+pass-1 probe commit, 790, 403, that it supersedes PR #379, and fill "Review" and "AC met".
+
+Verdict: ready for PR (after the `pr-body.md` paperwork above; label `config-change-approved` on the new PR)
+
+Riskiest unfalsified: the five deny entries' wildcard matching in Claude Code (an empty `*` in `gh * pr merge*`,
+compound commands split or not before a deny matches) still cannot be tried in a session; and the 2 new probes have
+run only under bash 3.2 here, bash 5 waits for CI on the new PR.
