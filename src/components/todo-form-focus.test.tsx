@@ -154,6 +154,9 @@ describe('<TodoForm> focus after a successful add (§44)', () => {
 
     await user.click(newTodoBox());
     await user.keyboard('Walk the dog');
+    // REQ-44.4: the box already holds focus here, so activeElement alone cannot tell whether the second result
+    // focused it; the spy, installed after user-event's own click, counts only the calls the result makes.
+    const focusSecond = vi.spyOn(newTodoBox(), 'focus');
     await user.keyboard('{Enter}');
     await waitFor(() => {
       expect(actions.createTodoAction).toHaveBeenCalledTimes(2);
@@ -167,6 +170,9 @@ describe('<TodoForm> focus after a successful add (§44)', () => {
     expect(newTodoBox()).toHaveValue('');
     expect(actions.createTodoAction).toHaveBeenCalledTimes(2);
     expect(submittedTitle(1)).toBe('Walk the dog');
+    expect(focusSecond).toHaveBeenCalledTimes(1);
+
+    focusSecond.mockRestore();
   });
 
   it('AC-44.5: typing Walk with no click after the save gives the value Walk, the counter 4 / 200, maxlength 200, the name "New todo", aria-describedby new-todo-count and 0 alerts', async () => {
