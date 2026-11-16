@@ -1,8 +1,8 @@
 'use client';
 
 // §19 DeleteTodoButton; §10 the message of a failed delete, directly after the button inside the row; §35 the
-// browser confirmation asked before any delete.
-import { useState, useTransition, type ReactNode } from 'react';
+// browser confirmation asked before any delete; §53 the failure message describes the button.
+import { useId, useState, useTransition, type ReactNode } from 'react';
 import { deleteTodoAction } from '@/actions/delete-todo';
 
 // §35 REQ-35.1: a fixed string, so the button needs no prop naming the todo.
@@ -11,6 +11,8 @@ const CONFIRM_MESSAGE = 'Delete this todo? This cannot be undone.';
 export function DeleteTodoButton({ todoId }: { readonly todoId: string }): ReactNode {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | undefined>(undefined);
+  // useId, not one built from todoId, so it never collides with the row's §10/§15 ids (REQ-53.2).
+  const messageId = useId();
 
   // Asked before the transition, so the button is not disabled while the dialog is open and a cancel leaves the row
   // exactly as it was (REQ-35.3). A failed result carries exactly one of these keys (§5 `id`, §10 `form`); the next
@@ -32,6 +34,7 @@ export function DeleteTodoButton({ todoId }: { readonly todoId: string }): React
         onClick={onDelete}
         disabled={pending}
         aria-label="Delete todo"
+        aria-describedby={error !== undefined ? messageId : undefined}
         title="Delete todo"
         className="rounded p-1 text-zinc-500 hover:text-red-600 disabled:opacity-50"
       >
@@ -44,7 +47,7 @@ export function DeleteTodoButton({ todoId }: { readonly todoId: string }): React
         </svg>
       </button>
       {error !== undefined && (
-        <span role="alert" className="text-sm text-red-600">
+        <span id={messageId} role="alert" className="text-sm text-red-600">
           {error}
         </span>
       )}

@@ -55,6 +55,7 @@ moves or removes a feature updates its row in code-writer's own commit right aft
 | F48 | §50 | The search box shows the `/` hint ("Press / to search") | `src/components/todo-search-form.tsx` | `src/components/todo-search-form-hint.test.tsx`, `e2e/50-search-hint.spec.ts` | ✅ |
 | F46 | §48 | Escape from the title editor focuses "Edit title" | `src/components/todo-item.tsx` | `src/components/todo-item-escape-focus.test.tsx`, `e2e/48-escape-title-focus.spec.ts` | ✅ |
 | F47 | §49 | A failed clear's message is the description of "Clear completed" | `src/components/clear-completed-button.tsx` | `src/components/clear-completed-button-description.test.tsx`, `src/components/clear-completed-button.test.tsx` | ✅ |
+| F51 | §53 | A failed delete's message is the description of "Delete todo" | `src/components/delete-todo-button.tsx` | `src/components/delete-todo-button-description.test.tsx`, `src/components/delete-todo-button.test.tsx` | ✅ |
 | F50 | §52 | A failed mark-all's message is the description of "Mark all complete" | `src/components/complete-all-button.tsx` | `src/components/complete-all-button-description.test.tsx`, `src/components/complete-all-button.test.tsx` | ✅ |
 | F49 | §51 | Escape from the due-date editor focuses "Edit due date" | `src/components/todo-due-date.tsx` | `src/components/todo-due-date-escape-focus.test.tsx`, `src/components/todo-due-date-focus.test.tsx`, `e2e/51-escape-due-date-focus.spec.ts` | ✅ |
 
