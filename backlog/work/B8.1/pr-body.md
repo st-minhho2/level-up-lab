@@ -77,15 +77,35 @@ Plan review: approved, round 2 (round 1: 2 reasons, pin commit, exact counts, ap
 
 ## Map delta
 
-pending
+F39 · §41 · (new) → ✅ — title editor opens with the whole title selected in `src/components/todo-item.tsx`; evidence: `pnpm test` → 330 passed (51 files), `pnpm test:e2e` → 76 passed (`docs(map)` 3c479bd)
 
 ## Review
 
-pending
+`/review-loop`: passes 1/3, verdict ready for PR, 0 findings (`backlog/work/B8.1/review.md` "Diff review (round 1)").
+
+| Pass | #   | Finding (file:line) | Source | Kind | Disposition | Justification |
+| ---- | --- | ------------------- | ------ | ---- | ----------- | ------------- |
+| 1    | —   | none                | —      | —    | —           | —             |
+
+Gates run by the reviewer: lint, typecheck, `pnpm test` 330/330, `pnpm test:e2e` 76/76 (AC-41.6 alone 40/40 with
+`--repeat-each=40`), check-suppressions, check-config-change, check-feat-commits, check-ac-coverage,
+check-spec-sections, check-features-map, check-plan-scope OK; `scripts/verify-red.sh B8.1` → red for the right reason
+(5 new red; pin 2dad5fd holds AC-41.4 green on the old code). One-line mutants probed on a copy of
+`todo-item.tsx`: deps `[]` 5 fail, no deps 8 fail, `[editing, draft]` 8 fail, `[editing, todo|error|pending]` 2 fail
+each, `focus()`/`select()`/`ref` removed 5 fail each, `if (!editing)` 5 fail; `if (true)` is equivalent (the field is
+not mounted when `editing` is false).
+
+Riskiest unfalsified: AC-41.6 reads focus and selection once right after `toBeVisible()`; it passed 40/40 in
+Chromium only, Firefox and WebKit `select()` not exercised.
+
+Outside this card: `src/components/todo-form-warning.test.tsx` AC-39.4 (and once AC-39.5) times out near the 5000 ms
+default under load (1–2 of 4 full runs, 5/5 alone); this diff does not touch it. A CI rerun may be needed if it trips.
+
+mutation: CI only, no src/lib or src/actions change
 
 ## Evidence
 
-- AC met: pending
+- AC met: 6/6 (AC-41.1–AC-41.6)
 - tier: medium
 - plan deviations: none
 - trace: n/a
