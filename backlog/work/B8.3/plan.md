@@ -40,12 +40,13 @@ export function CompleteAllButton({
 
 ## Verification
 
-Baseline: `pnpm test` 323 passed (50 files). Red (`test(todos): B8.3 … (red)`, no skeleton: the component renders a
+Baseline: `pnpm test` 323 passed (50 files); `pnpm test:e2e --list` 75 tests in 33 files. Red (`test(todos): B8.3 … (red)`, no skeleton: the component renders a
 disabled button today, so every new and rewritten test fails on an assertion): `scripts/verify-red.sh B8.3` exit 0;
 AC-43.1–43.4, AC-14.4 (a), AC-36.3 red; e2e 43, 14 (AC-14.6) and 36 (AC-36.6, AC-36.7) fail on the button count.
-Green: `pnpm lint && pnpm typecheck` clean · `pnpm test` 323 → ~328 passed (51 files; rewrites in place) [estimate],
-AC-14.4 (b), AC-14.5, AC-36.2, AC-36.4 green · `pnpm test:e2e` all green incl. `e2e/43-complete-all-hidden.spec.ts`
-(3 new), `e2e/16-search.spec.ts`, `e2e/22-all-done.spec.ts`, `e2e/30-filter-counts.spec.ts`, `e2e/09-clear-completed.spec.ts` · mutation:
+Green: `pnpm lint && pnpm typecheck` clean · `pnpm test` 323 → 327 passed (50 → 51 files: 4 new
+`it`s, AC-43.1 one `it` covering (a) and (b) as the card's `Test:` line names it; rewrites in place), AC-14.4 (b),
+AC-14.5, AC-36.2, AC-36.4 green · `pnpm test:e2e` 75 → 78 passed (33 → 34 files: `e2e/43-complete-all-hidden.spec.ts`
+AC-43.5–43.7, rewrites in place), `e2e/16-search.spec.ts`, `e2e/22-all-done.spec.ts`, `e2e/30-filter-counts.spec.ts`, `e2e/09-clear-completed.spec.ts` · mutation:
 CI only, no `src/lib` or `src/actions` change (B1.100) · `pnpm build` ok · `scripts/ci/check-features-map.sh`,
 `scripts/ci/check-plan-scope.sh` OK.
 
