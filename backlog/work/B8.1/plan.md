@@ -59,4 +59,4 @@ Mode runs the effect twice at the switch, before any typing: harmless. `src/comp
 the `[editing]` list and the `if (editing)` guard are guarded by AC-41.3–41.5 only. The spec's "Lead approves spec"
 box stays unticked: the issue's `agent-ready` label is the spec approval (D-27), as for §38–§40.
 
-Plan review: approved, round 2 (round 1: 2 reasons, pin commit, exact counts, applied 1bf47cf) · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 (round 1: 2 reasons, pin commit, exact counts, applied 1bf47cf) · Plan approved by: reviewer (D-27, tier medium, issue #316) · Rounds: 1
