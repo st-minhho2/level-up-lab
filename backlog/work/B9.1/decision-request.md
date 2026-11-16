@@ -86,3 +86,5 @@ Escape and holds. Proposed answer to the open question: a failed save does not m
 | **A (recommended)** Spec first, rule as above | sections and lifts in an attended `docs(spec)` PR, then the label | one attended `spec-analyst` pass per card | low: a line not named here still stops a run, and is counted | yes        |
 | B. Swap B9.2 for C ("Tomorrow" button)        | same rule, C instead of I                                         | 2 unit rewrites and 6 spec edits          | low                                                          | yes        |
 | C. Sections inside the run (D-33 style)       | the run's `spec-analyst` writes the section under the lifts above | none up front                             | a run that meets an unnamed line stops mid-run (attended)    | yes        |
+
+Lead, in the orchestrating session: "giữ B9.1–B9.3, D-40 theo đề xuất" (A).
