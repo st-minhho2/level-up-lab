@@ -212,6 +212,8 @@ true && gh pr merge 7
 gh pr -R o/r merge 7
 gh pr --repo=o/r merge 7
 gh pr --repo o/r merge 7 --squash
+"gh" api -X PUT repos/o/r/pulls/7/merge
+gh "api" -X PUT repos/o/r/pulls/7/merge
 MERGE
 c="$(printf "gh api graphql -F query=@- <<'X'\nmutation {\n  mergePullRequest(input: {pullRequestId: \"x\"}) { clientMutationId }\n}\nX")"
 probe_msg 2 'agents never merge' guard-bash.sh "$(pr_cmd "$c" "$PWD")"   # the query in a heredoc of the same command
