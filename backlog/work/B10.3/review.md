@@ -76,3 +76,77 @@ Costs the lead takes on approval (all stated in the plan):
 Non-blocking: the plan's footer still reads `Rounds: 1`; the dev-lead updates it with the verdict.
 
 Verdict: approved (ready for the lead's gate, not approved for build)
+
+## Diff review (round 1)
+
+Scope: ui. Range `main...HEAD`: pin `b258594`, red `71d2d8c`, feat `fefcf2d`, map `11455b8`.
+
+### Command results (last line each, run by me)
+
+| Command                             | Last line                                                                                                         |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | "All matched files use Prettier code style!" (exit 0)                                                             |
+| `pnpm typecheck`                    | `tsc --noEmit`, no error                                                                                          |
+| `pnpm test`                         | "Tests 366 passed (366)" (58 files)                                                                               |
+| `pnpm test:e2e`                     | "89 passed (3.3m)"                                                                                                |
+| `scripts/mutation-gate.sh`          | "mutation: CI only, no src/lib or src/actions change"                                                             |
+| `scripts/ci/check-suppressions.sh`  | "OK: no new suppressions"                                                                                         |
+| `scripts/ci/check-config-change.sh` | "OK: no protected config changed"                                                                                 |
+| `scripts/ci/check-feat-commits.sh`  | "OK: no feat commit touches tests"                                                                                |
+| `scripts/ci/check-ac-coverage.sh`   | "OK: every criterion of a shipped section has a test"                                                             |
+| `scripts/ci/check-spec-sections.sh` | "OK: sections cited: 1 … 53"                                                                                      |
+| `scripts/ci/check-features-map.sh`  | "OK"                                                                                                              |
+| `scripts/verify-red.sh B10.3`       | "6 ran (5 new), 5 new failed, 0 new passed OK (red on behavior)"; "RESULT: red for the right reason"; e2e skipped |
+| `git diff --stat main...HEAD`       | "9 files changed, 718 insertions(+), 2 deletions(-)"                                                              |
+
+The AC-39.4/AC-39.5 load-dependent timeouts the dev-lead saw did not recur: 366/366 in one run. That file
+(`todo-form-warning.test.tsx`) is outside this card's diff.
+
+### Checklist
+
+| Check                                                 | Result                                                                                                                                                                                                                            |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every AC-50.n has a test whose assertion matches Then | pass: AC-50.1–50.6 in `todo-search-form-hint.test.tsx`, AC-50.7 in `e2e/50-search-hint.spec.ts`. I compared each Then clause by clause, including the exact `textContent` strings, the 4 renders of 50.3 and the 0-to-4 selection |
+| no test weakened after the red commit                 | pass: `git log --first-parent --no-merges 71d2d8c..HEAD -- '*.test.*' e2e/` empty; the remerge-diff is empty (no merges)                                                                                                          |
+| every changed file is in `plan.md`                    | pass: 4 planned files plus the exempt paperwork (`docs/metrics.md`, `backlog/work/B10.3/*`)                                                                                                                                       |
+| interfaces match §50 Function contracts               | pass: signature and props unchanged; one literal `placeholder` attribute; no export, constant, state, effect or handler added                                                                                                     |
+| Zod at action boundary · Prisma only in lib · raw SQL | n/a: no action, lib or Prisma change                                                                                                                                                                                              |
+| migration                                             | n/a                                                                                                                                                                                                                               |
+| no secret, no suppression                             | pass (check-suppressions OK; diff read)                                                                                                                                                                                           |
+| features map row moved                                | pass: F48 §50 ✅ added in `docs(map)` `11455b8`                                                                                                                                                                                   |
+| would a test fail if a changed line were reverted?    | pass: the only behavioral line is the `placeholder`. verify-red shows that without it 5 tests fail. The header comment is not behavioral                                                                                          |
+
+### Probes (`git clone` under `$TMPDIR`, `node_modules` linked, `todo-search-form-hint.test.tsx` only)
+
+This checks whether the AC-50.5/50.6 steps after the first `placeholder` assertion can fail, which the red commit
+could not show:
+
+- M1, `event.preventDefault()` removed from the Escape handler: AC-50.5 fails ("expected false to be true", the
+  `defaultPrevented` step). 1 failed | 5 passed.
+- M4, `searchBoxRef.current?.select()` removed: AC-50.6 fails ("expected { start: 4, end: 4 } to deeply equal
+  { start: 0, end: 4 }"). 1 failed | 5 passed.
+- M3, `placeholder` dropped while a search is in effect: AC-50.3, 50.4, 50.5, 50.6 fail. 4 failed | 2 passed.
+- M2, the literal removed and the attribute set from the `useEffect` instead (client-only, violates REQ-50.4):
+  AC-50.4 fails (`placeholder: null` in the server string). 1 failed | 5 passed.
+
+The later steps of AC-50.5 and AC-50.6 do fail when their behavior breaks. REQ-50.4 is guarded by AC-50.4 in the unit
+layer, not only by the e2e.
+
+### Findings
+
+None blocking.
+
+Non-blocking, carried from the plan (the lead's):
+
+- `spec/contracts/23-search-shortcut.md:26` still reads "The hint "press / to search" is not shown." It contradicts
+  REQ-50.1 and the shipped code. The lead's `docs(spec)` fix is still open, so it stays on the PR's "Waiting on you"
+  list.
+- The plan footer still reads `Rounds: 1` after round 2.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: AC-50.7 (the only proof of REQ-50.5 `:placeholder-shown`) has never been observed red.
+verify-red skips e2e, and I did not run it against the pre-feat tree (the probe clone has no worktree env file for
+the database). By trace, at `71d2d8c` the first assertion (`firstResponse.text()` includes `placeholder="Press / to
+search"`) is false, so the test would fail there. Its hydrated steps after that were never run against a broken
+implementation.
