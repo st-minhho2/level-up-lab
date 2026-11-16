@@ -40,3 +40,41 @@ Costs the lead takes on approval (once the above are fixed): no e2e covers the a
 "How the criteria observe it"); the component is outside the mutation gate's `src/lib` + `src/actions` scope, so
 the `error !== undefined ? messageId : undefined` mutants are killed only by the AC-49.1/49.2/49.5 absent-attribute
 asserts and the AC-49.6 distinct-id assert, and nothing measures that.
+
+## Plan review (round 2)
+
+SCOPE: ui. Plan at 0d6d088 (changes since round 1: Files row, Verification, Work breakdown 2a/2b).
+
+| Check                                                                                  | Result                                                                                                                                                                                                                                                                                                                                                                                 |
+| -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                         | pass: unchanged from round 1; `clear-completed-button.tsx` is the only `src/` file §49 names (D-45 lists the same), the test file is the one §49 "How the criteria observe it" names, F47 is the E10 card's feature id                                                                                                                                                                 |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | pass: signature copied from §49 Function contracts; no action, schema, Prisma, lib or `page.tsx` change                                                                                                                                                                                                                                                                                |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass: approach A (`useId`); B rejected for REQ-49.5 / AC-49.6                                                                                                                                                                                                                                                                                                                          |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass: 6 criteria, each Then states counts, exact text, attribute presence or id equality                                                                                                                                                                                                                                                                                               |
+| verification lists exact commands with expected numbers                                | pass: 360 → 366 vitest, 88 → 88 e2e, mutation "CI only" (no `src/lib`/`src/actions` change). Round 1 reason 1 resolved: `verify-red.sh` (header steps 3–6) takes the parent of the first `(red)` commit as the base, so with the pin commit before it AC-49.2 and AC-49.5 run at the base and count as old; the new tests are AC-49.1, 49.3, 49.4, 49.6, each red today (traced below) |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | pass: skeleton justified as none (no new export); 2a `test(todos): B10.2 pin …` without `(red)`, 2b `… (red)`, then `feat`, `docs(map): F47 … [B10.2]`, review; the same shape as B9.4 (#354: `test(todos): B9.4 pin AC-47.3 …` before its `(red)` commit)                                                                                                                             |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by you | pass: `47-clear-completed-description.md:5` `- [ ] Lead approves spec`, unticked; D-27 label stands in, as B9.4                                                                                                                                                                                                                                                                        |
+| no settled D-n contradicted                                                            | pass: D-27, D-28 (`scripts/agent/tier.sh backlog/work/B10.2/plan.md` → `medium`), D-44, D-45                                                                                                                                                                                                                                                                                           |
+| `scripts/next-task.sh --check B10.2` says no overlap                                   | pass: "[next-task] B10.2: no overlap with any Doing or Review card"                                                                                                                                                                                                                                                                                                                    |
+
+Red traced against `src/components/clear-completed-button.tsx` at HEAD (no `useId`, no `id`, no `aria-describedby`):
+AC-49.1 fails on "aria-describedby equals the alert's id" / description equals the message after the failure;
+AC-49.3 fails while pending (description `''`, no attribute); AC-49.4 fails after the first failure (description
+`''`); AC-49.6 fails on the second button's description. AC-49.2 and AC-49.5 hold today in full, as the plan says.
+Round 1 reason 2 resolved by the second option offered (AC-49.2 pinned, red proof on the other four).
+
+Verdict: approved (ready for the lead's gate; medium tier, so under D-27 the reviewed plan of an `agent-ready` card
+may proceed)
+
+Costs the lead takes on approval:
+
+1. AC-49.2 as pinned checks only the end state after the success. The "together, in the commit that removes the
+   message" half of REQ-49.3 is not observed between renders; AC-49.3's after-success assertions cover the same end
+   state. No test reads an intermediate frame.
+2. The pin and red commits share one file. If the red commit renames or rewrites an AC-49.2 / AC-49.5 title,
+   `verify-red.sh` counts it as new and green and exits 1. The test-writer must leave those two `it`s byte-identical
+   in 2b.
+3. Carried from round 1: no e2e covers the attribute (§49 says so), and the component is outside the mutation
+   gate's scope, so whether the conditional's mutants are killed is checked by review only.
+4. Paperwork, non-blocking: the plan's closing line still says `Rounds: 1`, and at 62 lines it runs past the ≈ 40-line
+   one-screen guide (B9.4's approved plan was 56).

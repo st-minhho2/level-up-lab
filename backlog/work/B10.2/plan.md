@@ -59,4 +59,4 @@ or `src/actions` change (B1.100) · `pnpm build` ok · `scripts/ci/check-feature
 Costs the lead takes: the alert's `id` is a React `useId` value (`:r0:`-style), so tests compare it to the alert's
 `id` rather than a literal; jsdom keeps the description on a disabled button (AC-49.3), as browsers do.
 
-Plan review: round 1 changes requested (2), revised · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: · Rounds: 1
