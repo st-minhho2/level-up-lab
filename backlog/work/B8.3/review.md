@@ -145,3 +145,64 @@ Verdict: ready for PR
 Riskiest unfalsified: the AC-43.6 alert scope `body > :not(next-route-announcer)` relies on the app rendering the
 component under a body child other than the announcer; no e2e state produces the §10 alert, so I could not show this
 locator counting a real failure message in the browser.
+
+## Diff review (round 2)
+
+Diff read at `91140c7` (one `test(todos): B8.3 review pass 1 -- …` commit since round 1, touching only
+`src/components/complete-all-button-hidden.test.tsx`, 7+/4-). Scope: ui, this commit and what it affects.
+
+### Command results (run by the reviewer)
+
+| Command                             | Last line                                                                                |
+| ----------------------------------- | ---------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `✖ 1 problem (0 errors, 1 warning)` (pre-existing, `todo-form.tsx:33`, not in this diff) |
+| `pnpm typecheck`                    | `tsc --noEmit` clean                                                                     |
+| `pnpm test`                         | `Tests  327 passed (327)` (51 files), unchanged from round 1                             |
+| `pnpm test:e2e`                     | `78 passed (2.1m)`                                                                       |
+| `scripts/mutation-gate.sh`          | `mutation: CI only, no src/lib or src/actions change`                                    |
+| `scripts/ci/check-suppressions.sh`  | `OK: no new suppressions`                                                                |
+| `scripts/ci/check-config-change.sh` | `OK: no protected config changed`                                                        |
+| `scripts/ci/check-feat-commits.sh`  | `OK: no feat commit touches tests`                                                       |
+| `scripts/ci/check-ac-coverage.sh`   | `OK: every criterion of a shipped section has a test`                                    |
+| `scripts/ci/check-spec-sections.sh` | `OK: sections cited: 1 … 43`                                                             |
+| `scripts/ci/check-features-map.sh`  | `OK`                                                                                     |
+| `scripts/ci/check-plan-scope.sh`    | `OK: feat/B8.3-agent stays inside the approved plan of B8.3 (D-27 approval)`             |
+| `scripts/verify-red.sh B8.3`        | `RESULT: red for the right reason`                                                       |
+| `git diff --stat main...HEAD`       | `13 files changed, 821 insertions(+), 23 deletions(-)`                                   |
+
+### Checklist (this commit)
+
+| Check                     | Result                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| closes finding [1]        | pass. Probe (c) of round 1 (`document.body.focus()` after `setError`) on a clone at `91140c7` (`$TMPDIR/r2`): AC-43.4 fails, `expected "patchedFocus" to be called +0 times, but got 1 times`, 1 failed / 9 passed. Extra probe (e): `onClick={(e) => { e.currentTarget.focus(); onCompleteAll(); }}` (a focus call that does not move `activeElement`) fails the same way |
+| no assertion loosened     | pass. All four Then assertions (0 buttons, `activeElement` is `body`, spy 0 calls, 0 `[tabindex]`) are unchanged; the test's own `button.focus()` is removed and replaced by two new assertions (`completeAllTodosAction` called 1 time; `activeElement` is the button before the re-render), so the Given is now asserted instead of forced. The spy window only widened  |
+| test-change log after red | `git log --first-parent --no-merges be1e940..HEAD -- '*.test.*' e2e/` → `91140c7`, `5eff2d5`, `b06a5be`, all `test(...)` with bodies; `--merges --remerge-diff` → empty                                                                                                                                                                                                    |
+| commit shape              | pass: `test(todos): B8.3 review pass N -- …`, no `(red)` marker, as `backlog/CLAUDE.md` names for hardening tests; `check-feat-commits.sh` OK                                                                                                                                                                                                                              |
+| plan / spec / component   | unchanged by this commit; `check-plan-scope.sh` OK                                                                                                                                                                                                                                                                                                                         |
+
+### The lead's question: is the press/release split a faithful click for AC-43.4?
+
+Yes for what AC-43.4 measures. user-event 14's `click` is `pointer([{ target }, { keys: '[MouseLeft]', target }])`
+(`convenience/click.js`). A probe on the clone logging 13 event types on a bare button gives:
+
+- `user.click`: `pointerover, pointerenter, mouseover, mouseenter, pointermove, mousemove, pointerdown, mousedown, focus, focusin, pointerup, mouseup, click`
+- split: `pointerdown, mousedown, focus, focusin, pointerup, mouseup, click`
+
+The split drops only the hover/move prelude (the component has no hover handler, and that prelude comes before
+the press, so it would sit outside the spy window anyway). From the press on, the sequence is identical; user-event's
+own `focus()` happens at `mousedown`, and everything from `pointerup` (the click event, the transition, the result,
+the removal) is counted.
+
+The one window the spy does not count is the press itself: probe (f), `onPointerDown={(e) => e.currentTarget.focus()}`,
+passes all 10 tests. That call is indistinguishable from user-event's own focus at the press, and the Then counts
+"after the click"; the shipped component has no pointer-down handler. Not a finding, named below.
+
+### Findings
+
+None blocking; none new. Finding [1] is closed (confirmed, probes c and e).
+
+Verdict: ready for PR
+
+Riskiest unfalsified: unchanged from round 1, the AC-43.6 alert scope `body > :not(next-route-announcer)` has never
+counted a real §10 failure message in the browser; second, a `focus()` made during the press (pointerdown/mousedown)
+is outside AC-43.4's window by construction (probe f passes).
