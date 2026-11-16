@@ -34,12 +34,11 @@ beforeEach(() => {
 });
 
 describe('<CompleteAllButton> (§14)', () => {
-  it('AC-14.4: (a) renders exactly 1 button named "Mark all complete", disabled, when disabled is true', () => {
-    render(<CompleteAllButton disabled={true} />);
+  it('AC-14.4: (a) renders nothing, with 0 elements of role button and an empty container, when disabled is true', () => {
+    const { container } = render(<CompleteAllButton disabled={true} />);
 
-    expect(screen.getAllByRole('button')).toHaveLength(1);
-    expect(screen.getAllByRole('button', { name: 'Mark all complete' })).toHaveLength(1);
-    expect(screen.getByRole('button', { name: 'Mark all complete' })).toBeDisabled();
+    expect(screen.queryAllByRole('button')).toHaveLength(0);
+    expect(container.childNodes).toHaveLength(0);
   });
 
   it('AC-14.4: (b) renders exactly 1 enabled button, calls the action once with 0 arguments, is disabled while it is pending and enabled again once it resolves', async () => {

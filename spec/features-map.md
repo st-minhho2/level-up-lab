@@ -45,6 +45,7 @@ moves or removes a feature updates its row in code-writer's own commit right aft
 | F38 | §40 | "Clear due date" button in the due-date editor | `src/components/todo-due-date.tsx` | `src/components/todo-due-date-clear.test.tsx`, `e2e/40-due-date-clear.spec.ts` | ✅ |
 | F37 | §39 | Near-limit warning on the new-todo counter | `src/lib/title-count.ts`, `src/components/todo-form.tsx` | `src/lib/title-count.test.ts`, `src/components/todo-form-warning.test.tsx`, `e2e/39-title-counter-warning.spec.ts` | ✅ |
 | F36 | §38 | Match count in the search form | `src/components/todo-search-form.tsx`, `src/app/page.tsx` | `src/components/todo-search-form.test.tsx`, `e2e/38-search-count.spec.ts` | ✅ |
+| F41 | §43 | Hide "Mark all complete" when nothing is open | `src/components/complete-all-button.tsx` | `src/components/complete-all-button-hidden.test.tsx`, `src/components/complete-all-button.test.tsx`, `src/components/complete-all-button-count.test.tsx`, `e2e/43-complete-all-hidden.spec.ts`, `e2e/14-complete-all.spec.ts`, `e2e/36-complete-all-count.spec.ts` | ✅ |
 | F39 | §41 | Title editor opens with the whole title selected | `src/components/todo-item.tsx` | `src/components/todo-item-select.test.tsx`, `e2e/41-edit-title-select.spec.ts` | ✅ |
 | F40 | §42 | Filter nav hides a link whose count is 0 | `src/components/todo-filter-nav.tsx` | `src/components/todo-filter-nav-hide-empty.test.tsx`, `src/components/todo-filter-nav-counts.test.tsx`, `e2e/42-filter-hide-empty.spec.ts` | ✅ |
 
