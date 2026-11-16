@@ -51,7 +51,7 @@ implements exactly one numbered section below, and every behavior change goes th
 | §44 | [contracts/42-new-todo-focus.md](contracts/42-new-todo-focus.md) | Todos: after a successful add, focus is in the "New todo" box | ✅ |
 | §45 | [contracts/43-due-date-focus.md](contracts/43-due-date-focus.md) | Todos: opening the due-date editor puts focus in the date field | ✅ |
 | §46 | [contracts/44-search-select.md](contracts/44-search-select.md) | Todos: the `/` shortcut also selects the text already in the search box | ✅ |
-| §47 | [contracts/45-new-todo-focus-pending.md](contracts/45-new-todo-focus-pending.md) | Todos: a focus move during a pending add is kept | ✗ |
+| §47 | [contracts/45-new-todo-focus-pending.md](contracts/45-new-todo-focus-pending.md) | Todos: a focus move during a pending add is kept | ✅ |
 | §48 | [contracts/46-escape-title-focus.md](contracts/46-escape-title-focus.md) | Todos: Escape in the title editor puts focus on "Edit title" | ✗ |
 | §49 | [contracts/47-clear-completed-description.md](contracts/47-clear-completed-description.md) | Todos: a failed clear's message describes "Clear completed" | ✗ |
 | §50 | [contracts/48-search-hint.md](contracts/48-search-hint.md) | Todos: the search box shows "Press / to search" | ✗ |

@@ -78,9 +78,7 @@ _F44 · section 46_
 ### B9.4 · A focus move during a pending add is kept
 
 _F45 · section 47_
-**Status: Open** — defect D1 of the first D-43 sweep (2026-11-16): `src/components/todo-form.tsx` focuses the "New todo"
-box on every successful result, even when the person moved focus elsewhere while the save was pending, so typed text
-splits between two fields (type `Fresh`, click "Add", press `/`, type `milk`: "Search todos" holds `m`, the box `ilk`).
+**Status: Done** — 40cd956 (#354), 6 AC-47.n criteria green (AC-47.1, AC-47.2, AC-47.4–47.6 red in 5c7dade, the unit ones proven by verify-red.sh on base 5a9123b; AC-47.3 pinned green at the base, 5a9123b); unit 356 → 360; e2e 86 → 88, AC-47.5, AC-47.6; mutation n/a (no src/lib or src/actions change, B1.100); no-rework 1/1, unattended 1/1 (D-29); repairs B9.1, defect D1 of the first D-43 sweep (D-44); one sync with origin/main (101b323)
 
 - **Acceptance:**
   - On a successful result the box is focused only if the active element is the box, the "Add" button, or none.
