@@ -56,4 +56,4 @@ any submit that resolves ok, including a click on "Add" with an empty box, sends
 `docs(spec): §44`, #345): Tab from the box to "Add" (no submit, 1 call, "Add" focused), then click the box, type
 `Walk the dog`, Enter (2 calls, box focused, `''`); the test-writer copies that When literally, one `it`.
 
-Plan review: approved, round 2 · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: reviewer (D-27, tier medium, issue #339) · Rounds: 1
