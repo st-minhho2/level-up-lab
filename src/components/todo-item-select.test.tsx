@@ -69,7 +69,7 @@ describe('<TodoItem> selects the title on entering edit mode (§41)', () => {
     expect(titleField().selectionEnd).toBe(7);
   });
 
-  it('AC-41.3 (a): after Escape and "Edit title" again the field holds "Buy mik", is document.activeElement, selection 0 to 7', async () => {
+  it('AC-41.3: (a) after Escape and "Edit title" again the field holds "Buy mik", is document.activeElement, selection 0 to 7', async () => {
     const user = userEvent.setup();
     render(<TodoItem todo={openTodo('Buy mik')} />);
     await user.click(screen.getByRole('button', { name: 'Edit title' }));
@@ -86,7 +86,7 @@ describe('<TodoItem> selects the title on entering edit mode (§41)', () => {
     expect(titleField().selectionEnd).toBe(7);
   });
 
-  it('AC-41.3 (b): after a successful save and "Edit title" again the field holds "Buy milk", is document.activeElement, selection 0 to 8', async () => {
+  it('AC-41.3: (b) after a successful save and "Edit title" again the field holds "Buy milk", is document.activeElement, selection 0 to 8', async () => {
     actions.updateTodoTitleAction.mockResolvedValue({ ok: true, data: openTodo('Buy milk') });
     const user = userEvent.setup();
     const { rerender } = render(<TodoItem todo={openTodo('Buy mik')} />);
@@ -141,7 +141,7 @@ describe('<TodoItem> selects the title on entering edit mode (§41)', () => {
     },
     { name: '(b) saveFailed()', result: saveFailed(), message: 'Could not save, try again' },
   ])(
-    'AC-41.4 $name: the field keeps "Buy milk" and the selection 2 to 4, exactly 1 alert with the action\'s message, focus moved to "Save" stays there, updateTodoTitleAction called once',
+    'AC-41.4: $name, the field keeps "Buy milk" and the selection 2 to 4, exactly 1 alert with the action\'s message, focus moved to "Save" stays there, updateTodoTitleAction called once',
     async ({ result, message }) => {
       actions.updateTodoTitleAction.mockResolvedValue(result);
       const user = userEvent.setup();
