@@ -7,7 +7,7 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic                | File                                                       | Done   | Partial | Open   | Total   |
 | ------------------- | ---------------------------------------------------------- | ------ | ------- | ------ | ------- |
-| E1 Todos            | [plan/E1-todos.md](plan/E1-todos.md)                       | 64     | 1       | 34     | 99      |
+| E1 Todos            | [plan/E1-todos.md](plan/E1-todos.md)                       | 64     | 1       | 35     | 100     |
 | E2 Todos plus       | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)             | 5      | 0       | 0      | 5       |
 | E3 Todos polish     | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)         | 3      | 0       | 0      | 3       |
 | E4 Todos details    | [plan/E4-todos-details.md](plan/E4-todos-details.md)       | 3      | 0       | 1      | 4       |
@@ -16,7 +16,7 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | E7 Todos hints      | [plan/E7-todos-hints.md](plan/E7-todos-hints.md)           | 6      | 0       | 0      | 6       |
 | E8 Todos polish two | [plan/E8-todos-polish-two.md](plan/E8-todos-polish-two.md) | 0      | 0       | 3      | 3       |
 | E9 Todos focus      | [plan/E9-todos-focus.md](plan/E9-todos-focus.md)           | 0      | 0       | 3      | 3       |
-| **Total**           |                                                            | **93** | **1**   | **41** | **135** |
+| **Total**           |                                                            | **93** | **1**   | **42** | **136** |
 
 ## Execution order
 
@@ -183,6 +183,7 @@ flowchart TD
   S133["133 · focus in New todo after an add<br/>B9.1"]
   S134["134 · focus in the date field when the editor opens<br/>B9.2"]
   S135["135 · the / shortcut selects the search text<br/>B9.3"]
+  S136["136 · check-ac-coverage reads a ✗ section's titles<br/>B1.102"]
 ```
 
 ## Remaining
@@ -234,6 +235,7 @@ at most 3 cards Doing (B1.18).
 | 133  | B9.1   | After a successful add, focus is in the "New todo" box                                                    | —      | Open    | ~~D-40~~                        | Lead  | S [estimate] |
 | 134  | B9.2   | Opening the due-date editor puts focus in the date field                                                  | —      | Open    | ~~D-40~~                        | Lead  | S [estimate] |
 | 135  | B9.3   | The `/` shortcut also selects the text already in the search box                                          | —      | Open    | ~~D-40~~                        | Lead  | S [estimate] |
+| 136  | B1.102 | check-ac-coverage skips a ✗ section, so a feature PR's wrong title format fails only in its closing PR    | —      | Open    | —                               | Lead  | S [estimate] |
 
 ## Waiting on human
 
