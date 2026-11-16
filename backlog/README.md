@@ -7,7 +7,7 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic                | File                                                       | Done   | Partial | Open   | Total   |
 | ------------------- | ---------------------------------------------------------- | ------ | ------- | ------ | ------- |
-| E1 Todos            | [plan/E1-todos.md](plan/E1-todos.md)                       | 63     | 2       | 34     | 99      |
+| E1 Todos            | [plan/E1-todos.md](plan/E1-todos.md)                       | 64     | 1       | 34     | 99      |
 | E2 Todos plus       | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)             | 5      | 0       | 0      | 5       |
 | E3 Todos polish     | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)         | 3      | 0       | 0      | 3       |
 | E4 Todos details    | [plan/E4-todos-details.md](plan/E4-todos-details.md)       | 3      | 0       | 1      | 4       |
@@ -15,7 +15,7 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | E6 Todos cues       | [plan/E6-todos-cues.md](plan/E6-todos-cues.md)             | 6      | 0       | 0      | 6       |
 | E7 Todos hints      | [plan/E7-todos-hints.md](plan/E7-todos-hints.md)           | 6      | 0       | 0      | 6       |
 | E8 Todos polish two | [plan/E8-todos-polish-two.md](plan/E8-todos-polish-two.md) | 0      | 0       | 3      | 3       |
-| **Total**           |                                                            | **92** | **2**   | **38** | **132** |
+| **Total**           |                                                            | **93** | **1**   | **38** | **132** |
 
 ## Execution order
 
@@ -174,7 +174,7 @@ flowchart TD
   S127["127 · the due-date editor has a Clear due date button<br/>~~B7.6~~"]
   S124 --> S127
   S128["128 · local mutation runs only when src/lib or src/actions changed<br/>B1.100"]
-  S129["129 · ready runner PRs stay mergeable after a sibling merges<br/>B1.101"]
+  S129["129 · ready runner PRs stay mergeable after a sibling merges<br/>~~B1.101~~"]
   S105 --> S129
   S130["130 · opening the title editor selects the title<br/>B8.1"]
   S131["131 · filter links with no todos are hidden<br/>B8.2"]
@@ -224,7 +224,6 @@ at most 3 cards Doing (B1.18).
 | 109  | B1.93  | Eight smokes remove the caller's directory when `mktemp -d` fails                                         | —      | Open    | —                               | Lead  | S [estimate] |
 | 110  | B1.94  | CI never runs table-merge-smoke, whose verdict follows the host's own git attributes                      | —      | Open    | ~~B1.89~~                       | Lead  | S [estimate] |
 | 128  | B1.100 | Each parallel run mutation-tests all of src/lib up to three times, whatever the card changed              | —      | Partial | —                               | Lead  | S [estimate] |
-| 129  | B1.101 | GitHub reports parallel runner PRs as conflicting on the union tables, and each needs a re-run            | —      | Partial | —                               | Lead  | S [estimate] |
 | 130  | B8.1   | Opening the title editor selects the whole title                                                          | —      | Open    | ~~D-39~~                        | Lead  | S [estimate] |
 | 131  | B8.2   | The filter nav hides a link whose count is 0, except the current filter                                   | —      | Open    | ~~D-39~~                        | Lead  | S [estimate] |
 | 132  | B8.3   | "Mark all complete" is hidden when there is nothing to mark                                               | —      | Open    | ~~D-39~~                        | Lead  | S [estimate] |
