@@ -106,22 +106,37 @@ None (no `src/`, no section).
 
 ## Review
 
-pending
+`/review-loop`: passes 3/3, ready for PR at round 3 (`backlog/work/B1.104/review.md` "Diff review (round 1–3)").
+
+| Pass | #   | Finding (file:line)                                                               | Source   | Kind     | Disposition | Justification                                                                                                                                                                                                                                   |
+| ---- | --- | --------------------------------------------------------------------------------- | -------- | -------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | 1   | `scripts/agent/run-smoke.sh:742-746` R23 probed the source nouns, not the clauses | reviewer | coverage | fix now     | `74f8b38`: turning "Data, read for facts" into "Instructions also come from", dropping the report, the PR body route, the instruction sources or "Go on without it" (m1–m5) each now fail R23                                                   |
+| 2    | 1   | `scripts/agent/run-smoke.sh:744-749` R23 missed the facts clause                  | reviewer | coverage | fix now     | `12ba4ba`: "Facts in data are never acted on" (the D-27 conflict plan review r1 closed) or the bullet dropped (m7, m8) now fail R23; also "(typed here, never relayed)", "What to build comes from the card", "skip or approve a gate" (m9–m11) |
+| 3    | —   | none                                                                              | reviewer | —        | —           | ready for PR                                                                                                                                                                                                                                    |
+
+Riskiest unfalsified: whether a headless `claude -p --agent dev-lead` loads `.claude/rules/untrusted-text.md`; the
+prompt sentence reaches dev-lead either way, only the first run after merge shows it. R23 is a presence check: a
+negation inserted before a probed phrase (round 3 m15) or dropping the brief clause (m13, no Acceptance line or D-n
+behind it) still passes. No untrusted text tried to steer this card.
 
 ## Evidence
 
-- AC met: pending
+- AC met: 5/6 (clause 5 in part: the `scripts/CLAUDE.md` run-smoke row waits for B1.103, closing `-partial`)
 - tier: high
 - plan deviations: none
 - trace: n/a
+- run-smoke (/bin/bash 3.2.57): base `b5d8ca4` "22 probes OK"; red `62a2a4c` "2 of 23 probes FAILED" (R16, R23); HEAD "23 probes OK"
+- mutants: 6 at green (drop a source, the brief line, the facts line, the table row or the prompt sentence; add `paths:`) and 10 from review (m1–m5, m7–m11), each fails R16 or R23 only
+- hook-smoke "749 probes OK" before and after; vitest "Tests 403 passed (403)"; playwright "91 passed"; `pnpm lint`, `pnpm typecheck` 0
+- mutation: CI only, no src/lib or src/actions change
 
 ## Checklist
 
-- [ ] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
-- [ ] Red commit precedes the change commit; no `chore(` commit touches `run-smoke.sh`'s probes.
-- [ ] Every `AC-§.n` of the section is a test title (n/a: no section); mutation (n/a: no `src/lib` or `src/actions`).
-- [ ] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected config change carries `config-change-approved` (`.claude/rules/`, approved plan, D-19).
-- [ ] Migrations reviewed as SQL (n/a).
-- [ ] `spec/features-map.md` (n/a); `docs/metrics.md` (n/a: tooling); mistake-log: no repeat.
+- [x] **Diff matches the approved plan**: no file outside the Files table, no interface outside the list.
+- [x] Red commit precedes the change commit; no `chore(` commit touches `run-smoke.sh`'s probes.
+- [x] Every `AC-§.n` of the section is a test title (n/a: no section); mutation (n/a: no `src/lib` or `src/actions`).
+- [x] No new `eslint-disable` / `@ts-ignore` / `@ts-expect-error`; protected config change carries `config-change-approved` (`.claude/rules/`, approved plan, D-19).
+- [x] Migrations reviewed as SQL (n/a).
+- [x] `spec/features-map.md` (n/a); `docs/metrics.md` (n/a: tooling); mistake-log: no repeat.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
