@@ -166,3 +166,64 @@ Verdict: back to test-writer
 Riskiest unfalsified: AC-44.6's second add, in a real browser. Nothing shows whether a server re-render after
 `revalidatePath('/')` could blur the box and need the second `focus()`. Once [1] is fixed, the unit spy covers
 `focus()` being called, but not that call in the browser.
+
+## Diff review (round 2)
+
+Reviewed at `68929a4`. Scope: ui. Since round 1 (`348329e`), one commit, `68929a4` `test(todos): B9.1 review pass 1 --
+AC-44.4 second result calls focus() once`. It is test-only (`src/components/todo-form-focus.test.tsx`, +6 lines, 0
+removed). `src/` is unchanged since round 1.
+
+### Command results (run by the reviewer)
+
+| Command                             | Last line                                                                                       |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `pnpm lint`                         | `All matched files use Prettier code style!` (exit 0)                                           |
+| `pnpm typecheck`                    | `tsc --noEmit` clean                                                                            |
+| `pnpm test`                         | `Tests  343 passed (343)` (54 files; plan 343)                                                  |
+| `pnpm test:e2e`                     | `84 passed (2.0m)` (plan 84)                                                                    |
+| `scripts/mutation-gate.sh`          | `mutation: CI only, no src/lib or src/actions change`                                           |
+| `scripts/ci/check-suppressions.sh`  | `[check-suppressions] OK: no new suppressions`                                                  |
+| `scripts/ci/check-config-change.sh` | `[check-config-change] OK: no protected config changed`                                         |
+| `scripts/ci/check-feat-commits.sh`  | `[check-feat-commits] OK: no feat commit touches tests`                                         |
+| `scripts/ci/check-ac-coverage.sh`   | `[check-ac-coverage] OK: every criterion of a shipped section has a test`                       |
+| `scripts/ci/check-spec-sections.sh` | `[check-spec-sections] OK: sections cited: 1 … 46`                                              |
+| `scripts/ci/check-features-map.sh`  | `[check-features-map] OK`                                                                       |
+| `scripts/ci/check-plan-scope.sh`    | `[check-plan-scope] OK: feat/B9.1-agent stays inside the approved plan of B9.1 (D-27 approval)` |
+| `scripts/verify-red.sh B9.1`        | `RESULT: red for the right reason`                                                              |
+| `git diff --stat main...HEAD`       | `8 files changed, 817 insertions(+), 1 deletion(-)`                                             |
+
+### Checklist (only the rows that changed since round 1; the others stand)
+
+| Check                                                     | Result                                                                                                                                                                                                 |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every AC-44.n has a test whose assertion matches its Then | pass: AC-44.4 now asserts `focusSecond` `toHaveBeenCalledTimes(1)`, the §44 Function contract's "receives focus() once" for the second result. Title, When and the existing assertions are unchanged   |
+| no test weakened after the red commit                     | pass: `git log --first-parent --no-merges 947055c..HEAD -- '*.test.*' e2e/` adds only `68929a4`, which adds 1 spy and 1 assertion and removes nothing. The `--remerge-diff` merge check is still empty |
+| would a test fail if one changed line were reverted       | pass, probes below. Round 1's equivalent-mutant note on the `wasPending.current &&` guard still stands                                                                                                 |
+
+### Probes (`git clone` of `68929a4` at `$TMPDIR/r2`, `pnpm vitest run src/components/todo-form`)
+
+The test-writer could not run the first-success-only probe, so I ran it here.
+
+| Variant of `todo-form.tsx`                                             | Result                                                                                            |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| branch as committed                                                    | `Tests  39 passed (39)`                                                                           |
+| focus only on the first ok result (a `data-f` flag blocks later calls) | `1 failed \| 38 passed`, AC-44.4: `expected "patchedFocus" to be called 1 times, but got 0 times` |
+| approach B (`if (state?.ok === true)`, deps `[state]`)                 | `1 failed \| 38 passed`, AC-44.4: `… called 1 times, but got 0 times`                             |
+| `focus()` called twice per result                                      | `1 failed \| 38 passed`, AC-44.4: `… called 1 times, but got 2 times`                             |
+
+The round-1 finding [1] is resolved. The spy now tells apart the spec's behavior from both mutants it named, and it
+also catches over-calling.
+
+### Findings
+
+None blocking.
+
+Non-blocking note for dev-lead: the committed `backlog/work/B9.1/pr-body.md:68` still reads `plan deviations: none`.
+The deps `[pending, state]` deviation (round 1, concern 2) has to be written there before the PR opens, since the
+disposition says it is recorded in the PR body. This is paperwork, so it does not block.
+
+Verdict: ready for PR
+
+Riskiest unfalsified: AC-44.6's second add in a real browser. The e2e test passes, but the box already holds focus
+before the second Enter, so it would also pass if a re-render after `revalidatePath('/')` never blurred the box and
+the second `focus()` were missing. The unit spy covers that the call is made, not what it does in Chromium.
