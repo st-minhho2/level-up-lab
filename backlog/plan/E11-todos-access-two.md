@@ -29,7 +29,7 @@ _F49 · section 51_
 ### B11.2 · A failed mark-all's message describes "Mark all complete"
 
 _F50 · section 52_
-**Status: Open** — §10 shows a failed mark-all's message as an alert next to the button (`complete-all-button.tsx`), but the button carries no `aria-describedby`.
+**Status: Done** — a230acc (#365), 6 AC-52.n criteria green (AC-52.1, AC-52.3, AC-52.4 red in 10fc315, proven by verify-red.sh on base bb238ba; AC-52.2, AC-52.5, AC-52.6 pinned green at the base, bb238ba); unit 381 → 387; e2e 90 → 90; mutation n/a (no src/lib or src/actions change, B1.100); no-rework 1/1, unattended 1/1 (D-29); merged second in E11 after one sync (76218ab)
 
 - **Acceptance:**
   - While the message shows it is the button's accessible description; the next success removes both; a button that reappears (§43) has none.
