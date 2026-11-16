@@ -40,6 +40,13 @@ async function expectCountsRead(page: Page, all: string, active: string, complet
   await expect(countSpans(page)).toHaveText([all, active, completed]);
 }
 
+// §42: the links the navigation renders, in order, and the span after each.
+async function expectLinksWithCounts(page: Page, names: readonly string[], spans: readonly string[]): Promise<void> {
+  await expect(filterNav(page).getByRole('link')).toHaveText([...names]);
+  await expect(countSpans(page)).toHaveText([...spans]);
+  await expect(filterNav(page).locator('span')).toHaveCount(spans.length);
+}
+
 async function expectExactLinkNames(page: Page): Promise<void> {
   await expect(filterLink(page, 'All')).toHaveCount(1);
   await expect(filterLink(page, 'Active')).toHaveCount(1);
@@ -86,7 +93,7 @@ test.describe('§30 filter counts', () => {
     }
   });
 
-  test('AC-30.6: (3), (2), (1) becomes (3), (1), (2) after checking D, (3), (0), (3) after "Mark all complete" and after a reload, (0), (0), (0) after "Clear completed", with 0 document navigations during the first two steps', async ({
+  test('AC-30.6: (3), (2), (1) becomes (3), (1), (2) after checking D, (3), (3) for links All, Completed with 0 links Active after "Mark all complete" and after a reload, 1 span (0) for the link All after "Clear completed", with 0 document navigations during the first two steps', async ({
     page,
   }) => {
     await seedInDisplayOrder([{ title: 'D' }, { title: 'C', completed: true }, { title: 'B' }]);
@@ -101,26 +108,28 @@ test.describe('§30 filter counts', () => {
 
     await page.getByRole('button', { name: 'Mark all complete' }).click();
 
-    await expectCountsRead(page, '(3)', '(0)', '(3)');
+    await expectLinksWithCounts(page, ['All', 'Completed'], ['(3)', '(3)']);
+    await expect(filterLink(page, 'Active')).toHaveCount(0);
     expect(navigations()).toBe(0);
 
     await page.reload();
     await page.waitForLoadState('networkidle');
 
-    await expectCountsRead(page, '(3)', '(0)', '(3)');
+    await expectLinksWithCounts(page, ['All', 'Completed'], ['(3)', '(3)']);
+    await expect(filterLink(page, 'Active')).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Clear completed' }).click();
 
     await expect(page.getByRole('listitem')).toHaveCount(0);
-    await expectCountsRead(page, '(0)', '(0)', '(0)');
+    await expectLinksWithCounts(page, ['All'], ['(0)']);
   });
 
-  test('AC-30.7: with no stored todo the spans read (0), (0), (0), "No todos yet" shows and there are 0 list items', async ({
+  test('AC-30.7: with no stored todo the navigation holds 1 link, All, and 1 span reading (0), "No todos yet" shows and there are 0 list items', async ({
     page,
   }) => {
     await page.goto('/');
 
-    await expectCountsRead(page, '(0)', '(0)', '(0)');
+    await expectLinksWithCounts(page, ['All'], ['(0)']);
     await expect(page.getByText('No todos yet', { exact: true })).toBeVisible();
     await expect(page.getByRole('listitem')).toHaveCount(0);
   });

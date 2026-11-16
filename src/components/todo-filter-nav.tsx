@@ -1,4 +1,4 @@
-// §12 TodoFilterNav: links only, no state or events, so no 'use client'.
+// §12, §30, §42 TodoFilterNav: links only, no state or events, so no 'use client'.
 import Link from 'next/link';
 import { Fragment, type ReactNode } from 'react';
 import type { FilterCounts } from '@/lib/filter-counts';
@@ -20,6 +20,8 @@ const FILTER_LINKS: readonly FilterLink[] = [
 // No <ul>: the links must never count as list items (REQ-12.1), the rows of the todo list are the only ones.
 // §30 REQ-30.2: each count is a <span> after its link, never inside it, so the link's name stays "All" etc.;
 // REQ-30.6: without `counts` no span is rendered.
+// §42 REQ-42.1, REQ-42.2: with `counts`, a link at 0 is left out of the document unless it is the current filter,
+// so the page still says where the person is; without `counts` all three stay (REQ-42.6).
 export function TodoFilterNav({
   selected,
   counts,
@@ -27,9 +29,13 @@ export function TodoFilterNav({
   readonly selected: TodoFilter;
   readonly counts?: FilterCounts;
 }): ReactNode {
+  const shownLinks =
+    counts === undefined
+      ? FILTER_LINKS
+      : FILTER_LINKS.filter((link) => counts[link.filter] !== 0 || link.filter === selected);
   return (
     <nav aria-label="Filter todos" className="flex gap-3 text-sm">
-      {FILTER_LINKS.map((link) => (
+      {shownLinks.map((link) => (
         <Fragment key={link.filter}>
           <Link
             href={link.href}
