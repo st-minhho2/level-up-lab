@@ -55,7 +55,7 @@ export function CompleteAllButton({
 }: {
   readonly disabled: boolean;
   readonly count?: number;
-}): ReactNode; // button "Mark all complete" (§36 writes "Mark all complete (n)" for a count n >= 1; without count the name is exactly "Mark all complete"); calls completeAllTodosAction in a transition; disabled also while pending; after a failed result <p role="alert"> with fieldErrors.form?.[0] as the button's next sibling inside one wrapper element; a successful result clears it
+}): ReactNode; // button "Mark all complete" (§36 writes "Mark all complete (n)" for a count n >= 1; without count the name is exactly "Mark all complete"); calls completeAllTodosAction in a transition; disabled also while pending; after a failed result <p role="alert"> with fieldErrors.form?.[0] as the button's next sibling inside one wrapper element, which is also the button's accessible description while shown (§52); a successful result clears it
 // src/app/page.tsx: renders <CompleteAllButton disabled={!todos.some((todo) => !todo.completed)} count={filterCounts(todos).active} /> (§36) outside the list (never a listitem), in both the empty and the non-empty state; the component itself renders nothing when `disabled` is true, so no button is shown while no todo is open (§43); where it sits among the other controls is the mounting card's choice
 ```
 

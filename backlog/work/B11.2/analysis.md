@@ -1,0 +1,28 @@
+# B11.2 analysis
+
+## Completeness
+
+| Check                          | Result | Note                                                                                                                                                                                                                                                                                                                                   |
+| ------------------------------ | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Intent without solution words  | pass   | Intent speaks of what the button announces, not of `useId` or `aria-describedby`.                                                                                                                                                                                                                                                      |
+| Every behavior has a REQ       | pass   | REQ-52.1 to 52.6 (shown, absent, success removes, pending retry, unmount, unchanged).                                                                                                                                                                                                                                                  |
+| One EARS pattern each          | pass   | State-driven, event-driven, ubiquitous.                                                                                                                                                                                                                                                                                                |
+| At most 7 criteria             | pass   | 6 (AC-52.1 to AC-52.6).                                                                                                                                                                                                                                                                                                                |
+| Every Then measurable          | pass   | exact text, ids, attribute presence, counts.                                                                                                                                                                                                                                                                                           |
+| No unnumbered adjective        | pass   |                                                                                                                                                                                                                                                                                                                                        |
+| Out of scope                   | pass   | includes no e2e (no way to make the action fail in the browser).                                                                                                                                                                                                                                                                       |
+| Unchanged behavior with proofs | pass   | 9 titles copied verbatim from the test files by grep.                                                                                                                                                                                                                                                                                  |
+| Dependencies done              | pass   | §14, §36, §43 shipped; the code was read: the error state is set only on a result, so it survives a pending retry, and it lives in the inner component, so an unmount drops it (REQ-43.4).                                                                                                                                             |
+| No D-n contradicted            | pass   | D-39 (one component per card) held: only `complete-all-button.tsx`.                                                                                                                                                                                                                                                                    |
+| Sibling checks                 | pass   | §43 forbids focus calls, refs, tabindex only (`41` function contract); `useId`/`aria-describedby` are none. `41` note on "the only file of src this section changes" is §43's own scope, not binding §52. §36 REQ-36.5 (no element added) holds. AC-14.5, AC-36.2/36.4, AC-43.2 to 43.4 stay true (checked against the new attribute). |
+
+Allowed edit made: one clause on the §14 function contract (`spec/contracts/12-complete-all.md:58`), before: "...as the button's next sibling inside one wrapper element; a successful result clears it", after: "...inside one wrapper element, which is also the button's accessible description while shown (§52); a successful result clears it".
+
+## Open questions
+
+1. A failed result with no `form` message (type allows it; the action never sends it). Proposed: no alert, no `aria-describedby` (REQ-52.2, AC-52.6). Why: a dangling id would point at nothing. Otherwise: nothing visible changes today (the code already shows no alert then).
+2. e2e: none proposed. A failing mark-all cannot be made in the browser without fault injection. Otherwise: a fault-injection card is needed.
+
+## Needs a ruling
+
+None.
