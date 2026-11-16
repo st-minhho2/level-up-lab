@@ -93,7 +93,7 @@ AC-51.1 to AC-51.6 are component tests with Testing Library in
 `@/actions/todos`, as `todo-due-date-focus.test.tsx` does). A spy on `HTMLButtonElement.prototype.focus` is read through
 `mock.contexts`, the receivers of its calls, because `userEvent.click` also calls `focus()` on the button it clicks: a
 count is taken for the receiver "Edit due date" only. AC-51.7 is a Playwright test in
-`e2e/49-escape-due-date-focus.spec.ts` that reads `document.activeElement` with `page.evaluate`, as
+`e2e/51-escape-due-date-focus.spec.ts` that reads `document.activeElement` with `page.evaluate`, as
 `e2e/45-due-date-focus.spec.ts` does. The sections are numbered by feature order and the contract files by file order,
 so §51 lives in `49-escape-due-date-focus.md`.
 
