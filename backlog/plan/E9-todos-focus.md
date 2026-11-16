@@ -58,8 +58,7 @@ _F43 · section 45_
 ### B9.3 · The `/` shortcut also selects the text already in the search box
 
 _F44 · section 46_
-**Status: Open** — §25 (`spec/contracts/23-search-shortcut.md`) has `/` focus "Search todos" and "change nothing but
-focus" (REQ-25.5, line 21). It lists "selecting the box's text on focus" in its Out of scope (line 62).
+**Status: Done** — 66d6926 (#343), 6 AC-46.n criteria green (red proven by verify-red.sh, d163d9a); unit 338 → 343; e2e 82 → 83, AC-46.6; mutation n/a (no src/lib or src/actions change, B1.100); unattended and no-rework 1/1 (D-29), one runner run, merged first in E9 (batch 4) with no sibling sync
 
 - **Acceptance:**
   - When `/` moves focus to "Search todos", the box's whole current text is selected. The value, the address and the
