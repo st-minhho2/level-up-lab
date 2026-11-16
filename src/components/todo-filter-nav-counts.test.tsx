@@ -77,10 +77,14 @@ describe('<TodoFilterNav> counts (§30)', () => {
     expect(screen.getAllByRole('link')).toHaveLength(3);
   });
 
-  it('AC-30.3: the three spans read (0), (0), (0), then (12), (10), (2)', () => {
+  it('AC-30.3: with all counts 0 the navigation holds 1 link, All, followed by 1 span reading (0), and 0 links named Active or Completed; then the three spans read (12), (10), (2)', () => {
     const view = renderNavWithCounts('all', counts(0, 0, 0));
 
-    expect(countTexts()).toEqual(['(0)', '(0)', '(0)']);
+    expect(linkNames()).toEqual(['All']);
+    expect(countTexts()).toEqual(['(0)']);
+    expect(filterNav().querySelectorAll('span')).toHaveLength(1);
+    expect(within(filterNav()).queryAllByRole('link', { name: 'Active' })).toHaveLength(0);
+    expect(within(filterNav()).queryAllByRole('link', { name: 'Completed' })).toHaveLength(0);
 
     view.rerender(<TodoFilterNav selected="all" counts={counts(12, 10, 2)} />);
 
