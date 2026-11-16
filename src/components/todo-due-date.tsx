@@ -3,7 +3,8 @@
 // §15 TodoDueDate: a todo's due-date text and its edit control, rendered inside the TodoItem row; §17 adds the
 // overdue marker after the date; §28 Escape in the field closes the editor without saving; §31 adds the due-today
 // marker after the overdue slot; §37 adds a "Today" button that fills the field; §40 adds a "Clear due date" button
-// that saves an empty date; §45 focuses the date field on entering edit mode.
+// that saves an empty date; §45 focuses the date field on entering edit mode; §51 returns focus to "Edit due date"
+// after Escape.
 import {
   useEffect,
   useLayoutEffect,
@@ -43,6 +44,10 @@ export function TodoDueDate({
   const [completed, setCompleted] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const fieldRef = useRef<HTMLInputElement>(null);
+  const editButtonRef = useRef<HTMLButtonElement>(null);
+  // One-shot: set only by the Escape that leaves edit mode, consumed by the effect below (REQ-51.5); a save or a clear
+  // never sets it, so their exit moves no focus (REQ-51.3).
+  const escapedRef = useRef(false);
   const fieldId = `todo-${todoId}-due-date`;
   const errorId = `${fieldId}-error`;
 
@@ -59,9 +64,15 @@ export function TodoDueDate({
 
   // Keyed on `editing` alone: only the switch into edit mode moves focus (REQ-45.4); a re-render while editing (draft,
   // pending, error, a new dueDate, "Today") leaves focus where it is (REQ-45.3). No select(), unlike §41 (REQ-45.5).
+  // The switch out of edit mode focuses "Edit due date" only when Escape caused it (REQ-51.1, REQ-51.3).
   useEffect(() => {
     if (editing) {
       fieldRef.current?.focus();
+      return;
+    }
+    if (escapedRef.current) {
+      escapedRef.current = false;
+      editButtonRef.current?.focus();
     }
   }, [editing]);
 
@@ -78,6 +89,7 @@ export function TodoDueDate({
       return;
     }
     event.preventDefault();
+    escapedRef.current = true;
     setEditing(false);
     setDraft(dueDate ?? '');
     setError(undefined);
@@ -169,6 +181,7 @@ export function TodoDueDate({
           )}
           {/* Icon only: a row without a due date must show no text beyond §5 and §6 (REQ-15.5). */}
           <button
+            ref={editButtonRef}
             type="button"
             onClick={onEdit}
             disabled={pending}
