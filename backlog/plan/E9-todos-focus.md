@@ -34,6 +34,8 @@ focus from the click and is then disabled while pending (`todo-form.tsx:83`), so
   - The card's `docs(spec)` commit states once that the sibling sections' "`todo-form.tsx` unchanged" notes do not
     apply (D-40).
   - Mounts in `src/components/todo-form.tsx` only; contract `spec/contracts/42-new-todo-focus.md` (section 44).
+- **Spec:** §44 — unchanged (contract `spec/contracts/42-new-todo-focus.md`, written before the label under D-40; lifts and edits no other contract; states that the "`todo-form.tsx` unchanged" notes of `27-escape-new-todo.md:44`, `37-title-counter-warning.md:66` and `17-delete.md:59` do not apply; a failed save does not move focus)
+- **Test:** `src/components/todo-form-focus.test.tsx::AC-44.1: after typing Buy milk and clicking "Add" with createTodoAction resolving ok, the "New todo" box is document.activeElement and its value is ''` — red because: `todo-form.tsx` never calls `focus()` on the box, so `document.activeElement` is not the box after the save settles
 - **Tier:** full · **Depends on:** ~~D-40~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B9.1/`
 
@@ -52,6 +54,8 @@ button is removed, so focus falls to the page.
   - The card's `docs(spec)` commit adds one clause to §40's contract (`38-due-date-clear.md:64`) and states that the
     sibling sections' "`todo-due-date.tsx` unchanged" notes do not apply (D-40).
   - Mounts in `src/components/todo-due-date.tsx` only; contract `spec/contracts/43-due-date-focus.md` (section 45).
+- **Spec:** §45 — unchanged (contract `spec/contracts/43-due-date-focus.md`, written before the label under D-40; adds one clause to §40's contract line `38-due-date-clear.md:64`; states that the notes `17-delete.md:59`, `21-overdue-count.md:63`, `35-due-date-today.md:60` and `38-due-date-clear.md:67` do not apply)
+- **Test:** `src/components/todo-due-date-focus.test.tsx::AC-45.1: after the render document.activeElement is document.body and 0 elements are labelled "Due date"; after clicking "Edit due date" on dueDate 2026-11-05 the field labelled "Due date" is document.activeElement and holds 2026-11-05, and setTodoDueDateAction is called 0 times` — red because: `onEdit` only sets state and the clicked button is removed, so `document.activeElement` stays `document.body`
 - **Tier:** full · **Depends on:** ~~D-40~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B9.2/`
 
@@ -71,5 +75,7 @@ focus" (REQ-25.5, line 21). It lists "selecting the box's text on focus" in its 
   - No existing test is rewritten: AC-25.2, AC-25.3 and AC-25.5 check only the focused element, the value and
     `defaultPrevented`, and every e2e `/` press happens on an empty box.
   - Mounts in `src/components/todo-search-form.tsx` only; contract `spec/contracts/44-search-select.md` (section 46).
+- **Spec:** §46 — unchanged (contract `spec/contracts/44-search-select.md`, written before the label under D-40; edits REQ-25.5 and §25's contract line; lifts §25's "selecting the box's text on focus")
+- **Test:** `src/components/todo-search-form-select.test.tsx::AC-46.1: on (all, milk) with body focused, / makes "Search todos" the active element with value milk, selectionStart 0, selectionEnd 4, defaultPrevented true and 0 requests` — red because: the component calls `.focus()` but never `.select()`, so the selection does not span 0..4
 - **Tier:** full · **Depends on:** ~~D-40~~ · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B9.3/`
