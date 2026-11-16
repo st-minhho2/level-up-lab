@@ -149,6 +149,8 @@ describe('<TodoForm> focus after a successful add (§44)', () => {
 
     expect(document.activeElement).toBe(addButton());
     expect(actions.createTodoAction).toHaveBeenCalledTimes(1);
+    // user-event tracks its own value; React's form.reset() bypasses the value setter, so clear the stale copy.
+    newTodoBox().value = '';
 
     await user.click(newTodoBox());
     await user.keyboard('Walk the dog');
@@ -177,6 +179,8 @@ describe('<TodoForm> focus after a successful add (§44)', () => {
       expect(newTodoBox()).toHaveValue('');
     });
     await settled();
+    // user-event tracks its own value; React's form.reset() bypasses the value setter, so clear the stale copy.
+    newTodoBox().value = '';
 
     await user.keyboard('Walk');
 
