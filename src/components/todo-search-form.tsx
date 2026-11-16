@@ -1,8 +1,9 @@
 'use client';
 
 // §16 TodoSearchForm, extended by §21 (a "Clear search" link), §25 (the `/` key focuses the box), §27 (Escape in
-// the box clears it), §38 (the match count) and §46 (the `/` key also selects the box's text): a native GET form;
-// 'use client' only for the refs and keydown handlers of §25 and §27.
+// the box clears it), §38 (the match count), §46 (the `/` key also selects the box's text) and §50 (the box shows
+// the `/` hint as its placeholder): a native GET form; 'use client' only for the refs and keydown handlers of §25
+// and §27.
 import Link from 'next/link';
 import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { CLEAR_SEARCH_LABEL, clearSearchHref, isSearchInEffect } from '@/lib/clear-search';
@@ -79,6 +80,8 @@ export function TodoSearchForm({
         type="search"
         name="q"
         maxLength={SEARCH_QUERY_MAX_LENGTH}
+        // REQ-50.1, REQ-50.4: a literal, so the server's HTML carries it before hydration and without JavaScript.
+        placeholder="Press / to search"
         defaultValue={query}
         onKeyDown={onSearchBoxKeyDown}
         className="flex-1 rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
