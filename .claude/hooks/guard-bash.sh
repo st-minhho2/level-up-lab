@@ -38,7 +38,8 @@ done < <(printf '%s\n' "$CMD" | tr ';&|' '\n\n\n')
 #    with no comment or substitution. So does gh (global flags may come first): api with a DELETE/PATCH method (`-iX DELETE`) or
 #    force=true on git/refs, deleteRef, updateRef, a branch rename; repo sync --force; pr close or merge with -d (in a
 #    cluster or quoted) or --delete-branch, with flags and their values between pr and the subcommand (`gh pr -R o/r
-#    close`, `-R "$(…)"`) and quotes around gh, pr or the subcommand (B1.105). Once pr is followed by a flag, a later
+#    close`, `-R "$(…)"`, the first flag behind quotes, \ or $: `"-R"`, `\-R`, `$'-R'`) and quotes around gh, pr or the
+#    subcommand (B1.105); an empty unquoted variable before the flag (`gh pr $EMPTY -R …`) stays out of reach. Once pr is followed by a flag, a later
 #    close or merge word counts, on a later line of the command too (`gh pr -R o/r close 7` then `git branch -d x`:
 #    join them with && or ;). Out of reach of a text check: a flag or refspec held in a variable, words
 #    joined by ${IFS} or another expansion, an alias, a word quoted in pieces, a command built at run time, a ; & or |
@@ -55,7 +56,7 @@ CONFIG_FORCE='mirror|--mi?r?r?o?r?([^a-z]|$)|\.push["'"'"']?([[:space:]]+|=)["'"
 GH_API="${W}gh[[:space:]](.*[[:space:]])?api[[:space:]]"
 GH_WRITE_METHOD='(-[a-z]*x|--method)[[:space:]=]*["'"'"']?(delete|patch)|force[[:space:]]*[=:][[:space:]]*true'
 GH_REF_EDIT='deleteref|updateref|branches/[^[:space:]]+/rename'
-GH_PR_FLAGS='([[:space:]]+-.*)?' # a flag after pr, then any words (a value may hold spaces: `-R "$(cmd)"`; B1.103, B1.105)
+GH_PR_FLAGS='([[:space:]]+["'"'"'\\$]*-.*)?' # a flag after pr (behind quotes, \ or $: `"-R"`, `$'-R'`), then any words (a value may hold spaces: `-R "$(cmd)"`; B1.103, B1.105)
 GH_BRANCH_DELETE="${W}gh[\"']?[[:space:]](.*[[:space:]])?(repo[[:space:]]+sync.*--force|[\"']?pr[\"']?${GH_PR_FLAGS}[[:space:]]+[\"']?(close|merge)[\"']?([[:space:]].*)?[[:space:]][\"']?(-[a-z]*d|--delete-branch))"
 FORCE_MSG="force pushes and remote branch deletes are not allowed from an agent session."
 # Merging a pull request (B1.103): agents never merge (D-9), and the ruleset needs no approval, so a merge call would
