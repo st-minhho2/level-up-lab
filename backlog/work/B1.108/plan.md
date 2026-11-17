@@ -68,7 +68,8 @@ Costs (header and `hooks.md`): blocked too, a gh pr segment whose unquoted text 
 `'$X'-d` or `\$X-d`, `-c "$WHY-d"`, `--comment 'see {a,-d}'`, a commit message quoting `gh pr m''erge`; a command with
 both a force push and a gh pr merge or delete may get the other message (the gh pr loop now runs first). Still out of
 reach for the gh pr rules: an escape the shell expands (`$'\x2dd'`, `$'m\145rge'`), `${X:--d}`, `${X:-merge}` and
-other operator expansions, a brace list's sixth item on (`-{a,b,c,e,f,d}`), nested or adjacent lists (`-{x,{c,d}}`), words joined by `${IFS}`, a word in a set variable,
+other operator expansions, a brace list's sixth item on (`-{a,b,c,e,f,d}`), nested or adjacent lists (`-{x,{c,d}}`), a zsh subscript flag (`$X[(r)x]`) or a flag group with a space
+(`${(j: :)X}`) (plan review round 6 note), words joined by `${IFS}`, a word in a set variable,
 `$(…)`, an alias; for `gh api` (B1.103) and git push (B1.24), a word quoted in pieces (`pulls/7/m''erge`, `-'f'`).
 
 ## Files
@@ -125,4 +126,4 @@ B1.108` no overlap; `check-plan-scope.sh`, `check-backlog.sh` OK; CI green.
 | 4    | dev-lead | rounds 4–5 probes  | `test(hooks): B1.108 review pass 1 -- probe glued brace lists and expansions`        |
 | 5    | dev-lead | rounds 4–5 fix     | `fix(hooks): B1.108 review pass 1 -- brace lists, numbers, subscripts and zsh flags` |
 
-Plan review: round 6 pending · Plan approved by: lead, 2026-11-17 (round 3; round 6 pending) · Rounds: 2
+Plan review: approved, round 6 · Plan approved by: lead, 2026-11-17 (round 3; round 6 pending) · Rounds: 2
