@@ -49,3 +49,91 @@ Notes for the lead (none blocks):
 4. I did not check B's timing figures (929 s and 3.85 s). They bear only on choosing B.
 
 Verdict: approved
+
+## Diff review (round 1)
+
+Diff `origin/main` (`4e5b42a`) `...2bf0ac0`: 6 files, 211 insertions, 13 deletions. PR #390 is a draft whose head
+is still `2feb79e`, so the probe and fix commits are not pushed yet. Tooling card, no section, no `src/` change.
+
+### Commands (last line of each)
+
+| Command                                  | Result                                                                                                                              |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                              | exit 0; "All matched files use Prettier code style!"                                                                                |
+| `pnpm typecheck`                         | exit 0                                                                                                                              |
+| `pnpm test`                              | "Tests 403 passed (403)", the same count as before the card                                                                         |
+| `pnpm test:e2e`                          | "91 passed (2.2m)"                                                                                                                  |
+| `scripts/mutation-gate.sh`               | "mutation: CI only, no src/lib or src/actions change"                                                                               |
+| `scripts/hook-smoke.sh` (worktree, HEAD) | "hook-smoke: 838 probes OK", `/bin/bash` 3.2.57                                                                                     |
+| `scripts/ci/check-suppressions.sh`       | "OK: no new suppressions"                                                                                                           |
+| `scripts/ci/check-config-change.sh`      | exit 1 locally, as expected: it lists `hooks.md` and `guard-bash.sh` without the label. PR #390 has `config-change-approved`        |
+| `scripts/ci/check-feat-commits.sh`       | "OK: no feat commit touches tests"                                                                                                  |
+| `scripts/ci/check-ac-coverage.sh`        | "OK: every criterion of a shipped section has a test"                                                                               |
+| `scripts/ci/check-spec-sections.sh`      | "OK: sections cited: 1 … 53"                                                                                                        |
+| `scripts/ci/check-features-map.sh`       | "OK"                                                                                                                                |
+| `scripts/ci/check-plan-scope.sh`         | "OK: chore/B1.107-quoted-delete stays inside the approved plan of B1.107"                                                           |
+| `scripts/ci/check-backlog.sh`            | "OK: README matches the cards"                                                                                                      |
+| `scripts/verify-red.sh B1.107`           | "no 'test(<pkg>): B1.107 … (red)' commit". This is the deviation the plan states: no `(red)` marker on a commit with no vitest file |
+| `scripts/next-task.sh --check B1.107`    | "no overlap with any Doing or Review card"                                                                                          |
+
+The red was shown by hand instead. I ran `scripts/hook-smoke.sh` in `git clone . $TMPDIR/b107d1` at `b80699a`: exit 1,
+with exactly the 12 new `force pushes` probes failing. The clone also had 14 more FAILs because it has no
+`node_modules` (js-yaml, the dev-lead frontmatter checks and the FR review-format checks). The same 14 appear at HEAD
+in that clone, so they come from the environment, not from the card.
+
+### Checklist
+
+- Probes match the card: all 12 blocked probes and 6 allowed probes are the plan's lists, verbatim. Acceptance 2's
+  three commands are among the allowed ones. Acceptance 3: the red is above, the green is 838 = 820 + 18, and the
+  hook is bash 3.2.
+- Tests not weakened: `git log --first-parent --no-merges b80699a..HEAD -- scripts/hook-smoke.sh '*.test.*' e2e/` is
+  empty, and the branch has no merge commits. The fix commit touches only `guard-bash.sh` and `hooks.md`.
+- Every changed file is in the plan. The `GH_BRANCH_DELETE` line is the plan's pasted line, character for character.
+  The messages are unchanged.
+- `hooks.md` re-pad: `git diff -w` shows only 2 lines changed, the table's separator row and the guard-bash row. The
+  other 8 lines differ only in the padding Prettier adds after the guard-bash cell widened the column. The lint hook
+  formats every edit, and the file is in the plan, so this is the plan's change, not scope creep.
+- No secret, no suppression, no `src/`, no `prisma/`.
+- Mutants, run on the clone at `2bf0ac0` against the full `hook-smoke.sh`. "FAILs" counts the `force pushes` probes
+  that fail. Putting the class back to `[\"']?` gives 12 FAILs. Removing `$` from the class gives 7, removing `\\` gives 3, and changing `*` to `?`
+  gives 9. All four are killed, and the counts match the plan. With no mutant, HEAD in the clone has 0 `force pushes`
+  FAILs and the same 14 environment FAILs.
+- Header and `hooks.md` wording, checked against a copy of the base hook (`old`) and of HEAD (`new`) with
+  28 adversarial commands:
+  - The forms the docs name as blocked now go 0 → 2: `$''-d`, `''$'-d'`, `"gh" "pr" "close" 7 $'-d'`, a tab before
+    the flag, and `-c "fixed" \--delete-branch`.
+  - The forms named as out of reach stay at 0 on `new`: `\close`, `$'close'`, `$'pr' close`, `-'d'`, `"-"d`, and
+    `$'\x2dd'` (from the plan round). The stated false positive `-c "see \-d in docs"` goes 0 → 2.
+  - `"close"` and `'close'` with `$'-d'` / `\-d` are blocked (exit 2). So the phrase "a quoted or escaped
+    subcommand" is correct only together with its examples (`$'close'`, `\close`). The same header already says
+    plain quotes around the subcommand are covered (B1.105). Not blocking.
+  - The docs list as out of reach "a flag or refspec held in a variable" and "words joined by ${IFS} or another
+    expansion". Two spellings exit 0 on both hooks and do not clearly fit either phrase:
+    - `{-d,}` and `{,--delete-branch}`: brace expansion yields a bare `-d`.
+    - `$X-d` and `"$X"-d`: an empty variable before a literal flag.
+  - These gaps are older than this card and outside its acceptance, which covers quotes, `\` and `$'…'`/`$"…"`. They
+    belong in the follow-up card below, not here.
+- Merge path: `gh pr merge 7 $'-d'` and `\-d` exit 2 with the merge message on both hooks (B1.103), as plan-review
+  note 1 says.
+
+### Findings
+
+```
+[1] KIND: plan-mismatch
+    WHERE: backlog/work/B1.107/pr-body.md:25 (Plan section, "filed as a follow-up card with B (`sed` form) as its proposed fix")
+    DEFECT: the PR body says the `gh pr $'merge' 7` merge gap is filed as a follow-up card, but no such card exists.
+    TRIGGER: `grep -rl "\$'merge'" backlog/` at 2bf0ac0 lists only backlog/work/B1.107/{plan,review,pr-body}.md; `gh pr list --state all` shows no filing PR after #390.
+    WRONG BEHAVIOUR: the plan says that on `approve` the dev-lead files the merge gap, an open path for an agent to merge (exit 0 today, D-9), as a card. Until that card exists, nothing on main tracks the gap, yet the lead reading PR #390 is told it is filed.
+    CONFIDENCE: confirmed
+```
+
+The fix does not touch the diff. File the card in the "Filing a card" lane (its own PR), and add brace expansion
+(`{-d,}`) and an empty variable before the flag (`$X-d`) to it, or change the PR body to "to be filed". Do this before
+PR #390 leaves draft.
+
+Verdict: ready for PR. The code and probes are ready. Finding 1 is in the PR body, not the code; the dev-lead resolves
+it when filling the body's pending Verification and Review sections.
+
+Riskiest unfalsified: CI runs bash 5, and I ran only `/bin/bash` 3.2 locally. The new class `[\"'\\\\$]*` inside a
+double-quoted assignment could expand differently under bash 5's `=~`. The same class already works in `GH_PR_FLAGS`
+and `PUSH_FORCE` in CI, so I could not falsify it, but I did not run it there.
