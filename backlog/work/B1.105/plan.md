@@ -5,7 +5,9 @@ Approach: `guard-bash.sh` section 2. `GH_PR_FLAGS` (B1.103) becomes "a flag, the
 `GH_BRANCH_DELETE`, which uses it between `pr` and `close|merge`, with the quotes `GH_PR_MERGE` allows after `gh` and
 around `pr` / the subcommand. `GH_PR_MERGE` keeps using `GH_PR_FLAGS`, so `gh pr -R "$(cat r)" merge 7` (exit 0 today)
 is blocked too. Messages unchanged. The quotes and the merge form are one step past the card's flag forms, on the same
-lines; the lead can drop them at the gate.
+lines; the lead can drop them at the gate. Round 2 (diff review pass 1 #1, lead chose option a): the first flag may sit
+behind a quote or `\` (`gh pr "-R" o/r close 7 -d`, `gh pr '--repo' …`, `gh pr \-R …`; the shell strips them), so
+`GH_PR_FLAGS` takes `["'\\]?` before its `-`.
 
 Costs, for the lead to accept (stated in the hook header and `hooks.md`): the text is matched, not run. Once `pr` is
 followed by a flag, any later word `close`/`merge` counts: `gh pr -R o/r comment 7 -b "will close 7 -d"` and
@@ -21,7 +23,7 @@ advice (tier quick, no section). Dev-lead writes the hook and `scripts/` (intera
 | File                          | Change                                                                              | Why          |
 | ----------------------------- | ----------------------------------------------------------------------------------- | ------------ |
 | `.claude/hooks/guard-bash.sh` | `GH_PR_FLAGS` widened and moved up; `GH_BRANCH_DELETE` uses it, quotes; header      | Acceptance 1 |
-| `scripts/hook-smoke.sh`       | section "branch delete through gh pr flags (B1.105)": 16 blocked, 7 allowed         | Test line    |
+| `scripts/hook-smoke.sh`       | section "branch delete through gh pr flags (B1.105)": 21 blocked, 7 allowed         | Test line    |
 | `.claude/docs/hooks.md`       | guard-bash row: flags, values and quotes before `close`/`merge`; the false positive | Acceptance 1 |
 | `backlog/work/B1.105/*`       | plan, review, pr-body                                                               | pipeline     |
 
@@ -30,7 +32,7 @@ advice (tier quick, no section). Dev-lead writes the hook and `scripts/` (intera
 `guard-bash.sh` (PreToolUse Bash): exit 2 on the forms below; exit 0 otherwise as today.
 
 ```bash
-GH_PR_FLAGS='([[:space:]]+-.*)?'
+GH_PR_FLAGS='([[:space:]]+["'"'"'\\]?-.*)?'
 GH_BRANCH_DELETE="${W}gh[\"']?[[:space:]](.*[[:space:]])?(repo[[:space:]]+sync.*--force|[\"']?pr[\"']?${GH_PR_FLAGS}[[:space:]]+[\"']?(close|merge)[\"']?([[:space:]].*)?[[:space:]][\"']?(-[a-z]*d|--delete-branch))"
 ```
 
@@ -38,6 +40,8 @@ GH_BRANCH_DELETE="${W}gh[\"']?[[:space:]](.*[[:space:]])?(repo[[:space:]]+sync.*
   `close --delete-branch 7`, `-dc bye`, `"-d"`, `gh -R o/r pr --repo o/r …`, `/opt/homebrew/bin/gh …`, after `&&`,
   `"gh" pr close 7 -d`, `gh "pr" "close" …`, `GH PR -R O/R CLOSE 7 -D`, `-R "$(gh repo view …)" close 7 -d`,
   `-R $(cat r) close 7 --delete-branch`. Blocked, `agents never merge` (1): `gh pr -R "$(cat r)" merge 7`.
+- Round 2, blocked (5): `force pushes` for `gh pr "-R" o/r close 7 -d`, `gh pr '--repo' o/r close 7 --delete-branch`,
+  `gh pr "--repo=o/r" close 7 -d`, `gh pr \-R o/r close 7 -d`; `agents never merge` for `gh pr "-R" o/r merge 7`.
 - Allowed (7): `gh pr -R o/r close 7`, `gh pr --repo o/r close 7 -c "superseded"`, `gh pr -R o/r view 7`,
   `gh pr -R o/r list`, `gh pr --repo o/r list --state closed`, `gh pr -R o/r checks 7`, `gh pr -R o/r diff 7`.
 
@@ -49,6 +53,9 @@ GH_BRANCH_DELETE="${W}gh[\"']?[[:space:]](.*[[:space:]])?(repo[[:space:]]+sync.*
 - Green `chore(hooks): B1.105 guard-bash blocks gh pr close with flags before it`: "hook-smoke: 813 probes OK"
   (790 + 23), `/bin/bash` 3.2 locally, bash 5 in CI. Mutants (prototype): `GH_PR_FLAGS` dropped; B1.103's one-word
   value back; no quote after `gh`; no quotes around `pr`/`close` — each fails at least one blocked probe.
+- Round 2: probe commit `test(hooks): B1.105 review pass 1 -- probe a quoted or escaped first flag` (no marker):
+  hook-smoke exit 1, 5 FAIL, 813 ok; then `fix(hooks): B1.105 review pass 1 -- a quoted or escaped first flag`:
+  "hook-smoke: 818 probes OK"; mutant: the `["'\\]?` class dropped → those 5 fail.
 - `pnpm lint && pnpm typecheck` exit 0; `pnpm test` 403 before and after (no `src/`); mutation: CI only, no src/lib or
   src/actions change; `next-task.sh --check B1.105` no overlap; `check-plan-scope.sh`, `check-backlog.sh` OK; CI green.
 
@@ -60,4 +67,4 @@ GH_BRANCH_DELETE="${W}gh[\"']?[[:space:]](.*[[:space:]])?(repo[[:space:]]+sync.*
 | 2    | dev-lead | rule, header, docs | `chore(hooks): B1.105 guard-bash blocks gh pr close with flags before it` |
 | 3    | reviewer | diff review        | `docs(backlog): B1.105 review pass N`                                     |
 
-Plan review: approved, round 2 · Plan approved by: lead, 2026-11-17 · Rounds: 1
+Plan review: · Plan approved by: · Rounds: 2
