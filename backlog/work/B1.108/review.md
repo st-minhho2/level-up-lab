@@ -300,3 +300,70 @@ Verdict: back to code-writer
 Riskiest unfalsified: word forms only zsh expands (the session shell is zsh): `${=X}`, `${~X}`, `$X[1]` and glob
 qualifiers are not modelled by `UNQUOTE`, and I did not search them for a merge or `-d` the copy misses. Not re-run
 either: the 139 KB one-segment timing (355 s on base too) and the other 10 of the 15 mutants.
+
+## Plan review (round 4)
+
+Plan at `d1b9c7a`, diffed against the approved round 3 (`86bec99`). Round 4 changes only the two pasted lines,
+`UNQUOTE` (`${…}` takes `[0-9]+`) and `BRACE_ONE` (the four classes also exclude `;` `&` `|` `(` `)` and the backtick).
+It adds 11 probes and two commits.
+
+The prototype `fix/guard-bash.sh` (copied to `$TMPDIR/b108/r4/fix/`) differs from `bd10055`'s hook (`green/`,
+byte-identical to the worktree's `HEAD` hook) by exactly those two lines, and both match the plan's block. Probes:
+`probes4.sh`, inserted into `scripts/hook-smoke.sh` in a fresh clone `$TMPDIR/b108/r4/c/` at `d1b9c7a`.
+
+| Check                                                                                  | pass / fail: reason                                                                                                                                                 |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                         | pass: the same 4 rows. Round 4 adds no file                                                                                                                         |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | fail: n/a for TypeScript, but the `${…}` widening still misses the subscript and zsh-flag forms of the same family (reason 1)                                       |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass: no advice. The lead's option a is recorded                                                                                                                    |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass: 11 more blocked forms, each with its message                                                                                                                  |
+| verification lists exact commands with expected numbers                                | pass, reproduced with `/bin/bash` 3.2.57. On the `bd10055` hook: exit 1, 11 FAIL (exactly the 11 new probes), 878 ok. On the prototype: "hook-smoke: 889 probes OK" |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | pass: steps 4 and 5 are a probe `test(hooks): … review pass 1 -- …` and a `fix(hooks): …`, as review-pass hardening is filed                                        |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by you | pass: n/a. `tier.sh` gives `high`. The plan's last line reads "round 4 pending", with no new approval written                                                       |
+| no settled D-n contradicted                                                            | pass: D-9, D-19 and D-28 are followed                                                                                                                               |
+| `scripts/next-task.sh --check B1.108` on the committed plan says no overlap            | pass: `[next-task] B1.108: no overlap with any Doing or Review card` (at `d1b9c7a`)                                                                                 |
+
+Diff review pass 1 is resolved:
+
+- All 11 triggers exit 2 on the prototype under BSD `sed` / bash 3.2 and under GNU `sed` 4.9 / bash 5.2.15
+  (`node:24-bookworm`, read-only mount), with identical exits on both builds.
+- I ran 72 commands: the 11 probes, 19 new adversarial ones and my 42 from rounds 1 to 3. Only 13 change exit code
+  from `bd10055` to the prototype: the 11 probes, `${10}merge`, and `$({echo,-d})`, which a glued `(` used to hide.
+- No allowed read changes: `{view,diff} 7;true`, `-q '{t: .title, b: .body}'|cat`, `-q '.[]|{n:.number}'&&true`,
+  `(gh pr view {7,8})` and `${12}x` all exit 0.
+- Timing is unchanged:
+
+  | Input                              | `bd10055`     | Prototype     |
+  | ---------------------------------- | ------------- | ------------- |
+  | 300 segments                       | 1.84 / 1.89 s | 1.92 / 1.86 s |
+  | round 3's 105 KB worst case, view  | 0.78 s        | 0.75 s        |
+  | round 3's 105 KB worst case, merge | 0.15 s        | 0.17 s        |
+
+### Reasons (changes requested)
+
+1. **A `${…}` that is not a bare name or number still merges or deletes, in bash as well as zsh.** This answers the
+   pass-1 "riskiest unfalsified" (zsh word forms). Round 4 widens `\$\{…\}` to `[0-9]+` only. A subscript or a zsh
+   flag leaves the copy holding `$ x[1] merge` or `${=x}merge`, while the shell hands gh the plain word.
+   - Merge trigger: `gh pr ${X[1]}merge 7`. `printf "[%s]" ${X[1]}merge` prints `[merge]` in both bash and zsh.
+   - Delete triggers: `gh pr close 7 ${X[1]}-d` and `gh pr close 7 ${X[0]}--delete-branch`. In bash these print
+     `[-d]` and `[--delete-branch]`.
+   - zsh only, and the session shell is zsh: `gh pr $X[1]merge 7`, `gh pr ${=X}merge 7`, `${~X}merge`,
+     `${^X}merge`, `gh pr close 7 $X[1]-d` and `${=X}-d`. zsh prints `[merge]` or `[-d]` for each.
+   - All of them exit 0 on `bd10055` and on the prototype.
+   - The plan's out-of-reach list names "`${X:--d}` and other operator expansions". It does not name a subscript or a
+     zsh flag. The header claims `${NAME}` is removed.
+   - This is the third time this family has been found (plan round 1 reason 1, pass 1 finding 2). Either remove
+     every `${…}` with no `:`/`-`/`=`/`+`/`?` operator as a whole word part, and `$NAME[…]`, then probe one bash
+     and one zsh form, or name "a subscripted or flagged expansion (`${X[1]}`, `$X[1]`, `${=X}`)" out of reach in
+     the header and `hooks.md`.
+
+Notes for the lead (not blocking):
+
+2. The round-4 probes spell the merge subcommand in upper case (`MERGE`), so they also lean on the lower-casing.
+   The lower-case mutant already has its own probes, so the probes still catch a reverted lower-casing. Upper case is
+   not what an agent would type, but the hook lower-cases the command before matching, so it gives the same result.
+3. I did not re-check the 7 round-4 mutant counts or the 139 KB timing. Both belong to diff review pass 2.
+4. This is round 4, past the three-round limit. My role rule sends it to the lead ("Waiting on human"). The verdict
+   below is input to the lead's choice, not a gate.
+
+Verdict: changes requested
