@@ -367,3 +367,66 @@ Notes for the lead (not blocking):
    below is input to the lead's choice, not a gate.
 
 Verdict: changes requested
+
+## Plan review (round 5)
+
+Plan at `e79e0c5`, diffed against `d1b9c7a`. Round 5 changes only the `UNQUOTE` line. It adds `$NAME[…]`, `${…[…]}`
+and zsh flags before the name (`(…)`, `=`, `~`, `^`), switches round 4's probes to a lower-case `merge`, and brings the
+probe total to 21.
+
+The prototype `fix5/guard-bash.sh` (copied to `$TMPDIR/b108/r5/fix5/`) differs from `bd10055` in only the two pasted
+lines, and both match the plan. Probes: `probes5.sh`, inserted into `scripts/hook-smoke.sh` in a fresh clone
+`$TMPDIR/b108/r5/c/` at `e79e0c5`.
+
+| Check                                                                                  | pass / fail: reason                                                                                                                     |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                         | pass: the same 4 rows                                                                                                                   |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | fail: the new subscript class `\[[^]]*\]` removes a whole command (reason 1)                                                            |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass: no advice. The lead's option a is recorded                                                                                        |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass                                                                                                                                    |
+| verification lists exact commands with expected numbers                                | pass, reproduced with `/bin/bash` 3.2.57. On the `bd10055` hook: exit 1, 21 FAIL, 878 ok. On the prototype: "hook-smoke: 899 probes OK" |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | pass: steps 4 and 5 as in round 4, with the subjects renamed                                                                            |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by you | pass: n/a. `tier.sh` gives `high`. The plan's last line reads "round 5 pending"                                                         |
+| no settled D-n contradicted                                                            | fail: D-9. The reason 1 triggers merge a PR that `bd10055` and base `4c79bec` block                                                     |
+| `scripts/next-task.sh --check B1.108` on the committed plan says no overlap            | pass: `[next-task] B1.108: no overlap with any Doing or Review card` (at `e79e0c5`)                                                     |
+
+Round 4's reason is resolved. Every round-4 subscript and zsh-flag trigger exits 2 on the prototype (the 21 probes in
+`p5.txt` all exit 2), and my 72 earlier commands keep their round-4 exits.
+
+### Reasons (changes requested)
+
+1. **The subscript class reaches across spaces, `;`, `$(` and backticks, so it removes a whole gh pr merge or delete
+   from the copy.** This is a regression: `bd10055` blocks every trigger below, and the prototype lets them through.
+   `\[[^]]*\]` (both copies, in `$NAME[…]` and `${…[…]}`) runs from the first `[` after a variable to the next `]`,
+   whatever lies between.
+   - Triggers (`gh`, the merge word, `$X` unset):
+     - `bash -c 'echo $X[; gh pr merge 7 #]'`
+     - `bash -c 'echo ok' && bash -c 'true $X[; gh pr close 7 -d #]'`
+     - `echo ${X[$(gh pr merge 7)]}`
+     - `echo $X[$(gh pr merge 7)]`
+     - ``echo ${X[`gh pr merge 7`]}``
+     - `echo ${(f)X[$(gh pr close 7 -d)]}`
+     - `gh pr close 7 -c $X[ -d -c ] x`
+   - `$TMPDIR/b108/r5/new-trig.txt` holds 12 triggers plus the plain merge as a control. On `bd10055` all 13 exit 2.
+     On the prototype the 12 triggers exit 0 and the control exits 2. The result is the same under BSD `sed` /
+     bash 3.2 and under GNU `sed` 4.9 / bash 5.2.15.
+   - The shell runs the hidden command:
+     - In bash, `$X[` is a literal `[`, the `;` ends the word and `#]` is a comment. `bash -c 'echo $X[; echo RAN #]'`
+       prints `RAN` when started from zsh too.
+     - In bash and zsh, a `$(…)` inside a subscript runs: `echo ${X[$(echo RAN >&2)]}` prints `RAN` in both.
+     - In bash, `-c $X[ -d -c ]` hands gh `-c [ -d -c ]`, so the `-d` is a real flag.
+   - Fix: narrow both subscript classes so a subscript cannot hold a space, `$`, a backtick, `(`, `)`, `;`, `&` or
+     `|`: `\[[^][:space:]$\`();&|]*\]`. Then add probes for these forms.
+     - I tried exactly that replacement on a copy (`$TMPDIR/b108/r5/tight/`).
+     - All 12 triggers and the control exit 2 on BSD and on GNU.
+     - The 21 `p5.txt` probes still exit 2.
+     - My 72 earlier commands keep their exits.
+     - I did not run the full hook-smoke on that copy.
+
+Notes for the lead (not blocking):
+
+2. `${X:-merge}` and `${X:--d}` are named out of reach, as the plan says, and still exit 0.
+3. I did not re-check the 11 round-5 mutant counts or the timings. Both belong to diff review pass 2.
+4. This is round 5, past the three-round limit, so it goes to the lead. The verdict is input, not a gate.
+
+Verdict: changes requested
