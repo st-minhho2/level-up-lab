@@ -71,4 +71,4 @@ GH_BRANCH_DELETE="${W}gh[\"']?[[:space:]](.*[[:space:]])?(repo[[:space:]]+sync.*
 | 4    | dev-lead | round 2 probes     | `test(hooks): B1.105 review pass 1 -- probe a quoted or escaped first flag` |
 | 5    | dev-lead | round 2 fix, docs  | `fix(hooks): B1.105 review pass 1 -- a quoted or escaped first flag`        |
 
-Plan review: approved, round 4 · Plan approved by: · Rounds: 2
+Plan review: approved, round 4 · Plan approved by: lead, 2026-11-17 · Rounds: 2
