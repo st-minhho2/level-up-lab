@@ -270,6 +270,30 @@ gh pr -R o/r checks 7
 gh pr -R o/r diff 7
 KEEP
 
+echo "== guard-bash.sh: a quoted or escaped delete flag after gh pr close (B1.107)"
+while IFS= read -r c; do probe_msg 2 'force pushes' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'QUOTED'
+gh pr close 7 $'-d'
+gh pr close 7 \-d
+gh pr close 7 $"--delete-branch"
+gh pr close 7 ""-d
+gh pr -R o/r close 7 $'-d'
+gh pr close 7 $'--delete-branch'
+gh pr close 7 \--delete-branch
+gh pr close 7 ''-d
+gh pr close 7 $"-d"
+gh pr close 7 $'-dc' bye
+gh pr close --repo o/r 7 \-d
+"gh" "pr" "close" 7 $'-d'
+QUOTED
+while IFS= read -r c; do probe 0 guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'PLAIN'
+gh pr close 7
+gh pr close 7 -c "superseded"
+gh pr -R o/r view 7
+gh pr close 7 -c $'superseded by #8'
+gh pr close "$N" --comment 'superseded'
+gh pr view 7 --json headRefName -q '.headRefName'
+PLAIN
+
 echo "== settings.json permissions (B1.23, B1.103)"
 n=$((n+1)); if node -e '
   const p = require("./.claude/settings.json").permissions;
