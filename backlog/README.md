@@ -7,7 +7,7 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic                 | File                                                         | Done    | Partial | Open   | Total   |
 | -------------------- | ------------------------------------------------------------ | ------- | ------- | ------ | ------- |
-| E1 Todos             | [plan/E1-todos.md](plan/E1-todos.md)                         | 67      | 1       | 36     | 104     |
+| E1 Todos             | [plan/E1-todos.md](plan/E1-todos.md)                         | 67      | 1       | 37     | 105     |
 | E2 Todos plus        | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)               | 5       | 0       | 0      | 5       |
 | E3 Todos polish      | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)           | 3       | 0       | 0      | 3       |
 | E4 Todos details     | [plan/E4-todos-details.md](plan/E4-todos-details.md)         | 3       | 0       | 1      | 4       |
@@ -18,7 +18,7 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | E9 Todos focus       | [plan/E9-todos-focus.md](plan/E9-todos-focus.md)             | 4       | 0       | 0      | 4       |
 | E10 Todos access     | [plan/E10-todos-access.md](plan/E10-todos-access.md)         | 3       | 0       | 0      | 3       |
 | E11 Todos access two | [plan/E11-todos-access-two.md](plan/E11-todos-access-two.md) | 3       | 0       | 0      | 3       |
-| **Total**            |                                                              | **109** | **1**   | **37** | **147** |
+| **Total**            |                                                              | **109** | **1**   | **38** | **148** |
 
 ## Execution order
 
@@ -201,6 +201,8 @@ flowchart TD
   S146["146 · guard-bash blocks a flag before close that deletes the branch<br/>~~B1.105~~"]
   S144 --> S146
   S147["147 · a (red) commit with no vitest file is refused before the push<br/>B1.106"]
+  S148["148 · guard-bash blocks a quoted or escaped delete flag after close<br/>B1.107"]
+  S146 --> S148
 ```
 
 ## Remaining
@@ -248,6 +250,7 @@ at most 3 cards Doing (B1.18).
 | 128  | B1.100 | Each parallel run mutation-tests all of src/lib up to three times, whatever the card changed              | —      | Partial | —                               | Lead  | S [estimate] |
 | 136  | B1.102 | check-ac-coverage skips a ✗ section, so a feature PR's wrong title format fails only in its closing PR    | —      | Open    | —                               | Lead  | S [estimate] |
 | 147  | B1.106 | A `(red)` marker on a commit with no vitest file fails only in CI, after the push                         | —      | Open    | —                               | Lead  | S [estimate] |
+| 148  | B1.107 | guard-bash lets a `$'…'`, `$"…"` or `\` delete flag after `gh pr close` delete the branch                 | —      | Open    | ~~B1.105~~                      | Lead  | S [estimate] |
 
 ## Waiting on human
 
