@@ -1580,3 +1580,30 @@ lives only in the mistake log, which says a written rule or a pre-push check is 
   - The PR carries `config-change-approved` (D-19).
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.106/`
+
+### B1.107 · guard-bash lets a `$'…'`, `$"…"` or `\` delete flag after `gh pr close` delete the branch
+
+_tooling · no §_
+**Status: Open** — `.claude/hooks/guard-bash.sh:55` (`GH_BRANCH_DELETE`) ends in
+`[[:space:]][\"']?(-[a-z]*d|--delete-branch)`: the delete flag after `close`/`merge` is seen only bare or behind one
+quote character. On `7163825` (and on B1.105's branch, PR #387), `gh pr close 7 $'-d'`, `gh pr close 7 \-d`,
+`gh pr close 7 $"--delete-branch"`, `gh pr close 7 ""-d` and `gh pr -R o/r close 7 $'-d'` exit 0, while
+`gh pr close 7 -d` and `gh pr close 7 "-d"` exit 2. The shell strips the `$`, quotes and `\`, so gh gets a plain `-d`
+and deletes the remote branch, which the hook exists to stop (B1.24). Found by B1.105's diff review pass 2 (finding 2,
+out of that card's scope); `PUSH_FORCE` (B1.24) and B1.105's `GH_PR_FLAGS` already take `["'\\$]*` for the same
+spellings
+
+- **Spec:** none — tooling (`.claude/hooks/guard-bash.sh`, `scripts/hook-smoke.sh`, `.claude/docs/hooks.md`); no `src/`
+  change, no section
+- **Test:** `scripts/hook-smoke.sh` probes for `gh pr close` (and `gh pr -R o/r close`) followed by `-d` /
+  `--delete-branch` behind `$'…'`, `$"…"`, `\` and `""` — red because: `guard-bash.sh` exits 0 on each today
+- **Acceptance:**
+  - Every `gh pr … close|merge …` with `-d` or `--delete-branch` behind quotes, `\` or `$` is blocked with the existing
+    branch-delete message; the forms blocked today stay blocked.
+  - `gh pr close 7`, `gh pr close 7 -c "superseded"` and `gh pr -R o/r view 7` still pass.
+  - The probes fail on main before the change and pass after; bash 3.2-safe; the hook-smoke count before and after is
+    stated.
+  - The PR carries `config-change-approved` (D-19).
+- **Tier:** quick · **Depends on:** B1.105 (same line of `guard-bash.sh` and the same `hook-smoke.sh` section) ·
+  **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.107/`
