@@ -126,4 +126,4 @@ B1.108` no overlap; `check-plan-scope.sh`, `check-backlog.sh` OK; CI green.
 | 4    | dev-lead | rounds 4–5 probes  | `test(hooks): B1.108 review pass 1 -- probe glued brace lists and expansions`        |
 | 5    | dev-lead | rounds 4–5 fix     | `fix(hooks): B1.108 review pass 1 -- brace lists, numbers, subscripts and zsh flags` |
 
-Plan review: approved, round 6 · Plan approved by: lead, 2026-11-17 (round 3; round 6 pending) · Rounds: 2
+Plan review: approved, round 6 · Plan approved by: lead, 2026-11-17 · Rounds: 2
