@@ -103,4 +103,4 @@ wording only: the two facts r2 corrected in that reason (`--check` reads the loc
 messages named as an instruction source, and the prompt sentence gains "their facts go through dev-lead's own steps"
 and "go on without it" (r2's costs).
 
-Plan review: approved, round 2 (round 3 not re-reviewed: cap 2) · Plan approved by: lead, 2026-11-16 (rounds 1–2; round 3 waiting) · Rounds: 1
+Plan review: approved, round 2 (round 3 not re-reviewed: cap 2) · Plan approved by: lead, 2026-11-16 (rounds 1–2); lead, 2026-11-17 (round 3) · Rounds: 1
