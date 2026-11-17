@@ -331,3 +331,80 @@ The costs the lead accepts are unchanged from rounds 2–3:
 Note: the plan is 74 lines, against about 40 for one screen.
 
 Riskiest unfalsified: bash 5 in CI. Only `/bin/bash` 3.2 ran here; `["'"'"'\\$]*` behaves the same in both.
+
+## Diff review (round 2)
+
+Diff since pass 1 (`fe3c200..68fae57`): probe commit `18f92e0`, which adds 7 lines to `scripts/hook-smoke.sh`, and
+fix commit `68fae57`, which changes `guard-bash.sh` (`GH_PR_FLAGS` line 59 and header lines 41–42) and `hooks.md` (one
+phrase in the gh clause, one phrase in out of reach; the rest of the 20 lines is Prettier padding). The plan was
+re-approved at `1cb12f1` (round 4, `Plan approved by: lead, 2026-11-17`), and its pasted `GH_PR_FLAGS` matches the
+hook. The copies ran from `$TMPDIR/b105d`, a `git clone` with `node_modules` linked, under `/bin/bash` 3.2.57.
+
+### Command results (last line of each)
+
+| Command                               | Result                                                                                                          |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint` / `pnpm typecheck`        | exit 0 / exit 0                                                                                                 |
+| `pnpm test`                           | "Tests 403 passed (403)"                                                                                        |
+| `pnpm test:e2e`                       | "91 passed (2.1m)"                                                                                              |
+| `scripts/mutation-gate.sh`            | "mutation: CI only, no src/lib or src/actions change"                                                           |
+| `scripts/ci/check-suppressions.sh`    | "OK: no new suppressions"                                                                                       |
+| `scripts/ci/check-config-change.sh`   | error, label missing (`guard-bash.sh`, `hooks.md`). Expected before the PR; it needs `config-change-approved`   |
+| `scripts/ci/check-feat-commits.sh`    | "OK: no feat commit touches tests"                                                                              |
+| `scripts/ci/check-ac-coverage.sh`     | "OK: every criterion of a shipped section has a test"                                                           |
+| `scripts/ci/check-spec-sections.sh`   | "OK: sections cited: 1 … 53"                                                                                    |
+| `scripts/ci/check-features-map.sh`    | "OK"                                                                                                            |
+| `scripts/verify-red.sh B1.105`        | "no … (red) commit": expected, since the plan states the probe commits carry no marker                          |
+| `scripts/next-task.sh --check B1.105` | "B1.105: no overlap with any Doing or Review card"                                                              |
+| `scripts/hook-smoke.sh` at `68fae57`  | "hook-smoke: 820 probes OK" (813 + 7)                                                                           |
+| `scripts/hook-smoke.sh` at `18f92e0`  | exit 1, exactly 7 FAIL, all 7 of them the new probes (5 `force pushes`, 2 `agents never merge`), each exiting 0 |
+
+### Checklist
+
+- Pass 1 #1 is fixed. All 5 of its triggers exit 2 at `68fae57`. Four more spellings also exit 2: `''-R`, `"-"R`,
+  `$'--repo=o/r'` and `"\-R"`. The 7 new probes cover `"-R"`, `'--repo'`, `"--repo=o/r"`, `\-R`, `$'-R'`, and for
+  merge `"-R"` and `$"--repo"`.
+- My 20 cases from pass 1 and 9 new ones give 28 of 29 as expected. The one miss is finding 2 below, which predates
+  this card. The `$` in the class adds no false positive I could find. These all exit 0: `gh pr view $N --json state`,
+  `gh pr $SUB $N -R o/r`, `gh pr checks $N --watch`, and the stated out-of-reach case `gh pr $EMPTY -R o/r close 7 -d`.
+- Reverting part of the class fails probes. I ran 4 mutants of line 59 on the copy:
+  - class dropped: 7 of 23 blocked probes pass
+  - `$` dropped: 2 pass (matches the dev-lead's run)
+  - `\` dropped: 1 passes
+  - quotes dropped: 6 pass
+- No probe weakened. `git log --first-parent --no-merges 18f92e0..HEAD -- scripts/hook-smoke.sh` is empty, and there
+  is no merge after `18f92e0`.
+- Every changed file is in `plan.md`: yes, the same 4 rows. The commit subjects match the plan's work breakdown (step 5
+  `fix(hooks): …`).
+- `hooks.md` wording for "an empty unquoted variable before a `gh pr` flag" is accurate. `gh pr $EMPTY -R o/r close 7
+-d` exits 0 as stated, and filing it under "a command built at run time" is fair: the shell drops the empty word, so
+  the hook cannot know it is empty.
+
+### Findings
+
+```
+[2] KIND: correctness (predates this card; B1.24's delete-flag clause, a line this card does not change in that part)
+    WHERE: .claude/hooks/guard-bash.sh:60 (GH_BRANCH_DELETE, the tail `[[:space:]][\"']?(-[a-z]*d|--delete-branch)`)
+    DEFECT: the delete flag after close/merge is matched only bare or behind one quote, so a delete flag behind `\` or
+            `$'…'` / `$"…"` is missed, the same escape class this card now accepts for the first flag.
+    TRIGGER: gh pr close 7 $'-d' ; gh pr close 7 \-d ; gh pr close 7 $"--delete-branch" ;
+             gh pr -R o/r close 7 $'-d' ; gh pr -R o/r close 7 \--delete-branch   (each exits 0 at 68fae57 and on main)
+    WRONG BEHAVIOUR: gh receives -d / --delete-branch and deletes the remote branch; the header says -d "quoted" is
+            blocked, and its out-of-reach list does not name `\` or `$'…'` before the delete flag.
+    CONFIDENCE: confirmed (ran the 5 on the $TMPDIR copy of 68fae57 and of origin/main's hook, /bin/bash 3.2: all exit 0)
+```
+
+Finding 2 does not block this PR. It is in B1.24's part of the rule, the flagless form fails the same way on main,
+and the card's acceptance names the flags between `pr` and `close`. It is a candidate for a new card filed alone
+(filing lane). The fix would mirror `68fae57` by widening `[\"']?` before the delete flag to `["'\\$]*`, plus probes.
+If the lead prefers to fold it into B1.105, that is a plan round 5 with re-approval.
+
+Verdict: ready for PR. Before opening it:
+
+- `backlog/work/B1.105/pr-body.md` is stale and must be updated from `plan.md`. Line 14 still says "approved round 2",
+  line 40 still pastes `GH_PR_FLAGS='([[:space:]]+-.*)?'`, and line 45 still gives 813 probes. It needs round 4, the
+  `["'\\$]*` line, 820 probes, the second red (7 FAIL at `18f92e0`) and the mutants.
+- The PR carries `config-change-approved` (D-19).
+
+Riskiest unfalsified: bash 5 in CI. Only `/bin/bash` 3.2 ran here. `["'\\$]*` inside a bracket expression is literal
+in both POSIX ERE implementations, but CI is the first run under bash 5.
