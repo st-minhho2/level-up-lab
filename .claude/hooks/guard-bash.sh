@@ -2,7 +2,7 @@
 # PreToolUse hook for Bash. Exit 2 + reason on stderr blocks the command and shows the agent why.
 # Blocks: rm -rf in any flag spelling, force pushes and remote branch deletes, destructive Prisma commands, Prisma
 # migrations against a non-local DATABASE_URL, reads of .env*/keys/credentials, printing secret-looking variables or
-# the whole env, a reviewer's write outside a set TMPDIR (B1.84).
+# the whole env, a reviewer's write outside a set TMPDIR (B1.84), merging a pull request through gh (B1.103).
 set -uo pipefail
 . "$(dirname "$0")/lib.sh"
 CMD="$(json_field tool_input.command)"
@@ -54,8 +54,23 @@ GH_WRITE_METHOD='(-[a-z]*x|--method)[[:space:]=]*["'"'"']?(delete|patch)|force[[
 GH_REF_EDIT='deleteref|updateref|branches/[^[:space:]]+/rename'
 GH_BRANCH_DELETE="${W}gh[[:space:]](.*[[:space:]])?(repo[[:space:]]+sync.*--force|pr[[:space:]]+(close|merge)([[:space:]].*)?[[:space:]][\"']?(-[a-z]*d|--delete-branch))"
 FORCE_MSG="force pushes and remote branch deletes are not allowed from an agent session."
+# Merging a pull request (B1.103): agents never merge (D-9), and the ruleset needs no approval, so a merge call would
+# land. Any case: `gh … pr merge` in a segment (gh behind a path, a prefix or quotes, global flags first, flags and
+# their values between pr and merge: `gh pr -R o/r merge`); and in a command that names `gh … api` anywhere, read over
+# the whole command so a path or query held in a variable or a heredoc of the same command counts: pulls/<n>/merge in
+# any method (a GET too), /merges, and the GraphQL mutations mergePullRequest, enablePullRequestAutoMerge, mergeBranch,
+# enqueuePullRequest. The text is matched, not run, so a command that only names these is blocked too (a grep for
+# them, a PR title or card evidence quoting them). Out of reach: a script file the agent wrote and then runs, a query
+# read from a file an earlier command wrote (`-F query=@q.graphql`), a word quoted in pieces, an alias, a command
+# built at run time (`$(which gh) pr merge 7`), curl on the GitHub API.
+GH_ANY_API="${W}gh[\"']?[[:space:]](.*[[:space:]])?[\"']?api[\"']?[[:space:]]"
+GH_MERGE_API='pulls/[^[:space:]]*/merge([^a-z]|$)|/merges([^a-z]|$)|mergepullrequest|enablepullrequestautomerge|mergebranch|enqueuepullrequest'
+GH_PR_FLAGS='([[:space:]]+-[^[:space:]]*([[:space:]]+[^-[:space:]][^[:space:]]*)?)*'
+GH_PR_MERGE="${W}gh[\"']?[[:space:]](.*[[:space:]])?[\"']?pr[\"']?${GH_PR_FLAGS}[[:space:]]+[\"']?merge${E}"
+MERGE_MSG="agents never merge a pull request (gh pr merge, gh api on pulls/<n>/merge or /merges, a GraphQL merge mutation): merging is the lead's (D-9)."
 joined="${CMD//\\$'\n'/}"
 low="$(printf '%s' "$joined" | tr '[:upper:]' '[:lower:]')"
+[[ "$low" =~ $GH_ANY_API && "$low" =~ $GH_MERGE_API ]] && block "$ME" "$MERGE_MSG"
 if [[ "$low" =~ git_config_ ]]; then # key and value are separate variables (GIT_CONFIG_KEY_0, GIT_CONFIG_VALUE_0)
   [[ "$low" =~ mirror || ( "$low" =~ \.push && "$low" =~ =[\"\'\\$]*[+:] ) ]] && block "$ME" "$FORCE_MSG"
 fi
@@ -67,6 +82,7 @@ while IFS= read -r segment; do
   if [[ "$low" =~ $GH_API ]]; then
     [[ ( "$low" =~ git/refs && "$low" =~ $GH_WRITE_METHOD ) || "$low" =~ $GH_REF_EDIT ]] && block "$ME" "$FORCE_MSG"
   fi
+  [[ "$low" =~ $GH_PR_MERGE ]] && block "$ME" "$MERGE_MSG"
   [[ "$low" =~ $GH_BRANCH_DELETE ]] && block "$ME" "$FORCE_MSG"
   [[ $names_git -eq 1 ]] || continue
   [[ "$segment" =~ $PUSH_TAIL && "${BASH_REMATCH[3]}" =~ $PUSH_FORCE ]] && block "$ME" "$FORCE_MSG"

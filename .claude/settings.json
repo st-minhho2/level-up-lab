@@ -18,7 +18,12 @@
       "Bash(git -c core.hooksPath=*)",
       "Bash(LEFTHOOK=0*)",
       "Bash(gh pr merge*)",
-      "Bash(gh pr review*)"
+      "Bash(gh pr review*)",
+      "Bash(gh * pr merge*)",
+      "Bash(gh *pulls/*/merge*)",
+      "Bash(gh */merges*)",
+      "Bash(gh *mergePullRequest*)",
+      "Bash(gh *enablePullRequestAutoMerge*)"
     ]
   },
   "hooks": {
