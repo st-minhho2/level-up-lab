@@ -1595,3 +1595,33 @@ _tooling · no §_
 - **Tier:** quick · **Depends on:** ~~B1.105~~ (same line of `guard-bash.sh` and the same `hook-smoke.sh` section) ·
   **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.107/`
+
+### B1.108 · guard-bash lets `gh pr` merge or delete the branch when `pr`, the subcommand or the flag is quoted in pieces
+
+_tooling · no §_
+**Status: Open** — `.claude/hooks/guard-bash.sh:74` (`GH_PR_MERGE`) and `:60` (`GH_BRANCH_DELETE`) allow at most one
+quote character around `gh`, `pr` and `close`/`merge`, and none inside a word. On `4e5b42a` (and on B1.107's branch,
+PR #390), these exit 0, and the shell hands gh the plain word, so the pull request is **merged** or the remote branch
+deleted: `gh pr $'merge' 7`, `gh $"pr" merge 7`, `gh pr \merge 7`, `gh pr m''erge 7`, `gh pr $'close' 7 -d`,
+`gh $'pr' close 7 --delete-branch`, `gh pr close 7 -'d'`, `gh pr close 7 "-"d`, `gh pr close 7 {-d,}`,
+`gh pr close 7 {,--delete-branch}` and `gh pr close 7 $X-d` (an unset `X`). The merge forms bypass B1.103's rule
+(agents never merge, D-9). Found while planning B1.107: its plan weighed a general fix (a copy of the segment with
+`$'`, `$"`, `'`, `"` and `\` removed before the gh rules match) and measured it on `/bin/bash` 3.2 against a 138 KB
+one-segment command: base 295 s, bash `${//}` 929 s, one `sed` per segment 315 s (and ×2 on 300 small segments);
+`backlog/work/B1.107/plan.md`, review pass 1 of PR #390
+
+- **Spec:** none — tooling (`.claude/hooks/guard-bash.sh`, `scripts/hook-smoke.sh`, `.claude/docs/hooks.md`); no `src/`
+  change, no section
+- **Test:** `scripts/hook-smoke.sh` probes for each form above (merge forms with `agents never merge`, delete forms
+  with `force pushes`) — red because: `guard-bash.sh` exits 0 on each today
+- **Acceptance:**
+  - Each form above is blocked with the existing message, or named in the hook header and `hooks.md` as out of reach
+    with the reason; the forms blocked today stay blocked.
+  - `gh pr close 7`, `gh pr close 7 -c "superseded"`, `gh pr -R o/r view 7`, `gh pr view 7 --json mergeable` and
+    `git merge origin/main` still pass; every allow probe in `hook-smoke.sh` still passes.
+  - The probes fail on main before the change and pass after; bash 3.2-safe; the hook's time on a 138 KB command,
+    and the hook-smoke count, before and after are stated.
+  - The PR carries `config-change-approved` (D-19).
+- **Tier:** quick · **Depends on:** B1.107 (same lines of `guard-bash.sh` and the next `hook-smoke.sh` section) ·
+  **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.108/`
