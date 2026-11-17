@@ -620,3 +620,90 @@ Riskiest unfalsified: other bash-only orderings, where bash expands a word in an
 parameter expansion, as in finding 1). I tested brace lists around the unbraced subscript, but not tilde or
 process substitution next to a removed `$NAME`. Not re-run: the 139 KB one-segment timing and 15 of the 19
 mutants.
+
+## Plan review (round 7)
+
+Plan at `af53eb8d`, diffed against `3514f8a2`. Round 7 changes only the two subscript classes in `UNQUOTE`:
+
+- After a bare `$NAME`: `[^][:space:],]`.
+- Inside `${…[…]}`: `[^]}(\`]`.
+
+It also writes `\|` in the `hooks.md` row and adds 3 out-of-reach forms (a glob, a brace sequence, a brace item holding
+`}`). There are 6 more probes.
+
+The prototype `fix9/guard-bash.sh` (copied to `$TMPDIR/b108/r7/fix9/`) differs from `5f9884b2` (`head/`, byte-identical
+to the worktree's `HEAD` hook) in the `UNQUOTE` line, which matches the plan, and in older header comments. The comments
+do not change behavior (note 3). Probes: `probes9.sh`, inserted into `scripts/hook-smoke.sh` in a fresh clone
+`$TMPDIR/b108/r7/c/` at `af53eb8d`.
+
+| Check                                                                                  | pass / fail: reason                                                                                                                     |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                         | pass: the same 4 rows                                                                                                                   |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | pass: n/a for TypeScript. The pasted `UNQUOTE` matches the prototype                                                                    |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass: no advice. The lead's option a is recorded                                                                                        |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass                                                                                                                                    |
+| verification lists exact commands with expected numbers                                | pass, reproduced with `/bin/bash` 3.2.57. On the `5f9884b2` hook: exit 1, 4 FAIL, 910 ok. On the prototype: "hook-smoke: 914 probes OK" |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | pass: steps 6 and 7, a probe `test(hooks): … review pass 2 -- …` and a `fix(hooks): …`                                                  |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by you | pass: n/a. `tier.sh` gives `high`. The plan's last line reads "round 7 pending"                                                         |
+| no settled D-n contradicted                                                            | pass: D-9, D-19 and D-28 are followed                                                                                                   |
+| `scripts/next-task.sh --check B1.108` on the committed plan says no overlap            | pass: `[next-task] B1.108: no overlap with any Doing or Review card` (at `af53eb8d`)                                                    |
+
+Diff review pass 2 is resolved, with the same results under BSD `sed` / bash 3.2 and under GNU `sed` 4.9 / bash 5.2.15.
+
+| Input                                                           | Exit on the prototype                                                             |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `p9.txt` (6)                                                    | 6 of 6 exit 2. On `5f9884b2`, 4 exit 0                                            |
+| `all9.txt` (66: the 60 earlier blocked forms + 6)               | all exit 2                                                                        |
+| `trig5.txt` (9)                                                 | all exit 2                                                                        |
+| `sub.txt`                                                       | as before: all 2 except `${X:-merge}` (0, named out of reach)                     |
+| `edge9.txt`                                                     | as the plan states: `{$X[},-d}`, `{x,$X[},-d}`, `-{c..d}` and `{a,b}{,-d}` exit 0 |
+| my 105 commands from rounds 1 to 7 (`$TMPDIR/b108/r7/mine.txt`) | 6 change exit, listed below                                                       |
+
+The 6 changes:
+
+- **0 → 2:**
+  - `gh pr $X[(r)x]merge 7` (two copies in the file)
+  - `gh pr close 7 $X[(r)x]-d`
+  - `gh pr close 7 -c x {${X[ 1 ]},-d}`. bash hands `[-c][x][-d]`, because brace expansion skips `${…}`.
+- **2 → 0:**
+  - `echo ${X[; gh pr merge 7 #]}`
+  - `echo ${X[a; gh pr merge 7; b]}`
+
+  Neither shell runs the inner command. bash stops with "syntax error: operand expected". zsh stops with "bad math
+  expression" or prints an empty line, and `RAN` never prints, also when wrapped in `bash -c "…"`. So these were false
+  positives, not a closed hole.
+
+Timing is unchanged:
+
+| Input                             | `5f9884b2`    | Prototype     |
+| --------------------------------- | ------------- | ------------- |
+| 300 segments                      | 1.91 / 1.99 s | 2.09 / 1.91 s |
+| round 3's 105 KB brace worst case | 0.77 s        | 0.83 s        |
+
+I tried 9 more forms against the new classes (`cases7.txt`):
+
+- A bare subscript can no longer hide a command. Building `gh pr merge 7` needs a space, a tab, a newline (one `sed`
+  line), a comma in a brace list, or `${IFS}`. The first four are refused or cannot occur, and `${IFS}` is already out
+  of reach. For example, `echo $X[$({gh,pr,merge,7})]` exits 2.
+- `gh pr close 7 -c {$X[;,-d,-c,]}` exits 0 on both hooks. bash ends the word at the `;`, so gh gets no `-d`.
+- `${X[a,-d,b]}` inside a brace list does not split in bash, since brace expansion skips `${…}`. zsh rejects it with
+  "bad substitution".
+
+No blocking reason.
+
+Notes for the lead (not blocking):
+
+1. **The zsh subscript-flag example in the out-of-reach list goes stale.** The current header (`guard-bash.sh:50`) and
+   `hooks.md` give `$X[(r)x]` as out of reach. On the prototype that form now exits 2, because the bare class allows
+   `(`. The braced form `gh pr ${X[(r)x]}merge 7` still exits 0, since the braced class refuses `(`, and zsh hands gh
+   `merge`. When the fix lands, the example should become `${X[(r)x]}`.
+2. `{$X[},-d}` hands gh `-d` in bash (`printf` prints `[-c][[}][-d]` after `-c`). It exits 0 at `bd10055`,
+   `5f9884b2` and on the prototype, and the plan names it out of reach ("a brace item holding `}`"). This is a stated
+   cost, not a regression.
+3. The prototype's header comments are from before `5f9884b2`, but its code lines match the plan. The diff review has
+   to check the header and `hooks.md` text: the `\|` rendering, note 1, and the 3 new out-of-reach forms.
+4. Not checked here: the 6 round-7 mutant counts, the 139 KB timing, and the `hooks.md` cell count. All belong to diff
+   review pass 3.
+5. This is round 7, past the three-round limit, so it goes to the lead. The lead's `approve` is the gate.
+
+Verdict: approved
