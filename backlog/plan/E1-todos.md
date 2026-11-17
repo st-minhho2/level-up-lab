@@ -1579,14 +1579,7 @@ lives only in the mistake log, which says a written rule or a pre-push check is 
 ### B1.107 · guard-bash lets a `$'…'`, `$"…"` or `\` delete flag after `gh pr close` delete the branch
 
 _tooling · no §_
-**Status: Open** — `.claude/hooks/guard-bash.sh:55` (`GH_BRANCH_DELETE`) ends in
-`[[:space:]][\"']?(-[a-z]*d|--delete-branch)`: the delete flag after `close`/`merge` is seen only bare or behind one
-quote character. On `7163825` (and on B1.105's branch, PR #387), `gh pr close 7 $'-d'`, `gh pr close 7 \-d`,
-`gh pr close 7 $"--delete-branch"`, `gh pr close 7 ""-d` and `gh pr -R o/r close 7 $'-d'` exit 0, while
-`gh pr close 7 -d` and `gh pr close 7 "-d"` exit 2. The shell strips the `$`, quotes and `\`, so gh gets a plain `-d`
-and deletes the remote branch, which the hook exists to stop (B1.24). Found by B1.105's diff review pass 2 (finding 2,
-out of that card's scope); `PUSH_FORCE` (B1.24) and B1.105's `GH_PR_FLAGS` already take `["'\\$]*` for the same
-spellings
+**Status: Done** — 23315a4 (#390), hook-smoke 820 to 838 probes OK (red 12 FAIL at b80699a; /bin/bash 3.2, bash 5 in CI), vitest 403, e2e 91, mutation: CI only, no src/lib or src/actions change
 
 - **Spec:** none — tooling (`.claude/hooks/guard-bash.sh`, `scripts/hook-smoke.sh`, `.claude/docs/hooks.md`); no `src/`
   change, no section
