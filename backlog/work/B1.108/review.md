@@ -505,3 +505,118 @@ Notes for the lead (not blocking):
 2. I did not re-check the 19 mutant counts or the 139 KB timing. Both belong to diff review pass 2.
 
 Verdict: approved
+
+## Diff review (round 2)
+
+Diff `4c79bec...5f9884b2`; pass-1 delta `161dc84..5f9884b2`: probes `2a636039` (`scripts/hook-smoke.sh` only, +36),
+fix `5f9884b2` (`guard-bash.sh`, `hooks.md` only). Evidence under `$TMPDIR/b108d/`: the clone `c/` fetched to
+`5f9884b2`, `bd/` holds the `bd10055` hook, `shellcases.txt` and `globcases.txt` the new triggers, `bin/gh` a stub
+that prints the words it gets, `shrun.sh` and `globrun.sh` run a case under `/bin/bash` and `/bin/zsh -f` with the
+stub first on `PATH`, and `fix2/` the prototype named under findings 1 and 2.
+
+### Command results (last lines)
+
+- `pnpm lint`: `All matched files use Prettier code style!`. `pnpm typecheck`: exit 0.
+- `pnpm test`: `Tests  403 passed (403)`. `pnpm test:e2e`: not re-run (no `src/`, `e2e/` or config change since
+  round 1's `91 passed`).
+- `scripts/mutation-gate.sh`: `mutation: CI only, no src/lib or src/actions change`.
+- `check-suppressions`, `check-feat-commits`, `check-ac-coverage`, `check-spec-sections`, `check-features-map`,
+  `check-plan-scope`, `check-backlog`: OK.
+- `check-config-change.sh`: `::error::Protected configuration changed without the 'config-change-approved' label`
+  (expected until the PR carries the label, D-19).
+- `verify-red.sh B1.108`: no `(red)` commit (the stated deviation, B1.106).
+- hook-smoke at `2a636039` (red): exit 1, 26 FAIL, 882 ok. At `5f9884b2`: `hook-smoke: 908 probes OK`, in the
+  worktree's clone with `/bin/bash` 3.2. Under bash 5.2.15 and GNU sed 4.9 (docker): 0 guard-bash FAIL, 319
+  `ok guard-bash`; the other 14 FAIL are the `node_modules`-less container's, as in round 1.
+- `git diff --stat origin/main...HEAD`: 6 files changed, 813 insertions(+), 29 deletions(-). (The local `main` ref
+  is stale at `7163825`, so `main...HEAD` lists 18 files; `origin/main` is the base `4c79bec`.)
+
+### Checklist
+
+- Each round 4–6 form has a probe asserting the message: pass. The 21 + 9 probes match the plan's lists.
+- No probe weakened: pass. `2a636039` only adds 36 lines; `5f9884b2` does not touch `scripts/hook-smoke.sh`.
+- Changed files are in `plan.md`: pass. The interface (`UNQUOTE`, `BRACE_ONE`) is byte-identical to the plan's block.
+- Round 1's findings: resolved. All 26 blocked triggers in round 1's `cases.txt` exit 2 at `5f9884b2`, `${10}`
+  included; the 8 that exit 0 are the allowed reads and the stated `${X:-}merge`.
+- Would a probe fail if one changed line were reverted: pass. 4 of the plan's 19 round 4–6 mutants re-run with
+  the full hook-smoke on the clone: a one-digit `${…}` gives 2 FAIL, no `(…)` flag group 1, and a subscript class
+  allowing a space 1, all as the plan says. `;` kept in BRACE_ONE's prefix class only gives 2 (the plan's 4 drops
+  it from all four classes). The clone was restored (`git status` clean).
+- Timing, two runs each: 300 segments base 1.83 / 1.82 s, `bd10055` 1.87 / 1.75 s, `5f9884b2` 1.81 / 1.81 s,
+  `fix2/` 1.77 / 1.76 s. The 3 KB brace-heavy merge command takes 0.07 s on all four.
+- Header and `hooks.md` state the boundary: fail (findings 2, 3).
+
+### Findings
+
+```
+[1] KIND: correctness (regression from bd10055)
+    WHERE: .claude/hooks/guard-bash.sh:99 (UNQUOTE, the unbraced subscript class `\[[^][:space:](`;&|]*\]`)
+    DEFECT: the subscript removed after an unbraced `$NAME` may hold `{` `,` `}`, but bash brace-expands the word
+            before it expands `$X`, and in bash `$X[` is not a subscript at all, so the removal deletes words bash
+            hands gh.
+    TRIGGER: `gh pr close 7 -c {$X[,-d,-c,]}` and `gh pr close 7 -c {$X[,--delete-branch,-c,]}`, run by bash
+             (`bash -c '…'`, which round 6's own probe uses as a vector).
+    WRONG BEHAVIOUR: exit 0 at 5f9884b2 on both sed builds; exit 2 at bd10055. bash 3.2 and 5.2 hand the stub
+            `[pr] [close] [7] [-c] [[] [-d] [-c] []]`: two comments ("[" then "]") and `-d`, so the remote branch is
+            deleted. The copy reads `-c {}`. zsh rejects the word (`bad math expression`), so it is bash-only.
+            Prototype (`fix2/`): add `{},` to that class (`[^][:space:](`;&|{},]`); the copy then keeps
+            `{[,-d,-c,]}`, BRACE_ONE turns it into `[ -d -c ]`, exit 2.
+    CONFIDENCE: confirmed (hook on both sed builds; the stub under bash 3.2, bash 5.2 and zsh)
+
+[2] KIND: spec-mismatch (stated boundary)
+    WHERE: .claude/hooks/guard-bash.sh:99 (the braced subscript class), header :93, hooks.md:11
+    DEFECT: a braced subscript holding a space is kept, and the out-of-reach lists do not name what that lets
+            through. The header says only "A subscript holding a space … stays". The space exclusion is needed
+            only for the unbraced `$X[` (where bash splits the word there, the round 5 regression); inside `${…}`
+            neither shell splits words or runs `;`.
+    TRIGGER: `gh pr ${X[ 1 ]}MERGE 7`; `gh pr close 7 ${X[ 1 ]}-d` (MERGE = the merge subcommand)
+    WRONG BEHAVIOUR: exit 0 at 5f9884b2 (and at bd10055 and 4c79bec); bash and zsh both hand the stub
+            `[pr] [MERGE] [7]` / `[pr] [close] [7] [-d]`, while `${X[1]}MERGE` without the spaces is blocked.
+            Either cover it (prototype: braced class `[^]{}(`;&|]`, still refusing `(` and the backtick so
+            `${X[$(…)]}` stays visible, and `{` `}` so `${X[a}; … {]}` cannot swallow a command), or name
+            "a braced subscript with a space (`${X[ 1 ]}`)" out of reach in the header and `hooks.md`.
+    CONFIDENCE: confirmed (hook on both sed builds; the stub under bash and zsh)
+
+[3] KIND: spec-mismatch (documentation)
+    WHERE: .claude/docs/hooks.md:11 (the guard-bash row)
+    DEFECT: the new text puts a bare `|` inside code spans in a table cell ("`;`, `&` or `|`" and "`;` `&` `|`"); in
+            a GFM table that pipe ends the cell, so the row has 5 cells under a 3-cell header.
+    TRIGGER: render or parse `.claude/docs/hooks.md` at 5f9884b2: the row counts 5 cells (161dc84: 3), and prettier
+             padded it as a column break ("`&` or `" + 74 spaces + "| `(it may hide …").
+    WRONG BEHAVIOUR: GFM drops cells past the header's count, so the rendered row stops at "unless the subscript
+            holds a space, `(`, a backtick, `;`, `&` or". Everything after it disappears from the page: the
+            brace stop characters, every false positive, both out-of-reach lists, the merge rule, Prisma, secret
+            reads, pr-step and rule 6. Prettier's re-pairing of the code spans also glued words to them
+            ("`)`and a backtick, so`-'d'`, … `close>/dev/null 7 -d`count"). Fix: write `\|` inside the table (or
+            "the pipe", as the row's B1.24 text does), then re-run prettier.
+    CONFIDENCE: confirmed (cell count by script on both revisions; the raw line quoted above)
+```
+
+Notes for the lead (not blocking):
+
+4. **Globs are missing from both out-of-reach lists.** Pre-existing: base exits 0 too, and the card does not cover
+   them. In a directory holding a file named after the merge subcommand, or a file `-d` (`: > ./-d` is enough),
+   `gh pr [m]erge 7`, `gh pr m?rge 7` and `gh pr close 7 [-]d` exit 0 on the hook. bash and zsh hand the stub
+   `pr MERGE 7` and `pr close 7 -d`. This takes two steps, like "a script file the agent wrote", but the lists
+   should name "a glob that matches a file" (or a card should take it).
+5. Not exec'd by either shell, so not findings: zsh flag groups holding a backtick or `;`
+   (`${(`…`)X}`, `${(;…;)X}`) and a braced subscript holding `}` or `;`. Both shells error without running the
+   inner command, which the stub confirms.
+6. With `fix2/` (findings 1 and 2), the full hook-smoke still gives "hook-smoke: 908 probes OK", and every case of
+   mine keeps its exit code except the 4 triggers, which go to 2.
+
+Answers to the brief's doubts:
+
+- The header comments now match the code, except finding 2's missing out-of-reach line. They cover what is removed
+  (subscripts, zsh flags), the characters that keep a subscript or a flag group, the brace stop characters, and the
+  new out-of-reach entries (`${X:-merge}`, `$X[(r)x]`, `${(j: :)X}`). The `hooks.md` row has the same text but is
+  broken by finding 3.
+- Prettier's re-padding: whitespace only for the other rows. `git diff -w 161dc84..HEAD` leaves 2 lines, the
+  guard-bash row and the separator. The guard-bash row's own spacing changes are finding 3.
+
+Verdict: back to code-writer
+
+Riskiest unfalsified: other bash-only orderings, where bash expands a word in an order zsh does not (brace before
+parameter expansion, as in finding 1). I tested brace lists around the unbraced subscript, but not tilde or
+process substitution next to a removed `$NAME`. Not re-run: the 139 KB one-segment timing and 15 of the 19
+mutants.
