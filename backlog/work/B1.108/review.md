@@ -430,3 +430,78 @@ Notes for the lead (not blocking):
 4. This is round 5, past the three-round limit, so it goes to the lead. The verdict is input, not a gate.
 
 Verdict: changes requested
+
+## Plan review (round 6)
+
+This round is past the three-round limit. The coordinator's brief says the lead typed `review r6`; I did not see that
+message. The plan is high tier, so the lead's `approve` is the gate either way.
+
+Plan at `48aded2`, diffed against `e79e0c5`. Round 6 changes only the `UNQUOTE` line. A subscript is removed only when
+it holds no space, `(`, backtick, `;`, `&` or `|`. A zsh flag group is removed only when it holds no space and no
+parenthesis. The round adds 9 probes, 30 in total for rounds 4 to 6.
+
+The prototype `fix7/guard-bash.sh` (copied to `$TMPDIR/b108/r6/fix7/`) differs from `bd10055` in only the two pasted
+lines, and both match the plan. Probes: `probes7.sh`, inserted into `scripts/hook-smoke.sh` in a fresh clone
+`$TMPDIR/b108/r6/c/` at `48aded2`.
+
+| Check                                                                                  | pass / fail: reason                                                                                                                     |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                         | pass: the same 4 rows                                                                                                                   |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | pass: n/a for TypeScript. The two lines match the prototype                                                                             |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass: no advice                                                                                                                         |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass                                                                                                                                    |
+| verification lists exact commands with expected numbers                                | pass, reproduced with `/bin/bash` 3.2.57. On the `bd10055` hook: exit 1, 26 FAIL, 882 ok. On the prototype: "hook-smoke: 908 probes OK" |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | pass: unchanged from round 5                                                                                                            |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by you | pass: n/a. `tier.sh` gives `high`. The plan's last line reads "round 6 pending"                                                         |
+| no settled D-n contradicted                                                            | pass: D-9, D-19 and D-28 are followed. Round 5's regression is closed (below)                                                           |
+| `scripts/next-task.sh --check B1.108` on the committed plan says no overlap            | pass: `[next-task] B1.108: no overlap with any Doing or Review card` (at `48aded2`)                                                     |
+
+Round 5's reason is resolved. The results on the prototype are the same under BSD `sed` / bash 3.2 and under GNU `sed`
+4.9 / bash 5.2.15:
+
+- My 13 round-5 commands (`$TMPDIR/b108/r5/new-trig.txt`) all exit 2.
+- The dev-lead's `trig5.txt` (9) and `p7.txt` (30) all exit 2.
+- My 72 commands from rounds 1 to 4 give the same exits as on the round-5 prototype.
+
+These forms try to get past the narrowed class. All exit 2 on both `bd10055` and the prototype:
+
+- `echo $X[\;gh pr merge 7 #]`
+- `echo $X['; gh pr merge 7 #']`
+- `echo $X[>(gh pr merge 7)]`
+
+These exit 0 on both hooks. The shell does not run a command or hand gh a flag in any of them:
+
+- `echo $X[$'\n'gh pr merge 7]`: the newline is quoted, so it stays inside one word.
+- `gh pr close 7 $X[-d]`: in bash, `[-d]` is a glob, not a flag.
+- `echo ${X[{a,b}]}`.
+
+Timing is unchanged:
+
+| Input                             | `bd10055`     | Prototype     |
+| --------------------------------- | ------------- | ------------- |
+| 300 segments                      | 1.87 / 1.87 s | 1.89 / 1.78 s |
+| round 3's 105 KB brace worst case | 0.81 s        | 0.80 s        |
+
+No blocking reason.
+
+Notes for the lead (not blocking):
+
+1. **A zsh subscript flag or a join flag with a space still merges. This is not a regression: it exits 0 on
+   `bd10055` too.** These exit 0 on both hooks:
+   - `gh pr $X[(r)x]merge 7`
+   - `gh pr ${X[(r)x]}merge 7`
+   - `gh pr ${(j: :)X}merge 7`
+   - `gh pr close 7 $X[(r)x]-d`
+
+   In zsh, the session shell, `printf "[%s]" $X[(r)x]merge ${X[(r)x]}merge ${(j: :)X}merge` prints
+   `[merge][merge][merge]`. The plan's rule excludes `(` and spaces from the classes on purpose, to keep round 5's
+   `$(…)` hole shut, so these follow from a stated choice. Still, the out-of-reach list (header and `hooks.md`) does
+   not name them. At the least, add "a zsh subscript flag (`$X[(r)x]`) or a flag group with a space (`${(j: :)X}`)" to
+   it.
+
+   A narrower widening is possible but untested here: allow one leading `\([a-z]+\)` inside the subscript, letters
+   only, with no `$` before the `(`. It would cover `(r)`, `(i)` and `(w)` without letting `$(` back in.
+
+2. I did not re-check the 19 mutant counts or the 139 KB timing. Both belong to diff review pass 2.
+
+Verdict: approved
