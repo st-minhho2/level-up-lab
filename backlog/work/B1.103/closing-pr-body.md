@@ -15,9 +15,9 @@ Evidence (from #381):
 
 Files:
 
-- `backlog/plan/E1-todos.md`: B1.103 `**Status: Done** — 109ee07 (#381)` with the evidence above.
-- `backlog/README.md`: Remaining row 144 removed; `~~B1.103~~` in node 144. No Remaining row on `main` is blocked by
-  B1.103 (B1.105's row arrives with #382). Totals: E1 65/1/36, total 107/1/37 of 145.
+- `backlog/plan/E1-todos.md`: B1.103 `**Status: Done** — 109ee07 (#381)` with the evidence above; `~~B1.103~~` in B1.105's "Depends on".
+- `backlog/README.md`: Remaining row 144 removed; `~~B1.103~~` in node 144 and in row 146 (B1.105, filed in #382,
+  merged here from `main`). Totals: E1 65/1/38/104, total 107/1/39 of 147.
 - `backlog/work/B1.103/closing-pr-body.md`: this body.
 
 No `spec/` row: tooling, no section, no feature. `docs/metrics.md` has no per-card row for tooling (as B1.95, B1.98).

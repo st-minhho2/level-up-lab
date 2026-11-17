@@ -1555,7 +1555,7 @@ which the hook exists to stop (B1.24). B1.103 closes the same gap for the `merge
   - The probes fail on main before the change and pass after; bash 3.2-safe; the hook-smoke count before and after is
     stated.
   - The PR carries `config-change-approved` (D-19).
-- **Tier:** quick · **Depends on:** B1.103 (same lines of `guard-bash.sh` and `hook-smoke.sh`; reuses its
+- **Tier:** quick · **Depends on:** ~~B1.103~~ (same lines of `guard-bash.sh` and `hook-smoke.sh`; reuses its
   `GH_PR_FLAGS`) · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.105/`
 
