@@ -60,4 +60,4 @@ GH_BRANCH_DELETE="${W}gh[\"']?[[:space:]](.*[[:space:]])?(repo[[:space:]]+sync.*
 | 2    | dev-lead | rule, header, docs | `chore(hooks): B1.105 guard-bash blocks gh pr close with flags before it` |
 | 3    | reviewer | diff review        | `docs(backlog): B1.105 review pass N`                                     |
 
-Plan review: approved, round 2 · Plan approved by: · Rounds: 1
+Plan review: approved, round 2 · Plan approved by: lead, 2026-11-17 · Rounds: 1
