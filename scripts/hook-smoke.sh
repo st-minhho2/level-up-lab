@@ -342,6 +342,42 @@ gh pr {view,diff} 7
 gh pr view 7 --json title,body -q '{t: .title, b: .body}'
 WHOLE
 
+echo "== guard-bash.sh: a brace list glued to ; & | ( ) or a backtick, \${10}, a subscript or a zsh flag (B1.108 review pass 1)"
+while IFS= read -r c; do probe_msg 2 'agents never merge' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'GLUED'
+gh {pr,merge,7};
+(gh {pr,merge,7})
+({gh,pr,merge,7})
+`{gh,pr,merge,7}`
+true;{gh,pr,merge,7}
+gh pr ${10}merge 7
+gh pr ${X[1]}merge 7
+gh pr $X[1]merge 7
+gh pr ${=X}merge 7
+gh pr ${~X}merge 7
+gh pr ${^X}merge 7
+gh pr ${(f)X}merge 7
+bash -c 'echo $X[; gh pr merge 7 #]'
+echo $X[$({gh,pr,merge,7})]
+echo ${X[`{gh,pr,merge,7}`]}
+echo $X[;{gh,pr,merge,7};]
+echo $X[&&{gh,pr,merge,7}&&]
+echo $X[|{gh,pr,merge,7}|]
+echo ${(;gh pr merge 7)X}
+GLUED
+while IFS= read -r c; do probe_msg 2 'force pushes' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'GLUEDD'
+gh pr close {7,-d};
+gh pr close {7,-d}&&true
+gh pr close {7,-d}|cat
+gh pr {close,7,-d}|cat
+gh pr close 7 ${12}-d
+gh pr close 7 ${X[1]}-d
+gh pr close 7 ${X[0]}--delete-branch
+gh pr close 7 $X[1]-d
+gh pr close 7 ${=X}-d
+echo ${(f)X[$(gh pr close 7 -d)]}
+gh pr close 7 -c $X[ -d -c ] x
+GLUEDD
+
 echo "== settings.json permissions (B1.23, B1.103)"
 n=$((n+1)); if node -e '
   const p = require("./.claude/settings.json").permissions;
