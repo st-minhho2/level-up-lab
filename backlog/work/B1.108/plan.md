@@ -14,8 +14,11 @@ Dev-lead writes the hook and `scripts/` (interactive, as B1.103, B1.105, B1.107)
 reasons (`${@}merge`, `-{d,d}`) and its note (`merge>/dev/null`, exit 0 today, the same lines) into this card; round 3
 bounds the brace expansion (review round 2). Round 4 (diff review pass 1, both findings; the lead chose option a):
 `BRACE_ONE`'s prefix, item and suffix classes also exclude `;` `&` `|` `(` `)` and the backtick, where the shell ends a
-word, so a separator glued to a list (`{7,-d};`, `({gh,pr,MERGE,7})`) is no longer copied onto every item and then
-split off by `tr`; and `${…}` takes `[0-9]+` (`${10}`). Same lines, no other change.
+word, so a separator glued to a list (`{7,-d};`, `({gh,pr,merge,7})`) is no longer copied onto every item and then
+split off by `tr`; and `${…}` takes `[0-9]+` (`${10}`). Round 5 (plan review round 4; the lead chose option a): the
+variable removal also takes a subscript (`$X[1]`, `${X[1]}`, empty when unset in bash and zsh) and zsh's flags before
+the name (`${=X}`, `${~X}`, `${^X}`, `${(f)X}`), since the session shell is zsh; round 4's probes use a lower-case
+`merge`. Same lines, no other change.
 
 Weighed against A' (per-pattern widening: a class `(["'\\{},]|\$NAME|\${NAME})*` around every letter of `gh`, `pr`,
 `close`, `merge`, `-d`, `--delete-branch`): longer to read; prototyped (round 1 forms) it missed `g''h pr merge 7`, and
@@ -46,33 +49,35 @@ Blocked after (30, all exit 0 today). Merge (`agents never merge`, 13): `gh pr $
 `gh pr list --json title,headRefName -q '.[].title' > out.txt`, `gh pr {view,diff} 7`,
 `gh pr view 7 --json title,body -q '{t: .title, b: .body}'`.
 
-Round 4, blocked (11, all exit 0 at `bd10055`). Merge: `gh {pr,MERGE,7};`, `(gh {pr,MERGE,7})`, `({gh,pr,MERGE,7})`,
-`` `{gh,pr,MERGE,7}` ``, `true;{gh,pr,MERGE,7}`, `gh pr ${10}MERGE 7`. Delete: `gh pr close {7,-d};`,
-`gh pr close {7,-d}&&true`, `gh pr close {7,-d}|cat`, `gh pr {close,7,-d}|cat`, `gh pr close 7 ${12}-d`. The 30
-blocked and 10 allowed above keep their exits. 300 segments: 1.91 / 1.92 s, the same as `bd10055`.
+Rounds 4–5, blocked (21, all exit 0 at `bd10055`). Merge (12): `gh {pr,merge,7};`, `(gh {pr,merge,7})`,
+`({gh,pr,merge,7})`, `` `{gh,pr,merge,7}` ``, `true;{gh,pr,merge,7}`, `gh pr ${10}merge 7`, `gh pr ${X[1]}merge 7`,
+`gh pr $X[1]merge 7`, `gh pr ${=X}merge 7`, `gh pr ${~X}merge 7`, `gh pr ${^X}merge 7`, `gh pr ${(f)X}merge 7`.
+Delete (9): `gh pr close {7,-d};`, `gh pr close {7,-d}&&true`, `gh pr close {7,-d}|cat`, `gh pr {close,7,-d}|cat`,
+`gh pr close 7` + `${12}-d`, `${X[1]}-d`, `${X[0]}--delete-branch`, `$X[1]-d`, `${=X}-d`. The 30 blocked and 10
+allowed above keep their exits. 300 segments: 1.90–1.93 s, the same as `bd10055` (1.91–1.94 s).
 
 Costs (header and `hooks.md`): blocked too, a gh pr segment whose unquoted text holds ` -d` or a merge word: a literal
 `'$X'-d` or `\$X-d`, `-c "$WHY-d"`, `--comment 'see {a,-d}'`, a commit message quoting `gh pr m''erge`; a command with
 both a force push and a gh pr merge or delete may get the other message (the gh pr loop now runs first). Still out of
-reach for the gh pr rules: an escape the shell expands (`$'\x2dd'`, `$'m\145rge'`), `${X:--d}` and other operator
-expansions, a brace list's sixth item on (`-{a,b,c,e,f,d}`), nested or adjacent lists (`-{x,{c,d}}`), words joined by `${IFS}`, a word in a set variable,
+reach for the gh pr rules: an escape the shell expands (`$'\x2dd'`, `$'m\145rge'`), `${X:--d}`, `${X:-merge}` and
+other operator expansions, a brace list's sixth item on (`-{a,b,c,e,f,d}`), nested or adjacent lists (`-{x,{c,d}}`), words joined by `${IFS}`, a word in a set variable,
 `$(…)`, an alias; for `gh api` (B1.103) and git push (B1.24), a word quoted in pieces (`pulls/7/m''erge`, `-'f'`).
 
 ## Files
 
-| File                          | Change                                                                                      | Why          |
-| ----------------------------- | ------------------------------------------------------------------------------------------- | ------------ |
-| `.claude/hooks/guard-bash.sh` | `UNQUOTE`, `BRACE_ONE`, a loop over the copy for the two gh pr rules; quote classes; header | Acceptance 1 |
-| `scripts/hook-smoke.sh`       | section "gh pr words quoted in pieces … (B1.108)": 30 blocked, 10 allowed; round 4: 11 more | Test line    |
-| `.claude/docs/hooks.md`       | guard-bash row: the unquoted copy, the costs, what stays out of reach                       | Acceptance 1 |
-| `backlog/work/B1.108/*`       | plan, review, pr-body                                                                       | pipeline     |
+| File                          | Change                                                                                         | Why          |
+| ----------------------------- | ---------------------------------------------------------------------------------------------- | ------------ |
+| `.claude/hooks/guard-bash.sh` | `UNQUOTE`, `BRACE_ONE`, a loop over the copy for the two gh pr rules; quote classes; header    | Acceptance 1 |
+| `scripts/hook-smoke.sh`       | section "gh pr words quoted in pieces … (B1.108)": 30 blocked, 10 allowed; rounds 4–5: 21 more | Test line    |
+| `.claude/docs/hooks.md`       | guard-bash row: the unquoted copy, the costs, what stays out of reach                          | Acceptance 1 |
+| `backlog/work/B1.108/*`       | plan, review, pr-body                                                                          | pipeline     |
 
 ## Interfaces touched
 
-`guard-bash.sh` (PreToolUse Bash): exit 2 with the existing `MERGE_MSG` / `FORCE_MSG` on the 41 forms; exit 0 otherwise as today.
+`guard-bash.sh` (PreToolUse Bash): exit 2 with the existing `MERGE_MSG` / `FORCE_MSG` on the 51 forms; exit 0 otherwise as today.
 
 ```bash
-UNQUOTE='s/\$([a-z_][a-z0-9_]*|[0-9@*])|\$\{([a-z_][a-z0-9_]*|[0-9]+|[@*])\}//g; s/\$(["'"'"'])/\1/g; s/["'"'"'\\]//g; s/[<>]/ /g'
+UNQUOTE='s/\$([a-z_][a-z0-9_]*(\[[^]]*\])?|[0-9@*])|\$\{(\([^)]*\))?[=~^]*([a-z_][a-z0-9_]*|[0-9]+|[@*])(\[[^]]*\])?\}//g; s/\$(["'"'"'])/\1/g; s/["'"'"'\\]//g; s/[<>]/ /g'
 BRACE_ONE='s/([^[:space:]{};&|()`]*)\{([^[:space:]{},;&|()`]*),([^[:space:]{};&|()`]*)\}([^[:space:]{};&|()`]*)/\1\2\4 \1{\3}\4/g'
 GH_PR_FLAGS='([[:space:]]+-.*)?'
 GH_BRANCH_DELETE="${W}gh[[:space:]](.*[[:space:]])?(repo[[:space:]]+sync.*--force|pr${GH_PR_FLAGS}[[:space:]]+(close|merge)([[:space:]].*)?[[:space:]](-[a-z]*d|--delete-branch))"
@@ -92,22 +97,23 @@ done < <(printf '%s\n' "$joined" | tr '[:upper:]' '[:lower:]' \
   removal → 6 probes fail; no `${…}` → 3; no positional → 2; no `$'`/`$"` → 5; no `\` → 2; no `'` → 8; no `"` → 3;
   no `<>` → 2; no brace expansion → 6; three passes → 1; no `g` → 1; leftover braces kept → 4; no lower case → 5;
   no `sed` → 30.
-- Round 4: probes `test(hooks): B1.108 review pass 1 -- probe brace lists glued to a separator and ${10}` (no
-  marker): hook-smoke exit 1, 11 FAIL, 878 ok; then `fix(hooks): B1.108 review pass 1 -- brace lists stop at a
-separator, ${10}`: "hook-smoke: 889 probes OK" (878 + 11). Mutants (prototype, 7/7 killed, 0 allow probes broken):
-  `;` kept in the classes → 3 fail; `&` → 1; `|` → 2; `(` → 1; `)` → 1; backtick → 1; one digit in `${…}` → 2.
+- Rounds 4–5: probes `test(hooks): B1.108 review pass 1 -- probe glued brace lists and expansions` (no marker):
+  hook-smoke exit 1, 21 FAIL, 878 ok (prototype: same); then `fix(hooks): B1.108 review pass 1 -- brace lists,
+numbers, subscripts and zsh flags`: "hook-smoke: 899 probes OK" (878 + 21). Mutants (prototype, 11/11 killed, 0
+  allow probes broken): `;` kept in the classes → 3 fail; `&` → 1; `|` → 2; `(` → 1; `)` → 2; backtick → 1; one
+  digit in `${…}` → 2; no `$X[…]` → 2; no `${X[…]}` → 3; no `=~^` flags → 4; no `(…)` flags → 1.
 - 139 KB, 300-segment and brace-heavy timings re-run on the green commit and stated in the PR. `pnpm lint && pnpm typecheck` exit
   0; `pnpm test` 403 before and after; mutation: CI only, no src/lib or src/actions change; `next-task.sh --check
 B1.108` no overlap; `check-plan-scope.sh`, `check-backlog.sh` OK; CI green.
 
 ## Work breakdown
 
-| Step | Role     | Produces           | Commit                                                                                  |
-| ---- | -------- | ------------------ | --------------------------------------------------------------------------------------- |
-| 1    | dev-lead | probes             | `test(hooks): B1.108 hook-smoke probes gh pr words quoted in pieces`                    |
-| 2    | dev-lead | rule, header, docs | `chore(hooks): B1.108 guard-bash reads gh pr words unquoted`                            |
-| 3    | reviewer | diff review        | `docs(backlog): B1.108 review pass N`                                                   |
-| 4    | dev-lead | round 4 probes     | `test(hooks): B1.108 review pass 1 -- probe brace lists glued to a separator and ${10}` |
-| 5    | dev-lead | round 4 fix        | `fix(hooks): B1.108 review pass 1 -- brace lists stop at a separator, ${10}`            |
+| Step | Role     | Produces           | Commit                                                                               |
+| ---- | -------- | ------------------ | ------------------------------------------------------------------------------------ |
+| 1    | dev-lead | probes             | `test(hooks): B1.108 hook-smoke probes gh pr words quoted in pieces`                 |
+| 2    | dev-lead | rule, header, docs | `chore(hooks): B1.108 guard-bash reads gh pr words unquoted`                         |
+| 3    | reviewer | diff review        | `docs(backlog): B1.108 review pass N`                                                |
+| 4    | dev-lead | rounds 4–5 probes  | `test(hooks): B1.108 review pass 1 -- probe glued brace lists and expansions`        |
+| 5    | dev-lead | rounds 4–5 fix     | `fix(hooks): B1.108 review pass 1 -- brace lists, numbers, subscripts and zsh flags` |
 
-Plan review: round 4 pending · Plan approved by: lead, 2026-11-17 (round 3; round 4 pending) · Rounds: 2
+Plan review: round 5 pending · Plan approved by: lead, 2026-11-17 (round 3; round 5 pending) · Rounds: 2
