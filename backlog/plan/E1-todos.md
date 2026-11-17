@@ -1479,14 +1479,7 @@ AC-41.4`, fixed by the title-only PR #338
 ### B1.103 · An agent can still merge a pull request through `gh api`, past the `gh pr merge` deny rule
 
 _tooling · no §_
-**Status: Open** — `.claude/settings.json:20` denies only `Bash(gh pr merge*)`; `.claude/hooks/guard-bash.sh:67-68`
-blocks `gh api` only on `git/refs` with a DELETE/PATCH method or `force=true`, and on `deleteRef`, `updateRef` or a
-branch rename (`:53-54`); `:55` blocks `gh pr merge` only with `-d` or `--delete-branch`. The `main` ruleset requires 0
-approvals (D-9) and has no bypass actors, so in a session and in the runner container (`bypassPermissions`) these
-pass: `gh api -X PUT repos/{owner}/{repo}/pulls/N/merge` (also `--method PUT`, `-XPUT`), `gh api graphql` with
-`mergePullRequest` or `enablePullRequestAutoMerge`, `gh api` against `/merges`, and `gh` with a global flag before
-`pr merge` (`gh -R owner/repo pr merge N`), which the deny rule's prefix does not match. No agent has merged so far;
-D-9 holds "agents never merge" by the deny rule and convention only
+**Status: Done** — 109ee07 (#381); hook-smoke 790 OK (red 082f517: 26 FAIL, 762 ok; green e21416f 788 OK; review pass 1 probes ad6a542; bash 3.2, bash 5 in CI), 12 of 12 prototype mutants killed, settings deny 16 -> 21, vitest 403, e2e 91, mutation: CI only, no src/lib or src/actions change; plan review 2 rounds, lead 1, diff review 2 passes; re-cut from #379 after a (red) marker on a probe-only commit (mistake-log Seen 2, follow-up B1.106)
 
 - **Spec:** none — tooling (`.claude/hooks/guard-bash.sh`, possibly `.claude/settings.json` deny entries,
   `scripts/CLAUDE.md`, `.claude/docs/hooks.md`); no `src/` change, no section
@@ -1540,3 +1533,57 @@ such text tries to steer it
   - The PR carries `config-change-approved` (D-19).
 - **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.104/`
+
+### B1.105 · guard-bash lets `gh pr` with a flag before `close` delete the branch
+
+_tooling · no §_
+**Status: Open** — `.claude/hooks/guard-bash.sh:55` (`GH_BRANCH_DELETE`) needs `pr`, whitespace, then `close`, so a
+flag between them escapes it: on `b5d8ca4` and on B1.103's branch, `gh pr -R o/r close 7 --delete-branch`,
+`gh pr -R o/r close 7 -d` and `gh pr --repo o/r close 7 --delete-branch` exit 0, while
+`gh -R o/r pr close 7 --delete-branch` and `gh pr close 7 --delete-branch` exit 2. Each deletes the remote branch,
+which the hook exists to stop (B1.24). B1.103 closes the same gap for the `merge` half (its `GH_PR_FLAGS`, review r1
+#1); the `close` half stays, as its review r2 notes
+
+- **Spec:** none — tooling (`.claude/hooks/guard-bash.sh`, `scripts/hook-smoke.sh`, possibly `.claude/docs/hooks.md`);
+  no `src/` change, no section
+- **Test:** `scripts/hook-smoke.sh` probes for `gh pr` with `-R o/r` / `--repo o/r` before `close` and `-d` /
+  `--delete-branch` after it — red because: `guard-bash.sh` exits 0 on each today
+- **Acceptance:**
+  - Every `gh pr … close … -d|--delete-branch` spelling with flags (and their values) between `pr` and `close` is
+    blocked with the existing branch-delete message; the forms blocked today stay blocked.
+  - `gh pr -R o/r close 7` without a delete flag, `gh pr -R o/r view 7` and `gh pr -R o/r list` still pass.
+  - The probes fail on main before the change and pass after; bash 3.2-safe; the hook-smoke count before and after is
+    stated.
+  - The PR carries `config-change-approved` (D-19).
+- **Tier:** quick · **Depends on:** ~~B1.103~~ (same lines of `guard-bash.sh` and `hook-smoke.sh`; reuses its
+  `GH_PR_FLAGS`) · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.105/`
+
+### B1.106 · A `(red)` marker on a commit with no vitest file fails only in CI, after the push
+
+_tooling · no §_
+**Status: Open** — the `docs/mistake-log.md` row "B1.62 pushed a scripts-only probe commit" is Seen 2 (B1.62 on PR
+#185, B1.103 on PR #379): each time a tooling card's probe commit carried `(red)`, `scripts/verify-red.sh:73-75`
+failed CI `guards` with "commits touch no \*.test.ts(x) file", and since history is never rewritten the card moved to
+a new branch and PR. Nothing earlier catches it: `lefthook.yml` `commit-msg` checks only the Conventional Commits
+subject, and `scripts/pr-step.sh push` checks no subject. The written rules name the marker only for red tests
+(`.claude/rules/testing.md:16`, `backlog/CLAUDE.md:32`); "a tooling card's probe commit carries no `(red)`" (B1.58)
+lives only in the mistake log, which says a written rule or a pre-push check is owed
+
+- **Spec:** none — tooling (a local check: a `lefthook.yml` `commit-msg` job or `scripts/pr-step.sh push`; one line in
+  `.claude/rules/testing.md` and `backlog/CLAUDE.md`; `scripts/CLAUDE.md` / `.claude/docs/hooks.md` rows); no `src/`
+  change, no section
+- **Test:** a smoke probe (`scripts/githooks-smoke.sh` or `scripts/pr-step-smoke.sh`) that a `(red)` commit touching
+  no `*.test.ts(x)` is refused locally — red because: today it is accepted and pushed
+- **Acceptance:**
+  - A `test(…): … (red)` commit whose files hold no `*.test.ts` / `*.test.tsx` is refused before it leaves the
+    machine (at commit or at `scripts/pr-step.sh push`), with a message naming the fix (drop `(red)`, as B1.58); the
+    rule is the one `verify-red.sh` applies, so the two cannot disagree.
+  - A `(red)` commit with a vitest file, a `test(…)` commit without `(red)`, and every other type still pass.
+  - `.claude/rules/testing.md` and `backlog/CLAUDE.md` say in one line that a probe-only commit carries no `(red)`.
+  - The probe fails on main before the change and passes after; bash 3.2-safe; the smoke count before and after is
+    stated.
+  - The mistake-log row names this card as its check.
+  - The PR carries `config-change-approved` (D-19).
+- **Tier:** quick · **Depends on:** — · **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.106/`
