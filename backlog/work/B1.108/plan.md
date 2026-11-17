@@ -18,7 +18,10 @@ word, so a separator glued to a list (`{7,-d};`, `({gh,pr,merge,7})`) is no long
 split off by `tr`; and `${…}` takes `[0-9]+` (`${10}`). Round 5 (plan review round 4; the lead chose option a): the
 variable removal also takes a subscript (`$X[1]`, `${X[1]}`, empty when unset in bash and zsh) and zsh's flags before
 the name (`${=X}`, `${~X}`, `${^X}`, `${(f)X}`), since the session shell is zsh; round 4's probes use a lower-case
-`merge`. Same lines, no other change.
+`merge`. Round 6 (plan review round 5, a regression in round 5): a subscript or a zsh flag group is removed only when
+it holds no space, `(`, backtick, `;`, `&` or `|` (flags: no space or paren), so `$X[; gh pr merge 7 #]` or
+`${X[$(gh pr merge 7)]}`, where the shell runs the hidden command, no longer hides it from the copy; 9 probes guard
+it, one per excluded character. Same lines, no other change.
 
 Weighed against A' (per-pattern widening: a class `(["'\\{},]|\$NAME|\${NAME})*` around every letter of `gh`, `pr`,
 `close`, `merge`, `-d`, `--delete-branch`): longer to read; prototyped (round 1 forms) it missed `g''h pr merge 7`, and
@@ -53,8 +56,13 @@ Rounds 4–5, blocked (21, all exit 0 at `bd10055`). Merge (12): `gh {pr,merge,7
 `({gh,pr,merge,7})`, `` `{gh,pr,merge,7}` ``, `true;{gh,pr,merge,7}`, `gh pr ${10}merge 7`, `gh pr ${X[1]}merge 7`,
 `gh pr $X[1]merge 7`, `gh pr ${=X}merge 7`, `gh pr ${~X}merge 7`, `gh pr ${^X}merge 7`, `gh pr ${(f)X}merge 7`.
 Delete (9): `gh pr close {7,-d};`, `gh pr close {7,-d}&&true`, `gh pr close {7,-d}|cat`, `gh pr {close,7,-d}|cat`,
-`gh pr close 7` + `${12}-d`, `${X[1]}-d`, `${X[0]}--delete-branch`, `$X[1]-d`, `${=X}-d`. The 30 blocked and 10
-allowed above keep their exits. 300 segments: 1.90–1.93 s, the same as `bd10055` (1.91–1.94 s).
+`gh pr close 7` + `${12}-d`, `${X[1]}-d`, `${X[0]}--delete-branch`, `$X[1]-d`, `${=X}-d`. Round 6, blocked (9; the
+5 marked \* exit 0 at `bd10055`, the other 4 are blocked there and guard round 5's regression): merge
+`bash -c 'echo $X[; gh pr merge 7 #]'`, `echo $X[$({gh,pr,merge,7})]`\*, ``echo ${X[`{gh,pr,merge,7}`]}``\*,
+`echo $X[;{gh,pr,merge,7};]`\*, `echo $X[&&{gh,pr,merge,7}&&]`\*, `echo $X[|{gh,pr,merge,7}|]`\*,
+`echo ${(;gh pr merge 7)X}`; delete `echo ${(f)X[$(gh pr close 7 -d)]}`, `gh pr close 7 -c $X[ -d -c ] x` (bash runs
+the hidden `gh` in each \* form, checked with a stub). The 30 blocked and 10 allowed above keep their exits. 300
+segments: 1.89–1.92 s, `bd10055` 1.94–2.01 s.
 
 Costs (header and `hooks.md`): blocked too, a gh pr segment whose unquoted text holds ` -d` or a merge word: a literal
 `'$X'-d` or `\$X-d`, `-c "$WHY-d"`, `--comment 'see {a,-d}'`, a commit message quoting `gh pr m''erge`; a command with
@@ -68,16 +76,16 @@ other operator expansions, a brace list's sixth item on (`-{a,b,c,e,f,d}`), nest
 | File                          | Change                                                                                         | Why          |
 | ----------------------------- | ---------------------------------------------------------------------------------------------- | ------------ |
 | `.claude/hooks/guard-bash.sh` | `UNQUOTE`, `BRACE_ONE`, a loop over the copy for the two gh pr rules; quote classes; header    | Acceptance 1 |
-| `scripts/hook-smoke.sh`       | section "gh pr words quoted in pieces … (B1.108)": 30 blocked, 10 allowed; rounds 4–5: 21 more | Test line    |
+| `scripts/hook-smoke.sh`       | section "gh pr words quoted in pieces … (B1.108)": 30 blocked, 10 allowed; rounds 4–6: 30 more | Test line    |
 | `.claude/docs/hooks.md`       | guard-bash row: the unquoted copy, the costs, what stays out of reach                          | Acceptance 1 |
 | `backlog/work/B1.108/*`       | plan, review, pr-body                                                                          | pipeline     |
 
 ## Interfaces touched
 
-`guard-bash.sh` (PreToolUse Bash): exit 2 with the existing `MERGE_MSG` / `FORCE_MSG` on the 51 forms; exit 0 otherwise as today.
+`guard-bash.sh` (PreToolUse Bash): exit 2 with the existing `MERGE_MSG` / `FORCE_MSG` on the 60 forms; exit 0 otherwise as today.
 
 ```bash
-UNQUOTE='s/\$([a-z_][a-z0-9_]*(\[[^]]*\])?|[0-9@*])|\$\{(\([^)]*\))?[=~^]*([a-z_][a-z0-9_]*|[0-9]+|[@*])(\[[^]]*\])?\}//g; s/\$(["'"'"'])/\1/g; s/["'"'"'\\]//g; s/[<>]/ /g'
+UNQUOTE='s/\$([a-z_][a-z0-9_]*(\[[^][:space:](`;&|]*\])?|[0-9@*])|\$\{(\([^()[:space:]]*\))?[=~^]*([a-z_][a-z0-9_]*|[0-9]+|[@*])(\[[^][:space:](`;&|]*\])?\}//g; s/\$(["'"'"'])/\1/g; s/["'"'"'\\]//g; s/[<>]/ /g'
 BRACE_ONE='s/([^[:space:]{};&|()`]*)\{([^[:space:]{},;&|()`]*),([^[:space:]{};&|()`]*)\}([^[:space:]{};&|()`]*)/\1\2\4 \1{\3}\4/g'
 GH_PR_FLAGS='([[:space:]]+-.*)?'
 GH_BRANCH_DELETE="${W}gh[[:space:]](.*[[:space:]])?(repo[[:space:]]+sync.*--force|pr${GH_PR_FLAGS}[[:space:]]+(close|merge)([[:space:]].*)?[[:space:]](-[a-z]*d|--delete-branch))"
@@ -97,11 +105,12 @@ done < <(printf '%s\n' "$joined" | tr '[:upper:]' '[:lower:]' \
   removal → 6 probes fail; no `${…}` → 3; no positional → 2; no `$'`/`$"` → 5; no `\` → 2; no `'` → 8; no `"` → 3;
   no `<>` → 2; no brace expansion → 6; three passes → 1; no `g` → 1; leftover braces kept → 4; no lower case → 5;
   no `sed` → 30.
-- Rounds 4–5: probes `test(hooks): B1.108 review pass 1 -- probe glued brace lists and expansions` (no marker):
-  hook-smoke exit 1, 21 FAIL, 878 ok (prototype: same); then `fix(hooks): B1.108 review pass 1 -- brace lists,
-numbers, subscripts and zsh flags`: "hook-smoke: 899 probes OK" (878 + 21). Mutants (prototype, 11/11 killed, 0
-  allow probes broken): `;` kept in the classes → 3 fail; `&` → 1; `|` → 2; `(` → 1; `)` → 2; backtick → 1; one
-  digit in `${…}` → 2; no `$X[…]` → 2; no `${X[…]}` → 3; no `=~^` flags → 4; no `(…)` flags → 1.
+- Rounds 4–6: probes `test(hooks): B1.108 review pass 1 -- probe glued brace lists and expansions` (no marker):
+  hook-smoke exit 1, 26 FAIL, 882 ok (prototype: same); then `fix(hooks): B1.108 review pass 1 -- brace lists,
+numbers, subscripts and zsh flags`: "hook-smoke: 908 probes OK" (878 + 30). Mutants (prototype, 19/19 killed, 0
+  allow probes broken): in `BRACE_ONE`, `;` kept → 4 fail, `&` → 2, `|` → 3, `(` → 2, `)` → 3, backtick → 2; one
+  digit in `${…}` → 2; no `$X[…]` → 2; no `${X[…]}` → 3; no `=~^` flags → 4; no `(…)` flags → 1; flags group
+  `[^)]*` → 1; the subscript class allowing a space → 1, `(` → 1, backtick → 1, `;` → 1, `&` → 1, `|` → 1.
 - 139 KB, 300-segment and brace-heavy timings re-run on the green commit and stated in the PR. `pnpm lint && pnpm typecheck` exit
   0; `pnpm test` 403 before and after; mutation: CI only, no src/lib or src/actions change; `next-task.sh --check
 B1.108` no overlap; `check-plan-scope.sh`, `check-backlog.sh` OK; CI green.
@@ -116,4 +125,4 @@ B1.108` no overlap; `check-plan-scope.sh`, `check-backlog.sh` OK; CI green.
 | 4    | dev-lead | rounds 4–5 probes  | `test(hooks): B1.108 review pass 1 -- probe glued brace lists and expansions`        |
 | 5    | dev-lead | rounds 4–5 fix     | `fix(hooks): B1.108 review pass 1 -- brace lists, numbers, subscripts and zsh flags` |
 
-Plan review: round 5 pending · Plan approved by: lead, 2026-11-17 (round 3; round 5 pending) · Rounds: 2
+Plan review: round 6 pending · Plan approved by: lead, 2026-11-17 (round 3; round 6 pending) · Rounds: 2
