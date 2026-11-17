@@ -1530,12 +1530,7 @@ _tooling · no §_
 ### B1.105 · guard-bash lets `gh pr` with a flag before `close` delete the branch
 
 _tooling · no §_
-**Status: Open** — `.claude/hooks/guard-bash.sh:55` (`GH_BRANCH_DELETE`) needs `pr`, whitespace, then `close`, so a
-flag between them escapes it: on `b5d8ca4` and on B1.103's branch, `gh pr -R o/r close 7 --delete-branch`,
-`gh pr -R o/r close 7 -d` and `gh pr --repo o/r close 7 --delete-branch` exit 0, while
-`gh -R o/r pr close 7 --delete-branch` and `gh pr close 7 --delete-branch` exit 2. Each deletes the remote branch,
-which the hook exists to stop (B1.24). B1.103 closes the same gap for the `merge` half (its `GH_PR_FLAGS`, review r1
-#1); the `close` half stays, as its review r2 notes
+**Status: Done** — 9087ff3 (#387), hook-smoke 790 to 820 probes OK (red 16 FAIL at 7d753df, 7 FAIL at 18f92e0; /bin/bash 3.2, bash 5 in CI), vitest 403, e2e 91, mutation: CI only, no src/lib or src/actions change
 
 - **Spec:** none — tooling (`.claude/hooks/guard-bash.sh`, `scripts/hook-smoke.sh`, possibly `.claude/docs/hooks.md`);
   no `src/` change, no section
@@ -1604,6 +1599,6 @@ spellings
   - The probes fail on main before the change and pass after; bash 3.2-safe; the hook-smoke count before and after is
     stated.
   - The PR carries `config-change-approved` (D-19).
-- **Tier:** quick · **Depends on:** B1.105 (same line of `guard-bash.sh` and the same `hook-smoke.sh` section) ·
+- **Tier:** quick · **Depends on:** ~~B1.105~~ (same line of `guard-bash.sh` and the same `hook-smoke.sh` section) ·
   **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.107/`
