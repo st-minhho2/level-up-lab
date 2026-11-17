@@ -1479,14 +1479,7 @@ AC-41.4`, fixed by the title-only PR #338
 ### B1.103 · An agent can still merge a pull request through `gh api`, past the `gh pr merge` deny rule
 
 _tooling · no §_
-**Status: Open** — `.claude/settings.json:20` denies only `Bash(gh pr merge*)`; `.claude/hooks/guard-bash.sh:67-68`
-blocks `gh api` only on `git/refs` with a DELETE/PATCH method or `force=true`, and on `deleteRef`, `updateRef` or a
-branch rename (`:53-54`); `:55` blocks `gh pr merge` only with `-d` or `--delete-branch`. The `main` ruleset requires 0
-approvals (D-9) and has no bypass actors, so in a session and in the runner container (`bypassPermissions`) these
-pass: `gh api -X PUT repos/{owner}/{repo}/pulls/N/merge` (also `--method PUT`, `-XPUT`), `gh api graphql` with
-`mergePullRequest` or `enablePullRequestAutoMerge`, `gh api` against `/merges`, and `gh` with a global flag before
-`pr merge` (`gh -R owner/repo pr merge N`), which the deny rule's prefix does not match. No agent has merged so far;
-D-9 holds "agents never merge" by the deny rule and convention only
+**Status: Done** — 109ee07 (#381); hook-smoke 790 OK (red 082f517: 26 FAIL, 762 ok; green e21416f 788 OK; review pass 1 probes ad6a542; bash 3.2, bash 5 in CI), 12 of 12 prototype mutants killed, settings deny 16 -> 21, vitest 403, e2e 91, mutation: CI only, no src/lib or src/actions change; plan review 2 rounds, lead 1, diff review 2 passes; re-cut from #379 after a (red) marker on a probe-only commit (mistake-log Seen 2, follow-up B1.106)
 
 - **Spec:** none — tooling (`.claude/hooks/guard-bash.sh`, possibly `.claude/settings.json` deny entries,
   `scripts/CLAUDE.md`, `.claude/docs/hooks.md`); no `src/` change, no section
@@ -1562,7 +1555,7 @@ which the hook exists to stop (B1.24). B1.103 closes the same gap for the `merge
   - The probes fail on main before the change and pass after; bash 3.2-safe; the hook-smoke count before and after is
     stated.
   - The PR carries `config-change-approved` (D-19).
-- **Tier:** quick · **Depends on:** B1.103 (same lines of `guard-bash.sh` and `hook-smoke.sh`; reuses its
+- **Tier:** quick · **Depends on:** ~~B1.103~~ (same lines of `guard-bash.sh` and `hook-smoke.sh`; reuses its
   `GH_PR_FLAGS`) · **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.105/`
 
