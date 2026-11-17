@@ -140,3 +140,67 @@ Notes for the lead (not blocking):
 3. I did not re-check the 13 mutant counts or the 139 KB timing (364 s on both). Both belong to the diff review.
 
 Verdict: changes requested
+
+## Plan review (round 3)
+
+This is a third round. The coordinator's brief says the lead typed `review r3` in the session. I did not see that
+message. The plan is high tier, so it waits for the lead's `approve` whatever this verdict says.
+
+Plan at `1a35692`. In the prototype `new/guard-bash.sh` (copied to `$TMPDIR/b108/r3/new/`), `BRACE_ONE` carries the
+`g` flag and runs a fixed four times, with no `:b … tb` loop. Its diff against `4c79bec` is the plan's pasted
+interface plus the header block. The probe section is the round-3 `probes.sh`, inserted into `scripts/hook-smoke.sh`
+in the clone `$TMPDIR/b108/c/`.
+
+| Check                                                                                  | pass / fail: reason                                                                                                                                                                                                                 |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                         | pass: same 4 rows, tooling, no section                                                                                                                                                                                              |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | pass: n/a for TypeScript. The brace cost is now bounded and stated (below)                                                                                                                                                          |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass: no advice, stated                                                                                                                                                                                                             |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass: the card's 11 forms are among the 30 blocked probes, and acceptance 2's 5 commands are among the 10 allowed                                                                                                                   |
+| verification lists exact commands with expected numbers                                | pass: reproduced with `/bin/bash` 3.2.57. Base hook with the probes: exit 1, 30 FAIL, 848 ok. Prototype with the probes: "hook-smoke: 878 probes OK" (838 + 40). The brace-heavy timings are now stated and will be re-run on green |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | pass: unchanged, deviation stated                                                                                                                                                                                                   |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by you | pass: n/a. `tier.sh` gives `high`, so the lead's `approve` gates the build. D-19 label named                                                                                                                                        |
+| no settled D-n contradicted                                                            | pass: D-9, D-19 and D-28 are followed. All 838 existing probes pass on the prototype                                                                                                                                                |
+| `scripts/next-task.sh --check B1.108` on the committed plan says no overlap            | pass: `[next-task] B1.108: no overlap with any Doing or Review card` (at `1a35692`)                                                                                                                                                 |
+
+Round 2's reason is resolved. The round-2 trigger inputs, base against the round-3 prototype:
+
+| Input                                          | BSD `sed`, `/bin/bash` 3.2 | GNU `sed` 4.9, bash 5.2.15                 |
+| ---------------------------------------------- | -------------------------- | ------------------------------------------ |
+| `echo` + 2000 `a` + 500 commas                 | 0.09 / 0.10 s (plan)       | 65 / 105 ms (round 2: more than 6 minutes) |
+| a gh pr merge segment + 2000 `a` + 1000 commas | 0.09 / 0.10 s (plan)       | 32 / 77 ms, exit 2                         |
+| the same with 4000 `a`                         | 0.10 / 0.12 s (plan)       | 32 / 212 ms, exit 2                        |
+| 96 KB JSON heredoc                             | 0.44 / 0.48 s (plan)       | 152 / 170 ms                               |
+
+A worst case that is not in the plan, timed with BSD `sed` and `/bin/bash` 3.2:
+
+- One 105 KB word of 500 runs, each 200 `y` followed by `{a,b,c,d,e}`.
+- With `g`, each pass at most doubles the line, so four passes grow it at most 16×.
+
+| Command around the word              | Base   | Prototype | Exit |
+| ------------------------------------ | ------ | --------- | ---- |
+| `echo`                               | 0.34 s | 0.72 s    | 0    |
+| a gh pr `-R o/r view 7 … -q` segment | 0.31 s | 0.79 s    | 0    |
+| a gh pr merge segment                | 0.13 s | 0.26 s    | 2    |
+
+Bypass checks on the round-3 prototype:
+
+- My 42 adversarial commands give the same exit codes as on round 2 under both BSD and GNU. Everything blocked in
+  round 2 is still blocked, and the 10 allowed reads still pass.
+- `edge.txt` behaves exactly as the plan's out-of-reach list says:
+  - These exit 0: `-{a,b,c,e,f,d}`, `-{x,{c,d}}`, `{-x,-{c,d}}`, `${X:--d}` and `$'\x2dd'`.
+  - `-{a,b,c,e,d}` exits 2.
+  - The stated false positives exit 2: `-c 'see {a,-d}'` and `-c "$WHY-d"`.
+
+No blocking reason.
+
+Notes for the lead (not blocking):
+
+1. **The sixth-item gap is real, not only theoretical.** The trigger is
+   `gh pr close 7 --{comment=a,comment=b,comment=c,comment=e,comment=f,delete-branch}`. The shell hands gh five
+   `--comment=…` flags and `--delete-branch`. After four passes the copy reads `--comment=f,delete-branch`, so the
+   hook exits 0 (I ran it). With five items, ending in `delete-branch`, it exits 2. The plan names this as "a brace list's sixth item on", so it is a stated cost. Taking a sixth item
+   would cost one more pass.
+2. I did not re-check the 15 mutant counts or the 139 KB timing (355 / 356 s). Both belong to the diff review.
+
+Verdict: approved
