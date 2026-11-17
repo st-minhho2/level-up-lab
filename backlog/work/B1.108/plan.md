@@ -96,4 +96,4 @@ B1.108` no overlap; `check-plan-scope.sh`, `check-backlog.sh` OK; CI green.
 | 2    | dev-lead | rule, header, docs | `chore(hooks): B1.108 guard-bash reads gh pr words unquoted`         |
 | 3    | reviewer | diff review        | `docs(backlog): B1.108 review pass N`                                |
 
-Plan review: approved, round 3 · Plan approved by: · Rounds: 1
+Plan review: approved, round 3 · Plan approved by: lead, 2026-11-17 · Rounds: 1
