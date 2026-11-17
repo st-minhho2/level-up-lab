@@ -7,6 +7,19 @@ fetching docs, test-writer reading `node_modules`), and a role file would hold a
 stays fixed fields only (`run.sh` `comment()`: "never agent text"), so a quoted injection never reaches GitHub through
 it; the report goes to the PR body or "Waiting on human", which the lead reads anyway.
 
+## Round 3 (after #380 merged as bed5bd7, B1.104 Partial, #384)
+
+Pending item of the closing lane, Acceptance 5's other half: B1.103 has merged (#381, #383) and no Doing card plans
+`scripts/CLAUDE.md` now, so B1.104 carries the row itself on `chore/B1.104-scripts-guide-row`, one `docs(scripts)`
+commit. A new row after `agent/run.sh <issue> …`: `agent/run-smoke.sh` | "probes R1–R23 of `agent/run.sh` offline with
+`claude` and `gh` shims, among them R16 the exact run prompt and R23 the untrusted-text rule and its `CLAUDE.md` row
+(B1.104); in no CI job yet (B1.60), run with `/bin/bash`" | `jq`. The guide had no `run-smoke.sh` row since B1.44;
+B1.60 later only changes its Needs cell when CI runs it. No other file but this plan and the PR body; no behaviour
+change; `scripts/CLAUDE.md` is not in `CONFIG_PROTECTED`, so no label. Verification: `check-plan-scope.sh` OK,
+`prettier --check scripts/CLAUDE.md` (the first cell is narrower than the widest, so no re-pad), `run-smoke.sh` "23
+probes OK", `hook-smoke.sh` "790 probes OK", CI green. Not re-reviewed (plan review cap 2, as B1.101 round 4); the
+lead approves.
+
 ## Files
 
 | File                              | Change                                                                            | Why             |
@@ -15,6 +28,7 @@ it; the report goes to the PR body or "Waiting on human", which the lead reads a
 | `CLAUDE.md`                       | "Rules" table: row `untrusted-text.md`                                            | Acceptance 5    |
 | `scripts/agent/run.sh`            | run prompt: one sentence after "Waiting on human", then stop.                     | Acceptance 3    |
 | `scripts/agent/run-smoke.sh`      | R16 `want` gains the sentence; R23 the rule file and its table row; header R1–R23 | Test line       |
+| `scripts/CLAUDE.md`               | round 3: row `agent/run-smoke.sh` (R1–R23)                                        | Acceptance 5    |
 | `backlog/work/B1.104/*`           | plan, review, pr-body                                                             | pipeline        |
 
 ## Interfaces touched
@@ -89,4 +103,4 @@ wording only: the two facts r2 corrected in that reason (`--check` reads the loc
 messages named as an instruction source, and the prompt sentence gains "their facts go through dev-lead's own steps"
 and "go on without it" (r2's costs).
 
-Plan review: approved, round 2 · Plan approved by: lead, 2026-11-16 · Rounds: 1
+Plan review: approved, round 2 (round 3 not re-reviewed: cap 2) · Plan approved by: lead, 2026-11-16 (rounds 1–2; round 3 waiting) · Rounds: 1
