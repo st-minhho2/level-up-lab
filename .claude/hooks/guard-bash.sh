@@ -37,7 +37,10 @@ done < <(printf '%s\n' "$CMD" | tr ';&|' '\n\n\n')
 #    +/: push refspec, unless the whole segment is one line of plain `git config [--global…] --get|--unset|--list|-l …`
 #    with no comment or substitution. So does gh (global flags may come first): api with a DELETE/PATCH method (`-iX DELETE`) or
 #    force=true on git/refs, deleteRef, updateRef, a branch rename; repo sync --force; pr close or merge with -d (in a
-#    cluster or quoted) or --delete-branch. Out of reach of a text check: a flag or refspec held in a variable, words
+#    cluster or quoted) or --delete-branch, with flags and their values between pr and the subcommand (`gh pr -R o/r
+#    close`, `-R "$(…)"`) and quotes around gh, pr or the subcommand (B1.105). Once pr is followed by a flag, a later
+#    close or merge word counts, on a later line of the command too (`gh pr -R o/r close 7` then `git branch -d x`:
+#    join them with && or ;). Out of reach of a text check: a flag or refspec held in a variable, words
 #    joined by ${IFS} or another expansion, an alias, a word quoted in pieces, a command built at run time, a ; & or |
 #    inside a quoted argument (it splits the segment early: `-o "a;b" -f`), git config files written directly, other
 #    HTTP clients (curl) calling the GitHub API.
@@ -52,11 +55,13 @@ CONFIG_FORCE='mirror|--mi?r?r?o?r?([^a-z]|$)|\.push["'"'"']?([[:space:]]+|=)["'"
 GH_API="${W}gh[[:space:]](.*[[:space:]])?api[[:space:]]"
 GH_WRITE_METHOD='(-[a-z]*x|--method)[[:space:]=]*["'"'"']?(delete|patch)|force[[:space:]]*[=:][[:space:]]*true'
 GH_REF_EDIT='deleteref|updateref|branches/[^[:space:]]+/rename'
-GH_BRANCH_DELETE="${W}gh[[:space:]](.*[[:space:]])?(repo[[:space:]]+sync.*--force|pr[[:space:]]+(close|merge)([[:space:]].*)?[[:space:]][\"']?(-[a-z]*d|--delete-branch))"
+GH_PR_FLAGS='([[:space:]]+-.*)?' # a flag after pr, then any words (a value may hold spaces: `-R "$(cmd)"`; B1.103, B1.105)
+GH_BRANCH_DELETE="${W}gh[\"']?[[:space:]](.*[[:space:]])?(repo[[:space:]]+sync.*--force|[\"']?pr[\"']?${GH_PR_FLAGS}[[:space:]]+[\"']?(close|merge)[\"']?([[:space:]].*)?[[:space:]][\"']?(-[a-z]*d|--delete-branch))"
 FORCE_MSG="force pushes and remote branch deletes are not allowed from an agent session."
 # Merging a pull request (B1.103): agents never merge (D-9), and the ruleset needs no approval, so a merge call would
 # land. Any case: `gh … pr merge` in a segment (gh behind a path, a prefix or quotes, global flags first, flags and
-# their values between pr and merge: `gh pr -R o/r merge`); and in a command that names `gh … api` anywhere, read over
+# their values between pr and merge: `gh pr -R o/r merge`, `-R "$(…)"`, so `gh pr -R o/r list --search merge` is blocked
+# too, GH_PR_FLAGS above); and in a command that names `gh … api` anywhere, read over
 # the whole command so a path or query held in a variable or a heredoc of the same command counts: pulls/<n>/merge in
 # any method (a GET too), /merges, and the GraphQL mutations mergePullRequest, enablePullRequestAutoMerge, mergeBranch,
 # enqueuePullRequest. The text is matched, not run, so a command that only names these is blocked too (a grep for
@@ -65,7 +70,6 @@ FORCE_MSG="force pushes and remote branch deletes are not allowed from an agent 
 # built at run time (`$(which gh) pr merge 7`), curl on the GitHub API.
 GH_ANY_API="${W}gh[\"']?[[:space:]](.*[[:space:]])?[\"']?api[\"']?[[:space:]]"
 GH_MERGE_API='pulls/[^[:space:]]*/merge([^a-z]|$)|/merges([^a-z]|$)|mergepullrequest|enablepullrequestautomerge|mergebranch|enqueuepullrequest'
-GH_PR_FLAGS='([[:space:]]+-[^[:space:]]*([[:space:]]+[^-[:space:]][^[:space:]]*)?)*'
 GH_PR_MERGE="${W}gh[\"']?[[:space:]](.*[[:space:]])?[\"']?pr[\"']?${GH_PR_FLAGS}[[:space:]]+[\"']?merge${E}"
 MERGE_MSG="agents never merge a pull request (gh pr merge, gh api on pulls/<n>/merge or /merges, a GraphQL merge mutation): merging is the lead's (D-9)."
 joined="${CMD//\\$'\n'/}"
