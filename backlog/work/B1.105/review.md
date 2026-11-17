@@ -59,3 +59,70 @@ nameWithOwner -q .nameWithOwner)" close 7 -d` and `gh pr -R $(cat r) close 7 -d`
 
 Note (does not block): the plan is 61 lines, against planning.md's one screen (about 40). B1.103 was longer and was
 approved.
+
+## Plan review (round 2)
+
+Plan at `16461a9`; it took option (a) from round 1 #1. Evidence:
+
+- `$TMPDIR/b105r2/hooks/new.sh` is `old.sh` (`9a37786`'s lines) with the plan's two pasted lines applied literally.
+  `diff` shows only line 55 (now `GH_PR_FLAGS='([[:space:]]+-.*)?'` plus the new `GH_BRANCH_DELETE`) and the old
+  `GH_PR_FLAGS` line removed.
+- 75 commands were fed as `pr_cmd` JSON with `/bin/bash` 3.2: round 1's 58 plus 17 new (`$TMPDIR/b105r2/cases.txt`).
+- The full `scripts/hook-smoke.sh` ran on a clone of `16461a9` with only `guard-bash.sh` replaced by `new.sh`
+  (`$TMPDIR/b105clone`): exit 0, "hook-smoke: 790 probes OK". All of B1.24's and B1.103's probes, B1.103's merge-state
+  reads among them, still pass with the wider `GH_PR_FLAGS`.
+- `pnpm test` on `16461a9`: "Tests 403 passed (403)", which matches the plan.
+
+| Check                                                                                  | pass / fail: reason                                                                                                                                                                                                                                                                           |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                         | pass: same 4 rows as round 1, all named by the card                                                                                                                                                                                                                                           |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | pass: n/a, no TypeScript. The pasted `GH_PR_FLAGS` and `GH_BRANCH_DELETE` are what I built and ran. The approach states that `GH_PR_MERGE` (B1.103) changes through the shared `GH_PR_FLAGS`                                                                                                  |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass: no advice, stated                                                                                                                                                                                                                                                                       |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass: round 1 #1 is fixed. `gh pr -R "$(gh repo view --json nameWithOwner -q .nameWithOwner)" close 7 -d` and `gh pr -R $(cat r) close 7 --delete-branch` now exit 2 with `force pushes` (0 on `old.sh`). `gh pr -R "$(cat r)" merge 7` now exits 2 with `agents never merge` (0 on `old.sh`) |
+| verification lists exact commands with expected numbers                                | pass: 16 blocked + 7 allowed = 23, and 790 + 23 = 813. The red count of 16 FAIL / 797 ok holds: all 16 blocked probes exit 0 on `old.sh` and all 7 allowed exit 0 on both. Round 1 #3 is fixed: `pnpm test` 403 before and after (confirmed)                                                  |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | pass: as round 1. The probe commit carries no `(red)` marker, with the reason stated. `git commit -F` is named for this card's messages                                                                                                                                                       |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by you | pass: n/a, no section. Tier `high` (round 1, Files unchanged in kind), so the lead's `approve` gates the build                                                                                                                                                                                |
+| no settled D-n contradicted                                                            | pass: D-9 and D-19 are kept. B1.103's merge rule widens and does not narrow: every B1.103 probe still passes (hook-smoke above)                                                                                                                                                               |
+| `scripts/next-task.sh --check B1.105` on the committed plan says no overlap            | pass: `[next-task] B1.105: no overlap with any Doing or Review card` (round 1; the Files are the same 4 rows)                                                                                                                                                                                 |
+
+Round 1 #2 is fixed. The costs now name the self-quoting cost, and the probe and green commits use `git commit -F`.
+
+Results on the 75 commands, for the forms with a stated expectation (round 1's 58 plus 9 new): 0 mismatches against
+the plan's hook. All 32 blocked spellings from round 1 and the 6 new blocked ones exit 2 (4 of the new ones with
+`agents never merge`, one of them the stated `comment -b "merge it"`). All 29 reads (26 + 3 new) exit 0, including
+`list --state closed`,
+`view --json closed,state`, `close 7 --comment "done"`, `view --json mergeable`, `list --state merged` and
+`view --json mergeStateStatus,mergedAt`. Mutants:
+
+- Round 1's `new.sh` is exactly the "B1.103's one-word value back" mutant, and both substitution probes exit 0 on it.
+- "`GH_PR_FLAGS` dropped" fails `gh pr -R o/r close 7 -d`.
+- The two quote mutants were traced in round 1.
+
+Verdict: approved
+
+Costs the lead accepts with this plan (all confirmed on `new.sh`, exit 0 on `old.sh`; none blocks):
+
+1. **The false positive reaches across a newline.** Section 2 joins a segment's lines with spaces, and the segment
+   splits only on `;`, `&` and the pipe. So "any later word" in the plan's costs means any later word on any later
+   line of the same multi-line command. These exit 2 with `agents never merge`:
+   - `gh pr -R o/r view 7` then, on the next line, `git merge origin/main`
+   - `gh pr -R o/r checks 7` then `git merge --no-ff -m "x"`
+   - `gh pr -R o/r view 7 --json body -q .body` then `echo "will merge later"`
+
+   `gh pr -R o/r close 7` then `git branch -d feat/x` exits 2 with `force pushes`. A local branch delete is safe, and
+   today the same thing happens only without the flag: `gh pr close 7` then `git branch -d x`. The workaround is
+   `&&` or `;` between the commands, or no flag after `pr`. Naming the newline case in `hooks.md`'s false positives
+   would save a confused retry.
+
+2. **More single-line examples of the stated class:**
+   - `gh pr -R o/r list --search "merge"`
+   - `gh pr -R o/r edit 7 --title "chore: merge guard"`
+
+   Both exit 2. Agents open and title PRs through `scripts/pr-step.sh` (the hook does not see inside it), so the
+   second matters only for a direct `gh pr edit`.
+
+3. **B1.103's rule changes in this card.** `GH_PR_MERGE` gets the wider `GH_PR_FLAGS`. The plan says so, and the PR
+   body should say so too, so the lead reads a change to the merge rule under a card titled for `close`.
+
+Riskiest unfalsified: bash 5 in CI. Only `/bin/bash` 3.2 is installed here; the regex uses no construct that
+differs between the two.
