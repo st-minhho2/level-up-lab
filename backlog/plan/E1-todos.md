@@ -1506,7 +1506,7 @@ _tooling · no §_
 ### B1.104 · Nothing tells a run that issue, comment and fetched text is data, never instructions
 
 _tooling · no §_
-**Status: Partial** — merged bed5bd7 (#380), pending the `scripts/CLAUDE.md` row for `agent/run-smoke.sh` (R1–R23; Acceptance 5, part), held back while B1.103 (#381) planned the same file: `.claude/rules/untrusted-text.md` and its `CLAUDE.md` Rules row, the run prompt sentence (`scripts/agent/run.sh`); run-smoke R16, R23 (bash 3.2: base b5d8ca4 22 OK; red afb2a6b 2 of 23 FAILED; green 23 OK, 23 OK after merging main at 9b066d5), 16 mutants each fail R16 or R23, hook-smoke 749 (790 after the merge), vitest 403, e2e 91, mutation CI only (no src/), plan review 2 rounds, diff review 3 passes; replaces #378 (closed: a `(red)` marker on a smoke-only red failed `guards`)
+**Status: Done** — bed5bd7 (#380), b6b6507 (#385): `.claude/rules/untrusted-text.md` and its `CLAUDE.md` Rules row, the run prompt sentence (`scripts/agent/run.sh`), the `scripts/CLAUDE.md` row for `agent/run-smoke.sh` (round 3); run-smoke R16, R23 (bash 3.2: base b5d8ca4 22 OK; red afb2a6b 2 of 23 FAILED; green 23 OK, 23 OK after merging main at 9b066d5), 16 mutants each fail R16 or R23, hook-smoke 749 (790 after B1.103), vitest 403, e2e 91, mutation CI only (no src/), plan review 2 rounds (round 3 lead only), diff review 3 passes; replaces #378 (closed: a `(red)` marker on a smoke-only red failed `guards`)
 
 - **Spec:** none — tooling (a `.claude/rules/*.md` file, the run prompt in `scripts/agent/run.sh`, `dev-lead.md`, or a
   combination; the `CLAUDE.md` rules table if a rule file is added, `scripts/CLAUDE.md`); no `src/` change, no section
