@@ -73,3 +73,70 @@ Notes for the lead (not blocking):
 5. I did not check the plan's 9 mutant counts or the 139 KB timing. Both belong to the diff review.
 
 Verdict: changes requested
+
+## Plan review (round 2)
+
+Plan at `d64a0c3`. The prototype `new/guard-bash.sh` (copied to `$TMPDIR/b108/new2/`) differs from `4c79bec` by
+exactly the plan's pasted `UNQUOTE`, `BRACE_ONE`, `GH_PR_FLAGS`, `GH_BRANCH_DELETE`, `GH_PR_MERGE` and loop, plus a
+header block. The probe section is the dev-lead's round-2 `probes.sh`, inserted into `scripts/hook-smoke.sh` in the
+clone `$TMPDIR/b108/c/`.
+
+| Check                                                                                  | pass / fail: reason                                                                                                                                                                                                                                          |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every file in the plan belongs to the section's features (map)                         | pass: same 4 rows as round 1, tooling, no section                                                                                                                                                                                                            |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | fail: n/a for TypeScript, but the pasted `BRACE_ONE` loop adds a cost the plan does not state (reason 1)                                                                                                                                                     |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass: no advice, stated                                                                                                                                                                                                                                      |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass: the card's 11 forms are among the 29 blocked probes, and acceptance 2's 5 commands are among the 9 allowed                                                                                                                                             |
+| verification lists exact commands with expected numbers                                | pass for the counts, which I reproduced with `/bin/bash` 3.2.57. Base hook with the probes: exit 1, 29 FAIL, 847 ok. Prototype with the probes: "hook-smoke: 876 probes OK". The timing table measures only inputs with no brace, so it cannot show reason 1 |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | pass: unchanged from round 1, the deviation is stated                                                                                                                                                                                                        |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by you | pass: n/a. `tier.sh` gives `high`, so the lead's `approve` gates the build. D-19 label named                                                                                                                                                                 |
+| no settled D-n contradicted                                                            | pass: D-9, D-19 and D-28 are followed. All 838 existing probes pass on the prototype                                                                                                                                                                         |
+| `scripts/next-task.sh --check B1.108` on the committed plan says no overlap            | pass: `[next-task] B1.108: no overlap with any Doing or Review card` (re-run at `d64a0c3`)                                                                                                                                                                   |
+
+Round 1 is resolved. On the prototype these now exit 2:
+
+- From reasons 1 and 2: `${1}merge`, `${@}merge`, `${*}merge`, `-{d,d}`, `-{d,c} x` and
+  `--{delete-branch,delete-branch}`.
+- From note 3: `merge>/dev/null`, `merge<x` and `close>/dev/null 7 -d`.
+
+Results of my 42 round-1 adversarial commands:
+
+- Base-blocked forms stay blocked.
+- These stay at 0: the 10 allowed reads, `-c "a;b" -d`, `m$'\145'rge` and `${X:-merge}`. Each is named out of reach
+  or allowed.
+- The same 42 commands give identical exit codes under bash 5.2.15 and GNU sed 4.9 (`node:24-bookworm`, read-only
+  mount), so the BSD and GNU `sed` forms agree.
+
+### Reasons (changes requested)
+
+1. **The brace loop grows the command by prefix × commas, so a short command makes the hook run for minutes.**
+   `BRACE_ONE` copies the whole prefix and suffix of a word once per comma inside its braces. The prefix and suffix
+   can be any length (`[^[:space:]{}]*`). Each pass of `:b … tb` rescans the grown line from the start.
+   - Trigger: `echo` followed by 2000 `a` characters, then `{` and 500 commas and `}`. The command is 2.5 KB.
+   - Result: the `sed` alone writes 1,002,506 bytes in 7.5 s, and the hook takes 9.2 s. Base takes 0.11 s.
+   - Under GNU sed 4.9 / bash 5.2 the same input had not finished after about 6 minutes. I stopped the container.
+   - A gh pr merge segment followed by the same brace word in one command gets these BSD timings:
+
+     | Command                  | Size | Base   | Prototype |
+     | ------------------------ | ---- | ------ | --------- |
+     | 2000 `a` and 1000 commas | 3 KB | 0.08 s | 32 s      |
+     | 4000 `a` and 1000 commas | 5 KB | 0.08 s | 73 s      |
+
+   - A plausible input hits it too. A heredoc of a 96 KB one-line minified JSON array (`cat > f.json <<'EOF'`,
+     2000 objects) takes 6.2 s against 0.36 s, which is 17× slower.
+   - `settings.json` sets no timeout for `guard-bash.sh`. If Claude Code lets a command run when its hook times out
+     (plausible, I did not check), then a merge in the same command as such a word gets through.
+   - Either way, the plan's cost section says "one `sed` per command is 3 forks per call" and does not name this
+     cost.
+   - Fix options: bound the expansion and add a probe. The prefix and suffix could be limited (`{0,N}`), the
+     iterations or line growth capped, or the loop run only on lines naming `gh` and `pr`, which does not help a
+     merge sharing the line. Re-measure the brace inputs above on both `sed` builds and state the numbers in the
+     plan. Or drop the expansion and name these forms out of reach.
+
+Notes for the lead (not blocking):
+
+2. Nested and adjacent brace lists (`-{x,{c,d}}`, `-{d,x}{,}`) are named out of reach in the plan and the header,
+   which matches what the prototype does (`edge.txt`).
+3. I did not re-check the 13 mutant counts or the 139 KB timing (364 s on both). Both belong to the diff review.
+
+Verdict: changes requested
