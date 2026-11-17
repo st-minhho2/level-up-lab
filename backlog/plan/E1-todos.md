@@ -1599,6 +1599,6 @@ spellings
   - The probes fail on main before the change and pass after; bash 3.2-safe; the hook-smoke count before and after is
     stated.
   - The PR carries `config-change-approved` (D-19).
-- **Tier:** quick · **Depends on:** B1.105 (same line of `guard-bash.sh` and the same `hook-smoke.sh` section) ·
+- **Tier:** quick · **Depends on:** ~~B1.105~~ (same line of `guard-bash.sh` and the same `hook-smoke.sh` section) ·
   **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.107/`

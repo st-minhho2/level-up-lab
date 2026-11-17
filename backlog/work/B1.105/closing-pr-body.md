@@ -12,15 +12,15 @@ Evidence (from #387):
 - vitest 403, e2e 91; mutation: CI only, no src/lib or src/actions change.
 - Rounds: plan review 4, lead 2 (re-approved after diff review pass 1 #1 and plan review r3, option a both times);
   diff review 2 of 3 passes.
-- Out of scope, filed as B1.107 (#388, open): a delete flag after the close word written behind `$'…'`, `$"…"`, `\` or
+- Out of scope, filed as B1.107 (#388, merged 184c126): a delete flag after the close word written behind `$'…'`, `$"…"`, `\` or
   `""` still deletes the branch (B1.24's half of the rule).
 
 Files:
 
-- `backlog/plan/E1-todos.md`: B1.105 `**Status: Done** — 9087ff3 (#387)` with the evidence above.
-- `backlog/README.md`: Remaining row 146 removed; `~~B1.105~~` in node 146. Totals: E1 67/1/36/104, total 109/1/37
-  of 147. B1.107 (#388) is not on `main` yet: whichever of #388 and this PR lands second merges `origin/main` and
-  strikes `~~B1.105~~` in row 148.
+- `backlog/plan/E1-todos.md`: B1.105 `**Status: Done** — 9087ff3 (#387)` with the evidence above; `~~B1.105~~` in
+  B1.107's "Depends on".
+- `backlog/README.md`: Remaining row 146 removed; `~~B1.105~~` in node 146 and in row 148 (B1.107, filed in #388,
+  merged here from `main`, 92f6136). Totals: E1 67/1/37/105, total 109/1/38 of 148.
 - `backlog/work/B1.105/closing-pr-body.md`: this body.
 
 No `spec/` row: tooling, no section, no feature. `docs/metrics.md` has no per-card row for tooling (as B1.103).
