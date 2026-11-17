@@ -204,3 +204,99 @@ Notes for the lead (not blocking):
 2. I did not re-check the 15 mutant counts or the 139 KB timing (355 / 356 s). Both belong to the diff review.
 
 Verdict: approved
+
+## Diff review (round 1)
+
+Diff `4c79bec...bd10055`: probe commit `f51f28c` (`scripts/hook-smoke.sh` only), green `bd10055` (`guard-bash.sh`,
+`hooks.md` only). Evidence under `$TMPDIR/b108d/`: `c/` is a `git clone` of the worktree, `base/` holds the
+`4c79bec` hook, `run.sh` runs `cases.txt` through both hooks (`gh` and the merge word are placeholders expanded at
+run time), `fix/` holds the one-line prototype named under finding 1.
+
+### Command results (last lines)
+
+| Command                                        | Result                                                                                                                                   |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                                    | `All matched files use Prettier code style!` (exit 0)                                                                                    |
+| `pnpm typecheck`                               | `> tsc --noEmit` (exit 0)                                                                                                                |
+| `pnpm test`                                    | `Tests  403 passed (403)`                                                                                                                |
+| `pnpm test:e2e`                                | `91 passed (2.2m)`                                                                                                                       |
+| `scripts/mutation-gate.sh`                     | `mutation: CI only, no src/lib or src/actions change`                                                                                    |
+| `scripts/ci/check-suppressions.sh`             | `[check-suppressions] OK: no new suppressions`                                                                                           |
+| `scripts/ci/check-config-change.sh`            | `::error::Protected configuration changed without the 'config-change-approved' label:` (expected: the label is added on the PR, D-19)    |
+| `scripts/ci/check-feat-commits.sh`             | `[check-feat-commits] OK: no feat commit touches tests`                                                                                  |
+| `scripts/ci/check-ac-coverage.sh`              | `[check-ac-coverage] OK: every criterion of a shipped section has a test`                                                                |
+| `scripts/ci/check-spec-sections.sh`            | `[check-spec-sections] OK: sections cited: 1 … 53`                                                                                       |
+| `scripts/ci/check-features-map.sh`             | `[check-features-map] OK`                                                                                                                |
+| `scripts/verify-red.sh B1.108`                 | `::error::no 'test(<pkg>): B1.108 … (red)' commit` (expected: probe commit without the marker, stated deviation, B1.106)                 |
+| `scripts/hook-smoke.sh` at `bd10055`           | `hook-smoke: 878 probes OK` (worktree and clone, `/bin/bash` 3.2, BSD `sed`)                                                             |
+| `scripts/hook-smoke.sh` at `f51f28c` (red)     | exit 1, 30 `FAIL` (all 30 new blocked probes, exit 0 on the base hook), `hook-smoke: FAILURES above`                                     |
+| hook-smoke, bash 5.2.15 + GNU sed 4.9 (docker) | 0 `guard-bash` FAIL (289 `ok guard-bash` lines); 14 FAIL elsewhere, all from `node_modules` missing in the container (js-yaml, prettier) |
+| `git diff --stat main...HEAD`                  | 6 files changed, 441 insertions(+), 29 deletions(-)                                                                                      |
+
+### Checklist
+
+| Check                                                 | Result                                                                                                                                                                                                                                                                            |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every acceptance clause has a probe matching its Then | pass: 13 merge probes assert `agents never merge`, 17 delete probes assert `force pushes`, 10 allowed probes assert exit 0; the card's 11 forms are among them                                                                                                                    |
+| no test weakened after the probe commit               | pass: `git log --first-parent --no-merges f51f28c..HEAD -- '*.test.*' e2e/ scripts/hook-smoke.sh` is empty; no merge commits in the range                                                                                                                                         |
+| every changed file is in `plan.md`                    | pass: the 4 Files rows, nothing else                                                                                                                                                                                                                                              |
+| interfaces match the plan                             | pass: `UNQUOTE`, `BRACE_ONE`, `GH_PR_FLAGS`, `GH_BRANCH_DELETE`, `GH_PR_MERGE` and the loop are byte-identical to the plan's pasted block                                                                                                                                         |
+| `src/` invariants (Zod, Prisma, raw SQL, migration)   | n/a: no `src/`, `prisma/` or `e2e/` change                                                                                                                                                                                                                                        |
+| no secret, no suppression                             | pass                                                                                                                                                                                                                                                                              |
+| features map row                                      | n/a: no section                                                                                                                                                                                                                                                                   |
+| bash 5 + GNU sed on the committed hook                | pass: same exit codes as BSD for all 36 of my cases and all guard-bash probes                                                                                                                                                                                                     |
+| would a probe fail if one changed line were reverted  | pass: 5 of the plan's 15 mutants re-run on the clone with the full hook-smoke: no `<>` → 2 FAIL, three passes → 1, no `g` → 1, leftover braces kept → 4, no lower case → 6 (plan 5; the sixth is the B1.105 probe `GH PR -R O/R CLOSE 7 -D`). Clone restored (`git status` clean) |
+| header comments and `hooks.md` state the boundary     | fail: the brace claim is unconditional, and two forms are missing from the out-of-reach lists (findings 1, 2)                                                                                                                                                                     |
+
+### Findings
+
+```
+[1] KIND: correctness
+    WHERE: .claude/hooks/guard-bash.sh:95 (BRACE_ONE), with :100-101 (split after the expansion)
+    DEFECT: BRACE_ONE's prefix and suffix classes `[^[:space:]{}]*` take in `;` `&` `|` `(` `)` and the backtick,
+            which end a word for the shell, so the prefix or suffix is copied onto every item and the later
+            `tr ';&|'` split (or the glued `(`/`)`) cuts gh from its own subcommand or flag.
+    TRIGGER: `gh pr close {7,-d};`, `gh pr close {7,-d}&&true`, `gh pr close {7,-d}|cat`,
+             `gh pr {close,7,-d}|cat`, `gh {pr,MERGE,7};`, `(gh {pr,MERGE,7})`, `` `{gh,pr,MERGE,7}` ``
+             (MERGE = the merge subcommand); bash-only (brace list in command position, zsh does not expand it
+             there): `true;{gh,pr,MERGE,7}`, `({gh,pr,MERGE,7})`
+    WRONG BEHAVIOUR: exit 0 on bd10055 under BSD sed / bash 3.2 and GNU sed 4.9 / bash 5.2. bash and zsh both expand
+            the argument-position forms to `gh pr close 7 -d` / `gh pr MERGE 7` (`printf "[%s]" {7,-d};` prints
+            `[7][-d]` in both), so the remote branch is deleted or the PR merged (D-9). The copy reads, e.g.,
+            `gh pr close 7; -d;`. The header (":40-44 … in a brace list") and the hooks.md row ("each brace list's
+            first five items expanded with its prefix and suffix") claim these are caught, and neither out-of-reach
+            list names them. Control: the same lists with a space before the separator exit 2. Base 4c79bec also
+            exits 0 on all of them, so this is not a regression, but it is a hole in the boundary this card states.
+            A prototype (`$TMPDIR/b108d/fix/guard-bash.sh`) that adds `;&|()` and the backtick to the four excluded
+            sets (`[^[:space:]{};&|()\`]`) turns all 11 triggers to exit 2 and leaves my 10 allowed reads at exit 0.
+            With that one line changed, the full `scripts/hook-smoke.sh` still gives "hook-smoke: 878 probes OK"
+            (second clone `$TMPDIR/b108d/c2/`), and the 300-segment timing is unchanged (base 2.10 s, HEAD
+            2.00 s, prototype 2.04 s, one run each under load). The fix needs probes for these forms first.
+    CONFIDENCE: confirmed (ran every trigger on both sed builds; checked the expansion with printf in bash and zsh)
+
+[2] KIND: spec-mismatch (stated boundary)
+    WHERE: .claude/hooks/guard-bash.sh:94 (UNQUOTE `\$\{([a-z_][a-z0-9_]*|[0-9@*])\}`), header :87-89, hooks.md guard-bash row
+    DEFECT: a multi-digit positional in braces (`${10}`) is neither removed nor named out of reach; the header says
+            "$1, ${1} … removed (empty when unset)" and lists only operator expansions as out of reach.
+    TRIGGER: `gh pr ${10}MERGE 7` (and `${10}` before `-d` in a close)
+    WRONG BEHAVIOUR: exit 0; with fewer than 10 arguments (an agent's `bash -c` has none) the shell hands gh
+            `pr MERGE 7`. Either widen the class (`[0-9]+` inside braces) with a probe, or name it out of reach.
+            Low weight: it is the same family as plan round 1 reason 1, not a new mechanism.
+    CONFIDENCE: confirmed (ran it on both sed builds; `printf "[%s]" ${10}m` prints `[m]` in bash and zsh)
+```
+
+Answers to the brief's three doubts:
+
+- Header and `hooks.md` boundary: accurate for quotes, `\`, `$'…'`, `$"…"`, variables, redirects, the sixth list item,
+  nested lists, operator expansions, the new false positives (`'$X'-d`, `-c "$WHY-d"`, `-c 'see {a,-d}'`, a commit
+  message quoting the merge subcommand in pieces, the message order) and the gh api / git push split. Wrong only on
+  findings 1 and 2.
+- The prettier re-padding of the 10 `hooks.md` rows is whitespace only: `git diff -w` on `hooks.md` leaves 2 lines,
+  the guard-bash row and the table's separator row (its dashes grew with the column).
+- bash 5 + GNU sed on the committed hook: run (table above), no guard-bash difference from BSD.
+
+Verdict: back to code-writer
+
+Riskiest unfalsified: word forms only zsh expands (the session shell is zsh): `${=X}`, `${~X}`, `$X[1]` and glob
+qualifiers are not modelled by `UNQUOTE`, and I did not search them for a merge or `-d` the copy misses. Not re-run
+either: the 139 KB one-segment timing (355 s on base too) and the other 10 of the 15 mutants.
