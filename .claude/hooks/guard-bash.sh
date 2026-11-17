@@ -39,13 +39,15 @@ done < <(printf '%s\n' "$CMD" | tr ';&|' '\n\n\n')
 #    force=true on git/refs, deleteRef, updateRef, a branch rename; repo sync --force; pr close or merge with -d (in a
 #    cluster) or --delete-branch, with flags and their values between pr and the subcommand (`gh pr -R o/r close`,
 #    `-R "$(…)"`, B1.105), read on the unquoted copy below (B1.108), so gh, pr, the subcommand or the flag may be
-#    quoted, quoted in pieces, escaped, behind $'…' or $"…", in a brace list, after an empty variable or glued to a
-#    redirect (`"-d"`, `\-d`, `$'-d'` B1.107; `-'d'`, `"-"d`, `$'close'`, `\close`, `-{c,d}`, `$X-d`, `close>/dev/null`
+#    quoted, quoted in pieces, escaped, behind $'…' or $"…", in a brace list (glued to ; & | ( ) or a backtick too),
+#    after an empty variable (`${10}`, `$X[1]`, `${X[1]}`, zsh `${=X}`, `${(f)X}`) or glued to a redirect (`"-d"`,
+#    `\-d`, `$'-d'` B1.107; `-'d'`, `"-"d`, `$'close'`, `\close`, `-{c,d}`, `{7,-d};`, `$X-d`, `close>/dev/null`
 #    B1.108); a comment holding one, `-c "see \-d"`, `-c "$WHY-d"`, `-c 'see {a,-d}'`, is blocked too. Once pr is
 #    followed by a flag, a later close or merge word counts, on a later line of the command too (`gh pr -R o/r close 7`
 #    then `git branch -d x`: join them with && or ;). Out of reach of a text check: a flag or refspec held in a set
-#    variable, words joined by ${IFS} or an operator expansion (`${X:--d}`), an alias, an escape the shell expands
-#    (`$'\x2dd'`), a brace list's sixth item on or a nested list (`-{x,{c,d}}`), for git push a word quoted in pieces
+#    variable, words joined by ${IFS} or an operator expansion (`${X:--d}`, `${X:-merge}`), an alias, an escape the
+#    shell expands (`$'\x2dd'`), a brace list's sixth item on or a nested list (`-{x,{c,d}}`), a zsh subscript flag
+#    (`$X[(r)x]`) or a flag group with a space (`${(j: :)X}`), for git push a word quoted in pieces
 #    (`-'f'`), a command built at run time, a ; & or | inside a quoted argument (it splits the segment early:
 #    `-o "a;b" -f`), git config files written directly, other HTTP clients (curl) calling the GitHub API.
 W='(^|[[:space:];&|"'"'"'(`/=\\])'
@@ -85,14 +87,17 @@ if [[ "$low" =~ git_config_ ]]; then # key and value are separate variables (GIT
   [[ "$low" =~ mirror || ( "$low" =~ \.push && "$low" =~ =[\"\'\\$]*[+:] ) ]] && block "$ME" "$FORCE_MSG"
 fi
 # gh pr rules (B1.103, B1.105, B1.107, B1.108) read an unquoted copy of each segment, lower case, as the shell hands gh
-# its words: $NAME, ${NAME}, $1, ${1}, $@, $* removed (empty when unset), the $ of $'…' and $"…" removed, then every
-# ' " and \ removed, < and > made spaces (a redirect ends a word), and each brace list's first five items expanded
-# with its prefix and suffix (`-{c,d}` → `-c -d`). One sed for the whole command, not one per segment; BRACE_ONE runs
-# a fixed four times (each pass takes one item off every list on the line), never in a loop, so a long word with many
-# commas costs at most four passes. The git push, config and gh api rules read the original text: removing $' there
-# would hide PUSH_FORCE's $'…\…' signal.
-UNQUOTE='s/\$([a-z_][a-z0-9_]*|[0-9@*])|\$\{([a-z_][a-z0-9_]*|[0-9@*])\}//g; s/\$(["'"'"'])/\1/g; s/["'"'"'\\]//g; s/[<>]/ /g'
-BRACE_ONE='s/([^[:space:]{}]*)\{([^[:space:]{},]*),([^[:space:]{}]*)\}([^[:space:]{}]*)/\1\2\4 \1{\3}\4/g'
+# its words: $NAME, ${NAME}, $1, ${10}, $@, $* removed (empty when unset), with a subscript ($X[1], ${X[1]}) and
+# zsh's flags before the name (${=X}, ${~X}, ${^X}, ${(f)X}), the $ of $'…' and $"…" removed, then every ' " and \
+# removed, < and > made spaces (a redirect ends a word), and each brace list's first five items expanded with its
+# prefix and suffix (`-{c,d}` → `-c -d`). A subscript holding a space, (, a backtick, ; & or | stays (B1.108 plan round
+# 5: removing `$X[; gh pr merge 7 #]` would hide a command the shell runs); so does a flag group with a space or paren.
+# The brace prefix, item and suffix stop at ; & | ( ) and a backtick, where the shell ends a word. One sed for the
+# whole command, not one per segment; BRACE_ONE runs a fixed four times (each pass takes one item off every list on the
+# line), never in a loop, so a long word with many commas costs at most four passes. The git push, config and gh api
+# rules read the original text: removing $' there would hide PUSH_FORCE's $'…\…' signal.
+UNQUOTE='s/\$([a-z_][a-z0-9_]*(\[[^][:space:](`;&|]*\])?|[0-9@*])|\$\{(\([^()[:space:]]*\))?[=~^]*([a-z_][a-z0-9_]*|[0-9]+|[@*])(\[[^][:space:](`;&|]*\])?\}//g; s/\$(["'"'"'])/\1/g; s/["'"'"'\\]//g; s/[<>]/ /g'
+BRACE_ONE='s/([^[:space:]{};&|()`]*)\{([^[:space:]{},;&|()`]*),([^[:space:]{};&|()`]*)\}([^[:space:]{};&|()`]*)/\1\2\4 \1{\3}\4/g'
 while IFS= read -r g; do
   [[ "$g" =~ $GH_PR_MERGE ]] && block "$ME" "$MERGE_MSG"
   [[ "$g" =~ $GH_BRANCH_DELETE ]] && block "$ME" "$FORCE_MSG"
