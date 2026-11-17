@@ -251,8 +251,15 @@ gh "pr" "close" 7 --delete-branch
 GH PR -R O/R CLOSE 7 -D
 gh pr -R "$(gh repo view --json nameWithOwner -q .nameWithOwner)" close 7 -d
 gh pr -R $(cat r) close 7 --delete-branch
+gh pr "-R" o/r close 7 -d
+gh pr '--repo' o/r close 7 --delete-branch
+gh pr "--repo=o/r" close 7 -d
+gh pr \-R o/r close 7 -d
+gh pr $'-R' o/r close 7 -d
 CLOSE
 probe_msg 2 'agents never merge' guard-bash.sh "$(pr_cmd 'gh pr -R "$(cat r)" merge 7' "$PWD")"   # a flag value with spaces
+probe_msg 2 'agents never merge' guard-bash.sh "$(pr_cmd 'gh pr "-R" o/r merge 7' "$PWD")"   # the first flag quoted whole
+probe_msg 2 'agents never merge' guard-bash.sh "$(pr_cmd 'gh pr $"--repo" o/r merge 7' "$PWD")"   # behind $"…"
 while IFS= read -r c; do probe 0 guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'KEEP'
 gh pr -R o/r close 7
 gh pr --repo o/r close 7 -c "superseded"
