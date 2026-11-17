@@ -21,7 +21,14 @@ the name (`${=X}`, `${~X}`, `${^X}`, `${(f)X}`), since the session shell is zsh;
 `merge`. Round 6 (plan review round 5, a regression in round 5): a subscript or a zsh flag group is removed only when
 it holds no space, `(`, backtick, `;`, `&` or `|` (flags: no space or paren), so `$X[; gh pr merge 7 #]` or
 `${X[$(gh pr merge 7)]}`, where the shell runs the hidden command, no longer hides it from the copy; 9 probes guard
-it, one per excluded character. Same lines, no other change.
+it, one per excluded character. Same lines, no other change. Round 7 (diff review pass 2, 3 findings; the lead chose
+option a): the two subscript classes split by what ends each one in the shell. After a bare `$NAME` (bash: not a
+subscript, a glob) the class refuses a space or `,` (`{$X[,-d,-c,]}` hands gh `-d`, a regression at `5f9884b2`); a
+`;` `&` `|` `(` or backtick there needs a space or a brace list to form a visible command, so the narrower class still
+blocks round 6's probes. Inside `${X[…]}` the class allows a space (`${X[ 1 ]}merge` merges) and refuses `}`, `(` and a
+backtick (`${X[a}; gh pr merge 7; {]}`, `${X[$(…)]}`, ``${X[`…`]}``). `hooks.md` writes `\|` in its table row
+(a bare `|` cut the row). Header and `hooks.md` add out of reach: a glob (`gh pr [m]erge 7`, `m?rge`), a brace
+sequence (`-{c..d}`), a brace item holding `}` (`{$X[},-d}`).
 
 Weighed against A' (per-pattern widening: a class `(["'\\{},]|\$NAME|\${NAME})*` around every letter of `gh`, `pr`,
 `close`, `merge`, `-d`, `--delete-branch`): longer to read; prototyped (round 1 forms) it missed `g''h pr merge 7`, and
@@ -77,16 +84,16 @@ other operator expansions, a brace list's sixth item on (`-{a,b,c,e,f,d}`), nest
 | File                          | Change                                                                                         | Why          |
 | ----------------------------- | ---------------------------------------------------------------------------------------------- | ------------ |
 | `.claude/hooks/guard-bash.sh` | `UNQUOTE`, `BRACE_ONE`, a loop over the copy for the two gh pr rules; quote classes; header    | Acceptance 1 |
-| `scripts/hook-smoke.sh`       | section "gh pr words quoted in pieces … (B1.108)": 30 blocked, 10 allowed; rounds 4–6: 30 more | Test line    |
+| `scripts/hook-smoke.sh`       | section "gh pr words quoted in pieces … (B1.108)": 30 blocked, 10 allowed; rounds 4–7: 36 more | Test line    |
 | `.claude/docs/hooks.md`       | guard-bash row: the unquoted copy, the costs, what stays out of reach                          | Acceptance 1 |
 | `backlog/work/B1.108/*`       | plan, review, pr-body                                                                          | pipeline     |
 
 ## Interfaces touched
 
-`guard-bash.sh` (PreToolUse Bash): exit 2 with the existing `MERGE_MSG` / `FORCE_MSG` on the 60 forms; exit 0 otherwise as today.
+`guard-bash.sh` (PreToolUse Bash): exit 2 with the existing `MERGE_MSG` / `FORCE_MSG` on the 66 forms; exit 0 otherwise as today.
 
 ```bash
-UNQUOTE='s/\$([a-z_][a-z0-9_]*(\[[^][:space:](`;&|]*\])?|[0-9@*])|\$\{(\([^()[:space:]]*\))?[=~^]*([a-z_][a-z0-9_]*|[0-9]+|[@*])(\[[^][:space:](`;&|]*\])?\}//g; s/\$(["'"'"'])/\1/g; s/["'"'"'\\]//g; s/[<>]/ /g'
+UNQUOTE='s/\$([a-z_][a-z0-9_]*(\[[^][:space:],]*\])?|[0-9@*])|\$\{(\([^()[:space:]]*\))?[=~^]*([a-z_][a-z0-9_]*|[0-9]+|[@*])(\[[^]}(`]*\])?\}//g; s/\$(["'"'"'])/\1/g; s/["'"'"'\\]//g; s/[<>]/ /g'
 BRACE_ONE='s/([^[:space:]{};&|()`]*)\{([^[:space:]{},;&|()`]*),([^[:space:]{};&|()`]*)\}([^[:space:]{};&|()`]*)/\1\2\4 \1{\3}\4/g'
 GH_PR_FLAGS='([[:space:]]+-.*)?'
 GH_BRANCH_DELETE="${W}gh[[:space:]](.*[[:space:]])?(repo[[:space:]]+sync.*--force|pr${GH_PR_FLAGS}[[:space:]]+(close|merge)([[:space:]].*)?[[:space:]](-[a-z]*d|--delete-branch))"
@@ -112,6 +119,13 @@ numbers, subscripts and zsh flags`: "hook-smoke: 908 probes OK" (878 + 30). Muta
   allow probes broken): in `BRACE_ONE`, `;` kept → 4 fail, `&` → 2, `|` → 3, `(` → 2, `)` → 3, backtick → 2; one
   digit in `${…}` → 2; no `$X[…]` → 2; no `${X[…]}` → 3; no `=~^` flags → 4; no `(…)` flags → 1; flags group
   `[^)]*` → 1; the subscript class allowing a space → 1, `(` → 1, backtick → 1, `;` → 1, `&` → 1, `|` → 1.
+- Round 7: probes `test(hooks): B1.108 review pass 2 -- probe subscripts that end a word` (no marker), 6: merge
+  `gh pr ${X[ 1 ]}merge 7`, ``echo ${X[`gh pr merge 7`]}``, `echo ${X[a}; gh pr merge 7; {]}`; delete
+  `bash -c 'gh pr close 7 -c {$X[,-d,-c,]}'`, `gh pr close 7 -c {$X[,-d,-c,]}`, `gh pr close 7 ${X[ 1 ]}-d`. Red at
+  `5f9884b2`: exit 1, 4 FAIL, 910 ok; then `fix(hooks): B1.108 review pass 2 -- subscript classes, table pipe`:
+  "hook-smoke: 914 probes OK". Mutants (prototype, 6/6 killed, 0 allow probes broken): bare class allowing a space → 2
+  fail, `,` → 6; braced class allowing `}` → 1, `(` → 1, backtick → 1, refusing a space → 2. Round 6's 30 probes, 9
+  round-5 triggers and 10 allowed keep their exits.
 - 139 KB, 300-segment and brace-heavy timings re-run on the green commit and stated in the PR. `pnpm lint && pnpm typecheck` exit
   0; `pnpm test` 403 before and after; mutation: CI only, no src/lib or src/actions change; `next-task.sh --check
 B1.108` no overlap; `check-plan-scope.sh`, `check-backlog.sh` OK; CI green.
@@ -125,5 +139,7 @@ B1.108` no overlap; `check-plan-scope.sh`, `check-backlog.sh` OK; CI green.
 | 3    | reviewer | diff review        | `docs(backlog): B1.108 review pass N`                                                |
 | 4    | dev-lead | rounds 4–5 probes  | `test(hooks): B1.108 review pass 1 -- probe glued brace lists and expansions`        |
 | 5    | dev-lead | rounds 4–5 fix     | `fix(hooks): B1.108 review pass 1 -- brace lists, numbers, subscripts and zsh flags` |
+| 6    | dev-lead | round 7 probes     | `test(hooks): B1.108 review pass 2 -- probe subscripts that end a word`              |
+| 7    | dev-lead | round 7 fix, docs  | `fix(hooks): B1.108 review pass 2 -- subscript classes, table pipe`                  |
 
-Plan review: approved, round 6 · Plan approved by: lead, 2026-11-17 · Rounds: 2
+Plan review: round 7 pending · Plan approved by: lead, 2026-11-17 (round 6; round 7 pending) · Rounds: 3
