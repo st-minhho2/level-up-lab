@@ -10,14 +10,15 @@ Evidence (from #390):
 - vitest 403, e2e 91; mutation: CI only, no src/lib or src/actions change.
 - Rounds: plan review 1, lead 1 (approach A, the narrow fix; the general normalization was weighed and measured);
   diff review 1 of 3 passes.
-- Out of scope, filed as B1.108 (#391, open): 11 spellings with `pr`, the subcommand or the flag quoted in pieces,
-  four of them a merge, with the general fix's timing.
+- Out of scope, filed as B1.108 (#391, merged b8cadaa): 11 spellings with `pr`, the subcommand or the flag quoted in
+  pieces, four of them a merge, with the general fix's timing.
 
 Files:
 
-- `backlog/plan/E1-todos.md`: B1.107 `**Status: Done** — 23315a4 (#390)` with the evidence above.
-- `backlog/README.md`: Remaining row 148 removed; `~~B1.107~~` in node 148. Totals: E1 68/1/36/105, total 110/1/37 of 148. B1.108's row (#391) is not on `main` yet; whichever of #391 and this PR lands second merges `origin/main` and
-  strikes `~~B1.107~~` in B1.108's "Depends on" and row.
+- `backlog/plan/E1-todos.md`: B1.107 `**Status: Done** — 23315a4 (#390)` with the evidence above; `~~B1.107~~` in
+  B1.108's "Depends on".
+- `backlog/README.md`: Remaining row 148 removed; `~~B1.107~~` in node 148 and in row 149 (B1.108, filed in #391,
+  merged here from `main`, 8ee3a88). Totals: E1 68/1/37/106, total 110/1/38 of 149.
 - `backlog/work/B1.107/closing-pr-body.md`: this body.
 
 No `spec/` row: tooling, no section, no feature. `docs/metrics.md` has no per-card row for tooling (as B1.103, B1.105).

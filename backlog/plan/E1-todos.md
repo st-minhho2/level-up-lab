@@ -1622,6 +1622,6 @@ one-segment command: base 295 s, bash `${//}` 929 s, one `sed` per segment 315 s
   - The probes fail on main before the change and pass after; bash 3.2-safe; the hook's time on a 138 KB command,
     and the hook-smoke count, before and after are stated.
   - The PR carries `config-change-approved` (D-19).
-- **Tier:** quick · **Depends on:** B1.107 (same lines of `guard-bash.sh` and the next `hook-smoke.sh` section) ·
+- **Tier:** quick · **Depends on:** ~~B1.107~~ (same lines of `guard-bash.sh` and the next `hook-smoke.sh` section) ·
   **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.108/`
