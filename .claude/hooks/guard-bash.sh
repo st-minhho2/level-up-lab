@@ -37,16 +37,17 @@ done < <(printf '%s\n' "$CMD" | tr ';&|' '\n\n\n')
 #    +/: push refspec, unless the whole segment is one line of plain `git config [--global…] --get|--unset|--list|-l …`
 #    with no comment or substitution. So does gh (global flags may come first): api with a DELETE/PATCH method (`-iX DELETE`) or
 #    force=true on git/refs, deleteRef, updateRef, a branch rename; repo sync --force; pr close or merge with -d (in a
-#    cluster) or --delete-branch, behind quotes, \ or $ (`"-d"`, `""-d`, `\-d`, `$'-d'`, `$"--delete-branch"`; the shell
-#    strips them, B1.107; a comment holding one, `-c "see \-d"`, is blocked too), with flags and their values between pr and the subcommand (`gh pr -R o/r
-#    close`, `-R "$(…)"`, the first flag behind quotes, \ or $: `"-R"`, `\-R`, `$'-R'`) and quotes around gh, pr or the
-#    subcommand (B1.105); an empty unquoted variable before the flag (`gh pr $EMPTY -R …`) stays out of reach. Once pr is followed by a flag, a later
-#    close or merge word counts, on a later line of the command too (`gh pr -R o/r close 7` then `git branch -d x`:
-#    join them with && or ;). Out of reach of a text check: a flag or refspec held in a variable, words
-#    joined by ${IFS} or another expansion, an alias, a word quoted in pieces (`-'d'`, `"-"d`), an escape the shell
-#    expands (`$'\x2dd'`), a quoted or escaped subcommand (`$'close'`, `\close`), a command built at run time, a ; & or |
-#    inside a quoted argument (it splits the segment early: `-o "a;b" -f`), git config files written directly, other
-#    HTTP clients (curl) calling the GitHub API.
+#    cluster) or --delete-branch, with flags and their values between pr and the subcommand (`gh pr -R o/r close`,
+#    `-R "$(…)"`, B1.105), read on the unquoted copy below (B1.108), so gh, pr, the subcommand or the flag may be
+#    quoted, quoted in pieces, escaped, behind $'…' or $"…", in a brace list, after an empty variable or glued to a
+#    redirect (`"-d"`, `\-d`, `$'-d'` B1.107; `-'d'`, `"-"d`, `$'close'`, `\close`, `-{c,d}`, `$X-d`, `close>/dev/null`
+#    B1.108); a comment holding one, `-c "see \-d"`, `-c "$WHY-d"`, `-c 'see {a,-d}'`, is blocked too. Once pr is
+#    followed by a flag, a later close or merge word counts, on a later line of the command too (`gh pr -R o/r close 7`
+#    then `git branch -d x`: join them with && or ;). Out of reach of a text check: a flag or refspec held in a set
+#    variable, words joined by ${IFS} or an operator expansion (`${X:--d}`), an alias, an escape the shell expands
+#    (`$'\x2dd'`), a brace list's sixth item on or a nested list (`-{x,{c,d}}`), for git push a word quoted in pieces
+#    (`-'f'`), a command built at run time, a ; & or | inside a quoted argument (it splits the segment early:
+#    `-o "a;b" -f`), git config files written directly, other HTTP clients (curl) calling the GitHub API.
 W='(^|[[:space:];&|"'"'"'(`/=\\])'
 E='(["'"'"'[:space:]`)]|$)'
 GIT_WORD="${W}git(${E}|-push|-send-pack)"
@@ -58,22 +59,24 @@ CONFIG_FORCE='mirror|--mi?r?r?o?r?([^a-z]|$)|\.push["'"'"']?([[:space:]]+|=)["'"
 GH_API="${W}gh[[:space:]](.*[[:space:]])?api[[:space:]]"
 GH_WRITE_METHOD='(-[a-z]*x|--method)[[:space:]=]*["'"'"']?(delete|patch)|force[[:space:]]*[=:][[:space:]]*true'
 GH_REF_EDIT='deleteref|updateref|branches/[^[:space:]]+/rename'
-GH_PR_FLAGS='([[:space:]]+["'"'"'\\$]*-.*)?' # a flag after pr (behind quotes, \ or $: `"-R"`, `$'-R'`), then any words (a value may hold spaces: `-R "$(cmd)"`; B1.103, B1.105)
-GH_BRANCH_DELETE="${W}gh[\"']?[[:space:]](.*[[:space:]])?(repo[[:space:]]+sync.*--force|[\"']?pr[\"']?${GH_PR_FLAGS}[[:space:]]+[\"']?(close|merge)[\"']?([[:space:]].*)?[[:space:]][\"'\\\\$]*(-[a-z]*d|--delete-branch))"
+GH_PR_FLAGS='([[:space:]]+-.*)?' # a flag after pr, then any words (a value may hold spaces: `-R "$(cmd)"`; B1.103, B1.105); quotes are gone in the unquoted copy (B1.108)
+GH_BRANCH_DELETE="${W}gh[[:space:]](.*[[:space:]])?(repo[[:space:]]+sync.*--force|pr${GH_PR_FLAGS}[[:space:]]+(close|merge)([[:space:]].*)?[[:space:]](-[a-z]*d|--delete-branch))"
 FORCE_MSG="force pushes and remote branch deletes are not allowed from an agent session."
 # Merging a pull request (B1.103): agents never merge (D-9), and the ruleset needs no approval, so a merge call would
 # land. Any case: `gh … pr merge` in a segment (gh behind a path, a prefix or quotes, global flags first, flags and
 # their values between pr and merge: `gh pr -R o/r merge`, `-R "$(…)"`, so `gh pr -R o/r list --search merge` is blocked
-# too, GH_PR_FLAGS above); and in a command that names `gh … api` anywhere, read over
+# too, GH_PR_FLAGS above), read on the unquoted copy below, so `$'merge'`, `m''erge`, `\merge`, `{merge,}`,
+# `${@}merge`, `$EMPTY merge` and `merge>/dev/null` count (B1.108); and in a command that names `gh … api` anywhere, read over
 # the whole command so a path or query held in a variable or a heredoc of the same command counts: pulls/<n>/merge in
 # any method (a GET too), /merges, and the GraphQL mutations mergePullRequest, enablePullRequestAutoMerge, mergeBranch,
 # enqueuePullRequest. The text is matched, not run, so a command that only names these is blocked too (a grep for
-# them, a PR title or card evidence quoting them). Out of reach: a script file the agent wrote and then runs, a query
-# read from a file an earlier command wrote (`-F query=@q.graphql`), a word quoted in pieces, an alias, a command
-# built at run time (`$(which gh) pr merge 7`), curl on the GitHub API.
+# them, a PR title or card evidence quoting them, `gh pr m''erge` too since B1.108). Out of reach: a script file the
+# agent wrote and then runs, a query read from a file an earlier command wrote (`-F query=@q.graphql`), for `gh api`
+# a word quoted in pieces (`pulls/7/m''erge`), an alias, a command built at run time (`$(which gh) pr merge 7`), curl
+# on the GitHub API.
 GH_ANY_API="${W}gh[\"']?[[:space:]](.*[[:space:]])?[\"']?api[\"']?[[:space:]]"
 GH_MERGE_API='pulls/[^[:space:]]*/merge([^a-z]|$)|/merges([^a-z]|$)|mergepullrequest|enablepullrequestautomerge|mergebranch|enqueuepullrequest'
-GH_PR_MERGE="${W}gh[\"']?[[:space:]](.*[[:space:]])?[\"']?pr[\"']?${GH_PR_FLAGS}[[:space:]]+[\"']?merge${E}"
+GH_PR_MERGE="${W}gh[[:space:]](.*[[:space:]])?pr${GH_PR_FLAGS}[[:space:]]+merge${E}"
 MERGE_MSG="agents never merge a pull request (gh pr merge, gh api on pulls/<n>/merge or /merges, a GraphQL merge mutation): merging is the lead's (D-9)."
 joined="${CMD//\\$'\n'/}"
 low="$(printf '%s' "$joined" | tr '[:upper:]' '[:lower:]')"
@@ -81,6 +84,21 @@ low="$(printf '%s' "$joined" | tr '[:upper:]' '[:lower:]')"
 if [[ "$low" =~ git_config_ ]]; then # key and value are separate variables (GIT_CONFIG_KEY_0, GIT_CONFIG_VALUE_0)
   [[ "$low" =~ mirror || ( "$low" =~ \.push && "$low" =~ =[\"\'\\$]*[+:] ) ]] && block "$ME" "$FORCE_MSG"
 fi
+# gh pr rules (B1.103, B1.105, B1.107, B1.108) read an unquoted copy of each segment, lower case, as the shell hands gh
+# its words: $NAME, ${NAME}, $1, ${1}, $@, $* removed (empty when unset), the $ of $'…' and $"…" removed, then every
+# ' " and \ removed, < and > made spaces (a redirect ends a word), and each brace list's first five items expanded
+# with its prefix and suffix (`-{c,d}` → `-c -d`). One sed for the whole command, not one per segment; BRACE_ONE runs
+# a fixed four times (each pass takes one item off every list on the line), never in a loop, so a long word with many
+# commas costs at most four passes. The git push, config and gh api rules read the original text: removing $' there
+# would hide PUSH_FORCE's $'…\…' signal.
+UNQUOTE='s/\$([a-z_][a-z0-9_]*|[0-9@*])|\$\{([a-z_][a-z0-9_]*|[0-9@*])\}//g; s/\$(["'"'"'])/\1/g; s/["'"'"'\\]//g; s/[<>]/ /g'
+BRACE_ONE='s/([^[:space:]{}]*)\{([^[:space:]{},]*),([^[:space:]{}]*)\}([^[:space:]{}]*)/\1\2\4 \1{\3}\4/g'
+while IFS= read -r g; do
+  [[ "$g" =~ $GH_PR_MERGE ]] && block "$ME" "$MERGE_MSG"
+  [[ "$g" =~ $GH_BRANCH_DELETE ]] && block "$ME" "$FORCE_MSG"
+done < <(printf '%s\n' "$joined" | tr '[:upper:]' '[:lower:]' \
+  | sed -E -e "$UNQUOTE" -e "$BRACE_ONE" -e "$BRACE_ONE" -e "$BRACE_ONE" -e "$BRACE_ONE" -e 's/[{}]//g' \
+  | tr '\n;&|' ' \n\n\n'; echo)
 names_git=0; [[ "$joined" =~ $GIT_WORD ]] && names_git=1
 US=$'\037' # marks the command's own newlines inside a segment
 while IFS= read -r segment; do
@@ -89,8 +107,6 @@ while IFS= read -r segment; do
   if [[ "$low" =~ $GH_API ]]; then
     [[ ( "$low" =~ git/refs && "$low" =~ $GH_WRITE_METHOD ) || "$low" =~ $GH_REF_EDIT ]] && block "$ME" "$FORCE_MSG"
   fi
-  [[ "$low" =~ $GH_PR_MERGE ]] && block "$ME" "$MERGE_MSG"
-  [[ "$low" =~ $GH_BRANCH_DELETE ]] && block "$ME" "$FORCE_MSG"
   [[ $names_git -eq 1 ]] || continue
   [[ "$segment" =~ $PUSH_TAIL && "${BASH_REMATCH[3]}" =~ $PUSH_FORCE ]] && block "$ME" "$FORCE_MSG"
   if [[ "$low" =~ $CONFIG_ROUTE && "$low" =~ $CONFIG_FORCE ]]; then
