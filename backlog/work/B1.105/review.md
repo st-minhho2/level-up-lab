@@ -126,3 +126,92 @@ Costs the lead accepts with this plan (all confirmed on `new.sh`, exit 0 on `old
 
 Riskiest unfalsified: bash 5 in CI. Only `/bin/bash` 3.2 is installed here; the regex uses no construct that
 differs between the two.
+
+## Diff review (round 1)
+
+Diff `origin/main...5328b8a`: 6 files, +311 −14. Code: `.claude/hooks/guard-bash.sh` (12 lines changed: 37–43 header,
+58–59 rule, 62–64 merge header, old `GH_PR_FLAGS` line removed), `scripts/hook-smoke.sh` (+29), `.claude/docs/hooks.md`
+(20 lines, but the word diff holds two insertions only; the rest is Prettier re-padding the table column). Probes ran
+on `git clone` copies under `$TMPDIR/b105d` with `/bin/bash` 3.2.57; no bash 5 on this machine.
+
+### Command results (last line of each)
+
+| Command                               | Result                                                                                                                                                                                                                                            |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                           | exit 0, "All matched files use Prettier code style!"                                                                                                                                                                                              |
+| `pnpm typecheck`                      | exit 0                                                                                                                                                                                                                                            |
+| `pnpm test`                           | "Tests 403 passed (403)", as the plan says                                                                                                                                                                                                        |
+| `pnpm test:e2e`                       | "91 passed (2.2m)"                                                                                                                                                                                                                                |
+| `scripts/mutation-gate.sh`            | "mutation: CI only, no src/lib or src/actions change"                                                                                                                                                                                             |
+| `scripts/ci/check-suppressions.sh`    | "OK: no new suppressions"                                                                                                                                                                                                                         |
+| `scripts/ci/check-config-change.sh`   | error: `guard-bash.sh` and `hooks.md` changed without the `config-change-approved` label. This is expected before the PR exists (D-19, acceptance 4); the PR must carry the label                                                                 |
+| `scripts/ci/check-feat-commits.sh`    | "OK: no feat commit touches tests"                                                                                                                                                                                                                |
+| `scripts/ci/check-ac-coverage.sh`     | "OK: every criterion of a shipped section has a test"                                                                                                                                                                                             |
+| `scripts/ci/check-spec-sections.sh`   | "OK: sections cited: 1 … 53"                                                                                                                                                                                                                      |
+| `scripts/ci/check-features-map.sh`    | "OK"                                                                                                                                                                                                                                              |
+| `scripts/verify-red.sh B1.105`        | "no 'test(<pkg>): B1.105 … (red)' commit": expected, the plan states the probe commit carries no marker (no vitest file)                                                                                                                          |
+| `scripts/next-task.sh --check B1.105` | "B1.105: no overlap with any Doing or Review card"                                                                                                                                                                                                |
+| `scripts/hook-smoke.sh` on `5328b8a`  | "hook-smoke: 813 probes OK" (790 + 23, as planned)                                                                                                                                                                                                |
+| `scripts/hook-smoke.sh` on `7d753df`  | exit 1. All 16 of the card's blocked probes FAIL with exit 0. The clone also had 15 FAILs from missing `node_modules` (js-yaml, path-guard, review formatter); those are not the card's. With the worktree's `node_modules`, the copy runs 813 OK |
+
+### Checklist
+
+- Acceptance 1, flag spellings blocked with the branch-delete message: **partly**. All 15 `force pushes` probes pass,
+  and 7 more spellings I tried exit 2: `--delete-branch=true`, tab separators, a PR URL, a `GH_REPO=` prefix,
+  `x=$(…)`, `-c "bye" -d`, and a `\`-newline before `-d`. A flag quoted whole between `pr` and `close` passes
+  (finding 1). The old regex's language is a subset of the new one (every added group is optional), so every form
+  blocked before is still blocked.
+- Acceptance 2, plain forms pass: yes. The 7 KEEP probes pass, and so do `close 7 --comment "done"`,
+  `list --state closed`, `view --json closed,state,mergeable,mergeStateStatus` and `list -s merged`.
+- Acceptance 3, red then green with counts: yes. Red is 16 FAIL on `7d753df`, green is 813 OK, and bash 3.2 was run.
+  Bash 5 was not run here.
+- Acceptance 4, the label: pending, because no PR exists yet. `check-config-change.sh` will fail until the label is on.
+- No probe weakened after the probe commit: `git log --first-parent --no-merges 7d753df..HEAD -- scripts/hook-smoke.sh`
+  is empty, and the `--remerge-diff` of merge `5328b8a` shows no conflict in `hook-smoke.sh` or `guard-bash.sh`.
+- Every changed file is in `plan.md`: yes, the 4 Files rows. The pasted `GH_PR_FLAGS` and `GH_BRANCH_DELETE` match the
+  hook byte for byte.
+- Reverting a changed line fails a probe: yes, in 4 mutants run on the copy, one changed line each. Without the quote
+  after `gh`, 1 probe passes. Without the quotes around `close|merge`, 1 passes. Without the quotes around `pr`, 1
+  passes. Without `${GH_PR_FLAGS}` in `GH_BRANCH_DELETE`, 13 pass. Plan review round 2 covers the one-word-value
+  mutant: both `$(…)` probes pass on it.
+- Header and `hooks.md` wording: accurate for what the regex does. "Once pr is followed by a flag, a later close or
+  merge word counts, on a later line too" matches the regex. For `close` the regex also needs a later `-d` /
+  `--delete-branch`, and the `hooks.md` row says so. The Prettier re-padding of the table is formatter output and
+  changes no text.
+- No secret, no suppression, no `src/`, `prisma/` or `e2e/` change; no migration.
+
+### Findings
+
+```
+[1] KIND: spec-mismatch
+    WHERE: .claude/hooks/guard-bash.sh:58 (GH_PR_FLAGS, shared by GH_BRANCH_DELETE:59 and GH_PR_MERGE)
+    DEFECT: GH_PR_FLAGS needs a bare `-` right after the whitespace that follows `pr`, so a first flag quoted whole
+            (or backslash-escaped) is not seen as a flag, and the rule then needs `close`/`merge` directly after `pr`.
+    TRIGGER: gh pr "-R" o/r close 7 -d ; gh pr '--repo' o/r close 7 --delete-branch ; gh pr "--repo=o/r" close 7 -d ;
+             gh pr \-R o/r close 7 -d ; gh pr "-R" o/r merge 7   (each exits 0 on 5328b8a; on main too)
+    WRONG BEHAVIOUR: the shell removes the quotes, so gh gets `-R o/r close 7 -d` and deletes the remote branch (or
+            merges). Card acceptance 1 says "every … spelling with flags (and their values) between pr and close" is
+            blocked. The header and hooks.md say quotes are handled around gh, pr, the subcommand and -d, and their
+            out-of-reach list names only "a word quoted in pieces", not a flag quoted whole.
+    CONFIDENCE: confirmed (ran on the $TMPDIR copy with /bin/bash 3.2: all 5 exit 0)
+```
+
+Candidate fix (checked on the copy, not applied): `GH_PR_FLAGS='([[:space:]]+["'"'"'\\]?-.*)?'`. With it, all 5
+triggers exit 2, all 20 of my extra cases match their expectation, and `scripts/hook-smoke.sh` gives "813 probes OK".
+The fix changes the plan's pasted interface line, so per `planning.md` the lead decides at re-approval between:
+
+- (a) the fix, with a probe for each trigger landed first in a probe commit;
+- (b) "a flag quoted whole or escaped" added to out of reach in the header, `hooks.md` and the PR body, with
+  acceptance 1 then read narrower than the card.
+
+Not findings, noted for the lead:
+
+- `gh pr -R o/r create -t "close the gap" -d` exits 2. Here `-d` is `--draft`. This is one more case of the stated
+  "later close word and -d" cost. Agents open PRs through `scripts/pr-step.sh`, so it rarely bites.
+- The `scripts/CLAUDE.md` hook-smoke row still names only B1.103's probes. Plan review round 1 marked this optional.
+
+Verdict: back to test-writer. Finding 1 needs a probe before a fix, and the plan line has to be re-approved if the
+lead takes (a). If the lead takes (b), it goes back to the code-writer for the wording only.
+
+Riskiest unfalsified: bash 5 in CI. Only `/bin/bash` 3.2 ran here. The new regex adds no construct that the two
+versions treat differently, but CI's run of `hook-smoke.sh` is the first under bash 5.
