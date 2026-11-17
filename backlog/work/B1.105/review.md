@@ -283,3 +283,51 @@ Notes (do not block):
 
 Riskiest unfalsified: bash 5 in CI, as in every round here. The added class uses no construct that 3.2 and 5 treat
 differently.
+
+## Plan review (round 4)
+
+Plan at `c46ba7c`. The lead chose option (a) of round 3 reason 1; this is the only change since `0d4fb54`, and it
+touches only `plan.md`. Evidence:
+
+- The pasted `GH_PR_FLAGS='([[:space:]]+["'"'"'\\$]*-.*)?'` is byte for byte the line of `$TMPDIR/b105r3/hooks/alt.sh`
+  (round 3's prototype).
+- Round 3 ran that prototype through the full `scripts/hook-smoke.sh` on a clone of `b1c3ddb`: "813 probes OK". It
+  also had 0 mismatches on the 70 commands with a stated expectation.
+- Here, the plan's 7 round 2 probes were run with `/bin/bash` 3.2 against three hooks: `cur.sh` (the branch hook),
+  `nodollar.sh` (the plan's `$`-dropped mutant, `["'"'"'\\]*`) and `alt.sh`. Results below.
+
+| Probe                                        | `cur.sh` | `nodollar.sh` | plan (`alt.sh`) | message              |
+| -------------------------------------------- | -------- | ------------- | --------------- | -------------------- |
+| `gh pr "-R" o/r close 7 -d`                  | 0        | 2             | 2               | `force pushes`       |
+| `gh pr '--repo' o/r close 7 --delete-branch` | 0        | 2             | 2               | `force pushes`       |
+| `gh pr "--repo=o/r" close 7 -d`              | 0        | 2             | 2               | `force pushes`       |
+| `gh pr \-R o/r close 7 -d`                   | 0        | 2             | 2               | `force pushes`       |
+| `gh pr $'-R' o/r close 7 -d`                 | 0        | 0             | 2               | `force pushes`       |
+| `gh pr "-R" o/r merge 7`                     | 0        | 2             | 2               | `agents never merge` |
+| `gh pr $"--repo" o/r merge 7`                | 0        | 0             | 2               | `agents never merge` |
+
+| Check                                                                                  | pass / fail: reason                                                                                                                                                                                                                                                                  |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| every file in the plan belongs to the section's features (map)                         | pass: the same 4 Files rows. `check-plan-scope.sh`: "stays inside the approved plan of B1.105"                                                                                                                                                                                       |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | pass: n/a, no TypeScript. The pasted line is what I ran                                                                                                                                                                                                                              |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass: no advice, stated. The lead's choices are cited (diff review r1 option a, plan review r3 option a)                                                                                                                                                                             |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass: round 3 reason 1 is fixed. `$'-R'` and `$"--repo"` exit 2 with the right message (table). `$EMPTY` is now named under "a command built at run time"                                                                                                                            |
+| verification lists exact commands with expected numbers                                | pass: 16 + 7 = 23 blocked, + 7 allowed = 30, and 790 + 30 = 820. The red is 7 FAIL / 813 ok, which matches `cur.sh` (all 7 exit 0). Mutants: dropping the class kills all 7 (`cur.sh` is that mutant); dropping `$` from it kills the 2 `$` probes (`nodollar.sh`), as the plan says |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | pass: rows 4–5 add the round 2 commits. `test(hooks): … review pass 1 -- …` carries no marker (`backlog/CLAUDE.md` hardening form), and the fix row is `fix(hooks): …`                                                                                                               |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by you | pass: n/a, no section. `scripts/agent/tier.sh` gives `high`. `Plan approved by:` is empty, so the lead's `approve` is needed                                                                                                                                                         |
+| no settled D-n contradicted                                                            | pass: D-9 and D-19 are kept                                                                                                                                                                                                                                                          |
+| `scripts/next-task.sh --check B1.105` on the committed plan says no overlap            | pass: `[next-task] B1.105: no overlap with any Doing or Review card`                                                                                                                                                                                                                 |
+
+Verdict: approved
+
+The costs the lead accepts are unchanged from rounds 2–3:
+
+- Once `pr` is followed by a flag, any later `close`/`merge` word in the segment counts, on a later line of a
+  multi-line command too (`gh pr -R o/r view 7` then `git merge origin/main`).
+- A command that quotes a blocked spelling is itself blocked.
+- An empty unquoted variable before the flag passes (now stated).
+- B1.103's merge rule widens through the shared `GH_PR_FLAGS`, so the PR body should say so.
+
+Note: the plan is 74 lines, against about 40 for one screen.
+
+Riskiest unfalsified: bash 5 in CI. Only `/bin/bash` 3.2 ran here; `["'"'"'\\$]*` behaves the same in both.
