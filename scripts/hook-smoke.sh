@@ -234,6 +234,35 @@ git log --merges --oneline
 READS
 probe 0 guard-bash.sh "$(pr_cmd 'scripts/pr-step.sh ready 7' "$PWD")"   # the wrapper's own gh calls stay its own
 
+echo "== guard-bash.sh: branch delete through gh pr flags (B1.105)"
+while IFS= read -r c; do probe_msg 2 'force pushes' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'CLOSE'
+gh pr -R o/r close 7 --delete-branch
+gh pr -R o/r close 7 -d
+gh pr --repo o/r close 7 --delete-branch
+gh pr --repo=o/r close 7 -d
+gh pr -R o/r close --delete-branch 7
+gh pr -R o/r close 7 -dc bye
+gh pr -R o/r close 7 "-d"
+gh -R o/r pr --repo o/r close 7 -d
+/opt/homebrew/bin/gh pr -R o/r close 7 -d
+true && gh pr --repo o/r close 7 --delete-branch
+"gh" pr close 7 -d
+gh "pr" "close" 7 --delete-branch
+GH PR -R O/R CLOSE 7 -D
+gh pr -R "$(gh repo view --json nameWithOwner -q .nameWithOwner)" close 7 -d
+gh pr -R $(cat r) close 7 --delete-branch
+CLOSE
+probe_msg 2 'agents never merge' guard-bash.sh "$(pr_cmd 'gh pr -R "$(cat r)" merge 7' "$PWD")"   # a flag value with spaces
+while IFS= read -r c; do probe 0 guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'KEEP'
+gh pr -R o/r close 7
+gh pr --repo o/r close 7 -c "superseded"
+gh pr -R o/r view 7
+gh pr -R o/r list
+gh pr --repo o/r list --state closed
+gh pr -R o/r checks 7
+gh pr -R o/r diff 7
+KEEP
+
 echo "== settings.json permissions (B1.23, B1.103)"
 n=$((n+1)); if node -e '
   const p = require("./.claude/settings.json").permissions;
