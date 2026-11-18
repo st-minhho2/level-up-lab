@@ -46,8 +46,9 @@ done < <(printf '%s\n' "$CMD" | tr ';&|' '\n\n\n')
 #    followed by a flag, a later close or merge word counts, on a later line of the command too (`gh pr -R o/r close 7`
 #    then `git branch -d x`: join them with && or ;). Out of reach of a text check: a flag or refspec held in a set
 #    variable, words joined by ${IFS} or an operator expansion (`${X:--d}`, `${X:-merge}`), an alias, an escape the
-#    shell expands (`$'\x2dd'`), a brace list's sixth item on or a nested list (`-{x,{c,d}}`), a zsh subscript flag
-#    (`$X[(r)x]`) or a flag group with a space (`${(j: :)X}`), for git push a word quoted in pieces
+#    shell expands (`$'\x2dd'`), a brace list's sixth item on, a nested list (`-{x,{c,d}}`), a sequence (`-{c..d}`)
+#    or an item holding } (`{$X[},-d}`), a glob (`gh pr [m]erge 7`), a zsh subscript flag inside braces
+#    (`${X[(r)x]}`) or a flag group with a space (`${(j: :)X}`), for git push a word quoted in pieces
 #    (`-'f'`), a command built at run time, a ; & or | inside a quoted argument (it splits the segment early:
 #    `-o "a;b" -f`), git config files written directly, other HTTP clients (curl) calling the GitHub API.
 W='(^|[[:space:];&|"'"'"'(`/=\\])'
@@ -90,13 +91,15 @@ fi
 # its words: $NAME, ${NAME}, $1, ${10}, $@, $* removed (empty when unset), with a subscript ($X[1], ${X[1]}) and
 # zsh's flags before the name (${=X}, ${~X}, ${^X}, ${(f)X}), the $ of $'…' and $"…" removed, then every ' " and \
 # removed, < and > made spaces (a redirect ends a word), and each brace list's first five items expanded with its
-# prefix and suffix (`-{c,d}` → `-c -d`). A subscript holding a space, (, a backtick, ; & or | stays (B1.108 plan round
-# 5: removing `$X[; gh pr merge 7 #]` would hide a command the shell runs); so does a flag group with a space or paren.
+# prefix and suffix (`-{c,d}` → `-c -d`). A subscript stays where the shell would end it or run something in it, so
+# that removing it cannot hide a command (B1.108 plan rounds 5 and 7): after a bare $X (bash: a glob, not a subscript)
+# one holding a space or a comma (`$X[; gh pr merge 7 #]`, `{$X[,-d,-c,]}`); inside ${X[…]} one holding }, ( or a
+# backtick (`${X[$(…)]}`), a space being allowed there (`${X[ 1 ]}`); and a flag group with a space or paren.
 # The brace prefix, item and suffix stop at ; & | ( ) and a backtick, where the shell ends a word. One sed for the
 # whole command, not one per segment; BRACE_ONE runs a fixed four times (each pass takes one item off every list on the
 # line), never in a loop, so a long word with many commas costs at most four passes. The git push, config and gh api
 # rules read the original text: removing $' there would hide PUSH_FORCE's $'…\…' signal.
-UNQUOTE='s/\$([a-z_][a-z0-9_]*(\[[^][:space:](`;&|]*\])?|[0-9@*])|\$\{(\([^()[:space:]]*\))?[=~^]*([a-z_][a-z0-9_]*|[0-9]+|[@*])(\[[^][:space:](`;&|]*\])?\}//g; s/\$(["'"'"'])/\1/g; s/["'"'"'\\]//g; s/[<>]/ /g'
+UNQUOTE='s/\$([a-z_][a-z0-9_]*(\[[^][:space:],]*\])?|[0-9@*])|\$\{(\([^()[:space:]]*\))?[=~^]*([a-z_][a-z0-9_]*|[0-9]+|[@*])(\[[^]}(`]*\])?\}//g; s/\$(["'"'"'])/\1/g; s/["'"'"'\\]//g; s/[<>]/ /g'
 BRACE_ONE='s/([^[:space:]{};&|()`]*)\{([^[:space:]{},;&|()`]*),([^[:space:]{};&|()`]*)\}([^[:space:]{};&|()`]*)/\1\2\4 \1{\3}\4/g'
 while IFS= read -r g; do
   [[ "$g" =~ $GH_PR_MERGE ]] && block "$ME" "$MERGE_MSG"
