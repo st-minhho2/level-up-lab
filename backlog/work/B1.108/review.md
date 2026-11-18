@@ -1198,3 +1198,69 @@ Verdict: back to code-writer
 Riskiest unfalsified: other ways a word reaches gh without being visible in the text: an `eval`, `xargs` or
 `printf | sh` fed a single-token span the copy removes. I tested the `bash -c '… $1'` route only. Not re-run: the
 139 KB timing.
+
+## Plan review (round 12)
+
+Plan at `653875ff`, diffed against `9218bdd6`. Round 12 brings back main's two gh pr rules (`GH_PR_MERGE`,
+`GH_BRANCH_DELETE`, with `GH_PR_FLAGS`) as `*_RAW`. They run on the original lower-case segment in the segment loop,
+as on main. The unquoted copy's rules run as well. The claim to check: every command main's gh pr rules block is
+blocked here by construction, and the copy can only add blocks.
+
+| Check                                                                                  | pass / fail: reason                                                                                                                                                                                             |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                         | pass: the same 4 rows                                                                                                                                                                                           |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | pass: n/a for TypeScript. The three `*_RAW` lines and the two checks match the plan                                                                                                                             |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass                                                                                                                                                                                                            |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass                                                                                                                                                                                                            |
+| verification lists exact commands with expected numbers                                | pass, reproduced with `/bin/bash` 3.2.57 in a fresh clone `$TMPDIR/b108/r12/c/` at `653875ff` with `probes15.sh`. On the `3c489387` hook: exit 1, 6 FAIL, 932 ok. On the prototype: "hook-smoke: 938 probes OK" |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | pass: steps 10 and 11                                                                                                                                                                                           |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by you | pass: n/a. `tier.sh` gives `high`. The plan's last line reads "round 12 pending"                                                                                                                                |
+| no settled D-n contradicted                                                            | pass: D-9, D-19 and D-28 are followed                                                                                                                                                                           |
+| `scripts/next-task.sh --check B1.108` on the committed plan says no overlap            | pass: `[next-task] B1.108: no overlap with any Doing or Review card` (at `653875ff`)                                                                                                                            |
+
+The claim holds, both by reading the code and in runs.
+
+**By reading.** I compared main `4c79bec` (`base/`) with the prototype (`fix15/`) on code lines only, comments left out:
+
+- `GH_PR_FLAGS_RAW`, `GH_BRANCH_DELETE_RAW` and `GH_PR_MERGE_RAW` are character for character main's three lines,
+  renamed.
+- The two checks sit where main's did, on the same `$low` of the same segment loop.
+- `W`, `E`, `joined`, the segment split and every other rule are unchanged. `lib.sh` and `reviewer-writes.mjs` are
+  byte-identical.
+- The only other addition is the copy loop that runs before the segment loop. It can only call `block`, which exits 2. It has no `exit 0`, and no `set -e` path could end the script early.
+
+So for any command, main's checks run on the same text and reach the same verdict unless an earlier block already
+fired.
+
+**By runs:**
+
+- Every corpus I have from rounds 1 to 11, 296 commands, compared main against the prototype with `cmp.sh`. Main
+  blocks 72 of them; the prototype lets none of the 72 through.
+- A fuzz run (`fuzz.js`, 1,500 commands, 1,495 distinct): gh, pr and the subcommand behind quotes, `\`, `$'…'`,
+  variables, subscripts, brace lists and redirects, wrapped in `bash -c '…'`, `&&`, `$${X[…]}`, a here-doc or
+  `$(…)`. Main blocks 22; the prototype lets none of them through.
+- No exit other than 0 or 2 came up.
+
+**The new probes and allowed reads**, with the same results under BSD `sed` / bash 3.2 and GNU `sed` 4.9 / bash
+5.2.15:
+
+- All 6 `pass7.txt` probes exit 2 on the prototype. With the stub harness, bash hands gh `-d`, `--delete-branch` or
+  the merge subcommand in each. The two nested forms do the same from zsh too.
+- On `3c489387`, all 6 exit 0. On main, all 6 exit 2.
+- `all15.txt` gives 93 of 93 at exit 2.
+- `allowed.txt` gives 10 of 10 at exit 0, as on main.
+
+No blocking reason.
+
+Notes for the lead (not blocking):
+
+1. A positional parameter set through `bash -c` still merges, as on main. `bash -c 'gh pr $1 7' x merge` exits 0 on
+   main, on `3c489387` and on the prototype, and both shells hand the stub `[pr][merge][7]`. The out-of-reach entry
+   "a word in a set variable" covers it. Naming `bash -c '… $1' arg` there would make it plain.
+2. The copy's false positives stay as stated in the plan's costs. Round 12 changes only what is blocked, never what is
+   allowed, and the `*_RAW` checks add nothing main does not already block.
+3. Not checked here: the header and `hooks.md` wording (the dropped "can never hide a command" claim), the
+   one-mutant count, and the 139 KB timing. All belong to diff review pass 5, if the lead allows it.
+4. This is round 12, past the three-round limit; the lead's `approve` is the gate.
+
+Verdict: approved
