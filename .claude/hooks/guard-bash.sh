@@ -48,7 +48,8 @@ done < <(printf '%s\n' "$CMD" | tr ';&|' '\n\n\n')
 #    variable, words joined by ${IFS} or an operator expansion (`${X:--d}`, `${X:-merge}`), an alias, an escape the
 #    shell expands (`$'\x2dd'`), a brace list's sixth item on, a nested list (`-{x,{c,d}}`), a sequence (`-{c..d}`)
 #    or an item holding } (`{$X[},-d}`), a glob (`gh pr [m]erge 7`), a zsh subscript flag inside braces
-#    (`${X[(r)x]}`) or a flag group with a space (`${(j: :)X}`), for git push a word quoted in pieces
+#    (`${X[(r)x]}`) or a flag group with a space (`${(j: :)X}`), a flag split by a parameter inside an unexpanded
+#    ${X[ … ]} and passed on as $1 (`bash -c 'gh pr close 7 $1' \${X[ -$@d ]}`, main too), for git push a word quoted in pieces
 #    (`-'f'`), a command built at run time, a ; & or | inside a quoted argument (it splits the segment early:
 #    `-o "a;b" -f`), git config files written directly, other HTTP clients (curl) calling the GitHub API.
 W='(^|[[:space:];&|"'"'"'(`/=\\])'
@@ -76,7 +77,8 @@ FORCE_MSG="force pushes and remote branch deletes are not allowed from an agent 
 # them, a PR title or card evidence quoting them, `gh pr m''erge` too since B1.108). Out of reach: a script file the
 # agent wrote and then runs, a query read from a file an earlier command wrote (`-F query=@q.graphql`), for `gh api`
 # a word quoted in pieces (`pulls/7/m''erge`), for gh pr a glob (`gh pr [m]erge 7`), an operator expansion
-# (`${X:-merge}`) or a zsh subscript flag inside braces (`${X[(r)x]}merge`), an alias, a command built at run time
+# (`${X:-merge}`), a zsh subscript flag inside braces (`${X[(r)x]}merge`) or a word split by a parameter inside an
+# unexpanded ${X[ … ]} and passed on as $1 (`\${X[ m$@erge ]}`, main too), an alias, a command built at run time
 # (`$(which gh) pr merge 7`), curl on the GitHub API.
 GH_ANY_API="${W}gh[\"']?[[:space:]](.*[[:space:]])?[\"']?api[\"']?[[:space:]]"
 GH_MERGE_API='pulls/[^[:space:]]*/merge([^a-z]|$)|/merges([^a-z]|$)|mergepullrequest|enablepullrequestautomerge|mergebranch|enqueuepullrequest'
