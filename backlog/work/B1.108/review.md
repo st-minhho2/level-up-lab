@@ -1264,3 +1264,91 @@ Notes for the lead (not blocking):
 4. This is round 12, past the three-round limit; the lead's `approve` is the gate.
 
 Verdict: approved
+
+## Diff review (round 5)
+
+Diff `4c79bec...ca34cab5`; pass-4 delta `3c489387..ca34cab5`: probes `2cee1538` (`scripts/hook-smoke.sh` only, +12),
+fix `ca34cab5` (`guard-bash.sh`, `hooks.md` only). `pr-body.md` is uncommitted and out of scope. Evidence under
+`$TMPDIR/b108d/`: the clone `c/` fetched to `ca34cab5`, `bd28/` and `bd38/` hold the `5f9884b2` and `3c489387` hooks,
+`r5.txt` and `r5z.txt` the new triggers, `all5.txt` all 72 of my commands from rounds 1–5, `bin/gh` the stub, and
+`fix6/` the prototype named under finding 1.
+
+### Command results (last lines)
+
+- `pnpm lint`: `All matched files use Prettier code style!`. `pnpm typecheck`: exit 0. `pnpm test`:
+  `Tests  403 passed (403)`. `pnpm test:e2e`: not re-run (no `src/`, `e2e/` or config change since round 1's
+  `91 passed`).
+- `scripts/mutation-gate.sh`: `mutation: CI only, no src/lib or src/actions change`.
+- `check-suppressions`, `check-feat-commits`, `check-ac-coverage`, `check-spec-sections`, `check-features-map`,
+  `check-plan-scope`, `check-backlog`: OK.
+- `check-config-change.sh`: `::error::Protected configuration changed without the 'config-change-approved' label`
+  (expected until the PR carries the label, D-19). `verify-red.sh B1.108`: no `(red)` commit (the stated deviation,
+  B1.106).
+- hook-smoke at `2cee1538` (red): exit 1, 6 FAIL, 932 ok. At `ca34cab5`: `hook-smoke: 938 probes OK`
+  (`/bin/bash` 3.2). Under bash 5.2.15 and GNU sed 4.9 (docker): 0 guard-bash FAIL, 349 `ok guard-bash`, and the
+  same 14 `node_modules` FAILs as before.
+- `git diff --stat origin/main...HEAD`: 6 files changed, 1696 insertions(+), 29 deletions(-). No merge commits.
+
+### Checklist
+
+- Pass 4's 6 triggers have probes asserting the message: pass. All exit 2 at `ca34cab5` under both sed builds.
+- No probe weakened: pass. `2cee1538` only adds 12 lines; `ca34cab5` does not touch `scripts/hook-smoke.sh`.
+- Changed files and the code lines match plan round 12: pass.
+- `*_RAW` are main's rules verbatim: pass. Renamed back, the three definitions are byte-identical to `4c79bec`'s. The
+  segment loop, with the two `*_RAW` lines, is identical to main's 16 lines, so every gh pr block main makes is kept.
+  On all 72 of my commands, none that the base hook blocks exits 0 at `ca34cab5` (BSD and GNU).
+- Would a probe fail if a changed line were reverted: pass. The red run is `ca34cab5` without the `*_RAW` lines and
+  gives 6 FAIL.
+- `hooks.md`: all 10 rows have 3 cells, and the row has no bare pipe. Against `3c489387`, the word diff changes only
+  this: "so text the shell does not expand … can never hide a command" became "since the shell may not expand that
+  `${` at all …; and because the copy can still lose a word the shell keeps (…), main's own two gh pr rules also run
+  on the original text, so the copy only adds blocks". `git diff -w` touches only the guard-bash row and the separator.
+- Header (`guard-bash.sh:84-85`, `:102-105`) and `hooks.md` wording: the "copy only adds blocks" claim is true of the
+  code (above). But neither out-of-reach list names the form in finding 1, while both still say the copy catches
+  `${@}merge`-style pieces.
+
+### Findings
+
+```
+[1] KIND: correctness (regression from 5f9884b2 inside the card; main exits 0 too)
+    WHERE: .claude/hooks/guard-bash.sh:110 (UNQUOTE, the braced token class `[^][:space:]()`'"\\;&|{},]`, which
+           allows `$`); header :102-105; hooks.md:11
+    DEFECT: a token split into pieces by a parameter (`m$@erge`, `-$@d`) inside an unexpanded `${X[ … ]}` is removed
+            whole by the copy, and main's original-text rules (*_RAW) cannot read the pieces. So the word reaches gh
+            through `$1`, and neither check sees it.
+    TRIGGER (MERGE = the merge subcommand):
+      bash -c 'gh pr -R o/r $1 7' \${X[ m$@ERGE ]}       (bash outer shell)
+      bash -c 'gh pr close 7 $1' \${X[ -$@d ]}          (bash)
+      bash -c 'gh pr close 7 $1' $${X[ -$@d ]}          (bash)
+      bash -c 'gh pr -R o/r $1 7' \${X[ m$EMPTY$@ERGE ]}
+      bash -c "bash -c 'gh pr -R o/r \$1 7' \\\${X[ m$@ERGE ]}"   (zsh outer shell too: the session's)
+      bash -c "bash -c 'gh pr close 7 \$1' \\\${X[ -$@d ]}"       (zsh outer shell too)
+    WRONG BEHAVIOUR: exit 0 at ca34cab5 and at 3c489387, under BSD sed / bash 3.2 and GNU sed 4.9 / bash 5.2.
+            Exit 2 at bd10055 and 5f9884b2, where the braced span was not removed, so the copy's `$@` removal
+            exposed the word. The gh stub gets `[pr] [-R] [o/r] [MERGE] [7]` or `[pr] [close] [7] [-d]`, from bash
+            and, for the nested forms, from zsh. The base hook also exits 0 (a piece is this card's subject, not
+            main's), so the "the copy only adds blocks" guarantee holds. But this is a merge or delete the card
+            caught at its first green and has since lost, and no out-of-reach list names it.
+            Prototype `fix6/`: add `$` to the braced token's excluded set (`[^]$[:space:]()…]`). The copy then keeps
+            the span and removes only `$@`, the word is visible, and the hook exits 2. Results:
+              - all 6 triggers exit 2 on both sed builds;
+              - my other 66 commands keep their exits;
+              - `${X[ 1 ]}merge` and every probe still pass;
+              - the full hook-smoke gives "hook-smoke: 938 probes OK" (second clone `c2/`).
+            The alternative is to name "a word in pieces inside an unexpanded `${X[ … ]}` passed as `$1`" out of
+            reach in the header and `hooks.md`.
+    CONFIDENCE: confirmed (hook on both sed builds; the stub under bash 3.2, bash 5.2 and zsh)
+```
+
+Notes for the lead (not blocking):
+
+2. No regression against `main` remains. The `*_RAW` lines guarantee it structurally, and my 72 commands confirm it.
+   If you would rather stop the passes here, a one-line out-of-reach entry in the header and `hooks.md` (the
+   alternative under finding 1) states the boundary honestly. fix6 is a one-character change with all probes green.
+3. This is pass 5, past the three-pass limit; the choice is yours.
+
+Verdict: back to code-writer
+
+Riskiest unfalsified: other single-token spans the copy removes and gh still gets as a word: the bare `$X[…]` and the
+flag group `${(…)X}` allow `$` too. They hold no word break, so I found no route, but I did not try `eval` or
+`xargs` on them. Not re-run: the 139 KB timing.
