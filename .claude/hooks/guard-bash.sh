@@ -81,6 +81,11 @@ FORCE_MSG="force pushes and remote branch deletes are not allowed from an agent 
 GH_ANY_API="${W}gh[\"']?[[:space:]](.*[[:space:]])?[\"']?api[\"']?[[:space:]]"
 GH_MERGE_API='pulls/[^[:space:]]*/merge([^a-z]|$)|/merges([^a-z]|$)|mergepullrequest|enablepullrequestautomerge|mergebranch|enqueuepullrequest'
 GH_PR_MERGE="${W}gh[[:space:]](.*[[:space:]])?pr${GH_PR_FLAGS}[[:space:]]+merge${E}"
+# main's gh pr rules on the original text (B1.103, B1.105, B1.107), kept as they are so the unquoted copy below
+# can only add a block, never lose one main makes (B1.108 diff review pass 4).
+GH_PR_FLAGS_RAW='([[:space:]]+["'"'"'\\$]*-.*)?'
+GH_BRANCH_DELETE_RAW="${W}gh[\"']?[[:space:]](.*[[:space:]])?(repo[[:space:]]+sync.*--force|[\"']?pr[\"']?${GH_PR_FLAGS_RAW}[[:space:]]+[\"']?(close|merge)[\"']?([[:space:]].*)?[[:space:]][\"'\\\\$]*(-[a-z]*d|--delete-branch))"
+GH_PR_MERGE_RAW="${W}gh[\"']?[[:space:]](.*[[:space:]])?[\"']?pr[\"']?${GH_PR_FLAGS_RAW}[[:space:]]+[\"']?merge${E}"
 MERGE_MSG="agents never merge a pull request (gh pr merge, gh api on pulls/<n>/merge or /merges, a GraphQL merge mutation): merging is the lead's (D-9)."
 joined="${CMD//\\$'\n'/}"
 low="$(printf '%s' "$joined" | tr '[:upper:]' '[:lower:]')"
@@ -94,9 +99,10 @@ fi
 # removed, < and > made spaces (a redirect ends a word), and each brace list's first five items expanded with its
 # prefix and suffix (`-{c,d}` → `-c -d`). A subscript or flag group is removed only when it holds no shell
 # metacharacter (no space, quote, \, ; & |, ( ), backtick, { } or comma; a bare $X[…] may hold ( ) for zsh's
-# `$X[(r)x]`, and ${X[ 1 ]} may have spaces around its one token): the shell may not expand that ${ at all (inside
-# '…', after \ or $$), and a hidden command needs a separator and a word break, which the removed text never holds
-# (B1.108 plan rounds 5 to 11: `'${X[ '; gh pr merge 7; ' ]}'`, `$${X[;{gh,pr,merge,7};]}` stay visible).
+# `$X[(r)x]`, and ${X[ 1 ]} may have spaces around its one token), since the shell may not expand that ${ at all
+# (inside '…', after \ or $$) and removing more could hide the command behind it (B1.108 plan rounds 5 to 11). The
+# copy can still lose a word the shell keeps (`bash -c 'gh pr close 7 $1' \${X[ -d ]}`), so main's own rules
+# (*_RAW, above) also run on the original text: the copy only adds blocks (B1.108 diff review pass 4).
 # The brace prefix, item and suffix stop at ; & | ( ) and a backtick, where the shell ends a word. One sed for the
 # whole command, not one per segment; BRACE_ONE runs a fixed four times (each pass takes one item off every list on the
 # line), never in a loop, so a long word with many commas costs at most four passes. The git push, config and gh api
@@ -117,6 +123,8 @@ while IFS= read -r segment; do
   if [[ "$low" =~ $GH_API ]]; then
     [[ ( "$low" =~ git/refs && "$low" =~ $GH_WRITE_METHOD ) || "$low" =~ $GH_REF_EDIT ]] && block "$ME" "$FORCE_MSG"
   fi
+  [[ "$low" =~ $GH_PR_MERGE_RAW ]] && block "$ME" "$MERGE_MSG"
+  [[ "$low" =~ $GH_BRANCH_DELETE_RAW ]] && block "$ME" "$FORCE_MSG"
   [[ $names_git -eq 1 ]] || continue
   [[ "$segment" =~ $PUSH_TAIL && "${BASH_REMATCH[3]}" =~ $PUSH_FORCE ]] && block "$ME" "$FORCE_MSG"
   if [[ "$low" =~ $CONFIG_ROUTE && "$low" =~ $CONFIG_FORCE ]]; then
