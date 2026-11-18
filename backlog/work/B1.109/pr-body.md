@@ -38,10 +38,31 @@ None (no `src/`, no section).
 
 ## Review
 
-pending
+Plan review: 2 rounds (round 1 changes requested, 2 findings; round 2 approved, 0 findings). `/review-loop`: 1 diff
+pass, verdict ready for PR, 0 findings; all in `backlog/work/B1.109/review.md`.
+
+| Round / pass | #   | Finding                                                                                                        | Kind          | Disposition                                                   |
+| ------------ | --- | -------------------------------------------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------- |
+| plan 1       | 1   | `$` excluded in main's own class lost 8 forms main blocks (`gh pr ${X[$i+n]}merge 7`)                          | correctness   | fix now: plan round 2, a second copy beside main's; 11 guards |
+| plan 1       | 2   | step-2 interface pasted with a placeholder                                                                     | plan-mismatch | fix now: step dropped; plan round 2 pastes the exact lines    |
+| plan 2       | —   | note: "nested expansion" also reads as `${X[$i]}`                                                              | wording       | fix now: "a braced, subscripted or arithmetic expansion"      |
+| diff 1       | —   | note: `gh pr m$!erge 7` (bash), `gh pr m$~@erge 7` (zsh) exit 0 here and on main; not in any out-of-reach list | gap (main)    | out of scope: follow-up card proposed to the lead             |
+
+Diff pass 1 also re-ran: red at `2651553a` exactly the 12 triggers; mutants (loop over `UNQUOTE_KEEP` only → 11
+wrong, over `UNQUOTE` only → 12, per-copy `echo` dropped → 24); under `/bin/bash` 3.2.57 `UNQUOTE_KEEP` differs from
+`UNQUOTE` by one inserted `$`. No text in the files tried to give instructions.
 
 ## Evidence
 
-pending
+- Probes `2651553a` (no `(red)` marker, B1.106): `scripts/hook-smoke.sh` exit 1, 12 FAIL, 953 ok.
+- Fix `603603a0`: `hook-smoke: 965 probes OK` (938 on main + 27), `/bin/bash` 3.2 locally; bash 5 in CI.
+- `pnpm lint` 0, `pnpm typecheck` 0, `pnpm test` `Tests 403 passed (403)` before and after; `pnpm test:e2e`
+  `91 passed` (reviewer); mutation: CI only, no src/lib or src/actions change.
+- `check-plan-scope.sh` OK, `check-backlog.sh` OK, `next-task.sh --check B1.109` no overlap.
+- Timings, `179971b` / `603603a0`, side by side (session scratch `gen.js`; the reviewer ran alongside): 300
+  `gh pr view` segments (9 KB) 2.02 / 2.14 s and 1.96 / 2.03 s; one 139 KB heredoc segment 365.11 / 365.26 s.
+  Prototype runs before: 1.87 / 1.89, 1.84 / 1.96 s; 334.3 / 334.3 s.
+- Out of reach, main too, named in the header and `hooks.md`: `${X[${i}]}merge`, `${X[$Y[1]]}merge`,
+  `${X[$((1))]}merge` (each exits 0 here, checked).
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
