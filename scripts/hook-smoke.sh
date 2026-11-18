@@ -414,6 +414,18 @@ echo '${(';{gh,pr,close,7,-d};')X}'
 gh pr close 7 $X[(r)x]-d
 QSUBD
 
+echo "== guard-bash.sh: main's gh pr rules still read the original text (B1.108 review pass 4)"
+while IFS= read -r c; do probe_msg 2 'agents never merge' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'RAWM'
+bash -c 'gh pr -R o/r $1 7' \${X[ merge ]}
+bash -c "bash -c 'gh pr -R o/r \$1 7' \\\${X[ merge ]}"
+RAWM
+while IFS= read -r c; do probe_msg 2 'force pushes' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'RAWD'
+bash -c 'gh pr close 7 $1' \${X[ -d ]}
+bash -c 'gh pr close 7 "$1"' $${X[ -d ]}
+bash -c 'gh pr close 7 $1' \${X[ --delete-branch ]}
+bash -c "bash -c 'gh pr close 7 \$1' \\\${X[ -d ]}"
+RAWD
+
 echo "== settings.json permissions (B1.23, B1.103)"
 n=$((n+1)); if node -e '
   const p = require("./.claude/settings.json").permissions;
