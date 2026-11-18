@@ -81,3 +81,55 @@ Not blocking (named so that the lead sees them before `approve`):
 - The plan is 68 lines, against `planning.md`'s ≈ 40. B1.105 had 74 lines, B1.107 75 and B1.108 192.
 
 Verdict: changes requested
+
+## Plan review (round 2)
+
+Plan at `78416257`. Evidence, all under `$TMPDIR/b1109probe/` (`/bin/bash` 3.2.57):
+
+- `v2/` is the dev-lead's round-2 prototype `.claude/hooks`. Its diff against main `179971b` is lines 112–122 only:
+  `TOKEN`, `TOKEN_NO_PARAM`, `UNQUOTE_KEEP`, and the gh pr loop reading both copies. The header is not changed yet.
+- I computed `UNQUOTE_KEEP` (`keep.sh`). It is main's `UNQUOTE` with one change: `$` added to the braced subscript's
+  token class. The bare `$X[…]` class and the flag-group class keep their `[^][:space:]`, because `TOKEN`'s leading
+  `[[:space:]]*` matches only the braced subscript.
+- `final.txt` is the dev-lead's 27-probe list. `mk/` and `mu/` are the plan's two mutants (the loop over
+  `UNQUOTE_KEEP` only, and over `UNQUOTE` only). `fp.txt` holds 7 gh pr commands that main allows and that put a
+  `$` in a subscript (jq filters, a search, `-q`).
+
+| Check                                                                                  | pass / fail: reason                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                         | pass: tooling, no section. The same 4 rows as round 1. `check-plan-scope.sh`: "OK: chore/B1.109-param-split changes only paperwork"                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | pass: n/a for TypeScript. The plan pastes the exact lines. `TOKEN`/`TOKEN_NO_PARAM`, `UNQUOTE_KEEP` and the loop match the prototype byte for byte (the prototype has no trailing comment). Round 1's reason 2 is closed                                                                                                                                                                                                                                                                                                                                  |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass: no advice, stated                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass: the card's 4 acceptance lines. Acceptance 2 now holds by construction: main's `UNQUOTE` copy and both `*_RAW` rules are unchanged and still run, and the new copy can only add a block. Round 1's reason 1 is closed                                                                                                                                                                                                                                                                                                                                |
+| verification lists exact commands with expected numbers                                | pass: reproduced. `final.txt`: base 12 BAD, `v2/` 0 BAD. Mutants: `mk/` 11 BAD, `mu/` 12 BAD, as the plan states. Round 1's `cases.txt`: `v2/` 1 BAD (`${X[${i}]}merge`, stated out of reach). `mine.txt`: `v2/` 3 BAD (the three nested forms the plan names, exit 0 on main too). The 300-segment timing is base 2.20 / 2.59 s, `v2/` 2.29 / 2.18 s. I did not re-run the 139 KB timing. hook-smoke on the `$TMPDIR/b1109c` clone with `v2/`: guard-bash rows 349 ok, 0 FAIL (the clone has no `node_modules`, so other hooks' rows fail as in round 1) |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | pass: probes `test(hooks): …`, no `(red)` marker (B1.106 to B1.108). Then green `chore(hooks): …` and review. No skeleton or map row (no section)                                                                                                                                                                                                                                                                                                                                                                                                         |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by you | pass: n/a, no section. The tier is high (`.claude/`), so the lead's `approve` gates the build. D-19's label is named                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| no settled D-n contradicted                                                            | pass: D-9 holds. All 8 of round 1's regressions are blocked on `v2/`, and 4 of them are among the plan's guards (`$i+n`, `i+$j`, `merge${X[i+$j]}`, `n-$i` with `-d`)                                                                                                                                                                                                                                                                                                                                                                                     |
+| `scripts/next-task.sh --check B1.109` on the committed plan says no overlap            | pass: `[next-task] B1.109: no overlap with any Doing or Review card`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+
+Confirmed beyond the plan's own probes:
+
+- No new false positive: the 7 commands in `fp.txt` exit 0 on both base and `v2/`. Examples:
+  `--jq '.files[${X[ $n ]}].path'`, `--search "author:${X[ $u ]} is:open"` and `echo "${X[ $a-d ]}"` after a gh pr
+  view.
+- The two copies cannot run into each other. Each copy goes through its own `tr` and then `echo`, so the second
+  copy always starts on a new line. A "later close or merge word" in one copy cannot reach the other copy's `pr`.
+- These are blocked on `v2/` and exit 0 on main, without being in the plan's list: `\${=X[ m$@erge ]}`,
+  `\${X[ -$@d$@ ]}` and `\${@[ -$@d ]}` (each through `bash -c '… $1'`).
+
+### Reasons
+
+None blocking.
+
+Not blocking (for the lead before `approve`):
+
+- The out-of-reach wording, "a subscript holding a nested expansion", also reads as covering `${X[$i]}merge`, and
+  that form is blocked (one of the guards). Name the class more narrowly in the header and `hooks.md`: a braced
+  (`${i}`), subscripted (`$Y[1]`) or arithmetic (`$((…))`) expansion inside the subscript.
+- The cost this approach carries over the round-1 prototype: `gh pr ${X[${i}]}merge 7` and
+  `gh pr ${X[$Y[1]]}merge 7` were blocked there and are not now, and main does not block them either. The plan
+  states this. No form main blocks is lost.
+- The cost per command is two more `sed` pipelines. On 300 segments the time is the same as base within the run's
+  spread. The 139 KB figure (334 s on both) is the dev-lead's and not reproduced.
+
+Verdict: approved
