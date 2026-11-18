@@ -10,7 +10,8 @@ expand the `${` (after `\` or `$$`, then `$1`) is visible (`merge`, `-d`). The g
 `UNQUOTE` first; `*_RAW` still read the original text. Main's copy and rules are unchanged, so every command main
 blocks stays blocked by construction; the new copy only adds blocks. Round 1 replaced main's class in place and lost
 `gh pr ${X[$i+n]}merge 7` and 10 more forms main blocks (review round 1, finding 1; guarded below). Out of reach,
-main too (header, `hooks.md`): a subscript holding a nested expansion (`${X[${i}]}merge`, `${X[$Y[1]]}merge`,
+main too (header, `hooks.md`): a subscript holding a braced, subscripted or arithmetic expansion (review round 2 note; `${X[$i]}merge` is
+blocked) (`${X[${i}]}merge`, `${X[$Y[1]]}merge`,
 `${X[$((1))]}merge`). The card's out-of-reach entry goes from both lists.
 
 ## Files
@@ -64,4 +65,4 @@ done)
 | 2    | dev-lead | rule, header, docs | `chore(hooks): B1.109 guard-bash adds a copy keeping parameter tokens`   |
 | 3    | reviewer | diff review (≤ 3)  | `docs(backlog): B1.109 review pass N`                                    |
 
-Plan review: · Plan approved by: · Rounds: 1 (plan round 2: review round 1, both findings)
+Plan review: approved, round 2 · Plan approved by: · Rounds: 1 (plan round 2: review round 1, both findings)
