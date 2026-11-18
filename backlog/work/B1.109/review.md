@@ -133,3 +133,88 @@ Not blocking (for the lead before `approve`):
   spread. The 139 KB figure (334 s on both) is the dev-lead's and not reproduced.
 
 Verdict: approved
+
+## Diff review (pass 1)
+
+Head `603603a0`, base `179971b` (= `origin/main`). Probe commit `2651553a`, fix `603603a0`.
+
+### Commands (last line of each)
+
+| Command                              | Last line                                                                                                                                          |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                          | `All matched files use Prettier code style!` (exit 0)                                                                                              |
+| `pnpm typecheck`                     | `> tsc --noEmit` (exit 0)                                                                                                                          |
+| `pnpm test`                          | `Tests  403 passed (403)`                                                                                                                          |
+| `pnpm test:e2e`                      | `91 passed (2.2m)`                                                                                                                                 |
+| `scripts/mutation-gate.sh`           | `mutation: CI only, no src/lib or src/actions change`                                                                                              |
+| `scripts/hook-smoke.sh` (HEAD)       | `hook-smoke: 965 probes OK`                                                                                                                        |
+| `scripts/ci/check-suppressions.sh`   | `[check-suppressions] OK: no new suppressions`                                                                                                     |
+| `scripts/ci/check-config-change.sh`  | exit 1, `.claude/docs/hooks.md`, `.claude/hooks/guard-bash.sh` without `config-change-approved`: expected, the label goes on at PR creation (D-19) |
+| `scripts/ci/check-feat-commits.sh`   | `[check-feat-commits] OK: no feat commit touches tests`                                                                                            |
+| `scripts/ci/check-ac-coverage.sh`    | `[check-ac-coverage] OK: every criterion of a shipped section has a test`                                                                          |
+| `scripts/ci/check-spec-sections.sh`  | `[check-spec-sections] OK: sections cited: 1 … 53`                                                                                                 |
+| `scripts/ci/check-features-map.sh`   | `[check-features-map] OK`                                                                                                                          |
+| `scripts/verify-red.sh B1.109`       | `::error::no 'test(<pkg>): B1.109 … (red)' commit`: expected, no vitest file, no `(red)` marker (B1.106)                                           |
+| `git diff --stat origin/main...HEAD` | `6 files changed, 311 insertions(+), 16 deletions(-)`                                                                                              |
+
+Red proved by hand instead of `verify-red.sh`. I ran `hook-smoke.sh` on a clone at `2651553a`, and exactly the 12
+trigger probes FAIL with exit 0. The merge forms are `m$@erge` ×2 nested/plain, `m$EMPTY$@erge`, `M$@ERGE`,
+`$${X[ m$@erge ]}`, `m$1erge` and `${(f)X[…]}`. The delete forms are `-$@d` plain/`$$`/nested, `--delete-$@branch`
+and `${10[ -$@d ]}`. All 11 guards and 3 allowed probes pass on main. The clone has no `node_modules`, so 14 other
+FAILs came from `js-yaml` / prettier / frontmatter checks. Those are unrelated to the card and pass in the worktree.
+
+### Checklist
+
+| Check                                                   | Result                                                                                                                                                                                                     |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every acceptance clause has a probe matching it         | pass: each card form exits 2 with `agents never merge` / `force pushes`. The out-of-reach entry is gone from the header and from `hooks.md` (both lists). Count 938 → 965 is stated                        |
+| no test weakened after the probe commit                 | pass: `git log --first-parent --no-merges 2651553a..HEAD -- '*.test.*' e2e/ scripts/hook-smoke.sh` is empty. There are no merges on the branch                                                             |
+| every changed file in `plan.md`                         | pass: `guard-bash.sh`, `hook-smoke.sh`, `hooks.md`, `work/B1.109/*`. Commit subjects match the work breakdown                                                                                              |
+| interface as planned                                    | pass: `TOKEN`, `TOKEN_NO_PARAM`, `UNQUOTE_KEEP` and the two-copy loop match the plan's block character for character                                                                                       |
+| bash 3.2-safe                                           | pass: under `/bin/bash` 3.2.57, `UNQUOTE_KEEP` differs from `UNQUOTE` by exactly one inserted `$` (char 156, `[^]$[:space:]()`)                                                                            |
+| main's blocks kept                                      | pass by construction: main's `UNQUOTE` copy runs first and unchanged, and `*_RAW` is untouched. Mutant B below equals main                                                                                 |
+| no `src/`, `prisma/`, `e2e/`; no secret, no suppression | pass                                                                                                                                                                                                       |
+| features map                                            | n/a, tooling, no section                                                                                                                                                                                   |
+| would a test fail if one changed line were reverted?    | pass, on hook copies under `$TMPDIR` against the 27 B1.109 probes (HEAD: 0 deviations): A, loop over `UNQUOTE_KEEP` only → 11 deviations; B, over `UNQUOTE` only → 12; C, the per-copy `echo` dropped → 24 |
+
+### Probes beyond the plan (29 commands, HEAD vs main)
+
+These are newly blocked on HEAD and exit 0 on main:
+
+- `$*` instead of `$@`
+- tab separators
+- `m$@e$@r$@g$@e`
+- `$@merge` and `merge$@`
+- a second `${Y[ $i ]}` after the subscript
+- two adjacent subscripts
+- `m$_x$@erge`
+- a trailing `;`
+
+The remaining forms behave the same on both. `m$@er\ge`, `m$@er''ge`, `m$@er{g,}e` and `${(f)@}` are blocked. The
+forms that exit 0 on both fall into two groups:
+
+- These are not attacks: `\${X[ m$@erge]}` and `\${X[m$@erge ]}` hand gh `merge]}` or `]}` rather than `merge`, and
+  `m$@erge,` hands it `merge,`.
+- These are the pre-existing gap below.
+
+### Findings
+
+No blocking finding.
+
+Pre-existing gap, not introduced by this diff and outside this card. Recommend a new card:
+
+```
+[-] KIND: security (pre-existing, main too, non-blocking)
+    WHERE: .claude/hooks/guard-bash.sh:118 (UNQUOTE, first alternative `\$([a-z_]…|[0-9@*])`)
+    DEFECT: an unbraced parameter whose name is `!` or that carries a zsh flag (`$~@`, `$=@`) is not removed from either copy, so a word split by it stays split for the gh pr rules
+    TRIGGER: `gh pr m$~@erge 7` from zsh (zsh expands `m$~@erge` to `merge`, checked), `gh pr m$!erge 7` from bash (`$!` empty, checked); the same inside `\${X[ m$~@erge ]}` / `\${X[ m$!erge ]}` through `bash -c '… $1'`
+    WRONG BEHAVIOUR: guard-bash exits 0 on HEAD and on main 179971b; neither the header nor hooks.md names these forms out of reach
+    CONFIDENCE: confirmed (ran each through both hooks; ran the expansions in zsh 5 and bash 3.2)
+```
+
+Verdict: ready for PR
+
+Riskiest unfalsified: the second copy adds false positives. A `gh pr` command whose subscript holds `$` next to the
+text `merge` or `-d` is now read as a subcommand or flag. I found no benign command that trips it: 3 allowed probes,
+plus round 2's 7 `fp.txt` commands. The cost per command was not timed on the green commit, and PR Evidence is still
+"pending".
