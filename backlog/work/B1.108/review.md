@@ -913,3 +913,81 @@ Notes for the lead (not blocking):
 5. This is round 8, past the three-round limit, so it goes to the lead. The verdict is input, not a gate.
 
 Verdict: changes requested
+
+## Plan review (round 9)
+
+Plan at `b242aae2`, diffed against `7dd6cf5e`. Round 9 replaces round 8's `\$` step with one rule: inside `${X[…]}`
+the subscript token may hold no shell metacharacter (no space, quote, backslash, `;` `&` `|`, `(` `)`, backtick,
+`{` `}` or `,`).
+
+The prototype `fix12/guard-bash.sh` (copied to `$TMPDIR/b108/r9/fix12/`) differs from `2889c4fd` (`final/`) in the
+`UNQUOTE` line only, which matches the plan. Probes: `probes12.sh`, inserted into `scripts/hook-smoke.sh` in a fresh
+clone `$TMPDIR/b108/r9/c/` at `b242aae2`. Every case below also went through round 8's stub harness (`judge.sh`): the
+base hook `4c79bec`, `final` and `fix12`, plus a logging `gh` stub under `/bin/bash` 3.2 and `zsh -f`.
+
+| Check                                                                                  | pass / fail: reason                                                                                                                                                                                                         |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                         | pass: the same 4 rows                                                                                                                                                                                                       |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | fail: the zsh flag group in the same expression still deletes text the shell runs (reason 1). The rule the plan states ("the deleted text itself can hold nothing the shell treats specially") is applied to the token only |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass                                                                                                                                                                                                                        |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass                                                                                                                                                                                                                        |
+| verification lists exact commands with expected numbers                                | pass, reproduced with `/bin/bash` 3.2.57. On the `2889c4fd` hook: exit 1, 6 FAIL, 920 ok. On the prototype: "hook-smoke: 926 probes OK"                                                                                     |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | pass: the table is whole again (round 8 note 3 fixed)                                                                                                                                                                       |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by you | pass: n/a. `tier.sh` gives `high`. The plan's last line reads "round 9 pending"                                                                                                                                             |
+| no settled D-n contradicted                                                            | fail: D-9. The reason 1 triggers merge in bash                                                                                                                                                                              |
+| `scripts/next-task.sh --check B1.108` on the committed plan says no overlap            | pass: `[next-task] B1.108: no overlap with any Doing or Review card` (at `b242aae2`)                                                                                                                                        |
+
+Round 8's reason is resolved:
+
+- Every case in round 8's `cases8.txt` where bash or zsh hands the stub a merge or `-d` now exits 2 on the prototype,
+  under BSD `sed` / bash 3.2 and under GNU `sed` 4.9 / bash 5.2.15. That covers the four `$$` forms, the `$$` form
+  inside `bash <<'HD'`, `\\\$`, `$\{`, `${X[ 1 ]}merge` and `true;{gh,pr,merge,7}`. The rest of `cases8` exits 2
+  as well.
+- `all12.txt` gives 78 of 78 at exit 2 on both builds. On `final`, 6 of them exit 0.
+- My 105 commands from rounds 1 to 7 give the same exits as on round 8's prototype.
+
+Timing is unchanged:
+
+| Input                       | `2889c4fd`    | Prototype     |
+| --------------------------- | ------------- | ------------- |
+| 300 segments                | 1.97 / 2.06 s | 1.87 / 2.20 s |
+| round 3's 105 KB worst case | 0.74 s        | 0.74 s        |
+
+### Reasons (changes requested)
+
+1. **The zsh flag group `\([^()[:space:]]*\)` sits in the same deleted span as the token, and it may still hold a
+   quote, `;` `&` `|`, `{` `}` and `,`.** So a quote can close inside it, and a brace-list command after it disappears
+   from the copy. This is not a regression: the exit is 0 on base `4c79bec`, on `2889c4fd` and on the prototype. But
+   it is the same defect as round 8 in the same expression, and it breaks the rule round 9 states as its reason.
+   - Triggers. Each exits 0 on the prototype and under both `sed` builds:
+
+     | Command                                | bash 3.2 hands the stub                  |
+     | -------------------------------------- | ---------------------------------------- |
+     | `echo '${(';{gh,pr,merge,7};')X}'`     | `[pr][merge][7]`                         |
+     | `echo '${(f'&&{gh,pr,merge,7}&&'f)X}'` | `[pr][merge][7]`                         |
+     | `echo '${('\|{gh,pr,merge,7}\|')X}'`   | `[pr][merge][7]`                         |
+     | `echo '${(';{gh,pr,close,7,-d};')X}'`  | `[pr][close][7][-d]`                     |
+     | the first, fed through `bash <<'HD'`   | `[pr][merge][7]`, from bash and from zsh |
+
+   - zsh run directly does not call the stub.
+   - These forms do not run anything (no stub call): `$${(;…;)X}`, `\${(;…;)X}` and `"${(";…;")X}"`. Each is a syntax
+     error or a bad substitution.
+   - Fix: give the flag group the token's exclusions, `\([^][:space:]()`'"\\;&|{},]*\)`, and add probes for these
+forms. I tried exactly that on a copy (`$TMPDIR/b108/r9/fix13/`):
+     - All 8 commands in my `cases9.txt` that the flag group touches exit 2 on BSD and on GNU.
+     - `${(f)X}merge` and `${(j:x:)X}merge` stay blocked.
+     - `all12.txt` stays 78 of 78 at exit 2.
+     - `cases8` and my 105 earlier commands keep their exits.
+     - The full hook-smoke gives "hook-smoke: 926 probes OK".
+
+Notes for the lead (not blocking):
+
+2. The bare `$X[…]` class (`[^][:space:],]`) and a plain `$NAME` still allow quotes and separators. `echo '$X[';{gh,pr,merge,7};']'`
+   and `echo '${X';{gh,pr,merge,7};'}'` are blocked, because the class refuses `,` or the name stops early. A hidden
+   command needs a space or a comma brace list, and that class has neither. So the narrower rule is enough there.
+3. Not checked here: the round-9 group mutants (`pairs.py`), the header and `hooks.md` text, and the 139 KB timing.
+   All belong to diff review pass 4.
+4. This is round 9, past the three-round limit, so it goes to the lead. The verdict is input; the lead's `approve` is
+   the gate.
+
+Verdict: changes requested
