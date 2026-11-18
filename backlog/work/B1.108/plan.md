@@ -171,4 +171,4 @@ B1.108` no overlap; `check-plan-scope.sh`, `check-backlog.sh` OK; CI green.
 | 8    | dev-lead | round 10 probes    | `test(hooks): B1.108 review pass 3 -- probe a subscript across a quote or escape`    |
 | 9    | dev-lead | round 10 fix, docs | `fix(hooks): B1.108 review pass 3 -- one class without shell metacharacters`         |
 
-Plan review: approved, round 11 · Plan approved by: lead, 2026-11-18 (round 7; round 11 pending) · Rounds: 4
+Plan review: approved, round 11 · Plan approved by: lead, 2026-11-18 · Rounds: 4
