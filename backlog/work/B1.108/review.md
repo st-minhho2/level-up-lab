@@ -707,3 +707,93 @@ Notes for the lead (not blocking):
 5. This is round 7, past the three-round limit, so it goes to the lead. The lead's `approve` is the gate.
 
 Verdict: approved
+
+## Diff review (round 3)
+
+Diff `4c79bec...2889c4fd`; pass-2 delta `70bdc6f5..2889c4fd`: probes `4c8f20a3` (`scripts/hook-smoke.sh` only, +12),
+fix `2889c4fd` (`guard-bash.sh`, `hooks.md` only). Evidence under `$TMPDIR/b108d/`: the clone `c/` fetched to
+`2889c4fd`, `r3cases.txt` and `r3b.txt` the new triggers, `all3.txt` all 58 of my commands from rounds 1–3, `bin/gh`
+the stub, `fix3/` and `fix4/` the two prototypes named under finding 1.
+
+### Command results (last lines)
+
+- `pnpm lint`: `All matched files use Prettier code style!`. `pnpm typecheck`: exit 0. `pnpm test`:
+  `Tests  403 passed (403)`. `pnpm test:e2e`: not re-run (no `src/`, `e2e/` or config change since round 1's
+  `91 passed`).
+- `scripts/mutation-gate.sh`: `mutation: CI only, no src/lib or src/actions change`.
+- `check-suppressions`, `check-feat-commits`, `check-ac-coverage`, `check-spec-sections`, `check-features-map`,
+  `check-plan-scope`, `check-backlog`: OK.
+- `check-config-change.sh`: `::error::Protected configuration changed without the 'config-change-approved' label`
+  (expected until the PR carries the label, D-19). `verify-red.sh B1.108`: no `(red)` commit (stated deviation,
+  B1.106).
+- hook-smoke at `4c8f20a3` (red): exit 1, 4 FAIL, 910 ok. At `2889c4fd`: `hook-smoke: 914 probes OK`
+  (`/bin/bash` 3.2). Under bash 5.2.15 and GNU sed 4.9 (docker): 0 guard-bash FAIL, 325 `ok guard-bash`, and the
+  same 14 `node_modules` FAILs as before.
+- `git diff --stat origin/main...HEAD`: 6 files changed, 1046 insertions(+), 29 deletions(-). No merge commits.
+
+### Checklist
+
+- Each pass-2 finding has a probe asserting the message: pass (6 probes, as the plan lists).
+- No probe weakened: pass. `4c8f20a3` only adds 12 lines; `2889c4fd` does not touch `scripts/hook-smoke.sh`.
+- Changed files and the `UNQUOTE` line match plan round 7: pass.
+- Pass 2's findings 1–3: resolved. `{$X[,-d,-c,]}` and `${X[ 1 ]}` exit 2.
+- `hooks.md`: all 10 rows of the table now have 3 cells (5f9884b2: the guard-bash row had 5). Nothing B1.108 added is
+  lost. A word diff of the guard-bash row against `5f9884b2` shows only these changes:
+  - the subscript wording;
+  - "the pipe" for `|`;
+  - the added `${X[ 1 ]}-d`;
+  - the four new out-of-reach forms;
+  - `.*` and `.env*` restored (prettier had turned the `*` into `_` while the row was broken).
+
+  Against `bd10055`, `git diff -w` changes only the guard-bash row and the separator.
+
+- Header comments (`guard-bash.sh:94-97`, `:49-51`): they describe the code as written, but the braced class they
+  describe is the defect in finding 1.
+- Mutants: MUT3_PLACEHOLDER
+
+### Findings
+
+```
+[1] KIND: correctness (regression from 4c79bec, bd10055 and 5f9884b2)
+    WHERE: .claude/hooks/guard-bash.sh:102 (UNQUOTE, the braced subscript class `[^]}(`]`)
+    DEFECT: round 7 lets the class inside ${X[…]} hold a space, ; & | and quotes, but the regex also matches
+            `${X[` where the shell does not expand it: inside single quotes, after a backslash (`\${`), or across
+            a quote boundary. The removal then deletes plain command text the shell runs.
+    TRIGGER (MERGE = the merge subcommand; each exits 2 on the base hook):
+      echo '${X[ '; gh pr MERGE 7; ' ]}'                (bash and zsh)
+      echo '${X[ '&&gh pr close 7 -d&&' ]}'             (bash and zsh)
+      echo '${X['|gh pr MERGE 7|']}'                    (bash and zsh; gh runs inside the pipeline)
+      echo \${X[ ;gh pr MERGE 7; ]}                     (bash)
+      bash -c 'gh "$@"' '${X[ ' pr MERGE 7 -b ' ]}'     (bash and zsh; no separator at all, a space is enough)
+      bash -c 'gh "$@"' \${X[ pr MERGE 7 -b ]}          (bash)
+    WRONG BEHAVIOUR: exit 0 at 2889c4fd under BSD sed / bash 3.2 and GNU sed 4.9 / bash 5.2. The stub gets
+            `[pr] [MERGE] [7]` (or `[pr] [close] [7] [-d]`, or `[pr] [MERGE] [7] [-b] [ ]}]`), so the PR is
+            merged (D-9) or the branch deleted. A plain, unquoted `gh pr MERGE 7` that main blocks today now passes
+            when it is wrapped this way. The plan review of round 7 checked hiding through a bare subscript, not a
+            quoted or escaped braced one.
+            Refusing `;&|` too (prototype `fix3/`, `[^]}(`;&|]`) is not enough: the two space-only `bash -c`
+            triggers still exit 0. Prototype `fix4/` closes all 6 and keeps the pass-2 probes:
+              - braced class `[^]}(`;&|'"\\]`, so the subscript may not cross a quote or hold a separator;
+              - a first sed expression `s/\\\$/\\_/g`, so an escaped `\$` is never read as an expansion.
+            With fix4, all 9 base-blocked commands that pass at HEAD exit 2 on both sed builds, the rest of my 58
+            keep their exits, and the full hook-smoke gives "hook-smoke: 914 probes OK" (second clone `c2/`).
+            The other way out, a braced class that refuses a space again, re-opens `${X[ 1 ]}` and would mean
+            deleting pass 2's probes. That is not allowed.
+    CONFIDENCE: confirmed (hook on both sed builds; the stub under bash 3.2, bash 5.2 and zsh)
+```
+
+Notes for the lead (not blocking):
+
+2. The glob is named out of reach only in the delete rule's list (header `:50`, and the matching `hooks.md` list),
+   with a merge example (`gh pr [m]erge 7`). The merge rule's own out-of-reach list (header `:76-79`, and the
+   `hooks.md` merge part) does not name it.
+3. This is pass 3 of 3. Finding 1 is a regression against `main`, so I do not see "merge as is" as an option. The
+   choice is the lead's: take fix4 (or an equal fix) as a fourth pass with its probes, or drop round 7's braced class
+   change and name `${X[ 1 ]}` out of reach. The second option would take 2 of pass 2's probes back out, which needs
+   the lead's ruling, since tests are never weakened.
+
+Verdict: back to code-writer
+
+Riskiest unfalsified: other places where the regex reads `$…` that the shell does not expand: a here-doc with a
+quoted delimiter, `$` inside `$'…'`, and `\\$` (an escaped backslash before a real expansion). I tested single
+quotes, double quotes and `\$` only. Not re-run: the 139 KB timing.
