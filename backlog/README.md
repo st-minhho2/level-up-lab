@@ -7,7 +7,7 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 
 | Epic                 | File                                                         | Done    | Partial | Open   | Total   |
 | -------------------- | ------------------------------------------------------------ | ------- | ------- | ------ | ------- |
-| E1 Todos             | [plan/E1-todos.md](plan/E1-todos.md)                         | 68      | 1       | 38     | 107     |
+| E1 Todos             | [plan/E1-todos.md](plan/E1-todos.md)                         | 69      | 1       | 37     | 107     |
 | E2 Todos plus        | [plan/E2-todos-plus.md](plan/E2-todos-plus.md)               | 5       | 0       | 0      | 5       |
 | E3 Todos polish      | [plan/E3-todos-polish.md](plan/E3-todos-polish.md)           | 3       | 0       | 0      | 3       |
 | E4 Todos details     | [plan/E4-todos-details.md](plan/E4-todos-details.md)         | 3       | 0       | 1      | 4       |
@@ -18,7 +18,7 @@ rulings in `00-decisions.md`, role artifacts in `work/<card>/`. Rules for pickin
 | E9 Todos focus       | [plan/E9-todos-focus.md](plan/E9-todos-focus.md)             | 4       | 0       | 0      | 4       |
 | E10 Todos access     | [plan/E10-todos-access.md](plan/E10-todos-access.md)         | 3       | 0       | 0      | 3       |
 | E11 Todos access two | [plan/E11-todos-access-two.md](plan/E11-todos-access-two.md) | 3       | 0       | 0      | 3       |
-| **Total**            |                                                              | **110** | **1**   | **39** | **150** |
+| **Total**            |                                                              | **111** | **1**   | **38** | **150** |
 
 ## Execution order
 
@@ -203,7 +203,7 @@ flowchart TD
   S147["147 · a (red) commit with no vitest file is refused before the push<br/>B1.106"]
   S148["148 · guard-bash blocks a quoted or escaped delete flag after close<br/>~~B1.107~~"]
   S146 --> S148
-  S149["149 · guard-bash blocks gh pr words quoted in pieces<br/>B1.108"]
+  S149["149 · guard-bash blocks gh pr words quoted in pieces<br/>~~B1.108~~"]
   S148 --> S149
   S150["150 · guard-bash blocks a parameter-split word in an unexpanded subscript<br/>B1.109"]
   S149 --> S150
@@ -254,8 +254,7 @@ at most 3 cards Doing (B1.18).
 | 128  | B1.100 | Each parallel run mutation-tests all of src/lib up to three times, whatever the card changed               | —      | Partial | —                               | Lead  | S [estimate] |
 | 136  | B1.102 | check-ac-coverage skips a ✗ section, so a feature PR's wrong title format fails only in its closing PR     | —      | Open    | —                               | Lead  | S [estimate] |
 | 147  | B1.106 | A `(red)` marker on a commit with no vitest file fails only in CI, after the push                          | —      | Open    | —                               | Lead  | S [estimate] |
-| 149  | B1.108 | guard-bash lets `gh pr` merge or delete a branch through a word quoted in pieces                           | —      | Open    | ~~B1.107~~                      | Lead  | S [estimate] |
-| 150  | B1.109 | guard-bash lets `gh pr` merge or delete a branch through a parameter-split word in an unexpanded subscript | —      | Open    | B1.108                          | Lead  | S [estimate] |
+| 150  | B1.109 | guard-bash lets `gh pr` merge or delete a branch through a parameter-split word in an unexpanded subscript | —      | Open    | ~~B1.108~~                      | Lead  | S [estimate] |
 
 ## Waiting on human
 

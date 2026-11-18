@@ -10,8 +10,9 @@ the plan, so there is no `Plan approved by` line. Filing decides nothing: `dev-l
 
 Files:
 
-- `backlog/plan/E1-todos.md`: card B1.109 (quick, depends on B1.108).
-- `backlog/README.md`: totals (E1 68/1/38/107, total 110/1/39/150), node S150 (after S149), Remaining row 150.
+- `backlog/plan/E1-todos.md`: card B1.109 (quick, depends on ~~B1.108~~, merged as 7aa59fb and closed in #395).
+- `backlog/README.md`: totals (E1 69/1/37/107, total 111/1/38/150, after merging `origin/main` with #395), node S150
+  (after S149), Remaining row 150.
 - `backlog/work/B1.109/filing-pr-body.md`: this body.
 
 `scripts/ci/check-backlog.sh` → OK.
