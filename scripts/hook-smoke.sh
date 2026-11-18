@@ -390,6 +390,30 @@ gh pr close 7 -c {$X[,-d,-c,]}
 gh pr close 7 ${X[ 1 ]}-d
 SUBD
 
+echo "== guard-bash.sh: \${X[…]} or a zsh flag group across a quote, after a backslash or after \$\$ (B1.108 review pass 3)"
+while IFS= read -r c; do probe_msg 2 'agents never merge' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'QSUBM'
+echo '${X[ '; gh pr merge 7; ' ]}'
+echo '${X['|gh pr merge 7|']}'
+echo \${X[ ;gh pr merge 7; ]}
+bash -c 'gh "$@"' '${X[ ' pr merge 7 -b ' ]}'
+bash -c 'gh "$@"' \${X[ pr merge 7 -b ]}
+echo '${X['&&{gh,pr,merge,7}&&']}'
+echo \${X[&&{gh,pr,merge,7}&&]}
+echo $${X[;{gh,pr,merge,7};]}
+echo $${X[&&{gh,pr,merge,7}&&]}
+echo $${X[|{gh,pr,merge,7}|]}
+echo '${(';{gh,pr,merge,7};')X}'
+echo '${(f'&&{gh,pr,merge,7}&&'f)X}'
+echo '${(f'|{gh,pr,merge,7}|'f)X}'
+gh pr $X[(r)x]merge 7
+QSUBM
+while IFS= read -r c; do probe_msg 2 'force pushes' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'QSUBD'
+echo '${X[ '&&gh pr close 7 -d&&' ]}'
+echo $${X[;{gh,pr,close,7,-d};]}
+echo '${(';{gh,pr,close,7,-d};')X}'
+gh pr close 7 $X[(r)x]-d
+QSUBD
+
 echo "== settings.json permissions (B1.23, B1.103)"
 n=$((n+1)); if node -e '
   const p = require("./.claude/settings.json").permissions;
