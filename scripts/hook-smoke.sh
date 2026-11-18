@@ -294,6 +294,138 @@ gh pr close "$N" --comment 'superseded'
 gh pr view 7 --json headRefName -q '.headRefName'
 PLAIN
 
+echo "== guard-bash.sh: gh pr words quoted in pieces, escaped, in a brace list, behind an empty variable or a redirect (B1.108)"
+while IFS= read -r c; do probe_msg 2 'agents never merge' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'MERGE'
+gh pr $'merge' 7
+gh $"pr" merge 7
+gh pr \merge 7
+gh pr m''erge 7
+gh pr {merge,} 7
+gh pr {merge,view} 7
+g''h pr merge 7
+gh pr -R o/r m"erg"e 7
+GH PR $'MERGE' 7
+gh pr $EMPTY merge 7
+gh pr ${@}merge 7
+gh pr ${1}merge 7
+gh pr merge>/dev/null 7
+MERGE
+while IFS= read -r c; do probe_msg 2 'force pushes' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'PIECES'
+gh pr $'close' 7 -d
+gh $'pr' close 7 --delete-branch
+gh pr \close 7 -d
+gh pr close 7 -'d'
+gh pr close 7 "-"d
+gh pr close 7 --delete-'branch'
+gh pr close 7 {-d,}
+gh pr close 7 {,--delete-branch}
+gh pr close 7 -{d,d}
+gh pr close 7 -{c,d} x
+gh pr close 7 -{c,x,y,z,d}
+gh pr close 7 {a,b,c} {e,f,g} -{c,d}
+gh pr close 7 --{delete-branch,delete-branch}
+gh pr close 7 $X-d
+gh pr close 7 ${X}-d
+gh pr $EMPTY -R o/r close 7 -d
+gh pr close>/dev/null 7 -d
+PIECES
+while IFS= read -r c; do probe 0 guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'WHOLE'
+gh pr close 7
+gh pr close 7 -c "superseded"
+gh pr -R o/r view 7
+gh pr view 7 --json mergeable
+git merge origin/main
+gh pr view 7 --json number,title,mergeStateStatus
+gh pr close "$N" -c 'superseded by #8'
+gh pr list --json title,headRefName -q '.[].title' > out.txt
+gh pr {view,diff} 7
+gh pr view 7 --json title,body -q '{t: .title, b: .body}'
+WHOLE
+
+echo "== guard-bash.sh: a brace list glued to ; & | ( ) or a backtick, \${10}, a subscript or a zsh flag (B1.108 review pass 1)"
+while IFS= read -r c; do probe_msg 2 'agents never merge' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'GLUED'
+gh {pr,merge,7};
+(gh {pr,merge,7})
+({gh,pr,merge,7})
+`{gh,pr,merge,7}`
+true;{gh,pr,merge,7}
+gh pr ${10}merge 7
+gh pr ${X[1]}merge 7
+gh pr $X[1]merge 7
+gh pr ${=X}merge 7
+gh pr ${~X}merge 7
+gh pr ${^X}merge 7
+gh pr ${(f)X}merge 7
+bash -c 'echo $X[; gh pr merge 7 #]'
+echo $X[$({gh,pr,merge,7})]
+echo ${X[`{gh,pr,merge,7}`]}
+echo $X[;{gh,pr,merge,7};]
+echo $X[&&{gh,pr,merge,7}&&]
+echo $X[|{gh,pr,merge,7}|]
+echo ${(;gh pr merge 7)X}
+GLUED
+while IFS= read -r c; do probe_msg 2 'force pushes' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'GLUEDD'
+gh pr close {7,-d};
+gh pr close {7,-d}&&true
+gh pr close {7,-d}|cat
+gh pr {close,7,-d}|cat
+gh pr close 7 ${12}-d
+gh pr close 7 ${X[1]}-d
+gh pr close 7 ${X[0]}--delete-branch
+gh pr close 7 $X[1]-d
+gh pr close 7 ${=X}-d
+echo ${(f)X[$(gh pr close 7 -d)]}
+gh pr close 7 -c $X[ -d -c ] x
+GLUEDD
+
+echo "== guard-bash.sh: a subscript that ends a word or holds a space (B1.108 review pass 2)"
+while IFS= read -r c; do probe_msg 2 'agents never merge' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'SUBM'
+gh pr ${X[ 1 ]}merge 7
+echo ${X[`gh pr merge 7`]}
+echo ${X[a}; gh pr merge 7; {]}
+SUBM
+while IFS= read -r c; do probe_msg 2 'force pushes' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'SUBD'
+bash -c 'gh pr close 7 -c {$X[,-d,-c,]}'
+gh pr close 7 -c {$X[,-d,-c,]}
+gh pr close 7 ${X[ 1 ]}-d
+SUBD
+
+echo "== guard-bash.sh: \${X[…]} or a zsh flag group across a quote, after a backslash or after \$\$ (B1.108 review pass 3)"
+while IFS= read -r c; do probe_msg 2 'agents never merge' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'QSUBM'
+echo '${X[ '; gh pr merge 7; ' ]}'
+echo '${X['|gh pr merge 7|']}'
+echo \${X[ ;gh pr merge 7; ]}
+bash -c 'gh "$@"' '${X[ ' pr merge 7 -b ' ]}'
+bash -c 'gh "$@"' \${X[ pr merge 7 -b ]}
+echo '${X['&&{gh,pr,merge,7}&&']}'
+echo \${X[&&{gh,pr,merge,7}&&]}
+echo $${X[;{gh,pr,merge,7};]}
+echo $${X[&&{gh,pr,merge,7}&&]}
+echo $${X[|{gh,pr,merge,7}|]}
+echo '${(';{gh,pr,merge,7};')X}'
+echo '${(f'&&{gh,pr,merge,7}&&'f)X}'
+echo '${(f'|{gh,pr,merge,7}|'f)X}'
+gh pr $X[(r)x]merge 7
+QSUBM
+while IFS= read -r c; do probe_msg 2 'force pushes' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'QSUBD'
+echo '${X[ '&&gh pr close 7 -d&&' ]}'
+echo $${X[;{gh,pr,close,7,-d};]}
+echo '${(';{gh,pr,close,7,-d};')X}'
+gh pr close 7 $X[(r)x]-d
+QSUBD
+
+echo "== guard-bash.sh: main's gh pr rules still read the original text (B1.108 review pass 4)"
+while IFS= read -r c; do probe_msg 2 'agents never merge' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'RAWM'
+bash -c 'gh pr -R o/r $1 7' \${X[ merge ]}
+bash -c "bash -c 'gh pr -R o/r \$1 7' \\\${X[ merge ]}"
+RAWM
+while IFS= read -r c; do probe_msg 2 'force pushes' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'RAWD'
+bash -c 'gh pr close 7 $1' \${X[ -d ]}
+bash -c 'gh pr close 7 "$1"' $${X[ -d ]}
+bash -c 'gh pr close 7 $1' \${X[ --delete-branch ]}
+bash -c "bash -c 'gh pr close 7 \$1' \\\${X[ -d ]}"
+RAWD
+
 echo "== settings.json permissions (B1.23, B1.103)"
 n=$((n+1)); if node -e '
   const p = require("./.claude/settings.json").permissions;
