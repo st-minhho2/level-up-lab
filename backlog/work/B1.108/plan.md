@@ -42,6 +42,13 @@ wider classes, so `'${(';{gh,pr,merge,7};')X}'` hid a merge, exit 0 on main too)
 metacharacter", serves all three deleted spans (bare subscript, flag group, braced token). Round 11 (plan review
 round 10: refusing `(` `)` after a bare `$X` re-opened zsh's `$X[(r)x]merge`, blocked at `2889c4fd`): the bare
 subscript alone allows `(` `)`; it still refuses a space and a comma, so `$X[$({gh,pr,merge,7})]` stays visible.
+Round 12 (diff review pass 4: the spaces around `${X[ -d ]}`'s token are word breaks where the shell does not expand
+the `${`, so `bash -c 'gh pr close 7 $1' \${X[ -d ]}` hands gh `-d`; main blocks it; the sixth regression of this
+kind): a structural fix instead of another class. Main's two gh pr rules come back unchanged as `GH_PR_MERGE_RAW` and
+`GH_BRANCH_DELETE_RAW` (with `GH_PR_FLAGS_RAW`, all three copied from `4c79bec`) and run on the original lower-case
+segment, exactly as on main; the unquoted copy's rules run as well. A command main blocks is therefore blocked here
+by construction, whatever the copy deletes; the copy can only add blocks. The header and `hooks.md` drop the claim
+that the deleted text "can never hide a command" and say this instead.
 
 Weighed against A' (per-pattern widening: a class `(["'\\{},]|\$NAME|\${NAME})*` around every letter of `gh`, `pr`,
 `close`, `merge`, `-d`, `--delete-branch`): longer to read; prototyped (round 1 forms) it missed `g''h pr merge 7`, and
@@ -97,13 +104,13 @@ other operator expansions, a brace list's sixth item on (`-{a,b,c,e,f,d}`), nest
 | File                          | Change                                                                                          | Why          |
 | ----------------------------- | ----------------------------------------------------------------------------------------------- | ------------ |
 | `.claude/hooks/guard-bash.sh` | `UNQUOTE`, `BRACE_ONE`, a loop over the copy for the two gh pr rules; quote classes; header     | Acceptance 1 |
-| `scripts/hook-smoke.sh`       | section "gh pr words quoted in pieces … (B1.108)": 30 blocked, 10 allowed; rounds 4–11: 54 more | Test line    |
+| `scripts/hook-smoke.sh`       | section "gh pr words quoted in pieces … (B1.108)": 30 blocked, 10 allowed; rounds 4–12: 60 more | Test line    |
 | `.claude/docs/hooks.md`       | guard-bash row: the unquoted copy, the costs, what stays out of reach                           | Acceptance 1 |
 | `backlog/work/B1.108/*`       | plan, review, pr-body                                                                           | pipeline     |
 
 ## Interfaces touched
 
-`guard-bash.sh` (PreToolUse Bash): exit 2 with the existing `MERGE_MSG` / `FORCE_MSG` on the 84 forms; exit 0 otherwise as today.
+`guard-bash.sh` (PreToolUse Bash): exit 2 with the existing `MERGE_MSG` / `FORCE_MSG` on the 90 forms, and on every command main's gh pr rules block; exit 0 otherwise as today.
 
 ```bash
 UNQUOTE='s/\$([a-z_][a-z0-9_]*(\[[^][:space:]`'"'"'"\\;&|{},]*\])?|[0-9@*])|\$\{(\([^][:space:]()`'"'"'"\\;&|{},]*\))?[=~^]*([a-z_][a-z0-9_]*|[0-9]+|[@*])(\[[[:space:]]*[^][:space:]()`'"'"'"\\;&|{},]*[[:space:]]*\])?\}//g; s/\$(["'"'"'])/\1/g; s/["'"'"'\\]//g; s/[<>]/ /g'
@@ -115,6 +122,11 @@ while IFS= read -r g; do …GH_PR_MERGE → MERGE_MSG; GH_BRANCH_DELETE → FORC
 done < <(printf '%s\n' "$joined" | tr '[:upper:]' '[:lower:]' \
   | sed -E -e "$UNQUOTE" -e "$BRACE_ONE" -e "$BRACE_ONE" -e "$BRACE_ONE" -e "$BRACE_ONE" -e 's/[{}]//g' \
   | tr '\n;&|' ' \n\n\n'; echo)
+# main's rules, copied from 4c79bec, renamed *_RAW, run in the segment loop on "$low" before the git push rules:
+GH_PR_FLAGS_RAW='([[:space:]]+["'"'"'\\$]*-.*)?'
+GH_BRANCH_DELETE_RAW / GH_PR_MERGE_RAW = 4c79bec's GH_BRANCH_DELETE / GH_PR_MERGE with ${GH_PR_FLAGS_RAW}
+  [[ "$low" =~ $GH_PR_MERGE_RAW ]] && block "$ME" "$MERGE_MSG"
+  [[ "$low" =~ $GH_BRANCH_DELETE_RAW ]] && block "$ME" "$FORCE_MSG"
 ```
 
 ## Verification
@@ -151,8 +163,12 @@ review pass 3 -- one class without shell metacharacters`: "hook-smoke: 932 probe
   probes broken): the class reduced to "no space" in all three places → 17 fail; separators and brace characters
   allowed in all three → 10; the flag group alone reduced → 4; the bare subscript alone → 6; the bare subscript
   refusing `(` `)` → 2; the braced token allowing a space → 1. One character group at a time survives by
-  design: a hidden command needs a separator and a word break, so each group alone is covered by another. Diff
-  review pass 4 (the lead's fourth pass).
+  design: each group alone is covered by another. Diff review pass 4 (the lead's fourth pass).
+- Round 12: probes `test(hooks): B1.108 review pass 4 -- probe a token passed to gh as a word` (no marker), 6:
+  merge `bash -c 'gh pr -R o/r $1 7' \${X[ merge ]}` and its nested form; delete `bash -c 'gh pr close 7 $1'
+\${X[ -d ]}`, the same with `"$1"` and `$${X[ -d ]}`, with `--delete-branch`, and the nested form. Red at
+  `3c489387`: exit 1, 6 FAIL, 932 ok; then `fix(hooks): B1.108 review pass 4 -- main's gh pr rules on the original
+text`: "hook-smoke: 938 probes OK". Mutant: drop the two `_RAW` checks → 6 fail. Diff review pass 5 (the lead's call).
 - 139 KB, 300-segment and brace-heavy timings re-run on the green commit and stated in the PR. `pnpm lint && pnpm typecheck` exit
   0; `pnpm test` 403 before and after; mutation: CI only, no src/lib or src/actions change; `next-task.sh --check
 B1.108` no overlap; `check-plan-scope.sh`, `check-backlog.sh` OK; CI green.
@@ -170,5 +186,7 @@ B1.108` no overlap; `check-plan-scope.sh`, `check-backlog.sh` OK; CI green.
 | 7    | dev-lead | round 7 fix, docs  | `fix(hooks): B1.108 review pass 2 -- subscript classes, table pipe`                  |
 | 8    | dev-lead | round 10 probes    | `test(hooks): B1.108 review pass 3 -- probe a subscript across a quote or escape`    |
 | 9    | dev-lead | round 10 fix, docs | `fix(hooks): B1.108 review pass 3 -- one class without shell metacharacters`         |
+| 10   | dev-lead | round 12 probes    | `test(hooks): B1.108 review pass 4 -- probe a token passed to gh as a word`          |
+| 11   | dev-lead | round 12 fix, docs | `fix(hooks): B1.108 review pass 4 -- main's gh pr rules on the original text`        |
 
-Plan review: approved, round 11 · Plan approved by: lead, 2026-11-18 · Rounds: 4
+Plan review: round 12 pending · Plan approved by: lead, 2026-11-18 (round 11; round 12 pending) · Rounds: 5
