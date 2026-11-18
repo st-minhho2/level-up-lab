@@ -142,4 +142,4 @@ B1.108` no overlap; `check-plan-scope.sh`, `check-backlog.sh` OK; CI green.
 | 6    | dev-lead | round 7 probes     | `test(hooks): B1.108 review pass 2 -- probe subscripts that end a word`              |
 | 7    | dev-lead | round 7 fix, docs  | `fix(hooks): B1.108 review pass 2 -- subscript classes, table pipe`                  |
 
-Plan review: approved, round 7 · Plan approved by: lead, 2026-11-17 (round 6; round 7 pending) · Rounds: 3
+Plan review: approved, round 7 · Plan approved by: lead, 2026-11-18 · Rounds: 3
