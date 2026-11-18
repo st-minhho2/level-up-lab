@@ -189,4 +189,4 @@ B1.108` no overlap; `check-plan-scope.sh`, `check-backlog.sh` OK; CI green.
 | 10   | dev-lead | round 12 probes    | `test(hooks): B1.108 review pass 4 -- probe a token passed to gh as a word`          |
 | 11   | dev-lead | round 12 fix, docs | `fix(hooks): B1.108 review pass 4 -- main's gh pr rules on the original text`        |
 
-Plan review: round 12 pending · Plan approved by: lead, 2026-11-18 (round 11; round 12 pending) · Rounds: 5
+Plan review: approved, round 12 · Plan approved by: lead, 2026-11-18 (round 11; round 12 pending) · Rounds: 5
