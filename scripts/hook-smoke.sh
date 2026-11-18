@@ -378,6 +378,18 @@ echo ${(f)X[$(gh pr close 7 -d)]}
 gh pr close 7 -c $X[ -d -c ] x
 GLUEDD
 
+echo "== guard-bash.sh: a subscript that ends a word or holds a space (B1.108 review pass 2)"
+while IFS= read -r c; do probe_msg 2 'agents never merge' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'SUBM'
+gh pr ${X[ 1 ]}merge 7
+echo ${X[`gh pr merge 7`]}
+echo ${X[a}; gh pr merge 7; {]}
+SUBM
+while IFS= read -r c; do probe_msg 2 'force pushes' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'SUBD'
+bash -c 'gh pr close 7 -c {$X[,-d,-c,]}'
+gh pr close 7 -c {$X[,-d,-c,]}
+gh pr close 7 ${X[ 1 ]}-d
+SUBD
+
 echo "== settings.json permissions (B1.23, B1.103)"
 n=$((n+1)); if node -e '
   const p = require("./.claude/settings.json").permissions;
