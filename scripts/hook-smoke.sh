@@ -426,6 +426,41 @@ bash -c 'gh pr close 7 $1' \${X[ --delete-branch ]}
 bash -c "bash -c 'gh pr close 7 \$1' \\\${X[ -d ]}"
 RAWD
 
+echo "== guard-bash.sh: a word split by a parameter in \${X[ … ]} (B1.109)"
+while IFS= read -r c; do probe_msg 2 'agents never merge' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'SPLITM'
+bash -c 'gh pr -R o/r $1 7' \${X[ m$@erge ]}
+bash -c 'gh pr -R o/r $1 7' \${X[ m$EMPTY$@erge ]}
+bash -c "bash -c 'gh pr -R o/r \$1 7' \\\${X[ m$@erge ]}"
+bash -c 'gh pr -R o/r $1 7' \${X[ M$@ERGE ]}
+bash -c 'gh pr -R o/r $1 7' $${X[ m$@erge ]}
+bash -c 'gh pr -R o/r $1 7' \${X[ m$1erge ]}
+bash -c 'gh pr -R o/r $1 7' \${(f)X[ m$@erge ]}
+bash -c 'gh pr -R o/r $1 7' \${X[ m${@}erge ]}
+gh pr ${X[$i]}merge 7
+gh pr ${X[ $i ]}merge 7
+gh pr ${X[$i+$j]}merge 7
+gh pr ${X[$#]}merge 7
+gh pr ${X[$@]}merge 7
+gh pr ${X[$i+n]}merge 7
+gh pr ${X[ i+$j ]}merge 7
+gh pr merge${X[i+$j]} 7
+SPLITM
+while IFS= read -r c; do probe_msg 2 'force pushes' guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'SPLITD'
+bash -c 'gh pr close 7 $1' \${X[ -$@d ]}
+bash -c 'gh pr close 7 $1' $${X[ -$@d ]}
+bash -c "bash -c 'gh pr close 7 \$1' \\\${X[ -$@d ]}"
+bash -c 'gh pr close 7 $1' \${X[ --delete-$@branch ]}
+bash -c 'gh pr close 7 $1' \${10[ -$@d ]}
+gh pr close 7 ${X[$i]}-d
+gh pr close 7 ${X[ $i ]}-d
+gh pr close 7 ${X[ n-$i ]}-d
+SPLITD
+while IFS= read -r c; do probe 0 guard-bash.sh "$(pr_cmd "$c" "$PWD")"; done <<'SPLITOK'
+gh pr view 7 --json title -q '.title' ${X[$i]}
+gh pr close 7 -c "see ${X[ $i ]}"
+echo \${X[ m$@erge ]}
+SPLITOK
+
 echo "== settings.json permissions (B1.23, B1.103)"
 n=$((n+1)); if node -e '
   const p = require("./.claude/settings.json").permissions;
