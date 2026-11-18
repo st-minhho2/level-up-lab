@@ -991,3 +991,78 @@ Notes for the lead (not blocking):
    the gate.
 
 Verdict: changes requested
+
+## Plan review (round 10)
+
+Plan at `c6c8acb9`, diffed against `b242aae2`. Round 10 uses one class, "no shell metacharacter"
+(`[^][:space:]()`'"\\;&|{},]`), for all three spans `UNQUOTE`deletes: the bare`$X[…]` subscript, the zsh flag group
+and the braced token.
+
+The dev-lead's prototype `fix13/guard-bash.sh` (copied to `$TMPDIR/b108/r10/dev13/`) differs from `2889c4fd` (`final/`)
+in the `UNQUOTE` line only, which matches the plan. Probes: `probes13.sh`, inserted into `scripts/hook-smoke.sh` in a
+fresh clone `$TMPDIR/b108/r10/c/` at `c6c8acb9`. Every case went through the stub harness (`judge.sh`): the base hook
+`4c79bec`, `final` and `dev13`, plus a logging `gh` stub under `/bin/bash` 3.2 and `zsh -f`.
+
+| Check                                                                                  | pass / fail: reason                                                                                                                      |
+| -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                         | pass: the same 4 rows                                                                                                                    |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | fail: the shared class drops `(` `)` from the bare subscript, so `$X[(r)x]` is no longer removed (reason 1)                              |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass                                                                                                                                     |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass                                                                                                                                     |
+| verification lists exact commands with expected numbers                                | pass, reproduced with `/bin/bash` 3.2.57. On the `2889c4fd` hook: exit 1, 10 FAIL, 920 ok. On the prototype: "hook-smoke: 930 probes OK" |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | pass                                                                                                                                     |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by you | pass: n/a. `tier.sh` gives `high`. The plan's last line reads "round 10 pending"                                                         |
+| no settled D-n contradicted                                                            | fail: D-9. The reason 1 trigger merges in zsh, the session shell                                                                         |
+| `scripts/next-task.sh --check B1.108` on the committed plan says no overlap            | pass: `[next-task] B1.108: no overlap with any Doing or Review card` (at `c6c8acb9`)                                                     |
+
+Round 9's reason is resolved. Results are identical under BSD `sed` / bash 3.2 and under GNU `sed` 4.9 / bash 5.2.15:
+
+- Every case in `cases8` and `cases9` where bash or zsh hands the stub a merge or `-d` now exits 2. That covers the
+  `$$` forms, the flag-group forms, both quoted here-docs (`bash <<'HD'`), `\\\$`, `$\{`, `${X[ 1 ]}merge`,
+  `${(f)X}merge`, `${(j:x:)X}merge` and `true;{gh,pr,merge,7}`.
+- `all13.txt` is 82 of 82 at exit 2. On `final`, 10 of them exit 0.
+
+Timing is unchanged:
+
+| Input                                                      | `2889c4fd`    | Prototype            |
+| ---------------------------------------------------------- | ------------- | -------------------- |
+| 300 segments (one run under load reads 3.12 s for `final`) | 1.91 / 2.03 s | 1.98 / 1.93 / 1.95 s |
+| round 3's 105 KB worst case                                | 0.93 s        | 0.82 s               |
+
+### Reasons (changes requested)
+
+1. **A regression from `2889c4fd`: a zsh subscript flag after a bare `$X` merges again.** Round 7 let the bare class
+   hold `(`, so `$X[(r)x]` was removed. The plan's out-of-reach line still says "round 7 blocks `$X[(r)x]`". The shared
+   class now refuses `(` and `)` in the bare subscript as well.
+   - Triggers. Each exits 2 on `final`, 0 on the prototype and 0 on base, under both `sed` builds:
+
+     | Command                    | zsh hands the stub   |
+     | -------------------------- | -------------------- |
+     | `gh pr $X[(r)x]merge 7`    | `[pr][merge][7]`     |
+     | `gh pr $X[(i)x]merge 7`    | `[pr][merge][7]`     |
+     | `gh pr close 7 $X[(r)x]-d` | `[pr][close][7][-d]` |
+
+   - In my 105 commands from rounds 1 to 7, these are the only 3 that change against round 9 (lines 86, 89 and 101 of
+     `mine.txt`).
+   - Fix: keep `(` `)` allowed in the bare subscript only (`\[[^][:space:]`'"\\;&|{},]*\]`), and add a
+`$X[(r)x]merge` probe. I tried exactly that on a copy (`$TMPDIR/b108/r10/fix14/`):
+     - The three triggers exit 2. `${X[(r)x]}` stays at 0, as the plan names it out of reach.
+     - `all13.txt` stays 82 of 82 at exit 2.
+     - `cases8` and `cases9` keep the prototype's exits on both builds.
+     - My 105 commands give exactly round 9's exits.
+     - The full hook-smoke gives "hook-smoke: 930 probes OK".
+   - Parentheses are safe in the bare subscript. A hidden command still needs a space or a comma brace list, and that
+     class refuses both. `echo $X[$({gh,pr,merge,7})]` and `echo '$X[(';{gh,pr,merge,7};')]'` exit 2 on the copy,
+     and `echo $X[$(gh)]` runs gh with no arguments. Bash does not split a word at `(` inside `$X[…]`.
+   - Alternatively, the out-of-reach line could say `$X[(r)x]` too. That reopens a zsh merge that round 7 had shut.
+
+Notes for the lead (not blocking):
+
+2. The plan text says one class "serves all three deleted spans". With the fix above, the bare subscript keeps one
+   difference, `(` `)` allowed, and the plan and header should say so.
+3. Not checked here: the round-10 mutants (`mut13.py`), the header and `hooks.md` text, and the 139 KB timing. All
+   belong to diff review pass 4.
+4. This is round 10, past the three-round limit, so it goes to the lead. The verdict is input; the lead's `approve` is
+   the gate.
+
+Verdict: changes requested
