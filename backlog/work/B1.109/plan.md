@@ -65,4 +65,4 @@ done)
 | 2    | dev-lead | rule, header, docs | `chore(hooks): B1.109 guard-bash adds a copy keeping parameter tokens`   |
 | 3    | reviewer | diff review (≤ 3)  | `docs(backlog): B1.109 review pass N`                                    |
 
-Plan review: approved, round 2 · Plan approved by: · Rounds: 1 (plan round 2: review round 1, both findings)
+Plan review: approved, round 2 · Plan approved by: lead, 2026-11-18 · Rounds: 1 (plan round 2: review round 1, both findings)
