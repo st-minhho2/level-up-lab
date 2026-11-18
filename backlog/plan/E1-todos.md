@@ -1625,3 +1625,31 @@ one-segment command: base 295 s, bash `${//}` 929 s, one `sed` per segment 315 s
 - **Tier:** quick · **Depends on:** ~~B1.107~~ (same lines of `guard-bash.sh` and the next `hook-smoke.sh` section) ·
   **Owner:** Lead · **Size:** S [estimate]
 - **Work:** `work/B1.108/`
+
+### B1.109 · guard-bash lets `gh pr` merge or delete the branch through a word split by a parameter inside an unexpanded `${X[ … ]}`
+
+_tooling · no §_
+**Status: Open** — B1.108's diff review pass 5 (PR #393, head `ca34cab5`): the unquoted copy deletes `${X[ … ]}`
+when its token holds no shell metacharacter, and that token class allows `$`. Where the shell does not expand the
+`${` (after `\` or `$$`), a flag or subcommand split by a parameter inside it (`-$@d`, `m$@erge`, `m$EMPTY$@erge`)
+is deleted whole from the copy, main's original-text rules cannot read the pieces, and `bash -c '… $1'` hands gh the
+plain word. Each exits 0 on B1.108's branch and on main `4c79bec`, and exits 2 at B1.108's earlier `5f9884b2`:
+`bash -c 'gh pr -R o/r $1 7' \${X[ m$@erge ]}`, `bash -c 'gh pr close 7 $1' \${X[ -$@d ]}`,
+`bash -c 'gh pr close 7 $1' $${X[ -$@d ]}`, `bash -c 'gh pr -R o/r $1 7' \${X[ m$EMPTY$@erge ]}`, and the nested
+`bash -c "bash -c '… \$1' \\\${X[ … ]}"` forms (also from zsh). B1.108 names the form out of reach in the hook
+header and `.claude/docs/hooks.md`; the reviewer's prototype adds `$` to the braced token's excluded set and blocks
+all six with "hook-smoke: 938 probes OK"
+
+- **Spec:** none — tooling (`.claude/hooks/guard-bash.sh`, `scripts/hook-smoke.sh`, `.claude/docs/hooks.md`); no `src/`
+  change, no section
+- **Test:** `scripts/hook-smoke.sh` probes for each form above (merge forms with `agents never merge`, delete forms
+  with `force pushes`) — red because: `guard-bash.sh` exits 0 on each after B1.108
+- **Acceptance:**
+  - Each form above is blocked with the existing message; the out-of-reach entry is removed from the header and
+    `hooks.md`.
+  - Every probe B1.108 left in `hook-smoke.sh` still passes; nothing main blocks passes (the `*_RAW` rules stay).
+  - The probes fail before the change and pass after; bash 3.2-safe; the hook-smoke count before and after is stated.
+  - The PR carries `config-change-approved` (D-19).
+- **Tier:** quick · **Depends on:** B1.108 (same line of `guard-bash.sh` and the next `hook-smoke.sh` section) ·
+  **Owner:** Lead · **Size:** S [estimate]
+- **Work:** `work/B1.109/`
