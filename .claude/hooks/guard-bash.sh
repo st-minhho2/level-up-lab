@@ -77,8 +77,8 @@ FORCE_MSG="force pushes and remote branch deletes are not allowed from an agent 
 # them, a PR title or card evidence quoting them, `gh pr m''erge` too since B1.108). Out of reach: a script file the
 # agent wrote and then runs, a query read from a file an earlier command wrote (`-F query=@q.graphql`), for `gh api`
 # a word quoted in pieces (`pulls/7/m''erge`), for gh pr a glob (`gh pr [m]erge 7`), an operator expansion
-# (`${X:-merge}`), a zsh subscript flag inside braces (`${X[(r)x]}merge`) or a word split by a parameter inside an
-# unexpanded ${X[ … ]} and passed on as $1 (`\${X[ m$@erge ]}`, main too), an alias, a command built at run time
+# (`${X:-merge}`), a zsh subscript flag inside braces (`${X[(r)x]}merge`) or a subscript holding a braced,
+# subscripted or arithmetic expansion (`${X[$((1))]}merge`, B1.109), an alias, a command built at run time
 # (`$(which gh) pr merge 7`), curl on the GitHub API.
 GH_ANY_API="${W}gh[\"']?[[:space:]](.*[[:space:]])?[\"']?api[\"']?[[:space:]]"
 GH_MERGE_API='pulls/[^[:space:]]*/merge([^a-z]|$)|/merges([^a-z]|$)|mergepullrequest|enablepullrequestautomerge|mergebranch|enqueuepullrequest'
@@ -104,19 +104,29 @@ fi
 # `$X[(r)x]`, and ${X[ 1 ]} may have spaces around its one token), since the shell may not expand that ${ at all
 # (inside '…', after \ or $$) and removing more could hide the command behind it (B1.108 plan rounds 5 to 11). The
 # copy can still lose a word the shell keeps (`bash -c 'gh pr close 7 $1' \${X[ -d ]}`), so main's own rules
-# (*_RAW, above) also run on the original text: the copy only adds blocks (B1.108 diff review pass 4).
+# (*_RAW, above) also run on the original text: the copy only adds blocks (B1.108 diff review pass 4). That copy
+# deletes ${X[ m$@erge ]} whole, so where the shell does not expand the ${ (after \ or $$) a word split by a
+# parameter inside it reaches gh through $1 unseen; a second copy, UNQUOTE_KEEP, keeps a braced token that holds a
+# $ and removes only the parameter, so `merge` or `-d` shows. The loop reads both copies and main's comes first,
+# unchanged: replacing its class in place lost `gh pr ${X[$i+n]}merge 7`, which main blocks (B1.109). Out of reach,
+# main too: a subscript holding a braced, subscripted or arithmetic expansion (`${X[${i}]}merge`,
+# `${X[$Y[1]]}merge`, `${X[$((1))]}merge`).
 # The brace prefix, item and suffix stop at ; & | ( ) and a backtick, where the shell ends a word. One sed for the
 # whole command, not one per segment; BRACE_ONE runs a fixed four times (each pass takes one item off every list on the
 # line), never in a loop, so a long word with many commas costs at most four passes. The git push, config and gh api
 # rules read the original text: removing $' there would hide PUSH_FORCE's $'…\…' signal.
 UNQUOTE='s/\$([a-z_][a-z0-9_]*(\[[^][:space:]`'"'"'"\\;&|{},]*\])?|[0-9@*])|\$\{(\([^][:space:]()`'"'"'"\\;&|{},]*\))?[=~^]*([a-z_][a-z0-9_]*|[0-9]+|[@*])(\[[[:space:]]*[^][:space:]()`'"'"'"\\;&|{},]*[[:space:]]*\])?\}//g; s/\$(["'"'"'])/\1/g; s/["'"'"'\\]//g; s/[<>]/ /g'
+TOKEN='[[:space:]]*[^][:space:]()' TOKEN_NO_PARAM='[[:space:]]*[^]$[:space:]()'
+UNQUOTE_KEEP="${UNQUOTE/"$TOKEN"/$TOKEN_NO_PARAM}" # one match: the braced token; bash 3.2 checked
 BRACE_ONE='s/([^[:space:]{};&|()`]*)\{([^[:space:]{},;&|()`]*),([^[:space:]{};&|()`]*)\}([^[:space:]{};&|()`]*)/\1\2\4 \1{\3}\4/g'
 while IFS= read -r g; do
   [[ "$g" =~ $GH_PR_MERGE ]] && block "$ME" "$MERGE_MSG"
   [[ "$g" =~ $GH_BRANCH_DELETE ]] && block "$ME" "$FORCE_MSG"
-done < <(printf '%s\n' "$joined" | tr '[:upper:]' '[:lower:]' \
-  | sed -E -e "$UNQUOTE" -e "$BRACE_ONE" -e "$BRACE_ONE" -e "$BRACE_ONE" -e "$BRACE_ONE" -e 's/[{}]//g' \
-  | tr '\n;&|' ' \n\n\n'; echo)
+done < <(for u in "$UNQUOTE" "$UNQUOTE_KEEP"; do
+  printf '%s\n' "$joined" | tr '[:upper:]' '[:lower:]' \
+    | sed -E -e "$u" -e "$BRACE_ONE" -e "$BRACE_ONE" -e "$BRACE_ONE" -e "$BRACE_ONE" -e 's/[{}]//g' \
+    | tr '\n;&|' ' \n\n\n'; echo
+done)
 names_git=0; [[ "$joined" =~ $GIT_WORD ]] && names_git=1
 US=$'\037' # marks the command's own newlines inside a segment
 while IFS= read -r segment; do
