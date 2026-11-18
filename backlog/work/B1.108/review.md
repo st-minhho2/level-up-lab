@@ -1066,3 +1066,37 @@ Notes for the lead (not blocking):
    the gate.
 
 Verdict: changes requested
+
+## Plan review (round 11)
+
+Plan at `cbd58489`, diffed against `c6c8acb9`. Round 11 lets the bare `$X[…]` subscript hold `(` `)` again. It adds
+two probes, `gh pr $X[(r)x]merge 7` and `gh pr close 7 $X[(r)x]-d`. The prototype `fix14/guard-bash.sh` is
+byte-identical to my round-10 candidate (`cmp` is silent), and its `UNQUOTE` line matches the plan.
+
+| Check                                                                                  | pass / fail: reason                                                                                                                                                                                              |
+| -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                         | pass: the same 4 rows                                                                                                                                                                                            |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | pass: n/a for TypeScript. The pasted `UNQUOTE` matches the prototype                                                                                                                                             |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass                                                                                                                                                                                                             |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass                                                                                                                                                                                                             |
+| verification lists exact commands with expected numbers                                | pass, reproduced with `/bin/bash` 3.2.57 in a fresh clone `$TMPDIR/b108/r11/c/` at `cbd58489` with `probes14.sh`. On the `2889c4fd` hook: exit 1, 10 FAIL, 922 ok. On the prototype: "hook-smoke: 932 probes OK" |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | pass                                                                                                                                                                                                             |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by you | pass: n/a. `tier.sh` gives `high`. The plan's last line reads "round 11 pending"                                                                                                                                 |
+| no settled D-n contradicted                                                            | pass: D-9, D-19 and D-28 are followed                                                                                                                                                                            |
+| `scripts/next-task.sh --check B1.108` on the committed plan says no overlap            | pass: `[next-task] B1.108: no overlap with any Doing or Review card` (at `cbd58489`)                                                                                                                             |
+
+Round 10's reason is resolved, with identical results under BSD `sed` / bash 3.2 and under GNU `sed` 4.9 / bash
+5.2.15:
+
+- `all14.txt` is 87 of 87 at exit 2.
+- `cases10`: the three `$X[(r)x]` / `$X[(i)x]` triggers exit 2, and `${X[(r)x]}` stays 0, as the plan names it out of
+  reach.
+- `cases10b`, `cases9` and `cases8` keep round 10's exits.
+- My 105 commands from rounds 1 to 7 give exactly round 9's exits.
+- The here-doc cases were judged with the stub in round 10 on this same file: every one where bash or zsh hands gh a
+  merge or `-d` exits 2.
+
+No blocking reason. Not checked here: the mutants, the header and `hooks.md` text, and the 139 KB timing. All belong to
+diff review pass 4. This is round 11, past the three-round limit; the lead's `approve` is the gate.
+
+Verdict: approved
