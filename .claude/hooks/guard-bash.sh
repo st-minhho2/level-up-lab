@@ -75,8 +75,9 @@ FORCE_MSG="force pushes and remote branch deletes are not allowed from an agent 
 # enqueuePullRequest. The text is matched, not run, so a command that only names these is blocked too (a grep for
 # them, a PR title or card evidence quoting them, `gh pr m''erge` too since B1.108). Out of reach: a script file the
 # agent wrote and then runs, a query read from a file an earlier command wrote (`-F query=@q.graphql`), for `gh api`
-# a word quoted in pieces (`pulls/7/m''erge`), an alias, a command built at run time (`$(which gh) pr merge 7`), curl
-# on the GitHub API.
+# a word quoted in pieces (`pulls/7/m''erge`), for gh pr a glob (`gh pr [m]erge 7`), an operator expansion
+# (`${X:-merge}`) or a zsh subscript flag inside braces (`${X[(r)x]}merge`), an alias, a command built at run time
+# (`$(which gh) pr merge 7`), curl on the GitHub API.
 GH_ANY_API="${W}gh[\"']?[[:space:]](.*[[:space:]])?[\"']?api[\"']?[[:space:]]"
 GH_MERGE_API='pulls/[^[:space:]]*/merge([^a-z]|$)|/merges([^a-z]|$)|mergepullrequest|enablepullrequestautomerge|mergebranch|enqueuepullrequest'
 GH_PR_MERGE="${W}gh[[:space:]](.*[[:space:]])?pr${GH_PR_FLAGS}[[:space:]]+merge${E}"
@@ -91,15 +92,16 @@ fi
 # its words: $NAME, ${NAME}, $1, ${10}, $@, $* removed (empty when unset), with a subscript ($X[1], ${X[1]}) and
 # zsh's flags before the name (${=X}, ${~X}, ${^X}, ${(f)X}), the $ of $'…' and $"…" removed, then every ' " and \
 # removed, < and > made spaces (a redirect ends a word), and each brace list's first five items expanded with its
-# prefix and suffix (`-{c,d}` → `-c -d`). A subscript stays where the shell would end it or run something in it, so
-# that removing it cannot hide a command (B1.108 plan rounds 5 and 7): after a bare $X (bash: a glob, not a subscript)
-# one holding a space or a comma (`$X[; gh pr merge 7 #]`, `{$X[,-d,-c,]}`); inside ${X[…]} one holding }, ( or a
-# backtick (`${X[$(…)]}`), a space being allowed there (`${X[ 1 ]}`); and a flag group with a space or paren.
+# prefix and suffix (`-{c,d}` → `-c -d`). A subscript or flag group is removed only when it holds no shell
+# metacharacter (no space, quote, \, ; & |, ( ), backtick, { } or comma; a bare $X[…] may hold ( ) for zsh's
+# `$X[(r)x]`, and ${X[ 1 ]} may have spaces around its one token): the shell may not expand that ${ at all (inside
+# '…', after \ or $$), and a hidden command needs a separator and a word break, which the removed text never holds
+# (B1.108 plan rounds 5 to 11: `'${X[ '; gh pr merge 7; ' ]}'`, `$${X[;{gh,pr,merge,7};]}` stay visible).
 # The brace prefix, item and suffix stop at ; & | ( ) and a backtick, where the shell ends a word. One sed for the
 # whole command, not one per segment; BRACE_ONE runs a fixed four times (each pass takes one item off every list on the
 # line), never in a loop, so a long word with many commas costs at most four passes. The git push, config and gh api
 # rules read the original text: removing $' there would hide PUSH_FORCE's $'…\…' signal.
-UNQUOTE='s/\$([a-z_][a-z0-9_]*(\[[^][:space:],]*\])?|[0-9@*])|\$\{(\([^()[:space:]]*\))?[=~^]*([a-z_][a-z0-9_]*|[0-9]+|[@*])(\[[^]}(`]*\])?\}//g; s/\$(["'"'"'])/\1/g; s/["'"'"'\\]//g; s/[<>]/ /g'
+UNQUOTE='s/\$([a-z_][a-z0-9_]*(\[[^][:space:]`'"'"'"\\;&|{},]*\])?|[0-9@*])|\$\{(\([^][:space:]()`'"'"'"\\;&|{},]*\))?[=~^]*([a-z_][a-z0-9_]*|[0-9]+|[@*])(\[[[:space:]]*[^][:space:]()`'"'"'"\\;&|{},]*[[:space:]]*\])?\}//g; s/\$(["'"'"'])/\1/g; s/["'"'"'\\]//g; s/[<>]/ /g'
 BRACE_ONE='s/([^[:space:]{};&|()`]*)\{([^[:space:]{},;&|()`]*),([^[:space:]{};&|()`]*)\}([^[:space:]{};&|()`]*)/\1\2\4 \1{\3}\4/g'
 while IFS= read -r g; do
   [[ "$g" =~ $GH_PR_MERGE ]] && block "$ME" "$MERGE_MSG"
