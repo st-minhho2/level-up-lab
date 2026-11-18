@@ -1100,3 +1100,101 @@ No blocking reason. Not checked here: the mutants, the header and `hooks.md` tex
 diff review pass 4. This is round 11, past the three-round limit; the lead's `approve` is the gate.
 
 Verdict: approved
+
+## Diff review (round 4)
+
+Diff `4c79bec...3c489387`; pass-3 delta `2889c4fd..3c489387`: probes `14db89e8` (`scripts/hook-smoke.sh` only, +24),
+fix `3c489387` (`guard-bash.sh`, `hooks.md` only). `pr-body.md` is uncommitted and out of scope. Evidence under
+`$TMPDIR/b108d/`: the clone `c/` fetched to `3c489387`, `bd28/` holds the `5f9884b2` hook, `r4.txt` and `r4z.txt` the
+new triggers, `all4.txt` all 65 of my commands from rounds 1–4, `bin/gh` the stub, and `fix5/` the prototype named
+under finding 1.
+
+### Command results (last lines)
+
+- `pnpm lint`: `All matched files use Prettier code style!`. `pnpm typecheck`: exit 0. `pnpm test`:
+  `Tests  403 passed (403)`. `pnpm test:e2e`: not re-run (no `src/`, `e2e/` or config change since round 1's
+  `91 passed`).
+- `scripts/mutation-gate.sh`: `mutation: CI only, no src/lib or src/actions change`.
+- `check-suppressions`, `check-feat-commits`, `check-ac-coverage`, `check-spec-sections`, `check-features-map`,
+  `check-plan-scope`, `check-backlog`: OK.
+- `check-config-change.sh`: `::error::Protected configuration changed without the 'config-change-approved' label`
+  (expected until the PR carries the label, D-19). `verify-red.sh B1.108`: no `(red)` commit (the stated deviation,
+  B1.106).
+- hook-smoke at `14db89e8` (red): exit 1, 10 FAIL, 922 ok. At `3c489387`: `hook-smoke: 932 probes OK`
+  (`/bin/bash` 3.2). Under bash 5.2.15 and GNU sed 4.9 (docker): 0 guard-bash FAIL, 343 `ok guard-bash`, and the
+  same 14 `node_modules` FAILs as before.
+- `git diff --stat origin/main...HEAD`: 6 files changed, 1494 insertions(+), 29 deletions(-). No merge commits.
+
+### Checklist
+
+- Each pass-3 trigger has a probe asserting the message: pass. There are 18 probes, matching the plan's list. The 6
+  round-3 triggers and the 3 extra quoted/escaped ones in my `all4.txt` all exit 2.
+- No probe weakened: pass. `14db89e8` only adds 24 lines; `3c489387` does not touch `scripts/hook-smoke.sh`.
+- Changed files and the `UNQUOTE` line match plan round 11: pass.
+- `hooks.md`: all 10 rows have 3 cells, and the row has no bare pipe ("the pipe" is written out). A word diff of the
+  guard-bash row against `2889c4fd` shows only:
+  - the subscript wording, now the "no shell metacharacter" rule;
+  - the merge rule's new out-of-reach entries: a glob, `${X:-merge}`, `${X[(r)x]}merge`.
+
+  `git diff -w 2889c4fd HEAD` changes only the guard-bash row and the separator.
+
+- Header comments and `hooks.md` wording: they state the code's classes exactly. Character for character, the
+  excluded set and the two exceptions (`( )` after a bare `$X`, spaces around `${X[ 1 ]}`'s one token) match
+  `UNQUOTE`. The reason they give is wrong (finding 1): "a hidden command needs a separator and a word break, which
+  the removed text never holds" (`guard-bash.sh:98`), and "so text the shell does not expand … can never hide a
+  command" (`hooks.md:11`).
+- Mutants: I re-ran 2 of the plan's round 9–11 mutants with the full hook-smoke on the clone. The bare subscript
+  refusing `( )` gives 2 FAIL and the braced token allowing a space inside gives 1, both as the plan says. The clone
+  was restored (`git status` clean).
+
+### Findings
+
+```
+[1] KIND: correctness (regression from 4c79bec and 5f9884b2)
+    WHERE: .claude/hooks/guard-bash.sh:104 (UNQUOTE, the braced token `\[[[:space:]]*[^…]*[[:space:]]*\]`),
+           header :95-99, hooks.md:11
+    DEFECT: the spaces allowed around `${X[ 1 ]}`'s one token are word breaks wherever the shell does not expand
+            that `${` (after `\` or `$$`, as the header itself says). The token then reaches gh as a word of its
+            own, through a script's positional parameter (`$1`), with no separator needed.
+    TRIGGER (MERGE = the merge subcommand; every one exits 2 on the base hook and on 5f9884b2):
+      bash -c 'gh pr close 7 $1' \${X[ -d ]}
+      bash -c 'gh pr close 7 "$1"' $${X[ -d ]}
+      bash -c 'gh pr close 7 $1' \${X[ --delete-branch ]}
+      bash -c 'gh pr -R o/r $1 7' \${X[ MERGE ]}
+      bash -c "bash -c 'gh pr close 7 \$1' \\\${X[ -d ]}"        (works with zsh as the outer shell, the session's)
+      bash -c "bash -c 'gh pr -R o/r \$1 7' \\\${X[ MERGE ]}"    (likewise)
+    WRONG BEHAVIOUR: exit 0 at 3c489387 under BSD sed / bash 3.2 and GNU sed 4.9 / bash 5.2. bash makes `${X[`
+            `$0`, the token `$1` and `]}` `$2`, so the stub gets `[pr] [close] [7] [-d]` or
+            `[pr] [-R] [o/r] [MERGE] [7]`: the branch is deleted or the PR merged (D-9). The last two run the same
+            way from zsh (stub output identical). The copy reads `bash -c gh pr close 7  `, because both `$1` and
+            the braced span are removed. The `-d` the base hook saw in plain text is gone.
+            The plan's premise ("a hidden command needs a separator and a word break together") does not hold:
+            a word break is enough when the hidden token is a single flag or subcommand handed on as `$1`.
+            Prototype `fix5/`: one first sed expression `s/\\\$/\\_/g; s/\$\$/0/g`. An escaped `\$` is never an
+            expansion, and `$$` expands to digits, so neither starts a `${`. Results with it:
+              - all 6 triggers exit 2 on both sed builds;
+              - my other 59 commands keep their exits;
+              - `${X[ 1 ]}merge` and every pass-2 and pass-3 probe still exit 2;
+              - the full hook-smoke gives "hook-smoke: 932 probes OK" under BSD and 0 guard-bash FAIL under GNU.
+            The header and hooks.md reason would need the same correction.
+            The other way out is to drop the spaces around the token, which would delete pass 2's `${X[ 1 ]}`
+            probes. Tests are never weakened, so that needs the lead's ruling.
+    CONFIDENCE: confirmed (hook on both sed builds; the stub under bash 3.2, bash 5.2 and, for the nested form,
+                zsh as the outer shell)
+```
+
+Notes for the lead (not blocking):
+
+2. **The single-quote route is closed at HEAD.** Quotes are excluded from the token, so `'${X[ ' … ' ]}'` cannot be
+   matched across; all of round 3's quoted triggers exit 2. The bare form may hold `$` and `( )` (`$X[$(…)]`) but no
+   word break, so it hides no `gh pr` command. Words joined by `$IFS` stay out of reach, as on `main`. I did not test
+   a quoted here-doc this round.
+3. This is pass 4, past the three-pass limit. The finding is a regression against `main`, so I do not see "merge as
+   is" as an option. The lead chooses between fix5 (or an equal fix, with probes for the 6 triggers) and the
+   probe-deleting alternative above.
+
+Verdict: back to code-writer
+
+Riskiest unfalsified: other ways a word reaches gh without being visible in the text: an `eval`, `xargs` or
+`printf | sh` fed a single-token span the copy removes. I tested the `bash -c '… $1'` route only. Not re-run: the
+139 KB timing.
