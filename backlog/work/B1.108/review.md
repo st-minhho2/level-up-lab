@@ -749,7 +749,9 @@ the stub, `fix3/` and `fix4/` the two prototypes named under finding 1.
 
 - Header comments (`guard-bash.sh:94-97`, `:49-51`): they describe the code as written, but the braced class they
   describe is the defect in finding 1.
-- Mutants: MUT3_PLACEHOLDER
+- Mutants: I re-ran 2 of the plan's 6 round-7 mutants with the full hook-smoke on the clone. A bare class allowing
+  `,` gives 6 FAIL and a braced class refusing a space gives 2, both as the plan says. The clone was restored
+  (`git status` clean).
 
 ### Findings
 
@@ -797,3 +799,117 @@ Verdict: back to code-writer
 Riskiest unfalsified: other places where the regex reads `$…` that the shell does not expand: a here-doc with a
 quoted delimiter, `$` inside `$'…'`, and `\\$` (an escaped backslash before a real expansion). I tested single
 quotes, double quotes and `\$` only. Not re-run: the 139 KB timing.
+
+## Plan review (round 8)
+
+Plan at `7dd6cf5e`, diffed against `7e7c49cc`. Round 8 changes only `UNQUOTE`:
+
+- A first step, `s/\\\$/\\_/g`, makes an escaped `\$` plain text.
+- The braced subscript becomes optional spaces, then one token holding no space, `(`, backtick or `'`, then optional
+  spaces.
+
+The merge rule's out-of-reach list adds a glob. There are 8 more probes.
+
+The prototype `fix11/guard-bash.sh` (copied to `$TMPDIR/b108/r8/fix11/`) differs from `2889c4fd` (`final/`,
+byte-identical to the worktree's `HEAD` hook) in the `UNQUOTE` line only, which matches the plan. Probes:
+`probes11.sh`, inserted into `scripts/hook-smoke.sh` in a fresh clone `$TMPDIR/b108/r8/c/` at `7dd6cf5e`.
+
+I built a harness, `$TMPDIR/b108/r8/judge.sh`:
+
+- It runs each command through the base hook (`4c79bec`), `final`, `fix11` and one mutant.
+- It also runs each command in `/bin/bash` 3.2 and in `zsh -f`, with a `gh` stub on `PATH` that logs the words it
+  receives. Each verdict below is checked against what the shell really hands gh.
+
+The working tree also holds two uncommitted edits that are not mine: `pr-body.md`, and a mutant line in the pass-3
+section of this file. I left them as they are.
+
+| Check                                                                                  | pass / fail: reason                                                                                                                     |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| every file in the plan belongs to the section's features (map)                         | pass: the same 4 rows                                                                                                                   |
+| interfaces follow `ts-style.md`; mutations only in actions; Prisma only in lib         | fail: the token class still deletes text the shell runs after `$$` (reason 1)                                                           |
+| plan follows `advice.md`'s recommendation or states the deviation                      | pass: the plan states how it differs from the pass-3 `fix4` (no `;&                                                                     | "\` exclusions in the token), and reason 1 is exactly the cost of that difference |
+| ≤ 7 criteria, every Then measurable, no banned adjective without a number              | pass                                                                                                                                    |
+| verification lists exact commands with expected numbers                                | pass, reproduced with `/bin/bash` 3.2.57. On the `2889c4fd` hook: exit 1, 6 FAIL, 916 ok. On the prototype: "hook-smoke: 922 probes OK" |
+| work breakdown has skeleton → red → green → map → review with convention subjects      | pass on content. Rows 8 and 9 sit after a blank line, outside the table, so they render as a separate table with no header (note 3)     |
+| the section has a `Lead approves spec` box, ticked only by a human (D-7), never by you | pass: n/a. `tier.sh` gives `high`. The plan's last line reads "round 8 pending"                                                         |
+| no settled D-n contradicted                                                            | fail: D-9. The reason 1 triggers merge in bash, and `2889c4fd` blocks them                                                              |
+| `scripts/next-task.sh --check B1.108` on the committed plan says no overlap            | pass: `[next-task] B1.108: no overlap with any Doing or Review card` (at `7dd6cf5e`)                                                    |
+
+Pass 3's finding is resolved. Results under BSD `sed` / bash 3.2, and the same under GNU `sed` 4.9 / bash 5.2.15:
+
+| Input                              | Exit on the prototype                  |
+| ---------------------------------- | -------------------------------------- |
+| `p11.txt`                          | 8 of 8 exit 2. On `2889c4fd`, 6 exit 0 |
+| `all11.txt`                        | 74 of 74 exit 2                        |
+| my 105 commands from rounds 1 to 7 | 103 keep their exit                    |
+
+The other 2 of my commands go from 0 to 2: `echo ${X[; gh pr merge 7 #]}` and `echo ${X[a; gh pr merge 7; b]}`. Round
+7's notes showed that neither shell runs those, so they are false positives coming back.
+
+Timing is unchanged:
+
+| Input                             | `2889c4fd`    | Prototype     |
+| --------------------------------- | ------------- | ------------- |
+| 300 segments                      | 2.03 / 1.86 s | 1.92 / 1.86 s |
+| round 3's 105 KB brace worst case | 0.82 s        | 0.81 s        |
+
+My pass-3 "riskiest unfalsified" list, run through the harness:
+
+- **A here-doc with a quoted delimiter:**
+  - As data, it is harmless: in `cat <<'HD'` the body is never run.
+  - Fed to bash (`bash <<'HD'`), the body is parsed like a top-level command:
+    - The single-quote trigger inside it exits 2.
+    - The `$$` form of reason 1 exits 0, and bash and zsh both hand the stub `[pr] [merge] [7]`.
+- **`$` inside `$'…'`:** `echo $'${X[\';{gh,pr,merge,7};]}'` exits 2. The token cannot hold `'`, and the shell
+  runs nothing.
+- **`\\$`:**
+  - `echo \\${X[;{gh,pr,merge,7};]}` exits 2. It is a false positive: the expansion fails in arithmetic, and nothing
+    runs.
+  - `echo \\\${X[;…]}` exits 2 because the `\$` step catches it. bash runs the merge there, so this case is needed.
+  - `echo $\{X[;…]}` exits 2.
+- **Double quotes:** `"${X[ "&&{gh,pr,merge,7}&&" ]}"` and `"${X[";{…};"]}"` exit 0, but bash keeps parsing `${…}`
+  across the inner quotes and runs nothing. These are not findings.
+- **The plan's equivalent mutant (token allowing `(`) holds up.** My copy `mutparen/` exits 0 on
+  `echo ${X[$({gh,pr,merge,7})]}`, but bash does not brace-expand inside a subscript, so the stub is never called. Its
+  claim stands.
+
+### Reasons (changes requested)
+
+1. **After `$$`, a `${X[…]}` is not an expansion, and the token deletes the brace-list command behind it.**
+   - This regresses from `2889c4fd`: its braced class refused `}`, so the text stayed visible. On base `4c79bec` these
+     also exit 0, because main expands no brace lists. So the card's own coverage regresses, not main's.
+   - In bash, `$$` is the PID and takes the second `$`, so `{X[` is literal, the `;` `&&` or `|` ends the command, and
+     the brace list after it runs. The round-8 token holds `{` `,` `}` `;` `&` `|`, so `UNQUOTE` deletes the whole
+     `${X[;{gh,pr,merge,7};]}`. Round 8 handles only `\$`, the plan's other "`$` the shell does not expand".
+   - Triggers, each with the exits base / `2889c4fd` / prototype:
+
+     | Command                                        | Exits     | The bash stub gets                |
+     | ---------------------------------------------- | --------- | --------------------------------- |
+     | `echo $${X[;{gh,pr,merge,7};]}`                | 0 / 2 / 0 | `[pr][merge][7]`                  |
+     | `echo $${X[&&{gh,pr,merge,7}&&]}`              | 0 / 2 / 0 | `[pr][merge][7]`                  |
+     | `echo $${X[\|{gh,pr,merge,7}\|]}`              | 0 / 2 / 0 | `[pr][merge][7]`                  |
+     | `echo $${X[;{gh,pr,close,7,-d};]}`             | 0 / 2 / 0 | `[pr][close][7][-d]`              |
+     | `bash <<'HD'⏎echo $${X[;{gh,pr,merge,7};]}⏎HD` | 0 / 2 / 0 | `[pr][merge][7]`, in bash and zsh |
+
+   - zsh run directly does not call the stub, but the session's Bash tool reaches bash through `bash -c` or a
+     here-doc. bash 5.2.15 in `node:24-bookworm` hands the stub `pr merge 7` too.
+   - The prototype gives the same exits under GNU `sed`.
+   - Fix: a second step, `s/\$\$/__/g`, right after `s/\\\$/\\_/g`, so a `$$` is text before any removal (`$$$X`
+     still reads as `__` plus a removed `$X`). Add probes for the `$$` forms.
+     - I tried it on a copy (`$TMPDIR/b108/r8/fix12/`).
+     - The 4 `$$` triggers go to exit 2.
+     - `p11.txt` stays 8 of 8 at exit 2, and `all11.txt` 74 of 74.
+     - My 105 earlier commands keep the prototype's exits.
+     - I did not run the full hook-smoke on that copy.
+   - Taking pass 3's `fix4` exclusions (`;&|` in the token) instead would also close it.
+
+Notes for the lead (not blocking):
+
+2. The 2 → 0 → 2 swing of the two "operand expected" commands across rounds 7 and 8 changes no real behavior. Both are
+   false positives.
+3. The work-breakdown table in `plan.md` is broken: rows 8 and 9 come after a blank line and have no header row.
+4. Not checked here: the `hooks.md` text (the glob in the merge list) and the 139 KB timing. Both belong to diff
+   review pass 4.
+5. This is round 8, past the three-round limit, so it goes to the lead. The verdict is input, not a gate.
+
+Verdict: changes requested
