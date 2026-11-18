@@ -28,7 +28,12 @@ subscript, a glob) the class refuses a space or `,` (`{$X[,-d,-c,]}` hands gh `-
 blocks round 6's probes. Inside `${X[…]}` the class allows a space (`${X[ 1 ]}merge` merges) and refuses `}`, `(` and a
 backtick (`${X[a}; gh pr merge 7; {]}`, `${X[$(…)]}`, ``${X[`…`]}``). `hooks.md` writes `\|` in its table row
 (a bare `|` cut the row). Header and `hooks.md` add out of reach: a glob (`gh pr [m]erge 7`, `m?rge`), a brace
-sequence (`-{c..d}`), a brace item holding `}` (`{$X[},-d}`).
+sequence (`-{c..d}`), a brace item holding `}` (`{$X[},-d}`). Round 8 (diff review pass 3, a regression: the regex
+also matched a `${X[` the shell never expands, inside single quotes or after `\`, and deleted plain command text;
+the lead chose option a, a fourth pass): the copy never deletes text that could hold a word break. Inside `${X[…]}`
+the subscript is one token with optional spaces around it, and the token holds no space, `(`, backtick or `'`
+(`${X[ 1 ]}` still reads as empty); a first `s/\\\$/\\_/g` turns an escaped `\$` into plain text before any
+removal. The merge rule's out-of-reach list names a glob too (review note).
 
 Weighed against A' (per-pattern widening: a class `(["'\\{},]|\$NAME|\${NAME})*` around every letter of `gh`, `pr`,
 `close`, `merge`, `-d`, `--delete-branch`): longer to read; prototyped (round 1 forms) it missed `g''h pr merge 7`, and
@@ -84,16 +89,16 @@ other operator expansions, a brace list's sixth item on (`-{a,b,c,e,f,d}`), nest
 | File                          | Change                                                                                         | Why          |
 | ----------------------------- | ---------------------------------------------------------------------------------------------- | ------------ |
 | `.claude/hooks/guard-bash.sh` | `UNQUOTE`, `BRACE_ONE`, a loop over the copy for the two gh pr rules; quote classes; header    | Acceptance 1 |
-| `scripts/hook-smoke.sh`       | section "gh pr words quoted in pieces … (B1.108)": 30 blocked, 10 allowed; rounds 4–7: 36 more | Test line    |
+| `scripts/hook-smoke.sh`       | section "gh pr words quoted in pieces … (B1.108)": 30 blocked, 10 allowed; rounds 4–8: 44 more | Test line    |
 | `.claude/docs/hooks.md`       | guard-bash row: the unquoted copy, the costs, what stays out of reach                          | Acceptance 1 |
 | `backlog/work/B1.108/*`       | plan, review, pr-body                                                                          | pipeline     |
 
 ## Interfaces touched
 
-`guard-bash.sh` (PreToolUse Bash): exit 2 with the existing `MERGE_MSG` / `FORCE_MSG` on the 66 forms; exit 0 otherwise as today.
+`guard-bash.sh` (PreToolUse Bash): exit 2 with the existing `MERGE_MSG` / `FORCE_MSG` on the 74 forms; exit 0 otherwise as today.
 
 ```bash
-UNQUOTE='s/\$([a-z_][a-z0-9_]*(\[[^][:space:],]*\])?|[0-9@*])|\$\{(\([^()[:space:]]*\))?[=~^]*([a-z_][a-z0-9_]*|[0-9]+|[@*])(\[[^]}(`]*\])?\}//g; s/\$(["'"'"'])/\1/g; s/["'"'"'\\]//g; s/[<>]/ /g'
+UNQUOTE='s/\\\$/\\_/g; s/\$([a-z_][a-z0-9_]*(\[[^][:space:],]*\])?|[0-9@*])|\$\{(\([^()[:space:]]*\))?[=~^]*([a-z_][a-z0-9_]*|[0-9]+|[@*])(\[[[:space:]]*[^][:space:](`'"'"']*[[:space:]]*\])?\}//g; s/\$(["'"'"'])/\1/g; s/["'"'"'\\]//g; s/[<>]/ /g'
 BRACE_ONE='s/([^[:space:]{};&|()`]*)\{([^[:space:]{},;&|()`]*),([^[:space:]{};&|()`]*)\}([^[:space:]{};&|()`]*)/\1\2\4 \1{\3}\4/g'
 GH_PR_FLAGS='([[:space:]]+-.*)?'
 GH_BRANCH_DELETE="${W}gh[[:space:]](.*[[:space:]])?(repo[[:space:]]+sync.*--force|pr${GH_PR_FLAGS}[[:space:]]+(close|merge)([[:space:]].*)?[[:space:]](-[a-z]*d|--delete-branch))"
@@ -126,6 +131,15 @@ numbers, subscripts and zsh flags`: "hook-smoke: 908 probes OK" (878 + 30). Muta
   "hook-smoke: 914 probes OK". Mutants (prototype, 6/6 killed, 0 allow probes broken): bare class allowing a space → 2
   fail, `,` → 6; braced class allowing `}` → 1, `(` → 1, backtick → 1, refusing a space → 2. Round 6's 30 probes, 9
   round-5 triggers and 10 allowed keep their exits.
+- Round 8: probes `test(hooks): B1.108 review pass 3 -- probe a subscript across a quote or escape` (no marker), 8:
+  merge `echo '${X[ '; gh pr merge 7; ' ]}'`, `echo '${X['|gh pr merge 7|']}'`, `echo \${X[ ;gh pr merge 7; ]}`,
+  `bash -c 'gh "$@"' '${X[ ' pr merge 7 -b ' ]}'`, `bash -c 'gh "$@"' \${X[ pr merge 7 -b ]}`,
+  `echo '${X['&&{gh,pr,merge,7}&&']}'`, `echo \${X[&&{gh,pr,merge,7}&&]}`; delete `echo '${X[ '&&gh pr close 7 -d&&' ]}'`.
+  Red at `2889c4fd`: exit 1, 6 FAIL, 916 ok (the last two merges are blocked there and guard the new class); then
+  `fix(hooks): B1.108 review pass 3 -- one-token braced subscript, escaped dollar`: "hook-smoke: 922 probes OK".
+  Mutants (prototype, 4/5 killed, 0 allow probes broken): token allowing a space → 1 fail, a backtick → 1, `'` → 1;
+  no `\$` step → 1; token allowing `(` → 0 (equivalent: without a space a `$(…)` cannot form a multi-word command
+  that bash parses; kept so a `$(` is never deleted). Diff review pass 4 (the lead's fourth pass).
 - 139 KB, 300-segment and brace-heavy timings re-run on the green commit and stated in the PR. `pnpm lint && pnpm typecheck` exit
   0; `pnpm test` 403 before and after; mutation: CI only, no src/lib or src/actions change; `next-task.sh --check
 B1.108` no overlap; `check-plan-scope.sh`, `check-backlog.sh` OK; CI green.
@@ -142,4 +156,7 @@ B1.108` no overlap; `check-plan-scope.sh`, `check-backlog.sh` OK; CI green.
 | 6    | dev-lead | round 7 probes     | `test(hooks): B1.108 review pass 2 -- probe subscripts that end a word`              |
 | 7    | dev-lead | round 7 fix, docs  | `fix(hooks): B1.108 review pass 2 -- subscript classes, table pipe`                  |
 
-Plan review: approved, round 7 · Plan approved by: lead, 2026-11-18 · Rounds: 3
+| 8 | dev-lead | round 8 probes | `test(hooks): B1.108 review pass 3 -- probe a subscript across a quote or escape` |
+| 9 | dev-lead | round 8 fix, docs | `fix(hooks): B1.108 review pass 3 -- one-token braced subscript, escaped dollar` |
+
+Plan review: round 8 pending · Plan approved by: lead, 2026-11-18 (round 7; round 8 pending) · Rounds: 4
