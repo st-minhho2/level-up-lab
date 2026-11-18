@@ -30,10 +30,13 @@ backtick (`${X[a}; gh pr merge 7; {]}`, `${X[$(…)]}`, ``${X[`…`]}``). `hooks
 (a bare `|` cut the row). Header and `hooks.md` add out of reach: a glob (`gh pr [m]erge 7`, `m?rge`), a brace
 sequence (`-{c..d}`), a brace item holding `}` (`{$X[},-d}`). Round 8 (diff review pass 3, a regression: the regex
 also matched a `${X[` the shell never expands, inside single quotes or after `\`, and deleted plain command text;
-the lead chose option a, a fourth pass): the copy never deletes text that could hold a word break. Inside `${X[…]}`
-the subscript is one token with optional spaces around it, and the token holds no space, `(`, backtick or `'`
-(`${X[ 1 ]}` still reads as empty); a first `s/\\\$/\\_/g` turns an escaped `\$` into plain text before any
-removal. The merge rule's out-of-reach list names a glob too (review note).
+the lead chose option a, a fourth pass). Round 9 (plan review round 8: after `$$` a `${X[` is not an expansion
+either, so round 8's narrower token still hid `$${X[;{gh,pr,merge,7};]}`): instead of naming each context where
+`${` is not expanded (quotes, `\$`, `$$`, a quoted here-doc), the deleted text itself can hold nothing the shell
+treats specially. Inside `${X[…]}` the subscript is one token with optional spaces around it, and the token holds no
+space, quote, backslash, `;` `&` the pipe, `(` `)`, backtick, `{` `}` or `,`: a hidden command needs a separator and
+a word break (a space or a brace list) together, and the token holds neither, whatever context the `${` sits in.
+`${X[ 1 ]}` still reads as empty. No `\$` step. The merge rule's out-of-reach list names a glob too (review note).
 
 Weighed against A' (per-pattern widening: a class `(["'\\{},]|\$NAME|\${NAME})*` around every letter of `gh`, `pr`,
 `close`, `merge`, `-d`, `--delete-branch`): longer to read; prototyped (round 1 forms) it missed `g''h pr merge 7`, and
@@ -89,16 +92,16 @@ other operator expansions, a brace list's sixth item on (`-{a,b,c,e,f,d}`), nest
 | File                          | Change                                                                                         | Why          |
 | ----------------------------- | ---------------------------------------------------------------------------------------------- | ------------ |
 | `.claude/hooks/guard-bash.sh` | `UNQUOTE`, `BRACE_ONE`, a loop over the copy for the two gh pr rules; quote classes; header    | Acceptance 1 |
-| `scripts/hook-smoke.sh`       | section "gh pr words quoted in pieces … (B1.108)": 30 blocked, 10 allowed; rounds 4–8: 44 more | Test line    |
+| `scripts/hook-smoke.sh`       | section "gh pr words quoted in pieces … (B1.108)": 30 blocked, 10 allowed; rounds 4–9: 48 more | Test line    |
 | `.claude/docs/hooks.md`       | guard-bash row: the unquoted copy, the costs, what stays out of reach                          | Acceptance 1 |
 | `backlog/work/B1.108/*`       | plan, review, pr-body                                                                          | pipeline     |
 
 ## Interfaces touched
 
-`guard-bash.sh` (PreToolUse Bash): exit 2 with the existing `MERGE_MSG` / `FORCE_MSG` on the 74 forms; exit 0 otherwise as today.
+`guard-bash.sh` (PreToolUse Bash): exit 2 with the existing `MERGE_MSG` / `FORCE_MSG` on the 78 forms; exit 0 otherwise as today.
 
 ```bash
-UNQUOTE='s/\\\$/\\_/g; s/\$([a-z_][a-z0-9_]*(\[[^][:space:],]*\])?|[0-9@*])|\$\{(\([^()[:space:]]*\))?[=~^]*([a-z_][a-z0-9_]*|[0-9]+|[@*])(\[[[:space:]]*[^][:space:](`'"'"']*[[:space:]]*\])?\}//g; s/\$(["'"'"'])/\1/g; s/["'"'"'\\]//g; s/[<>]/ /g'
+UNQUOTE='s/\$([a-z_][a-z0-9_]*(\[[^][:space:],]*\])?|[0-9@*])|\$\{(\([^()[:space:]]*\))?[=~^]*([a-z_][a-z0-9_]*|[0-9]+|[@*])(\[[[:space:]]*[^][:space:]()`'"'"'"\\;&|{},]*[[:space:]]*\])?\}//g; s/\$(["'"'"'])/\1/g; s/["'"'"'\\]//g; s/[<>]/ /g'
 BRACE_ONE='s/([^[:space:]{};&|()`]*)\{([^[:space:]{},;&|()`]*),([^[:space:]{};&|()`]*)\}([^[:space:]{};&|()`]*)/\1\2\4 \1{\3}\4/g'
 GH_PR_FLAGS='([[:space:]]+-.*)?'
 GH_BRANCH_DELETE="${W}gh[[:space:]](.*[[:space:]])?(repo[[:space:]]+sync.*--force|pr${GH_PR_FLAGS}[[:space:]]+(close|merge)([[:space:]].*)?[[:space:]](-[a-z]*d|--delete-branch))"
@@ -131,32 +134,33 @@ numbers, subscripts and zsh flags`: "hook-smoke: 908 probes OK" (878 + 30). Muta
   "hook-smoke: 914 probes OK". Mutants (prototype, 6/6 killed, 0 allow probes broken): bare class allowing a space → 2
   fail, `,` → 6; braced class allowing `}` → 1, `(` → 1, backtick → 1, refusing a space → 2. Round 6's 30 probes, 9
   round-5 triggers and 10 allowed keep their exits.
-- Round 8: probes `test(hooks): B1.108 review pass 3 -- probe a subscript across a quote or escape` (no marker), 8:
+- Round 9: probes `test(hooks): B1.108 review pass 3 -- probe a subscript across a quote or escape` (no marker), 12:
   merge `echo '${X[ '; gh pr merge 7; ' ]}'`, `echo '${X['|gh pr merge 7|']}'`, `echo \${X[ ;gh pr merge 7; ]}`,
   `bash -c 'gh "$@"' '${X[ ' pr merge 7 -b ' ]}'`, `bash -c 'gh "$@"' \${X[ pr merge 7 -b ]}`,
-  `echo '${X['&&{gh,pr,merge,7}&&']}'`, `echo \${X[&&{gh,pr,merge,7}&&]}`; delete `echo '${X[ '&&gh pr close 7 -d&&' ]}'`.
-  Red at `2889c4fd`: exit 1, 6 FAIL, 916 ok (the last two merges are blocked there and guard the new class); then
-  `fix(hooks): B1.108 review pass 3 -- one-token braced subscript, escaped dollar`: "hook-smoke: 922 probes OK".
-  Mutants (prototype, 4/5 killed, 0 allow probes broken): token allowing a space → 1 fail, a backtick → 1, `'` → 1;
-  no `\$` step → 1; token allowing `(` → 0 (equivalent: without a space a `$(…)` cannot form a multi-word command
-  that bash parses; kept so a `$(` is never deleted). Diff review pass 4 (the lead's fourth pass).
+  `echo '${X['&&{gh,pr,merge,7}&&']}'`, `echo \${X[&&{gh,pr,merge,7}&&]}`, `echo $${X[;{gh,pr,merge,7};]}` and the
+  same with `&&` and the pipe; delete `echo '${X[ '&&gh pr close 7 -d&&' ]}'`, `echo $${X[;{gh,pr,close,7,-d};]}`.
+  Red at `2889c4fd`: exit 1, 6 FAIL, 920 ok (the other 6 are blocked there and guard the token); then
+  `fix(hooks): B1.108 review pass 3 -- braced subscript token without shell metacharacters`: "hook-smoke: 926
+  probes OK". Mutants (prototype, 0 allow probes broken): the token allowing a space → 1 fail; separators and brace
+  characters together → 5; backtick, parens and brace characters → 1; everything but a space → 7. One group at a time
+  survives by design: a hidden command needs a separator and a word break, so each group alone is covered by another.
+  Diff review pass 4 (the lead's fourth pass).
 - 139 KB, 300-segment and brace-heavy timings re-run on the green commit and stated in the PR. `pnpm lint && pnpm typecheck` exit
   0; `pnpm test` 403 before and after; mutation: CI only, no src/lib or src/actions change; `next-task.sh --check
 B1.108` no overlap; `check-plan-scope.sh`, `check-backlog.sh` OK; CI green.
 
 ## Work breakdown
 
-| Step | Role     | Produces           | Commit                                                                               |
-| ---- | -------- | ------------------ | ------------------------------------------------------------------------------------ |
-| 1    | dev-lead | probes             | `test(hooks): B1.108 hook-smoke probes gh pr words quoted in pieces`                 |
-| 2    | dev-lead | rule, header, docs | `chore(hooks): B1.108 guard-bash reads gh pr words unquoted`                         |
-| 3    | reviewer | diff review        | `docs(backlog): B1.108 review pass N`                                                |
-| 4    | dev-lead | rounds 4–5 probes  | `test(hooks): B1.108 review pass 1 -- probe glued brace lists and expansions`        |
-| 5    | dev-lead | rounds 4–5 fix     | `fix(hooks): B1.108 review pass 1 -- brace lists, numbers, subscripts and zsh flags` |
-| 6    | dev-lead | round 7 probes     | `test(hooks): B1.108 review pass 2 -- probe subscripts that end a word`              |
-| 7    | dev-lead | round 7 fix, docs  | `fix(hooks): B1.108 review pass 2 -- subscript classes, table pipe`                  |
+| Step | Role     | Produces           | Commit                                                                                    |
+| ---- | -------- | ------------------ | ----------------------------------------------------------------------------------------- |
+| 1    | dev-lead | probes             | `test(hooks): B1.108 hook-smoke probes gh pr words quoted in pieces`                      |
+| 2    | dev-lead | rule, header, docs | `chore(hooks): B1.108 guard-bash reads gh pr words unquoted`                              |
+| 3    | reviewer | diff review        | `docs(backlog): B1.108 review pass N`                                                     |
+| 4    | dev-lead | rounds 4–5 probes  | `test(hooks): B1.108 review pass 1 -- probe glued brace lists and expansions`             |
+| 5    | dev-lead | rounds 4–5 fix     | `fix(hooks): B1.108 review pass 1 -- brace lists, numbers, subscripts and zsh flags`      |
+| 6    | dev-lead | round 7 probes     | `test(hooks): B1.108 review pass 2 -- probe subscripts that end a word`                   |
+| 7    | dev-lead | round 7 fix, docs  | `fix(hooks): B1.108 review pass 2 -- subscript classes, table pipe`                       |
+| 8    | dev-lead | round 9 probes     | `test(hooks): B1.108 review pass 3 -- probe a subscript across a quote or escape`         |
+| 9    | dev-lead | round 9 fix, docs  | `fix(hooks): B1.108 review pass 3 -- braced subscript token without shell metacharacters` |
 
-| 8 | dev-lead | round 8 probes | `test(hooks): B1.108 review pass 3 -- probe a subscript across a quote or escape` |
-| 9 | dev-lead | round 8 fix, docs | `fix(hooks): B1.108 review pass 3 -- one-token braced subscript, escaped dollar` |
-
-Plan review: round 8 pending · Plan approved by: lead, 2026-11-18 (round 7; round 8 pending) · Rounds: 4
+Plan review: round 9 pending · Plan approved by: lead, 2026-11-18 (round 7; round 9 pending) · Rounds: 4
